@@ -68,7 +68,7 @@ jobs:
           echo "runner_ip=$RUNNER_IP" >> "$GITHUB_OUTPUT"
           az postgres flexible-server firewall-rule create \
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --name "$POSTGRES_SERVER" \
+            --server-name "$POSTGRES_SERVER" \
             --rule-name "github-actions-runner-temp" \
             --start-ip-address "$RUNNER_IP" \
             --end-ip-address "$RUNNER_IP" \
@@ -87,7 +87,7 @@ jobs:
         run: |
           az postgres flexible-server firewall-rule delete \
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --name "$POSTGRES_SERVER" \
+            --server-name "$POSTGRES_SERVER" \
             --rule-name "github-actions-runner-temp" \
             --yes \
             --output none || true
