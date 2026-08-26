@@ -1,0 +1,496 @@
+PIMSY Implementations — version 1.6.0
+=====================================
+
+WHAT CHANGED IN THIS VERSION
+-----------------------------
+
+Two things, aimed at getting this app running for real instead of only on
+your own computer: a normal email-and-password login (with a "forgot
+password" option), and everything needed to host the app on Azure.
+
+1. Password sign-in. Until now the only way in was an emailed link — fine
+   for trying the app out, but not how most people expect to log into a
+   work tool day to day. There's now a second way, right below the "email
+   me a link" box on the sign-in page: enter your email and a password.
+
+2. Forgot password / set a password. A new "Forgot your password, or don't
+   have one yet?" link on the sign-in page takes you to a page where you
+   enter your email and get a reset link (emailed, once RESEND_API_KEY is
+   configured — see below). Nobody has a password by default, so the very
+   first time anyone uses this it sets one rather than resetting one; the
+   page and the email both say which is happening. The link works once and
+   expires after an hour.
+
+3. Change your password any time from Settings. Both the staff Settings
+   page and the customer portal's "Your settings" page now have a Password
+   card. If you already have a password, it asks for your current one
+   first. If you don't, it just lets you set one.
+
+4. Magic-link sign-in and Google sign-in are completely unchanged — password
+   is an additional option, not a replacement. Nobody is forced to set a
+   password; anyone who never touches this keeps signing in exactly as
+   before.
+
+5. Ready to run on Azure. This is the bigger, more technical change, and
+   it's not something you do by double-clicking START-HERE.bat — it's for
+   whoever on your team (or an outside contractor) handles Azure and GitHub
+   for you. The app now has a Docker image, a one-command Azure
+   infrastructure setup (database, file storage, the web server itself),
+   and a GitHub Actions workflow that deploys automatically on every push.
+   Full instructions are in the azure/README.md file inside this zip. File
+   uploads also now work correctly once deployed there — previously they'd
+   have been silently lost on a restart, since Azure's web hosting doesn't
+   keep local files around reliably; the app now stores them in Azure Blob
+   Storage instead when it's running there. Nothing about local/demo use on
+   your own computer changes — that still stores files on disk exactly as
+   before.
+
+Nothing about task visibility, the customer portal, or your existing data
+changed in this release.
+
+
+HOW TO INSTALL THIS VERSION
+---------------------------
+
+1. Close any window that is currently running the app (Ctrl+C, then close).
+
+2. Unzip this into a NEW, EMPTY folder — do not unzip on top of the old one.
+   Somewhere plain like  C:\dev\pimsy-pm  is ideal.
+   Avoid OneDrive, Desktop and Documents if they sync to the cloud.
+
+3. Double-click  START-HERE.bat  and wait for the line that says Ready.
+
+4. Open  http://localhost:3000
+
+You will be starting from fresh sample data, plus the PRISM history from
+before. As before, nothing from the previous local copy carries over
+automatically.
+
+
+HOW TO CHECK YOU ARE ON THE RIGHT ONE
+--------------------------------------
+
+The sign-in page shows a version number at the very bottom of the screen.
+
+    v1.6.0    correct
+    v1.5.0 or older   you are on an older copy, from a different folder
+
+START-HERE.bat also prints the version near the top of its window.
+
+If the browser shows no version number, close every command window, make sure
+only one folder's START-HERE.bat is running, and reload the page.
+
+
+IF SOMETHING STILL DOES NOT WORK
+---------------------------------
+
+Note the version number from the sign-in page, what you clicked, and what you
+expected to happen. Scroll back through the START-HERE window for any red
+text. That window is where the app's errors appear.
+
+
+PIMSY Implementations — version 1.5.0
+=====================================
+
+WHAT CHANGED IN THIS VERSION
+-----------------------------
+
+This app now uses PIMSY's actual brand colors and logo, from the official
+PIMSY Brand Guidelines. Nothing about how the app works changed — this is a
+visual pass only.
+
+1. Real brand colors. The blue used throughout the app (buttons, active menu
+   items, links) is now PIMSY Dark Blue, the same blue from the brand
+   guidelines — not the placeholder blue used since the first build.
+
+2. The real logo. The sidebar, the customer portal header, and the sign-in
+   page now show the actual PIMSY mark instead of a plain "P" in a colored
+   box. The browser tab icon (favicon) is now the PIMSY mark too.
+
+3. Emails match. Notification emails (task alerts, invites, etc.) now use
+   the same brand blue instead of the old placeholder color.
+
+4. Two bugs fixed along the way, found while double-checking this change:
+   - The version number on the sign-in page had been stuck at "v1.1.0"
+     since version 1.2.0, even though the app itself kept moving forward.
+     It now correctly shows whatever version you're actually running, which
+     matters because that number is how you confirm you're on the right
+     copy.
+   - If your computer is set to light mode, the app was still always
+     showing itself in dark colors regardless of that setting, due to a
+     styling bug. Light mode now actually shows light colors.
+
+Nothing about your data, permissions, or workflow changed in this release.
+
+
+HOW TO INSTALL THIS VERSION
+---------------------------
+
+1. Close any window that is currently running the app (Ctrl+C, then close).
+
+2. Unzip this into a NEW, EMPTY folder — do not unzip on top of the old one.
+   Somewhere plain like  C:\dev\pimsy-pm  is ideal.
+   Avoid OneDrive, Desktop and Documents if they sync to the cloud.
+
+3. Double-click  START-HERE.bat  and wait for the line that says Ready.
+
+4. Open  http://localhost:3000
+
+You will be starting from fresh sample data, plus the PRISM history from
+before. As before, nothing from the previous local copy carries over
+automatically.
+
+
+HOW TO CHECK YOU ARE ON THE RIGHT ONE
+--------------------------------------
+
+The sign-in page shows a version number at the very bottom of the screen.
+
+    v1.5.0    correct
+    v1.4.0 or older   you are on an older copy, from a different folder
+
+START-HERE.bat also prints the version near the top of its window.
+
+If the browser shows no version number, close every command window, make sure
+only one folder's START-HERE.bat is running, and reload the page.
+
+
+IF SOMETHING STILL DOES NOT WORK
+---------------------------------
+
+Note the version number from the sign-in page, what you clicked, and what you
+expected to happen. Scroll back through the START-HERE window for any red
+text. That window is where the app's errors appear.
+
+
+PIMSY Implementations — version 1.4.0
+=====================================
+
+WHAT CHANGED IN THIS VERSION
+-----------------------------
+
+A specialist's view of the app is now scoped to their own work — two access
+gaps closed, no new screens.
+
+1. Specialists only see projects they're actually on. Until now, any
+   Implementation Specialist could open any project in the whole portfolio,
+   whether they were leading it or not. That was left over from an early
+   build and was never intended. Now a specialist's Projects list, dashboard,
+   and reports only include projects where they're the lead or have been
+   added as a project member — the same rule MEMBER-level staff already had.
+   Nothing changes for you: Owners, Admins, and Managers still see the full
+   portfolio, same as before. Adding someone to a project (Settings > Team,
+   on that project) is what gives a specialist visibility into it.
+
+2. Templates moved to Owner/Admin only. The Templates page — the standard
+   playbooks every new project starts from — was visible to every staff
+   member, specialists included, even though only Owners and Admins can
+   change anything there. It's now hidden from the sidebar for anyone else,
+   and the page itself won't open for them even by direct link. Choosing a
+   template while creating a new project is unaffected — that still works
+   for anyone who can create projects.
+
+Nothing about task visibility, the customer portal, or notifications changed
+in this release — this is purely about which of YOUR OWN staff can see which
+internal pages.
+
+
+HOW TO INSTALL THIS VERSION
+---------------------------
+
+1. Close any window that is currently running the app (Ctrl+C, then close).
+
+2. Unzip this into a NEW, EMPTY folder — do not unzip on top of the old one.
+   Somewhere plain like  C:\dev\pimsy-pm  is ideal.
+   Avoid OneDrive, Desktop and Documents if they sync to the cloud.
+
+3. Double-click  START-HERE.bat  and wait for the line that says Ready.
+
+4. Open  http://localhost:3000
+
+You will be starting from fresh sample data, plus the PRISM history from
+before. As before, nothing from the previous local copy carries over
+automatically.
+
+
+HOW TO CHECK YOU ARE ON THE RIGHT ONE
+--------------------------------------
+
+The sign-in page shows a version number at the very bottom of the screen.
+
+    v1.4.0    correct
+    v1.3.0 or older   you are on an older copy, from a different folder
+
+START-HERE.bat also prints the version near the top of its window.
+
+If the browser shows no version number, close every command window, make sure
+only one folder's START-HERE.bat is running, and reload the page.
+
+
+IF SOMETHING STILL DOES NOT WORK
+---------------------------------
+
+Note the version number from the sign-in page, what you clicked, and what you
+expected to happen. Scroll back through the START-HERE window for any red
+text. That window is where the app's errors appear.
+
+
+PIMSY Implementations — version 1.3.0
+=====================================
+
+WHAT CHANGED IN THIS VERSION
+-----------------------------
+
+The customer portal has been redesigned around tabs, one per phase of the
+implementation — Kickoff, Discovery, Site Configuration, Core Training, and
+so on — the same shape as Dock's old space layout. Instead of one long
+scrolling page, a practice contact now clicks between phases the way they
+would in Dock, plus a Recordings tab for training session links and a
+Messages tab for talking to their team.
+
+1. Phase tabs. Each phase your customer can see becomes its own tab in their
+   portal, showing just that phase's steps and progress. Overview stays as
+   a landing tab with open action items, project updates, and milestones.
+
+2. You control which tabs exist. Project > Settings has a new "Customer
+   portal tabs" card — one checkbox per phase. Uncheck a phase and its tab
+   disappears from the customer's view entirely, until you check it back on.
+   Nothing is deleted, and nothing about your own internal view changes —
+   this only affects what the practice can see.
+
+3. Recordings tab. A new "Recordings" card in Settings lets you paste a link
+   to a training session recording (Zoom, Teams, Loom, whatever you use) with
+   a name and an optional note. Like everything else in the portal, a
+   recording stays private until you tick "Visible to customer" — add it
+   quietly first, share it when you're ready. The Recordings tab only shows
+   up for the customer once at least one recording has been shared.
+
+4. Messages moved into the tab row, next to Recordings, so it's always in
+   the same place regardless of how many phase tabs a project has.
+
+Nothing about how tasks, action items, or notifications work has changed —
+this is a layout change to the portal, not a change to what data exists or
+who can see it. The same visibility rule as before still applies: a phase,
+task, or file only reaches the portal once it's explicitly marked shared.
+
+
+HOW TO INSTALL THIS VERSION
+---------------------------
+
+1. Close any window that is currently running the app (Ctrl+C, then close).
+
+2. Unzip this into a NEW, EMPTY folder — do not unzip on top of the old one.
+   Somewhere plain like  C:\dev\pimsy-pm  is ideal.
+   Avoid OneDrive, Desktop and Documents if they sync to the cloud.
+
+3. Double-click  START-HERE.bat  and wait for the line that says Ready.
+
+4. Open  http://localhost:3000
+
+You will be starting from fresh sample data, plus the PRISM history from
+before. As before, nothing from the previous local copy carries over
+automatically.
+
+
+HOW TO CHECK YOU ARE ON THE RIGHT ONE
+--------------------------------------
+
+The sign-in page shows a version number at the very bottom of the screen.
+
+    v1.3.0    correct
+    v1.2.0 or older   you are on an older copy, from a different folder
+
+START-HERE.bat also prints the version near the top of its window.
+
+If the browser shows no version number, close every command window, make sure
+only one folder's START-HERE.bat is running, and reload the page.
+
+
+IF SOMETHING STILL DOES NOT WORK
+---------------------------------
+
+Note the version number from the sign-in page, what you clicked, and what you
+expected to happen. Scroll back through the START-HERE window for any red
+text. That window is where the app's errors appear.
+
+
+PIMSY Implementations — version 1.2.0
+=====================================
+
+WHAT CHANGED IN THIS VERSION
+-----------------------------
+
+PRISM — the separate spreadsheet-like tool used to scope a deal, project a
+go-live date, and track on-time performance — has been folded into this app.
+You no longer need both. Everything PRISM did now happens here, against
+real project data instead of a hand-maintained copy of it.
+
+1. Scoping a new implementation. When you create a project, there is now an
+   optional "Scope this implementation" step: users, locations, form pages,
+   trainings per week, service lines, and the two compliance/org-structure
+   flags — the same inputs PRISM's Forecast+ tab asked for. As you fill it
+   in, an estimated hours figure and three projected go-live dates
+   (optimistic / typical / pessimistic) appear live, and picking one sets
+   the project's target go-live and scales its template phase dates to
+   match. Skipping this step still works exactly like before — scoping is
+   optional, not required.
+
+2. Go-live slip tracking. The date a project's go-live was first set is now
+   kept alongside whatever it moves to later. If you push a go-live date out
+   on a project that already had one, you'll be asked (optionally) whether
+   the slip was on the customer's side or PIMSY's — the same tagging PRISM
+   used. Skip it if you don't know yet; it can sit untagged.
+
+3. A new Analysis report, under Leadership in the left sidebar. It shows
+   forecast accuracy (estimated vs. actual go-live, across everyone),
+   an on-time scorecard per specialist, on-time rate by complexity tier,
+   and a slip-attribution breakdown by customer-caused vs. PIMSY-caused
+   days — everything PRISM's Analysis tab showed, now built from real
+   project records instead of a manually updated table.
+
+4. Team capacity now forecasts forward. The existing Team Capacity report
+   (Leadership > Team capacity) gained a week-by-week table projecting each
+   specialist's committed hours across upcoming projects, instead of only
+   showing where things stand today.
+
+5. PRISM's book of business comes in automatically. Running START-HERE.bat
+   on a fresh install now loads the same active engagements and completed
+   implementations PRISM was tracking, so the new Analysis and capacity
+   reports have real history to show from the very first run instead of
+   starting empty. This is a one-time historical import, not a live sync —
+   PRISM itself keeps running if you still want it, and nothing changes
+   there.
+
+PRISM is not being turned off by this update — that's your call, whenever
+you're ready. This just means you no longer have to keep both in sync by
+hand.
+
+
+HOW TO INSTALL THIS VERSION
+---------------------------
+
+1. Close any window that is currently running the app (Ctrl+C, then close).
+
+2. Unzip this into a NEW, EMPTY folder — do not unzip on top of the old one.
+   Somewhere plain like  C:\dev\pimsy-pm  is ideal.
+   Avoid OneDrive, Desktop and Documents if they sync to the cloud.
+
+3. Double-click  START-HERE.bat  and wait for the line that says Ready.
+
+4. Open  http://localhost:3000
+
+You will be starting from fresh sample data, plus the PRISM history
+described above. As before, nothing from the previous local copy carries
+over automatically.
+
+
+HOW TO CHECK YOU ARE ON THE RIGHT ONE
+--------------------------------------
+
+The sign-in page shows a version number at the very bottom of the screen.
+
+    v1.2.0    correct
+    v1.1.0 or nothing   you are on an older copy, from a different folder
+
+START-HERE.bat also prints the version near the top of its window.
+
+If the browser shows no version number, close every command window, make sure
+only one folder's START-HERE.bat is running, and reload the page.
+
+
+IF SOMETHING STILL DOES NOT WORK
+---------------------------------
+
+Note the version number from the sign-in page, what you clicked, and what you
+expected to happen. Scroll back through the START-HERE window for any red
+text. That window is where the app's errors appear.
+
+
+PIMSY Implementations — version 1.1.0
+=====================================
+
+IF THE APP FELT BROKEN, THIS IS WHY
+-----------------------------------
+
+In version 1.0.0 nothing you changed was ever saved.
+
+Reading worked, so the app looked healthy — projects, tasks and the portal
+all displayed correctly. But every action that writes something silently did
+nothing: ticking a task off, un-ticking it, inviting a specialist, creating a
+customer or a project. No error message, no clue. You clicked and the screen
+just sat there.
+
+The cause was in one line of database setup code. A production build splits
+the server into several separate pieces, and each piece was opening its own
+copy of the embedded database over the same folder. Whichever piece handled
+your click wrote to a copy that the pages never read from.
+
+It is fixed, and there is now an automated test that fails if it comes back.
+
+
+HOW TO INSTALL THIS VERSION
+---------------------------
+
+1. Close any window that is currently running the app (Ctrl+C, then close).
+
+2. Unzip this into a NEW, EMPTY folder — do not unzip on top of the old one.
+   Somewhere plain like  C:\dev\pimsy-pm  is ideal.
+   Avoid OneDrive, Desktop and Documents if they sync to the cloud.
+
+3. Double-click  START-HERE.bat  and wait for the line that says Ready.
+
+4. Open  http://localhost:3000
+
+You will be starting from fresh sample data. Nothing you entered in the old
+copy carried over — and since none of it was ever saved, there is nothing to
+carry.
+
+
+HOW TO CHECK YOU ARE ON THE RIGHT ONE
+-------------------------------------
+
+The sign-in page shows a version number at the very bottom of the screen.
+
+    v1.1.0    correct
+    nothing   you are on the old copy, from a different folder
+
+START-HERE.bat also prints the version near the top of its window.
+
+If the browser shows no version number, close every command window, make sure
+only one folder's START-HERE.bat is running, and reload the page.
+
+
+ALSO NEW IN THIS VERSION
+------------------------
+
+* Task completion now notifies. When a customer ticks off one of their action
+  items, the project lead is emailed. Previously this event had no alert type
+  at all, which made it the quietest thing in the system despite being the one
+  that unblocks the next step.
+
+* Files and links added to a task notify the lead and the task's owner.
+
+* Email is built for Outlook specifically. Desktop Outlook renders mail with
+  Word's engine and throws away the styling most templates rely on; these are
+  built for it, and each message carries a proper plain-text version for phone
+  notifications.
+
+* Staff and customers now receive different links to the same item, because
+  they reach it by different routes. Previously a customer clicking through
+  from an email could land on a page they had no access to.
+
+* Optional Microsoft Teams feed. Management > Alerts > Microsoft Teams. Posts
+  customer activity into one channel. Setup takes about two minutes inside
+  Teams itself and needs nothing from IT.
+
+* npm run setup was only ever applying the first database migration, so any
+  later change to the schema was skipped and a fresh install came up missing
+  columns. It now applies all of them.
+
+
+IF SOMETHING STILL DOES NOT WORK
+--------------------------------
+
+Note the version number from the sign-in page, what you clicked, and what you
+expected to happen. Scroll back through the START-HERE window for any red
+text. That window is where the app's errors appear.

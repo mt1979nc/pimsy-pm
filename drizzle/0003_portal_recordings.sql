@@ -1,0 +1,1 @@
+ALTER TABLE "file_asset" ADD COLUMN "is_recording" boolean DEFAULT false NOT NULL;

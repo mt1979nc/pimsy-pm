@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #fafbfc;
+  --color-border: #e3e6ea;
+  --color-border-strong: #cdd3da;
+  --color-ink: #14181d;
+  --color-ink-2: #4a5560;
+  --color-ink-3: #7b8794;
+
+  /*
+   * PIMSY EHR brand palette (PIMSY Brand Guidelines, Aug 2025).
+   * --color-brand = PIMSY Dark Blue, --color-brand-soft = PIMSY Light Blue —
+   * both literal brand colors, not derived tints. See pimsy-brand skill /
+   * project doc for the full palette and logo usage rules.
+   */
+  --color-brand: #113c64; /* PIMSY Dark Blue */
+  --color-brand-ink: #ffffff;
+  --color-brand-soft: #cee0e7; /* PIMSY Light Blue */
+  --color-accent: #ffc000; /* PIMSY Yellow — sparing use only, see brand guidelines */
+
+  --color-green: #16794c;
+  --color-green-soft: #e6f4ed;
+  --color-amber: #96610a;
+  --color-amber-soft: #fdf3e0;
+  --color-red: #b42318;
+  --color-red-soft: #fdecea;
+  --color-violet: #6941c6;
+  --color-violet-soft: #f2edfd;
+
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/*
+ * NOTE: this must be a plain `:root` override, not another `@theme` block.
+ * Tailwind v4's `@theme` is a build-time directive — nesting it inside
+ * `@media` here silently did NOT make it media-conditional: the compiler
+ * emitted only ONE definition per --color-* variable (whichever @theme block
+ * came last in the file), so every user saw these "dark" values always,
+ * regardless of their system's light/dark preference. A plain :root rule
+ * inside @media works correctly because @theme still exposes each token as
+ * an ordinary CSS custom property that a later, more specific rule can
+ * override at the cascade level — no @theme needed a second time.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0f1216;
+    --color-surface: #171b21;
+    --color-surface-2: #1c2128;
+    --color-border: #2a3138;
+    --color-border-strong: #3a434c;
+    --color-ink: #e8ecf1;
+    --color-ink-2: #a4b0bd;
+    --color-ink-3: #6f7d8c;
+
+    /* PIMSY Light Blue pops against a dark surface; PIMSY Dark Blue reads as
+       text on top of it — same brand pair as light mode, roles swapped. */
+    --color-brand: #cee0e7; /* PIMSY Light Blue */
+    --color-brand-ink: #113c64; /* PIMSY Dark Blue */
+    --color-brand-soft: #101e2c; /* dark-mode tint of PIMSY Dark Blue */
+    --color-accent: #ffc000; /* PIMSY Yellow */
+
+    --color-green: #58d19b;
+    --color-green-soft: #12281f;
+    --color-amber: #e5b567;
+    --color-amber-soft: #2b2114;
+    --color-red: #f28b82;
+    --color-red-soft: #2e1817;
+    --color-violet: #b39bf5;
+    --color-violet-soft: #221c33;
+  }
+}
+/* end dark-mode override */
+
+* {
+  border-color: var(--color-border);
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+::selection {
+  background: var(--color-brand);
+  color: var(--color-brand-ink);
+}
+
+/* Thin, unobtrusive scrollbars in the dense list views. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 6px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-in {
+  animation: fadeUp 0.18s ease-out both;
+}

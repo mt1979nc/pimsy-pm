@@ -1,0 +1,108 @@
+name: Deploy to Azure
+
+# Builds the Docker image, pushes it to the Azure Container Registry that
+# azure/main.bicep created, runs any new database migrations, then points
+# the Web App at the new image and restarts it.
+#
+# One-time setup (see azure/README.md for details):
+#   1. Run azure/deploy.sh once to create the Azure resources.
+#   2. Add these as repository secrets (Settings -> Secrets and variables ->
+#      Actions):
+#        AZURE_CREDENTIALS     - a service principal, see README
+#        AZURE_RESOURCE_GROUP  - resource group name you passed to deploy.sh
+#        AZURE_WEBAPP_NAME     - from the deploy.sh output
+#        AZURE_REGISTRY_NAME   - from the deploy.sh output (just the name,
+#                                 e.g. "pimsyacrxxxx", not the full login server)
+#        AZURE_POSTGRES_SERVER_NAME - from the deploy.sh output
+#        DATABASE_URL          - the connection string from the deploy.sh
+#                                 output, used only to run migrations
+#
+# After that, every push to main deploys automatically.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-azure
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to the container registry
+        run: az acr login --name "${{ secrets.AZURE_REGISTRY_NAME }}"
+
+      - name: Build and push the image
+        env:
+          REGISTRY: ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io
+        run: |
+          IMAGE="$REGISTRY/pimsy-pm:${{ github.sha }}"
+          docker build -t "$IMAGE" -t "$REGISTRY/pimsy-pm:latest" .
+          docker push "$IMAGE"
+          docker push "$REGISTRY/pimsy-pm:latest"
+
+      - name: Set up Node (for drizzle-kit)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Temporarily allow this runner through the Postgres firewall
+        id: fw
+        env:
+          POSTGRES_SERVER: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
+        run: |
+          RUNNER_IP="$(curl -s https://api.ipify.org)"
+          echo "runner_ip=$RUNNER_IP" >> "$GITHUB_OUTPUT"
+          az postgres flexible-server firewall-rule create \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "$POSTGRES_SERVER" \
+            --rule-name "github-actions-runner-temp" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" \
+            --output none
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run db:migrate
+
+      - name: Remove the temporary firewall rule
+        if: always()
+        env:
+          POSTGRES_SERVER: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
+        run: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "$POSTGRES_SERVER" \
+            --rule-name "github-actions-runner-temp" \
+            --yes \
+            --output none || true
+
+      - name: Point the Web App at the new image
+        env:
+          REGISTRY: ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io
+        run: |
+          az webapp config container set \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --container-image-name "$REGISTRY/pimsy-pm:${{ github.sha }}"
+
+      - name: Restart the Web App
+        run: |
+          az webapp restart \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}"

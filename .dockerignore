@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.pglite*
+.env*.local
+SIGN-IN-LINK.txt
+PASSWORD-RESET-LINK.txt
+uploads
+*.log
+azure
+.github
+tests
+tsconfig.tsbuildinfo

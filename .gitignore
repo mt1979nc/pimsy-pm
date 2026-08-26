@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+build/
+.env
+.env.local
+.env*.local
+*.log
+npm-debug.log*
+.DS_Store
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+SIGN-IN-LINK.txt
+PASSWORD-RESET-LINK.txt
+.pglite/

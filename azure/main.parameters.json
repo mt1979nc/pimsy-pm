@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "namePrefix": { "value": "pimsy" },
+    "postgresAdminLogin": { "value": "pimsyadmin" },
+    "postgresAdminPassword": { "value": "REPLACE_ME_BEFORE_DEPLOYING" },
+    "authSecret": { "value": "REPLACE_ME_BEFORE_DEPLOYING" },
+    "bootstrapOwnerEmail": { "value": "alexander@pimsyehr.com" },
+    "internalEmailDomains": { "value": "pimsyehr.com" },
+    "resendApiKey": { "value": "" },
+    "appServicePlanSku": { "value": "B1" },
+    "postgresSku": { "value": "Standard_B1ms" }
+  }
+}
