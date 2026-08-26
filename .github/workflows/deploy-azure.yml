@@ -69,7 +69,7 @@ jobs:
           az postgres flexible-server firewall-rule create \
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --server-name "$POSTGRES_SERVER" \
-            --rule-name "github-actions-runner-temp" \
+            --name "github-actions-runner-temp" \
             --start-ip-address "$RUNNER_IP" \
             --end-ip-address "$RUNNER_IP" \
             --output none
@@ -88,7 +88,7 @@ jobs:
           az postgres flexible-server firewall-rule delete \
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --server-name "$POSTGRES_SERVER" \
-            --rule-name "github-actions-runner-temp" \
+            --name "github-actions-runner-temp" \
             --yes \
             --output none || true
 
