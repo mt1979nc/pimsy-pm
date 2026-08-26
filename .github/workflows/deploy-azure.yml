@@ -59,4 +59,50 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      -
+      - name: Temporarily allow this runner through the Postgres firewall
+        id: fw
+        env:
+          POSTGRES_SERVER: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
+        run: |
+          RUNNER_IP="$(curl -s https://api.ipify.org)"
+          echo "runner_ip=$RUNNER_IP" >> "$GITHUB_OUTPUT"
+          az postgres flexible-server firewall-rule create \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "$POSTGRES_SERVER" \
+            --rule-name "github-actions-runner-temp" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" \
+            --output none
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run db:migrate
+
+      - name: Remove the temporary firewall rule
+        if: always()
+        env:
+          POSTGRES_SERVER: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
+        run: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --name "$POSTGRES_SERVER" \
+            --rule-name "github-actions-runner-temp" \
+            --yes \
+            --output none || true
+
+      - name: Point the Web App at the new image
+        env:
+          REGISTRY: ${{ secrets.AZURE_REGISTRY_NAME }}.azurecr.io
+        run: |
+          az webapp config container set \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --container-image-name "$REGISTRY/pimsy-pm:${{ github.sha }}"
+
+      - name: Restart the Web App
+        run: |
+          az webapp restart \
+            --name "${{ secrets.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}"
