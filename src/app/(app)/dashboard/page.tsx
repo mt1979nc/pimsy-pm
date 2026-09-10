@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/guard";
-import { canSeePortfolio } from "@/lib/authz";
+import { canSeePortfolio, canCreateProjects } from "@/lib/authz";
 import {
   portfolioSummary,
   attentionProjects,
@@ -54,9 +54,11 @@ export default async function DashboardPage() {
         subtitle="Everything that needs you today, in one place."
         actions={
           <>
-            <LinkButton href="/projects/new" variant="primary">
-              New project
-            </LinkButton>
+            {canCreateProjects(actor) ? (
+              <LinkButton href="/projects/new" variant="primary">
+                New project
+              </LinkButton>
+            ) : null}
           </>
         }
       />

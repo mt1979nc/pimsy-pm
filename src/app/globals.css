@@ -116,10 +116,15 @@ body {
 
 input,
 textarea,
-select,
-button {
+select {
     font: inherit;
     color: inherit;
+}
+
+/* Do NOT set color on button — it overrides Tailwind text-white on primary CTAs
+   (unlayered CSS beats @layer utilities), which made labels unreadable. */
+button {
+    font: inherit;
 }
 
 @keyframes fadeUp {

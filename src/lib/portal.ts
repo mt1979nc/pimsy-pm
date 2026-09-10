@@ -45,6 +45,7 @@ export async function portalActionItems(actor: CustomerActor) {
     orderBy: [asc(tasks.dueDate)],
     with: {
       project: { columns: { id: true, name: true } },
+      phase: { columns: { id: true, name: true, order: true } },
       // Only SHARED comments — INTERNAL notes stay invisible to the portal.
       comments: {
         where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/guard";
 import { portalProject, portalPhaseTabs, portalRecordings } from "@/lib/portal";
 import { Badge } from "@/components/ui";
-import { SubNavLink } from "@/components/nav-link";
+import { SideNavLink } from "@/components/nav-link";
 import { fmtDate, daysUntil } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
@@ -56,31 +56,27 @@ export default async function PortalProjectLayout({
         )}
       </div>
 
-      {/*
-        With one tab per phase this can run to a dozen+ tabs — too many to
-        fit without scrolling. Overview and Recordings/Messages stay pinned
-        so they're always reachable; only the phase list itself scrolls.
-      */}
-      <div className="mb-6 flex items-center border-b border-border">
-        <div className="shrink-0">
-          <SubNavLink href={`/portal/projects/${id}`}>Overview</SubNavLink>
-        </div>
-        <div className="flex min-w-0 flex-1 items-center gap-5 overflow-x-auto px-5">
-          {phaseTabs.map((phase) => (
-            <SubNavLink key={phase.id} href={`/portal/projects/${id}/phases/${phase.id}`}>
-              {phase.name}
-            </SubNavLink>
-          ))}
-        </div>
-        <div className="flex shrink-0 items-center gap-5">
-          {recordings.length > 0 ? (
-            <SubNavLink href={`/portal/projects/${id}/recordings`}>Recordings</SubNavLink>
-          ) : null}
-          <SubNavLink href={`/portal/projects/${id}/messages`}>Messages</SubNavLink>
-        </div>
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+        <aside className="w-full shrink-0 lg:sticky lg:top-4 lg:w-[220px]">
+          <nav className="rounded-xl border border-border bg-surface p-2">
+            <div className="px-2.5 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+              Areas
+            </div>
+            <SideNavLink href={`/portal/projects/${id}`}>Overview</SideNavLink>
+            {phaseTabs.map((phase) => (
+              <SideNavLink key={phase.id} href={`/portal/projects/${id}/phases/${phase.id}`}>
+                {phase.name}
+              </SideNavLink>
+            ))}
+            <div className="my-2 border-t border-border" />
+            {recordings.length > 0 ? (
+              <SideNavLink href={`/portal/projects/${id}/recordings`}>Recordings</SideNavLink>
+            ) : null}
+            <SideNavLink href={`/portal/projects/${id}/messages`}>Messages</SideNavLink>
+          </nav>
+        </aside>
+        <div className="min-w-0 flex-1">{children}</div>
       </div>
-
-      {children}
     </>
   );
 }
