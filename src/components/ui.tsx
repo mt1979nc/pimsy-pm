@@ -98,7 +98,7 @@ const buttonBase =
 const buttonVariants: Record<ButtonVariant, string> = {
   // Primary always uses PIMSY Dark Blue + white so label contrast stays AA in
   // light and dark mode (theme --color-brand swaps to Light Blue in dark).
-  primary: "bg-[#113c64] text-white hover:bg-[#0d2f4f]",
+  primary: "bg-[#113c64] !text-white hover:bg-[#0d2f4f] hover:!text-white",
   secondary: "border border-border-strong bg-surface text-ink hover:bg-surface-2",
   ghost: "text-ink hover:bg-surface-2",
   danger: "bg-red text-white hover:opacity-90",

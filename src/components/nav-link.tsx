@@ -55,3 +55,25 @@ export function SubNavLink({ href, children }: { href: string; children: React.R
     </Link>
   );
 }
+
+export function SideNavLink({ href, children, count }: { href: string; children: React.ReactNode; count?: number }) {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+  return (
+    <Link
+      href={href}
+      aria-current={isActive ? "page" : undefined}
+      className={cn(
+        "flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors",
+        isActive ? "bg-brand-soft text-brand" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+      )}
+    >
+      <span className="min-w-0 truncate">{children}</span>
+      {typeof count === "number" ? (
+        <span className={cn("shrink-0 tabular-nums text-[11.5px]", isActive ? "text-brand" : "text-ink-3")}>
+          {count}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
