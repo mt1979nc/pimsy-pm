@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAccounts } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
+import { canCreateProjects } from "@/lib/authz";
 import {
   PageHeader,
   Card,
@@ -24,7 +25,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireStaff();
+  const actor = await requireStaff();
 
   const customer = await db.query.customerAccounts.findFirst({
     where: eq(customerAccounts.id, id),
@@ -66,9 +67,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         actions={
           <>
             <CustomerStatusBadge status={customer.status} />
-            <LinkButton href="/projects/new" variant="primary">
-              New project
-            </LinkButton>
+            {canCreateProjects(actor) ? (
+              <LinkButton href="/projects/new" variant="primary">
+                New project
+              </LinkButton>
+            ) : null}
           </>
         }
       />
@@ -85,9 +88,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                 title="No projects yet"
                 description="Create their implementation project from a template."
                 action={
-                  <LinkButton href="/projects/new" variant="primary" size="sm">
-                    New project
-                  </LinkButton>
+                  canCreateProjects(actor) ? (
+                    <LinkButton href="/projects/new" variant="primary" size="sm">
+                      New project
+                    </LinkButton>
+                  ) : undefined
                 }
               />
             ) : (
