@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requirePortfolioAccess } from "@/lib/guard";
+import { canCreateCustomers } from "@/lib/authz";
 import { listCustomers } from "@/lib/queries";
 import {
   Card,
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "All customers" };
 
 export default async function AdminCustomersPage() {
-  await requirePortfolioAccess();
+  const actor = await requirePortfolioAccess();
   const customers = await listCustomers();
 
   const totals = {
@@ -40,9 +41,11 @@ export default async function AdminCustomersPage() {
             <Badge tone="amber">{totals.neverSignedIn} never signed in</Badge>
           ) : null}
         </div>
-        <LinkButton href="/customers/new" variant="primary" size="sm">
-          Add customer
-        </LinkButton>
+        {canCreateCustomers(actor) ? (
+          <LinkButton href="/customers/new" variant="primary" size="sm">
+            Add customer
+          </LinkButton>
+        ) : null}
       </div>
 
       <Card className="overflow-hidden">
