@@ -33,7 +33,9 @@ export default async function PortalProjectPage({
     portalFiles(actor, id),
   ]);
 
-  const myItems = looseTasks.filter((t) => t.ownerSide === "CUSTOMER" && t.status !== "DONE");
+  const myOpen = looseTasks.filter((t) => t.ownerSide === "CUSTOMER" && t.status !== "DONE");
+  const myDone = looseTasks.filter((t) => t.ownerSide === "CUSTOMER" && t.status === "DONE");
+  const myItems = myOpen;
 
   return (
     <>
@@ -62,6 +64,32 @@ export default async function PortalProjectPage({
                   status: t.status,
                   dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
                   projectId: id,
+                  commentCount: t.comments?.length ?? 0,
+                }}
+              />
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {myDone.length > 0 ? (
+        <Card className="mb-5">
+          <CardHeader
+            title="Completed"
+            subtitle="Tap the checkmark to reopen"
+          />
+          <div className="divide-y divide-border">
+            {myDone.map((t) => (
+              <PortalTaskRow
+                key={t.id}
+                task={{
+                  id: t.id,
+                  title: t.title,
+                  description: t.description,
+                  status: t.status,
+                  dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+                  projectId: id,
+                  commentCount: t.comments?.length ?? 0,
                 }}
               />
             ))}
