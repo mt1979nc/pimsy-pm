@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/guard";
+import { canCreateCustomers } from "@/lib/authz";
 import { listCustomers } from "@/lib/queries";
 import {
   PageHeader,
@@ -17,7 +18,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Customers" };
 
 export default async function CustomersPage() {
-  await requireStaff();
+  const actor = await requireStaff();
+  const canCreate = canCreateCustomers(actor);
   const customers = await listCustomers();
 
   return (
