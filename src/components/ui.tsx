@@ -96,15 +96,17 @@ const buttonBase =
   "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: "bg-brand text-brand-ink hover:opacity-90",
+  // Primary always uses PIMSY Dark Blue + white so label contrast stays AA in
+  // light and dark mode (theme --color-brand swaps to Light Blue in dark).
+  primary: "bg-[#113c64] text-white hover:bg-[#0d2f4f]",
   secondary: "border border-border-strong bg-surface text-ink hover:bg-surface-2",
-  ghost: "text-ink-2 hover:bg-surface-2 hover:text-ink",
+  ghost: "text-ink hover:bg-surface-2",
   danger: "bg-red text-white hover:opacity-90",
 };
 
 const buttonSizes: Record<ButtonSize, string> = {
-  sm: "h-8 px-2.5 text-[13px]",
-  md: "h-9 px-3.5 text-[13.5px]",
+  sm: "h-8 px-2.5 text-[13.5px]",
+  md: "h-9 px-3.5 text-[14px]",
 };
 
 export function Button({
@@ -146,7 +148,7 @@ type Tone = "neutral" | "brand" | "green" | "amber" | "red" | "violet";
 
 const toneClasses: Record<Tone, string> = {
   neutral: "bg-surface-2 text-ink-2 border-border",
-  brand: "bg-brand-soft text-brand border-transparent",
+  brand: "bg-brand-soft text-[#113c64] dark:text-[#cee0e7] border-transparent",
   green: "bg-green-soft text-green border-transparent",
   amber: "bg-amber-soft text-amber border-transparent",
   red: "bg-red-soft text-red border-transparent",
@@ -345,7 +347,7 @@ export function Avatar({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-brand-soft font-semibold text-brand",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-brand-soft font-semibold text-[#113c64] dark:text-[#cee0e7]",
         className,
       )}
       style={{ width: size, height: size, fontSize: Math.round(size * 0.4) }}
