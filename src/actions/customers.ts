@@ -8,7 +8,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { customerAccounts, users, projectMembers, projects } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
-import { isAdmin, ForbiddenError } from "@/lib/authz";
+import { isAdmin, ForbiddenError, canCreateCustomers } from "@/lib/authz";
 import { audit } from "@/lib/audit";
 import { sendEmail, layout } from "@/lib/email";
 import { env } from "@/lib/env";
@@ -40,6 +40,7 @@ export async function createCustomer(
   formData: FormData,
 ): Promise<ActionState> {
   const actor = await requireStaff();
+  if (!canCreateCustomers(actor)) return { error: "You cannot create customers." };
 
   const parsed = customerSchema.safeParse({
     name: formData.get("name"),
