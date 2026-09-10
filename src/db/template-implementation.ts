@@ -28,7 +28,15 @@ export type SeedTask = {
   durationDays?: number;
   estimateHours?: number;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  /** Nested Dock checklist items under a section/header task. */
+  children?: SeedTask[];
 };
+
+/** Section/header task with nested subtasks (Dock checklist groups). */
+const G = (parent: SeedTask, children: SeedTask[]): SeedTask => ({
+  ...parent,
+  children,
+});
 
 export type SeedPhase = {
   name: string;
@@ -70,18 +78,21 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
     offsetDays: 0,
     durationDays: 7,
     tasks: [
-      I("Pre-Kickoff", { priority: "HIGH" }),
-      I("Zendesk Company Setup"),
-      I("Inbed Bookings"),
-      I("Add Import Link to Task (if applicable)"),
-      I("Schedule Kickoff", { priority: "HIGH" }),
-      I("During Kickoff", { offsetDays: 3 }),
-      S("Dock Overview & Threads", { offsetDays: 3 }),
-      I("Confirm Data Import", { offsetDays: 3 }),
-      I("Schedule: Workflow Guided Discovery", { offsetDays: 3, priority: "HIGH" }),
-      I("Post Kickoff", { offsetDays: 4 }),
-      I("Add Kickoff Meeting Link", { offsetDays: 4 }),
-      I("Create Import Ticket, Import folder, & link to import tasks", { offsetDays: 4 }),
+      G(I("Pre-Kickoff", { priority: "HIGH" }), [
+        I("Zendesk Company Setup"),
+        I("Inbed Bookings"),
+        I("Add Import Link to Task (if applicable)"),
+        I("Schedule Kickoff", { priority: "HIGH" }),
+      ]),
+      G(I("During Kickoff", { offsetDays: 3 }), [
+        S("Dock Overview & Threads", { offsetDays: 3 }),
+        I("Confirm Data Import", { offsetDays: 3 }),
+        I("Schedule: Workflow Guided Discovery", { offsetDays: 3, priority: "HIGH" }),
+      ]),
+      G(I("Post Kickoff", { offsetDays: 4 }), [
+        I("Add Kickoff Meeting Link", { offsetDays: 4 }),
+        I("Create Import Ticket, Import folder, & link to import tasks", { offsetDays: 4 }),
+      ]),
     ],
   },
   {
@@ -116,33 +127,38 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
       I("Schedule Weekly Touchpoints", { offsetDays: 1 }),
       I('Expose the "Configuration" tab', { offsetDays: 1 }),
 
-      S("Organization Setup", { offsetDays: 2, durationDays: 5 }),
-      I("Org Info", { offsetDays: 2 }),
-      I("Division Setup", { offsetDays: 3 }),
-      I("Logos", { offsetDays: 3 }),
-      I("Business Hours", { offsetDays: 3 }),
+      G(S("Organization Setup", { offsetDays: 2, durationDays: 5 }), [
+        I("Org Info", { offsetDays: 2 }),
+        I("Division Setup", { offsetDays: 3 }),
+        I("Logos", { offsetDays: 3 }),
+        I("Business Hours", { offsetDays: 3 }),
+      ]),
 
-      S("User Setup", { offsetDays: 5, durationDays: 5 }),
-      I("Create Users", { offsetDays: 5 }),
-      I("User Codes / Rates", { offsetDays: 6 }),
-      I("Supervision Setup", { offsetDays: 6 }),
-      I('Expose "Access" tab', { offsetDays: 7 }),
-      I("Add Zendesk Users to Org", { offsetDays: 7 }),
+      G(S("User Setup", { offsetDays: 5, durationDays: 5 }), [
+        I("Create Users", { offsetDays: 5 }),
+        I("User Codes / Rates", { offsetDays: 6 }),
+        I("Supervision Setup", { offsetDays: 6 }),
+        I('Expose "Access" tab', { offsetDays: 7 }),
+        I("Add Zendesk Users to Org", { offsetDays: 7 }),
+      ]),
 
-      S("Billing Config", { offsetDays: 8, durationDays: 8 }),
-      I("Schedule Billing Workflow Discovery Meeting", { offsetDays: 8, priority: "HIGH" }),
-      I("Billing Workflow Discovery Meeting Notes & Recording", { offsetDays: 10 }),
-      I("Review Billing Questionnaire Data Sheet", { offsetDays: 10 }),
-      I("Billing Code Setup", { offsetDays: 11, durationDays: 3 }),
-      I("Payer Setup", { offsetDays: 12, durationDays: 3 }),
+      G(S("Billing Config", { offsetDays: 8, durationDays: 8 }), [
+        I("Schedule Billing Workflow Discovery Meeting", { offsetDays: 8, priority: "HIGH" }),
+        I("Billing Workflow Discovery Meeting Notes & Recording", { offsetDays: 10 }),
+        I("Review Billing Questionnaire Data Sheet", { offsetDays: 10 }),
+        I("Billing Code Setup", { offsetDays: 11, durationDays: 3 }),
+        I("Payer Setup", { offsetDays: 12, durationDays: 3 }),
+      ]),
 
       I("Review Clinical Workflow Data Sheet", { offsetDays: 9 }),
-      S("Forms: Note Templates", { offsetDays: 12, durationDays: 8 }),
-      S("Forms: Intake Assistant", { offsetDays: 14, durationDays: 6 }),
-      S("Forms: Client Forms", { offsetDays: 14, durationDays: 6 }),
-      S("Forms: Clinical Forms", { offsetDays: 14, durationDays: 6 }),
-      I("Move Forms", { offsetDays: 18 }),
-      S("Forms: Public Docs/Word Merge", { offsetDays: 16, durationDays: 6 }),
+      G(S("Forms", { offsetDays: 12, durationDays: 8 }), [
+        S("Forms: Note Templates", { offsetDays: 12, durationDays: 8 }),
+        S("Forms: Intake Assistant", { offsetDays: 14, durationDays: 6 }),
+        S("Forms: Client Forms", { offsetDays: 14, durationDays: 6 }),
+        S("Forms: Clinical Forms", { offsetDays: 14, durationDays: 6 }),
+        I("Move Forms", { offsetDays: 18 }),
+        S("Forms: Public Docs/Word Merge", { offsetDays: 16, durationDays: 6 }),
+      ]),
       I("Expose Training Tab for Booking", { offsetDays: 22 }),
     ],
   },
@@ -174,32 +190,33 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
     offsetDays: 42,
     durationDays: 21,
     tasks: [
-      S("Training 1: Intro to PIMSY", { priority: "HIGH" }),
-      C("Schedule Training 1", { priority: "HIGH" }),
-      I("Add Date to Training Task Title", { offsetDays: 1 }),
-      I("Expose Parking Lot", { offsetDays: 1 }),
-      I("Confirm users have logged in (prior to training)", { offsetDays: 2 }),
-      S("Training 1 Recording Link", { offsetDays: 3 }),
-
-      S("Training 2: Client Charts", { offsetDays: 4 }),
-      C("Schedule Training 2", { offsetDays: 4 }),
-      I("Confirm users have logged in (prior to training)", { offsetDays: 5 }),
-      S("Training 2 Recording Link", { offsetDays: 6 }),
-
-      S("Training 3: Appointments & Notes", { offsetDays: 8 }),
-      C("Schedule Training 3", { offsetDays: 8 }),
-      I("Confirm users have logged in (prior to training)", { offsetDays: 9 }),
-      S("Training 3 Recording Link", { offsetDays: 10 }),
-      I("Paisly Ambient Scribe (self-serve)", { offsetDays: 10 }),
-
-      S("Training 4: Group Notes (if applicable)", { offsetDays: 12 }),
-      C("Schedule Training 4", { offsetDays: 12 }),
-      S("Training 4 Recording Link", { offsetDays: 14 }),
-
-      S("Training 5: Intake", { offsetDays: 16 }),
-      C("Schedule Training 5", { offsetDays: 16 }),
-      I("Confirm users have logged in (prior to training)", { offsetDays: 17 }),
-      S("Training 5 Recording Link", { offsetDays: 18 }),
+      G(S("Training 1: Intro to PIMSY", { priority: "HIGH" }), [
+        C("Schedule Training 1", { priority: "HIGH" }),
+        I("Add Date to Training Task Title", { offsetDays: 1 }),
+        I("Expose Parking Lot", { offsetDays: 1 }),
+        I("Confirm users have logged in (prior to training)", { offsetDays: 2 }),
+        S("Training 1 Recording Link", { offsetDays: 3 }),
+      ]),
+      G(S("Training 2: Client Charts", { offsetDays: 4 }), [
+        C("Schedule Training 2", { offsetDays: 4 }),
+        I("Confirm users have logged in (prior to training)", { offsetDays: 5 }),
+        S("Training 2 Recording Link", { offsetDays: 6 }),
+      ]),
+      G(S("Training 3: Appointments & Notes", { offsetDays: 8 }), [
+        C("Schedule Training 3", { offsetDays: 8 }),
+        I("Confirm users have logged in (prior to training)", { offsetDays: 9 }),
+        S("Training 3 Recording Link", { offsetDays: 10 }),
+        I("Paisly Ambient Scribe (self-serve)", { offsetDays: 10 }),
+      ]),
+      G(S("Training 4: Group Notes (if applicable)", { offsetDays: 12 }), [
+        C("Schedule Training 4", { offsetDays: 12 }),
+        S("Training 4 Recording Link", { offsetDays: 14 }),
+      ]),
+      G(S("Training 5: Intake", { offsetDays: 16 }), [
+        C("Schedule Training 5", { offsetDays: 16 }),
+        I("Confirm users have logged in (prior to training)", { offsetDays: 17 }),
+        S("Training 5 Recording Link", { offsetDays: 18 }),
+      ]),
     ],
   },
   {
