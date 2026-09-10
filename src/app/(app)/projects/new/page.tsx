@@ -3,7 +3,7 @@ import { and, eq, ne, asc, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAccounts, users, projectTemplates } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
-import { canCreateProjects } from "@/lib/authz";
+import { canCreateProjects, canCreateCustomers } from "@/lib/authz";
 import { PageHeader, LinkButton, Card, EmptyState } from "@/components/ui";
 import { NewProjectForm } from "./new-project-form";
 
@@ -13,6 +13,7 @@ export const metadata = { title: "New project" };
 export default async function NewProjectPage() {
   const actor = await requireStaff();
   if (!canCreateProjects(actor)) redirect("/projects");
+  const canCreateCust = canCreateCustomers(actor);
 
   const [customers, staff, templates] = await Promise.all([
     db.query.customerAccounts.findMany({
