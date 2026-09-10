@@ -239,28 +239,36 @@ export async function createProject(
             .returning({ id: phases.id });
 
           const orderedTasks = [...tp.tasks].sort((a, b) => a.order - b.order);
-          if (orderedTasks.length > 0) {
-            await tx.insert(tasks).values(
-              orderedTasks.map((tt) => {
-                const taskStart = addDays(phaseStart, scaled(tt.offsetDays));
-                return {
-                  projectId: project.id,
-                  phaseId: phase.id,
-                  title: tt.title,
-                  description: tt.description,
-                  priority: tt.priority,
-                  // Customer-side work is always visible; otherwise honor the template.
-                  visibility: tt.ownerSide === "CUSTOMER" ? ("SHARED" as const) : tt.visibility,
-                  ownerSide: tt.ownerSide,
-                  order: tt.order,
-                  startDate: taskStart,
-                  dueDate: addDays(taskStart, scaled(tt.durationDays)),
-                  estimateHours: tt.estimateHours,
-                  assigneeId: tt.ownerSide === "INTERNAL" ? (d.leadId || actor.id) : null,
-                  createdById: actor.id,
-                };
-              }),
-            );
+          const templateIdToTaskId = new Map<string, string>();
+          // Parents first so subtasks can reference them (Dock section → checklist).
+          const parents = orderedTasks.filter((tt) => !tt.parentTaskId);
+          const children = orderedTasks.filter((tt) => tt.parentTaskId);
+          for (const tt of [...parents, ...children]) {
+            const taskStart = addDays(phaseStart, scaled(tt.offsetDays));
+            const parentLiveId = tt.parentTaskId
+              ? templateIdToTaskId.get(tt.parentTaskId) ?? null
+              : null;
+            const [created] = await tx
+              .insert(tasks)
+              .values({
+                projectId: project.id,
+                phaseId: phase.id,
+                parentTaskId: parentLiveId,
+                title: tt.title,
+                description: tt.description,
+                priority: tt.priority,
+                // Customer-side work is always visible; otherwise honor the template.
+                visibility: tt.ownerSide === "CUSTOMER" ? ("SHARED" as const) : tt.visibility,
+                ownerSide: tt.ownerSide,
+                order: tt.order,
+                startDate: taskStart,
+                dueDate: addDays(taskStart, scaled(tt.durationDays)),
+                estimateHours: tt.estimateHours,
+                assigneeId: tt.ownerSide === "INTERNAL" ? (d.leadId || actor.id) : null,
+                createdById: actor.id,
+              })
+              .returning({ id: tasks.id });
+            templateIdToTaskId.set(tt.id, created.id);
           }
         }
 

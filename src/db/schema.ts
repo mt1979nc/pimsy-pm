@@ -352,6 +352,10 @@ export const templateTasks = pgTable(
     phaseId: text("phase_id")
       .notNull()
       .references(() => templatePhases.id, { onDelete: "cascade" }),
+    /** Dock checklist nesting — null for top-level section/task rows. */
+    parentTaskId: text("parent_task_id").references((): AnyPgColumn => templateTasks.id, {
+      onDelete: "cascade",
+    }),
     title: text("title").notNull(),
     description: text("description"),
     order: integer("order").notNull().default(0),

@@ -72,9 +72,10 @@ async function seedTemplate(seed: TemplateSeed) {
       .returning({ id: templatePhases.id });
 
     let taskOrder = 0;
-    if (p.tasks.length > 0) {
-      await db.insert(templateTasks).values(
-        p.tasks.map((t) => ({
+    for (const t of p.tasks) {
+      const [parent] = await db
+        .insert(templateTasks)
+        .values({
           phaseId: phase.id,
           title: t.title,
           order: taskOrder++,
@@ -84,9 +85,25 @@ async function seedTemplate(seed: TemplateSeed) {
           offsetDays: t.offsetDays ?? 0,
           durationDays: t.durationDays ?? 2,
           estimateHours: t.estimateHours ?? null,
-        })),
-      );
-      taskTotal += p.tasks.length;
+        })
+        .returning({ id: templateTasks.id });
+      taskTotal += 1;
+      for (const child of t.children ?? []) {
+        await db.insert(templateTasks).values({
+          phaseId: phase.id,
+          parentTaskId: parent.id,
+          title: child.title,
+          order: taskOrder++,
+          priority: child.priority ?? ("MEDIUM" as const),
+          visibility:
+            child.ownerSide === "CUSTOMER" ? ("SHARED" as const) : (child.visibility ?? "INTERNAL"),
+          ownerSide: child.ownerSide,
+          offsetDays: child.offsetDays ?? 0,
+          durationDays: child.durationDays ?? 2,
+          estimateHours: child.estimateHours ?? null,
+        });
+        taskTotal += 1;
+      }
     }
   }
 

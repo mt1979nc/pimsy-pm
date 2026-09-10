@@ -6,7 +6,7 @@
 
 import { and, eq, ne, asc, desc, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { projects, tasks, phases, milestones, statusUpdates, fileAssets } from "@/db/schema";
+import { projects, tasks, phases, milestones, statusUpdates, fileAssets, taskComments } from "@/db/schema";
 import type { Actor } from "./authz";
 
 export type CustomerActor = Actor & { customerAccountId: string };
@@ -43,7 +43,14 @@ export async function portalActionItems(actor: CustomerActor) {
       ne(tasks.status, "CANCELLED"),
     ),
     orderBy: [asc(tasks.dueDate)],
-    with: { project: { columns: { id: true, name: true } } },
+    with: {
+      project: { columns: { id: true, name: true } },
+      // Only SHARED comments — INTERNAL notes stay invisible to the portal.
+      comments: {
+        where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
+        columns: { id: true },
+      },
+    },
   });
 }
 
@@ -59,6 +66,12 @@ export async function portalPlan(actor: CustomerActor, projectId: string) {
       tasks: {
         where: and(eq(tasks.visibility, "SHARED"), ne(tasks.status, "CANCELLED")),
         orderBy: [asc(tasks.order)],
+        with: {
+          comments: {
+            where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
+            columns: { id: true },
+          },
+        },
       },
     },
   });
@@ -71,6 +84,12 @@ export async function portalPlan(actor: CustomerActor, projectId: string) {
       ne(tasks.status, "CANCELLED"),
     ),
     orderBy: [asc(tasks.order)],
+    with: {
+      comments: {
+        where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
+        columns: { id: true },
+      },
+    },
   });
 
   return { phases: rows, looseTasks };
@@ -99,6 +118,12 @@ export async function portalPhase(actor: CustomerActor, projectId: string, phase
       tasks: {
         where: and(eq(tasks.visibility, "SHARED"), ne(tasks.status, "CANCELLED")),
         orderBy: [asc(tasks.order)],
+        with: {
+          comments: {
+            where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
+            columns: { id: true },
+          },
+        },
       },
     },
   });

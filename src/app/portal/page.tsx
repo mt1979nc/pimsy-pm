@@ -4,6 +4,7 @@ import { portalProjects, portalActionItems } from "@/lib/portal";
 import { listInboxThreads, isUnread } from "@/lib/threads";
 import { Card, CardHeader, EmptyState, Badge, ProgressBar, Avatar } from "@/components/ui";
 import { PortalTaskRow } from "./portal-task-row";
+import { PortalMessageBox } from "./portal-message-box";
 import { pctComplete } from "@/lib/rollup";
 import { fmtDate, daysUntil, isOverdue, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -20,6 +21,7 @@ export default async function PortalHome() {
   ]);
 
   const open = actions.filter((a) => a.status !== "DONE");
+  const completed = actions.filter((a) => a.status === "DONE");
   const overdue = open.filter((a) => isOverdue(a.dueDate));
   const unread = threads.filter((t) => isUnread(t, actor.id));
   const firstName = (actor.name ?? actor.email).split(" ")[0];
@@ -59,6 +61,33 @@ export default async function PortalHome() {
                   dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
                   projectName: projects.length > 1 ? t.project.name : null,
                   projectId: t.projectId,
+                  commentCount: t.comments?.length ?? 0,
+                }}
+              />
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {completed.length > 0 ? (
+        <Card className="mb-6">
+          <CardHeader
+            title="Completed"
+            subtitle="Tap the checkmark to reopen an item if it was marked done by mistake"
+          />
+          <div className="divide-y divide-border">
+            {completed.map((t) => (
+              <PortalTaskRow
+                key={t.id}
+                task={{
+                  id: t.id,
+                  title: t.title,
+                  description: t.description,
+                  status: t.status,
+                  dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+                  projectName: projects.length > 1 ? t.project.name : null,
+                  projectId: t.projectId,
+                  commentCount: t.comments?.length ?? 0,
                 }}
               />
             ))}
@@ -187,6 +216,10 @@ export default async function PortalHome() {
           )}
         </Card>
       </div>
+
+      <PortalMessageBox
+        projects={projects.map((p) => ({ id: p.id, name: p.name }))}
+      />
     </>
   );
 }
