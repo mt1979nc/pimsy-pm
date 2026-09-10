@@ -33,7 +33,6 @@ This app holds **no PHI** (logistics only). Footer on sign-in says so.
 - `/projects` — WIP list (codes, customers, status).
 - Point at **chase list / My Work** if demos are seeded with customer-owned tasks.
 
-
 ### 3. One Implementation workspace (3 min)
 Open **IMP-9001**:
 - **Phases / tasks** — Dock Implementation template ported (12 phases, 143 tasks, milestones).
@@ -67,7 +66,6 @@ Private window → `/portal`:
 | Threads | Shared **and** internal (promote with audit) |
 | API | Gated / expensive | **Ours** — DB + server actions today; REST easy to expose |
 | PHI risk | Same rule: logistics only |
-
 
 ---
 
