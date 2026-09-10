@@ -21,26 +21,6 @@ export const RELEASE_NOTES: { version: string; date: string; summary: string }[]
   {
     version: "1.6.0",
     date: "2026-08-26",
-    {
-        version: "1.3.0",
-        date: "2026-08-25",
-        summary:
-                "Customer portal redesigned around tabs, one per phase, with per-phase visibility toggles and a new Recordings tab.",
-  },
-  {
-        version: "1.2.0",
-        date: "2026-08-25",
-        summary:
-                "Folds PRISM's scoping estimator, go-live forecasting, and analysis reporting into project creation, plus a one-time import of PRISM's historical book of business.",
-  },
-  {
-        version: "1.1.0",
-        date: "2026-08-24",
-        summary:
-                "Fixes a bug where nothing you changed was saved on the embedded database. Adds task-completion and attachment alerts, Outlook-ready email, and an optional Microsoft Teams feed.",
-  },
-  { version: "1.0.0", date: "2026-08-21", summary: "First build." },
-  ];
     summary:
       "Adds email+password sign-in and 'forgot password' recovery alongside magic links, plus everything needed to run this app on Azure (Docker image, Azure Blob file storage, and a one-command infrastructure setup).",
   },
@@ -56,3 +36,23 @@ export const RELEASE_NOTES: { version: string; date: string; summary: string }[]
     summary:
       "Specialists now only see projects they're assigned to, not the whole portfolio. Templates moved to Owner/Admin only.",
   },
+  {
+    version: "1.3.0",
+    date: "2026-08-25",
+    summary:
+      "Customer portal redesigned around tabs, one per phase, with per-phase visibility toggles and a new Recordings tab.",
+  },
+  {
+    version: "1.2.0",
+    date: "2026-08-25",
+    summary:
+      "Folds PRISM's scoping estimator, go-live forecasting, and analysis reporting into project creation, plus a one-time import of PRISM's historical book of business.",
+  },
+  {
+    version: "1.1.0",
+    date: "2026-08-24",
+    summary:
+      "Fixes a bug where nothing you changed was saved on the embedded database. Adds task-completion and attachment alerts, Outlook-ready email, and an optional Microsoft Teams feed.",
+  },
+  { version: "1.0.0", date: "2026-08-21", summary: "First build." },
+];
