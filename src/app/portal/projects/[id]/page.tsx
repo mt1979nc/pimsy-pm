@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { requireCustomer } from "@/lib/guard";
 import {
   portalProject,
@@ -7,8 +8,10 @@ import {
   portalStatusUpdates,
   portalFiles,
 } from "@/lib/portal";
-import { Card, CardHeader, EmptyState, Badge, Avatar } from "@/components/ui";
+import { listInboxThreads, isUnread } from "@/lib/threads";
+import { Card, CardHeader, EmptyState, Badge, Avatar, ProgressBar } from "@/components/ui";
 import { PortalTaskRow } from "../../portal-task-row";
+import { PortalMessageBox } from "../../portal-message-box";
 import { attachmentHref } from "@/lib/attachments";
 import { fmtShort, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -26,16 +29,39 @@ export default async function PortalProjectPage({
   const project = await portalProject(actor, id);
   if (!project) notFound();
 
-  const [{ looseTasks }, milestones, updates, files] = await Promise.all([
+  const [{ phases, looseTasks }, milestones, updates, files, threads] = await Promise.all([
     portalPlan(actor, id),
     portalMilestones(actor, id),
     portalStatusUpdates(actor, id),
     portalFiles(actor, id),
+    listInboxThreads(actor, 8),
   ]);
 
-  const myOpen = looseTasks.filter((t) => t.ownerSide === "CUSTOMER" && t.status !== "DONE");
-  const myDone = looseTasks.filter((t) => t.ownerSide === "CUSTOMER" && t.status === "DONE");
-  const myItems = myOpen;
+  const projectThreads = threads.filter((t) => t.projectId === id);
+  const unread = projectThreads.filter((t) => isUnread(t, actor.id));
+
+  const customerTasks = (tasks: typeof looseTasks) =>
+    tasks.filter((t) => t.ownerSide === "CUSTOMER");
+
+  const openByPhase = phases
+    .map((phase) => {
+      const mine = customerTasks(phase.tasks);
+      const open = mine.filter((t) => t.status !== "DONE");
+      const done = mine.filter((t) => t.status === "DONE");
+      return { phase, open, done, all: mine };
+    })
+    .filter((g) => g.all.length > 0);
+
+  const looseMine = customerTasks(looseTasks);
+  const looseOpen = looseMine.filter((t) => t.status !== "DONE");
+  const looseDone = looseMine.filter((t) => t.status === "DONE");
+
+  const openCount =
+    openByPhase.reduce((n, g) => n + g.open.length, 0) + looseOpen.length;
+  const doneCount =
+    openByPhase.reduce((n, g) => n + g.done.length, 0) + looseDone.length;
+
+  const milestoneDone = milestones.filter((m) => m.completedAt).length;
 
   return (
     <>
@@ -47,58 +73,188 @@ export default async function PortalProjectPage({
         </Card>
       ) : null}
 
-      {myItems.length > 0 ? (
-        <Card className="mb-5">
-          <CardHeader
-            title="What we need from you"
-            subtitle={`${myItems.length} open item${myItems.length === 1 ? "" : "s"}`}
-          />
+      {/* Timeline first */}
+      <Card className="mb-5">
+        <CardHeader
+          title="Project timeline"
+          subtitle={
+            milestones.length > 0
+              ? `${milestoneDone} of ${milestones.length} milestones complete`
+              : "Key dates for your go-live"
+          }
+        />
+        {milestones.length === 0 ? (
+          <EmptyState title="No milestones yet" />
+        ) : (
           <div className="divide-y divide-border">
-            {myItems.map((t) => (
-              <PortalTaskRow
-                key={t.id}
-                task={{
-                  id: t.id,
-                  title: t.title,
-                  description: t.description,
-                  status: t.status,
-                  dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
-                  projectId: id,
-                  commentCount: t.comments?.length ?? 0,
-                }}
-              />
+            {milestones.map((m) => (
+              <div key={m.id} className="flex items-start gap-3 px-4 py-2.5">
+                <span
+                  className={cn(
+                    "mt-1 flex size-[15px] shrink-0 items-center justify-center rounded-full border",
+                    m.completedAt ? "border-green bg-green text-white" : "border-border-strong",
+                  )}
+                >
+                  {m.completedAt ? (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
+                      <path d="m5 13 4.5 4.5L19 7" />
+                    </svg>
+                  ) : null}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={cn("text-[13px]", m.completedAt ? "text-ink-3" : "text-ink")}>
+                      {m.name}
+                    </span>
+                    {m.isGoLive ? <Badge tone="violet">Go-live</Badge> : null}
+                  </div>
+                  <div className="text-[12px] text-ink-3">
+                    {m.completedAt ? `Completed ${fmtShort(m.completedAt)}` : fmtShort(m.dueDate)}
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-        </Card>
-      ) : null}
+        )}
+      </Card>
 
-      {myDone.length > 0 ? (
-        <Card className="mb-5">
-          <CardHeader
-            title="Completed"
-            subtitle="Tap the checkmark to reopen"
-          />
-          <div className="divide-y divide-border">
-            {myDone.map((t) => (
-              <PortalTaskRow
-                key={t.id}
-                task={{
-                  id: t.id,
-                  title: t.title,
-                  description: t.description,
-                  status: t.status,
-                  dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
-                  projectId: id,
-                  commentCount: t.comments?.length ?? 0,
-                }}
-              />
-            ))}
-          </div>
-        </Card>
-      ) : null}
-
+      {/* Tasks (grouped by area) | Messages */}
       <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.45fr_1fr]">
         <div className="space-y-5">
+          <Card>
+            <CardHeader
+              title="What we need from you"
+              subtitle={
+                openCount > 0
+                  ? `${openCount} open · grouped by area`
+                  : "You're all caught up"
+              }
+            />
+            {openCount === 0 && doneCount === 0 ? (
+              <EmptyState
+                title="You're all caught up"
+                description="Use Areas on the left to browse each phase of your implementation."
+              />
+            ) : (
+              <div className="space-y-1 pb-2">
+                {openByPhase.map(({ phase, open, done }) => (
+                  <div key={phase.id} className="border-b border-border last:border-b-0">
+                    <div className="flex items-center justify-between gap-2 bg-surface-2/60 px-4 py-2">
+                      <Link
+                        href={`/portal/projects/${id}/phases/${phase.id}`}
+                        className="text-[12.5px] font-semibold text-ink hover:text-brand"
+                      >
+                        {phase.name}
+                      </Link>
+                      <span className="text-[11.5px] tabular-nums text-ink-3">
+                        {done.length}/{open.length + done.length}
+                      </span>
+                    </div>
+                    {open.length > 0 ? (
+                      <div className="divide-y divide-border">
+                        {open.map((t) => (
+                          <PortalTaskRow
+                            key={t.id}
+                            task={{
+                              id: t.id,
+                              title: t.title,
+                              description: t.description,
+                              status: t.status,
+                              dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+                              projectId: id,
+                              commentCount: t.comments?.length ?? 0,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="px-4 py-2.5 text-[12.5px] text-ink-3">All set in this area</p>
+                    )}
+                  </div>
+                ))}
+                {looseOpen.length > 0 ? (
+                  <div className="border-b border-border last:border-b-0">
+                    <div className="bg-surface-2/60 px-4 py-2 text-[12.5px] font-semibold text-ink">
+                      General
+                    </div>
+                    <div className="divide-y divide-border">
+                      {looseOpen.map((t) => (
+                        <PortalTaskRow
+                          key={t.id}
+                          task={{
+                            id: t.id,
+                            title: t.title,
+                            description: t.description,
+                            status: t.status,
+                            dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+                            projectId: id,
+                            commentCount: t.comments?.length ?? 0,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </Card>
+
+          {doneCount > 0 ? (
+            <Card>
+              <CardHeader title="Completed" subtitle="Tap the checkmark to reopen" />
+              <div className="space-y-1 pb-2">
+                {openByPhase.map(({ phase, done }) =>
+                  done.length === 0 ? null : (
+                    <div key={`done-${phase.id}`} className="border-b border-border last:border-b-0">
+                      <div className="bg-surface-2/60 px-4 py-2 text-[12.5px] font-semibold text-ink">
+                        {phase.name}
+                      </div>
+                      <div className="divide-y divide-border">
+                        {done.map((t) => (
+                          <PortalTaskRow
+                            key={t.id}
+                            task={{
+                              id: t.id,
+                              title: t.title,
+                              description: t.description,
+                              status: t.status,
+                              dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+                              projectId: id,
+                              commentCount: t.comments?.length ?? 0,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ),
+                )}
+                {looseDone.length > 0 ? (
+                  <div>
+                    <div className="bg-surface-2/60 px-4 py-2 text-[12.5px] font-semibold text-ink">
+                      General
+                    </div>
+                    <div className="divide-y divide-border">
+                      {looseDone.map((t) => (
+                        <PortalTaskRow
+                          key={t.id}
+                          task={{
+                            id: t.id,
+                            title: t.title,
+                            description: t.description,
+                            status: t.status,
+                            dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+                            projectId: id,
+                            commentCount: t.comments?.length ?? 0,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </Card>
+          ) : null}
+
           {updates.length > 0 ? (
             <Card>
               <CardHeader title="Project updates" subtitle="From your implementation team" />
@@ -113,110 +269,53 @@ export default async function PortalProjectPage({
                     <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">
                       {u.summary}
                     </p>
-                    {u.needsFromYou ? (
-                      <div className="mt-3 rounded-lg bg-amber-soft px-3 py-2">
-                        <div className="text-[11px] font-semibold uppercase tracking-wide text-amber">
-                          What we need from you
-                        </div>
-                        <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-snug text-amber">
-                          {u.needsFromYou}
-                        </p>
-                      </div>
-                    ) : null}
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {[
-                        ["Recently completed", u.accomplished],
-                        ["Coming up", u.upcoming],
-                      ]
-                        .filter(([, v]) => v)
-                        .map(([label, v]) => (
-                          <div key={label as string} className="rounded-lg bg-surface-2 p-2.5">
-                            <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-                              {label}
-                            </div>
-                            <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-snug text-ink-2">
-                              {v}
-                            </p>
-                          </div>
-                        ))}
-                    </div>
                   </div>
                 ))}
               </div>
-            </Card>
-          ) : null}
-
-          {looseTasks.length > 0 ? (
-            <Card>
-              <CardHeader
-                title="Other items"
-                subtitle="Not tied to a specific phase"
-              />
-              <div className="divide-y divide-border">
-                {looseTasks.map((t) => (
-                  <PortalTaskRow
-                    key={t.id}
-                    task={{
-                      id: t.id,
-                      title: t.title,
-                      description: t.description,
-                      status: t.status,
-                      dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
-                      projectId: id,
-                    }}
-                  />
-                ))}
-              </div>
-            </Card>
-          ) : null}
-
-          {updates.length === 0 && looseTasks.length === 0 && myItems.length === 0 ? (
-            <Card>
-              <EmptyState
-                title="You're all caught up"
-                description="Use the tabs above to see each phase of your implementation."
-              />
             </Card>
           ) : null}
         </div>
 
         <div className="space-y-5">
           <Card>
-            <CardHeader title="Milestones" />
-            {milestones.length === 0 ? (
-              <EmptyState title="No milestones yet" />
+            <CardHeader
+              title="Messages"
+              subtitle={unread.length > 0 ? `${unread.length} unread` : "Your conversations"}
+            />
+            {projectThreads.length === 0 ? (
+              <EmptyState title="No messages yet" description="Send a note below anytime." />
             ) : (
               <div className="divide-y divide-border">
-                {milestones.map((m) => (
-                  <div key={m.id} className="flex items-start gap-3 px-4 py-2.5">
-                    <span
-                      className={cn(
-                        "mt-1 flex size-[15px] shrink-0 items-center justify-center rounded-full border",
-                        m.completedAt ? "border-green bg-green text-white" : "border-border-strong",
-                      )}
-                    >
-                      {m.completedAt ? (
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
-                          <path d="m5 13 4.5 4.5L19 7" />
-                        </svg>
-                      ) : null}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={cn("text-[13px]", m.completedAt ? "text-ink-3" : "text-ink")}>
-                          {m.name}
-                        </span>
-                        {m.isGoLive ? <Badge tone="violet">Go-live</Badge> : null}
-                      </div>
-                      <div className="text-[12px] text-ink-3">
-                        {m.completedAt ? `Completed ${fmtShort(m.completedAt)}` : fmtShort(m.dueDate)}
-                      </div>
+                {projectThreads.map((t) => (
+                  <Link
+                    key={t.id}
+                    href={`/portal/projects/${id}/messages/${t.id}`}
+                    className="block px-4 py-2.5 hover:bg-surface-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "size-1.5 shrink-0 rounded-full",
+                          isUnread(t, actor.id) ? "bg-brand" : "bg-transparent",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "truncate text-[13px]",
+                          isUnread(t, actor.id) ? "font-semibold text-ink" : "text-ink",
+                        )}
+                      >
+                        {t.subject}
+                      </span>
                     </div>
-                  </div>
+                    <div className="pl-3.5 text-[12px] text-ink-3">{fmtRelative(t.lastMessageAt)}</div>
+                  </Link>
                 ))}
               </div>
             )}
           </Card>
+
+          <PortalMessageBox embedded projects={[{ id, name: project.name }]} />
 
           {project.lead ? (
             <Card>
@@ -224,9 +323,7 @@ export default async function PortalProjectPage({
               <div className="flex items-center gap-3 px-4 py-3">
                 <Avatar name={project.lead.name} image={project.lead.image} size={34} />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13.5px] font-medium text-ink">
-                    {project.lead.name}
-                  </div>
+                  <div className="truncate text-[13.5px] font-medium text-ink">{project.lead.name}</div>
                   <div className="truncate text-[12px] text-ink-3">
                     {project.lead.title ?? "Implementation Specialist"}
                   </div>
