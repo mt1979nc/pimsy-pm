@@ -47,7 +47,6 @@ export default async function SignInPage({
                 : "Something went wrong signing you in. Please try again."}
             </p>
           ) : null}
-
           <form
             action={async (formData: FormData) => {
               "use server";
@@ -82,7 +81,6 @@ export default async function SignInPage({
             <span className="text-[11.5px] uppercase tracking-wide text-ink-3">or</span>
             <div className="h-px flex-1 bg-border" />
           </div>
-
           <PasswordSignInForm />
 
           {googleEnabled ? (
@@ -108,13 +106,13 @@ export default async function SignInPage({
           ) : null}
         </Card>
 
-        <p className="mt-5 text-center text-[12px] leading-relaxed text-ink-3">
+        <p className="mt-5 text-center text-[13px] leading-relaxed text-ink-2">
           This workspace is for implementation logistics only.
           <br />
           Never post patient information here.
         </p>
 
-        <p className="mt-3 text-center font-mono text-[11px] text-ink-3/70">
+        <p className="mt-3 text-center font-mono text-[12px] text-ink-2">
           v{APP_VERSION}
         </p>
       </div>
