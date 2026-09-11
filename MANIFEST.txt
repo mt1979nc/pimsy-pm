@@ -1,0 +1,44 @@
+ROADMAP.md
+drizzle/0006_about_waiting_on.sql
+drizzle/0007_prism_management.sql
+drizzle/meta/_journal.json
+package.json
+src/actions/management-engagements.ts
+src/actions/management-team.ts
+src/actions/messages.ts
+src/actions/projects.ts
+src/app/(app)/dashboard/page.tsx
+src/app/(app)/layout.tsx
+src/app/(app)/management/_components/engagement-edit-form.tsx
+src/app/(app)/management/_components/engagement-roster-table.tsx
+src/app/(app)/management/_components/team-flags-form.tsx
+src/app/(app)/management/engagements/[projectId]/page.tsx
+src/app/(app)/management/engagements/page.tsx
+src/app/(app)/management/layout.tsx
+src/app/(app)/management/page.tsx
+src/app/(app)/management/staffing/page.tsx
+src/app/(app)/management/team/page.tsx
+src/app/(app)/projects/[id]/about/about-form.tsx
+src/app/(app)/projects/[id]/about/page.tsx
+src/app/(app)/projects/[id]/layout.tsx
+src/app/(app)/projects/[id]/messages/[threadId]/page.tsx
+src/app/(app)/reports/capacity/page.tsx
+src/app/(app)/reports/page.tsx
+src/app/(app)/reports/waiting-on/page.tsx
+src/app/portal/projects/[id]/about/page.tsx
+src/app/portal/projects/[id]/layout.tsx
+src/app/portal/projects/[id]/messages/[threadId]/page.tsx
+src/components/message-composer.tsx
+src/components/thread-list.tsx
+src/components/ui.tsx
+src/db/schema.ts
+src/db/seed-prism-import.ts
+src/lib/authz.ts
+src/lib/prism-status.ts
+src/lib/queries.ts
+src/lib/service-line-map.ts
+src/lib/version.ts
+v1.7-REPORT.md
+base: origin/main 9b68b76
+head: 4ac13f5 feature/v1.8-prism-management
+includes: v1.7 + v1.8 (v1.7 not on origin/main yet)

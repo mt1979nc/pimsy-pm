@@ -9,6 +9,7 @@ import type {
   Visibility,
   CustomerStatus,
   RiskSeverity,
+  WaitingOn,
 } from "@/db/schema";
 
 // ---------------------------------------------------------------------------
@@ -287,6 +288,37 @@ export function VisibilityBadge({
   return (
     <Badge tone="neutral" className={className}>
       <LockIcon /> Internal only
+    </Badge>
+  );
+}
+
+
+const waitingOnMeta: Record<WaitingOn, { label: string; tone: Tone }> = {
+  PIMSY: { label: "Waiting on PIMSY", tone: "amber" },
+  CUSTOMER: { label: "Waiting on customer", tone: "violet" },
+  UNKNOWN: { label: "Waiting on —", tone: "neutral" },
+};
+
+export function WaitingOnBadge({
+  waitingOn,
+  agingDays,
+  className,
+}: {
+  waitingOn: WaitingOn;
+  /** Days since waitingOn was last set; omitted when unknown/resolved. */
+  agingDays?: number | null;
+  className?: string;
+}) {
+  if (waitingOn === "UNKNOWN") return null;
+  const m = waitingOnMeta[waitingOn];
+  return (
+    <Badge tone={m.tone} className={className}>
+      {m.label}
+      {agingDays != null && agingDays >= 0 ? (
+        <span className="opacity-80">
+          · {agingDays === 0 ? "today" : `${agingDays}d`}
+        </span>
+      ) : null}
     </Badge>
   );
 }

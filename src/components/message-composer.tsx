@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { postMessage, createThread, setThreadResolved, shareThreadWithCustomer } from "@/actions/messages";
+import { postMessage, createThread, setThreadResolved, shareThreadWithCustomer, setThreadWaitingOn } from "@/actions/messages";
 import { SubmitButton, FormError } from "@/components/submit-button";
-import { Button, inputClass, VisibilityBadge } from "@/components/ui";
+import { Button, inputClass, VisibilityBadge, WaitingOnBadge } from "@/components/ui";
 import { useTransition } from "react";
 
 export function MessageComposer({
@@ -147,11 +147,13 @@ export function ThreadActions({
   isResolved,
   visibility,
   canShare,
+  waitingOn = "UNKNOWN",
 }: {
   threadId: string;
   isResolved: boolean;
   visibility: "INTERNAL" | "SHARED";
   canShare: boolean;
+  waitingOn?: "PIMSY" | "CUSTOMER" | "UNKNOWN";
 }) {
   const [pending, start] = useTransition();
   const [confirmShare, setConfirmShare] = useState(false);
@@ -165,6 +167,26 @@ export function ThreadActions({
       >
         {isResolved ? "Reopen" : "Mark resolved"}
       </Button>
+
+      {visibility === "SHARED" && !isResolved ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <WaitingOnBadge waitingOn={waitingOn} />
+          <select
+            aria-label="Waiting on"
+            disabled={pending}
+            value={waitingOn}
+            className={`${inputClass} !h-8 !w-auto !py-0 text-[12.5px]`}
+            onChange={(e) => {
+              const v = e.target.value as "PIMSY" | "CUSTOMER" | "UNKNOWN";
+              start(async () => void (await setThreadWaitingOn(threadId, v)));
+            }}
+          >
+            <option value="UNKNOWN">Waiting on —</option>
+            <option value="PIMSY">Waiting on PIMSY</option>
+            <option value="CUSTOMER">Waiting on customer</option>
+          </select>
+        </div>
+      ) : null}
 
       {canShare && visibility === "INTERNAL" ? (
         confirmShare ? (

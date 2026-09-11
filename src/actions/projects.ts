@@ -704,6 +704,69 @@ export async function publishStatusUpdate(
 }
 
 // ---------------------------------------------------------------------------
+// About / site profile
+// ---------------------------------------------------------------------------
+
+export async function updateProjectAbout(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const projectId = String(formData.get("projectId") ?? "");
+  if (!projectId) return { error: "Missing project." };
+
+  await assertProjectWrite(actor, projectId);
+
+  const hubspotDealUrl = formData.get("hubspotDealUrl")?.toString().trim() ?? "";
+  const prismClientId = formData.get("prismClientId")?.toString().trim() ?? "";
+  const crmAcronym = formData.get("crmAcronym")?.toString().trim() ?? "";
+  const crmKey = formData.get("crmKey")?.toString().trim() ?? "";
+  const zoomBookingUrl = formData.get("zoomBookingUrl")?.toString().trim() ?? "";
+  const aboutNotes = formData.get("aboutNotes")?.toString() ?? "";
+
+  // Optional free-form custom fields as "key=value" lines.
+  const customRaw = formData.get("customFields")?.toString() ?? "";
+  const customFields: Record<string, string> = {};
+  for (const line of customRaw.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx <= 0) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const value = trimmed.slice(eqIdx + 1).trim();
+    if (key) customFields[key] = value;
+  }
+
+  await db
+    .update(projects)
+    .set({
+      hubspotDealUrl: hubspotDealUrl || null,
+      prismClientId: prismClientId || null,
+      crmAcronym: crmAcronym || null,
+      crmKey: crmKey || null,
+      zoomBookingUrl: zoomBookingUrl || null,
+      aboutNotes: aboutNotes || null,
+      customFields,
+      updatedAt: new Date(),
+    })
+    .where(eq(projects.id, projectId));
+
+  await audit({
+    actor,
+    action: "project.about.updated",
+    entityType: "project",
+    entityId: projectId,
+    summary: "About / site profile updated",
+  });
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/about`);
+  revalidatePath(`/portal/projects/${projectId}`);
+  revalidatePath(`/portal/projects/${projectId}/about`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
 // Read helper used by pages
 // ---------------------------------------------------------------------------
 

@@ -127,6 +127,12 @@ export const discoveryScenarioEnum = pgEnum("discovery_scenario", [
 /** Who a schedule slip is attributed to. Null until someone tags it. */
 export const slipCauseEnum = pgEnum("slip_cause", ["CUSTOMER", "PIMSY"]);
 
+/**
+ * Who a shared message thread is waiting on. Powers WIP callouts and the
+ * portfolio chase list. UNKNOWN until someone tags it (or a reply auto-tags).
+ */
+export const waitingOnEnum = pgEnum("waiting_on", ["PIMSY", "CUSTOMER", "UNKNOWN"]);
+
 /** What an attachment on a task, project or message actually is. */
 export const assetKindEnum = pgEnum("asset_kind", ["FILE", "IMAGE", "LINK"]);
 
@@ -206,6 +212,17 @@ export const users = pgTable(
     capacityHoursPerWeek: integer("capacity_hours_per_week").notNull().default(30),
 
     /**
+     * Prism Management flags (v1.8). capacityExempt people still show personal
+     * load but are excluded from department headroom / hiring math. canLead
+     * gates lead-owner dropdowns. isDirector is a capacity UI badge.
+     */
+    capacityExempt: boolean("capacity_exempt").notNull().default(false),
+    canLead: boolean("can_lead").notNull().default(true),
+    isDirector: boolean("is_director").notNull().default(false),
+    /** Optional map to Prism TeamId (am / dp / jr / md). */
+    prismTeamId: text("prism_team_id"),
+
+    /**
      * Optional email+password login, alongside magic-link and Google.
      * Null until the person sets one (via "Forgot password?" or Settings) —
      * most users go on using magic links and never touch this. bcrypt hash,
@@ -227,6 +244,7 @@ export const users = pgTable(
     uniqueIndex("user_email_idx").on(t.email),
     index("user_customer_account_idx").on(t.customerAccountId),
     index("user_role_idx").on(t.role),
+    uniqueIndex("user_prism_team_id_idx").on(t.prismTeamId),
   ],
 );
 
@@ -409,6 +427,18 @@ export const projects = pgTable(
       onDelete: "cascade",
     }),
     leadId: text("lead_id").references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+    /** Prism co-owner / co-lead (v1.8 Management). */
+    coLeadId: text("co_lead_id").references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+    /** Primary owner share of workload, 1–100. Co-lead gets the remainder. */
+    ownerSplitPercent: integer("owner_split_percent").notNull().default(100),
+    /** Manual hrs/wk override; null means use phase/estimator math. */
+    customHoursPerWeek: real("custom_hours_per_week"),
+    /**
+     * Prism roster status: active | pre-kickoff | pipeline.
+     * stalled / special are conveyed via prismNote when needed.
+     */
+    prismStatus: text("prism_status"),
+    prismNote: text("prism_note"),
 
     startDate: timestamp("start_date", { withTimezone: true }),
     /**
@@ -438,6 +468,19 @@ export const projects = pgTable(
       onDelete: "set null",
     }),
 
+    /**
+     * Site / About profile — Dock-replacement fields for HubSpot, Prism, CRM
+     * keys, Zoom booking, and free-form notes. Shown read-only in the portal
+     * (customer-safe subset) and editable by staff with project write access.
+     */
+    hubspotDealUrl: text("hubspot_deal_url"),
+    prismClientId: text("prism_client_id"),
+    crmAcronym: text("crm_acronym"),
+    crmKey: text("crm_key"),
+    zoomBookingUrl: text("zoom_booking_url"),
+    aboutNotes: text("about_notes"),
+    customFields: jsonb("custom_fields").$type<Record<string, string>>().notNull().default({}),
+
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -446,6 +489,8 @@ export const projects = pgTable(
     uniqueIndex("project_code_idx").on(t.code),
     index("project_customer_idx").on(t.customerAccountId),
     index("project_lead_idx").on(t.leadId),
+    index("project_co_lead_idx").on(t.coLeadId),
+    index("project_prism_status_idx").on(t.prismStatus),
     index("project_status_idx").on(t.status),
     index("project_health_idx").on(t.health),
     index("project_go_live_idx").on(t.targetGoLiveDate),
@@ -729,6 +774,13 @@ export const messageThreads = pgTable(
     isResolved: boolean("is_resolved").notNull().default(false),
     isPinned: boolean("is_pinned").notNull().default(false),
 
+    /**
+     * Ball-in-court for SHARED threads. INTERNAL threads stay UNKNOWN.
+     * waitingOnSince is bumped whenever waitingOn changes so aging is honest.
+     */
+    waitingOn: waitingOnEnum("waiting_on").notNull().default("UNKNOWN"),
+    waitingOnSince: timestamp("waiting_on_since", { withTimezone: true }).notNull().defaultNow(),
+
     lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
     messageCount: integer("message_count").notNull().default(0),
 
@@ -739,6 +791,7 @@ export const messageThreads = pgTable(
     index("thread_project_idx").on(t.projectId, t.lastMessageAt),
     index("thread_customer_idx").on(t.customerAccountId, t.lastMessageAt),
     index("thread_visibility_idx").on(t.visibility, t.lastMessageAt),
+    index("thread_waiting_on_idx").on(t.waitingOn, t.isResolved, t.lastMessageAt),
   ],
 );
 
@@ -967,7 +1020,16 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     fields: [projects.customerAccountId],
     references: [customerAccounts.id],
   }),
-  lead: one(users, { fields: [projects.leadId], references: [users.id] }),
+  lead: one(users, {
+    fields: [projects.leadId],
+    references: [users.id],
+    relationName: "ProjectLead",
+  }),
+  coLead: one(users, {
+    fields: [projects.coLeadId],
+    references: [users.id],
+    relationName: "ProjectCoLead",
+  }),
   template: one(projectTemplates, {
     fields: [projects.templateId],
     references: [projectTemplates.id],
@@ -1175,6 +1237,7 @@ export type RiskStatus = (typeof riskStatusEnum.enumValues)[number];
 export type ComplexityTier = (typeof complexityTierEnum.enumValues)[number];
 export type DiscoveryScenario = (typeof discoveryScenarioEnum.enumValues)[number];
 export type SlipCause = (typeof slipCauseEnum.enumValues)[number];
+export type WaitingOn = (typeof waitingOnEnum.enumValues)[number];
 export type PhaseStatus = (typeof phaseStatusEnum.enumValues)[number];
 export type ProjectMemberRole = (typeof projectMemberRoleEnum.enumValues)[number];
 export type NotificationType = (typeof notificationTypeEnum.enumValues)[number];

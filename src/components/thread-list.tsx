@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Badge, VisibilityBadge, Avatar } from "@/components/ui";
-import { fmtRelative } from "@/lib/dates";
+import { Badge, VisibilityBadge, WaitingOnBadge, Avatar } from "@/components/ui";
+import { fmtRelative, differenceInCalendarDays, startOfDay } from "@/lib/dates";
 import { isUnread } from "@/lib/threads";
 import { cn } from "@/lib/cn";
 
@@ -10,6 +10,8 @@ type Thread = {
   visibility: "INTERNAL" | "SHARED";
   isResolved: boolean;
   isPinned: boolean;
+  waitingOn?: "PIMSY" | "CUSTOMER" | "UNKNOWN";
+  waitingOnSince?: Date | string | null;
   lastMessageAt: Date | string;
   messageCount: number;
   projectId: string | null;
@@ -63,6 +65,19 @@ export function ThreadList({
                   {t.subject}
                 </span>
                 <VisibilityBadge visibility={t.visibility} />
+                {!t.isResolved && t.waitingOn && t.waitingOn !== "UNKNOWN" ? (
+                  <WaitingOnBadge
+                    waitingOn={t.waitingOn}
+                    agingDays={
+                      t.waitingOnSince
+                        ? differenceInCalendarDays(
+                            startOfDay(new Date()),
+                            startOfDay(new Date(t.waitingOnSince)),
+                          )
+                        : null
+                    }
+                  />
+                ) : null}
                 {t.isResolved ? <Badge tone="green">Resolved</Badge> : null}
               </div>
               <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">

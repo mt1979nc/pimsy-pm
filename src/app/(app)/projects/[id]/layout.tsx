@@ -128,6 +128,7 @@ export default async function ProjectLayout({
 
       <div className="mb-5 flex items-center gap-5 border-b border-border">
         <SubNavLink href={`/projects/${id}`}>Overview</SubNavLink>
+        <SubNavLink href={`/projects/${id}/about`}>About</SubNavLink>
         <SubNavLink href={`/projects/${id}/tasks`}>Tasks</SubNavLink>
         <SubNavLink href={`/projects/${id}/messages`}>Messages</SubNavLink>
         <SubNavLink href={`/projects/${id}/settings`}>Settings</SubNavLink>
