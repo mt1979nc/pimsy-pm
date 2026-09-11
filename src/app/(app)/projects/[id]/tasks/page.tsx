@@ -6,6 +6,7 @@ import { assertProjectAccess } from "@/lib/authz";
 import { Card, CardHeader, EmptyState, Badge, VisibilityBadge } from "@/components/ui";
 import { TaskRow } from "@/components/task-row";
 import { AddTaskInline, AddPhaseForm } from "./task-forms";
+import { PhaseNaButton } from "./phase-na-button";
 import { fmtShort } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
@@ -44,9 +45,15 @@ export default async function ProjectTasksPage({
   }
 
   const unphased = byPhase.get(null) ?? [];
-  const openCount = allTasks.filter((t) => t.status !== "DONE" && t.status !== "CANCELLED").length;
+  const openCount = allTasks.filter(
+    (t) => !t.notApplicable && t.status !== "DONE" && t.status !== "CANCELLED",
+  ).length;
   const customerCount = allTasks.filter(
-    (t) => t.ownerSide === "CUSTOMER" && t.status !== "DONE" && t.status !== "CANCELLED",
+    (t) =>
+      t.ownerSide === "CUSTOMER" &&
+      !t.notApplicable &&
+      t.status !== "DONE" &&
+      t.status !== "CANCELLED",
   ).length;
 
   return (
@@ -86,14 +93,17 @@ export default async function ProjectTasksPage({
                   {phase.visibility === "INTERNAL" ? (
                     <VisibilityBadge visibility="INTERNAL" />
                   ) : null}
+                  {phase.notApplicable ? <Badge tone="amber">N/A</Badge> : null}
+                  {phase.workTrack === "RCM" ? <Badge tone="violet">RCM</Badge> : null}
                 </span>
               }
               subtitle={
                 <>
-                  {done}/{phaseTasks.length} complete
+                  {done}/{phaseTasks.filter((t) => !t.notApplicable).length} complete
                   {phase.dueDate ? ` · due ${fmtShort(phase.dueDate)}` : ""}
                 </>
               }
+              action={<PhaseNaButton phaseId={phase.id} notApplicable={phase.notApplicable} />}
             />
             {phaseTasks.length === 0 ? (
               <p className="px-5 py-4 text-[13px] text-ink-3">Nothing in this phase yet.</p>

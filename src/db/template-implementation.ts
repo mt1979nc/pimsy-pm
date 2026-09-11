@@ -30,6 +30,16 @@ export type SeedTask = {
   priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   /** Nested Dock checklist items under a section/header task. */
   children?: SeedTask[];
+  isOptional?: boolean;
+  areaKey?: string;
+  defaultRole?:
+    | "IMPLEMENTATION_SPECIALIST"
+    | "T1_BILLING_SUPPORT"
+    | "T2_BILLING_SUPPORT"
+    | "RCM_IMPLEMENTATION_SPECIALIST"
+    | "RCM_MANAGER";
+  workTrack?: "EHR" | "RCM" | "SHARED";
+  overlapKey?: string;
 };
 
 /** Section/header task with nested subtasks (Dock checklist groups). */
@@ -45,6 +55,9 @@ export type SeedPhase = {
   offsetDays: number;
   durationDays: number;
   tasks: SeedTask[];
+  isOptional?: boolean;
+  areaKey?: string;
+  workTrack?: "EHR" | "RCM" | "SHARED";
 };
 
 const I = (title: string, extra: Partial<SeedTask> = {}): SeedTask => ({

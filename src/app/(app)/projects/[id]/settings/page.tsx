@@ -16,6 +16,8 @@ import {
 } from "./settings-forms";
 import { ProjectContacts } from "./contacts";
 import { SlipHistoryList } from "@/components/slip-history";
+import { staffingRoleLabel } from "@/lib/staffing";
+import { AddRcmTrackForm } from "./add-rcm-track-form";
 
 export const dynamic = "force-dynamic";
 
@@ -165,7 +167,7 @@ export default async function ProjectSettingsPage({
                     {m.user.role === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
                   </div>
                   <div className="truncate text-[12px] capitalize text-ink-3">
-                    {m.role.toLowerCase().replaceAll("_", " ")}
+                    {staffingRoleLabel(m.role)}
                   </div>
                 </div>
                 <RemoveMemberButton projectId={id} userId={m.userId} />
@@ -174,6 +176,16 @@ export default async function ProjectSettingsPage({
           </div>
           <AddMemberForm projectId={id} candidates={candidates} />
         </Card>
+
+        {project.rcmTaskCountTotal === 0 ? (
+          <Card>
+            <CardHeader
+              title="Add RCM track"
+              subtitle="Path 4 — existing EHR + RCM with Prism data. Does not rewrite EHR dates."
+            />
+            <AddRcmTrackForm projectId={id} staff={staff} />
+          </Card>
+        ) : null}
 
         <Card>
           <CardHeader

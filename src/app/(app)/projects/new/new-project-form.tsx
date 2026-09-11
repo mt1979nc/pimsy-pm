@@ -12,18 +12,25 @@ import {
   forecastImplementation,
   type ImplementationScope,
 } from "@/lib/estimator";
-import type { ComplexityTier, DiscoveryScenario } from "@/db/schema";
+import type { ComplexityTier, DiscoveryScenario, PlaybookPath } from "@/db/schema";
+import { PLAYBOOK_PATHS, PLAYBOOK_PATH_META } from "@/lib/playbook";
+import { STAFFING_ROLES, STAFFING_ROLE_LABELS, MANAGER_OVERVIEW_ROLES } from "@/lib/staffing";
 
-type Option = { id: string; name: string | null };
+type Option = { id: string; name: string | null; staffingRole?: string | null };
+type ExistingProject = { id: string; name: string; code: string; customerAccountId: string | null };
+type OptionalArea = { key: string; label: string; hint: string; taskCount: number };
 type Template = {
   id: string;
   name: string;
   description: string | null;
   durationDays: number;
   type: string;
+  code: string | null;
+  playbookPath: PlaybookPath | null;
   phaseCount: number;
   taskCount: number;
   customerTaskCount: number;
+  optionalAreas: OptionalArea[];
 };
 
 const tierTone: Record<ComplexityTier, "green" | "amber" | "red" | "violet"> = {
@@ -39,24 +46,43 @@ export function NewProjectForm({
   customers,
   staff,
   templates,
+  existingProjects,
   defaultLeadId,
 }: {
   customers: Option[];
   staff: Option[];
   templates: Template[];
+  existingProjects: ExistingProject[];
   defaultLeadId: string;
 }) {
   const [state, action] = useActionState(createProject, {});
   const [type, setType] = useState("IMPLEMENTATION");
-  const [templateId, setTemplateId] = useState(templates[0]?.id ?? "");
+  const defaultPath =
+    (templates.find((t) => t.playbookPath === "EHR")?.playbookPath as PlaybookPath | undefined) ??
+    (templates[0]?.playbookPath as PlaybookPath | null) ??
+    null;
+  const [playbookPath, setPlaybookPath] = useState<PlaybookPath | "">((defaultPath ?? "EHR") as PlaybookPath);
+  const [templateId, setTemplateId] = useState("");
+  const [includedAreas, setIncludedAreas] = useState<Record<string, boolean>>({});
+  const [roleAssignments, setRoleAssignments] = useState<Record<string, string>>({});
+  const [sourceProjectId, setSourceProjectId] = useState("");
+  const [customerId, setCustomerId] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
 
   const [scoped, setScoped] = useState(true);
   const [scope, setScope] = useState<ImplementationScope>(DEFAULT_SCOPE);
   const [scenario, setScenario] = useState<DiscoveryScenario>("TYPICAL");
 
-  const selected = templates.find((t) => t.id === templateId);
+  const pathTemplate = playbookPath
+    ? templates.find((t) => t.playbookPath === playbookPath || t.code === PLAYBOOK_PATH_META[playbookPath].code)
+    : null;
+  const selected = templateId
+    ? templates.find((t) => t.id === templateId)
+    : pathTemplate ?? templates.find((t) => t.id === templateId);
   const isInternal = type === "INTERNAL";
+  const optionalAreas = selected?.optionalAreas ?? [];
+  const customerProjects = existingProjects.filter((p) => !customerId || p.customerAccountId === customerId);
+  const isPrismPath = playbookPath === "RCM_PRISM";
 
   const forecast = useMemo(() => {
     const kickoff = startDate ? new Date(`${startDate}T00:00:00`) : new Date();
@@ -121,6 +147,8 @@ export function NewProjectForm({
                   className={inputClass}
                   disabled={isInternal}
                   required={!isInternal}
+                  value={customerId}
+                  onChange={(e) => setCustomerId(e.target.value)}
                 >
                   <option value="">Select a customer…</option>
                   {customers.map((c) => (
@@ -375,21 +403,76 @@ export function NewProjectForm({
 
         <Card>
           <CardHeader
-            title="Start from a template"
-            subtitle="Builds every phase, task and milestone automatically"
+            title="Playbook"
+            subtitle="Four paths — pick how this site should start"
           />
           <div className="space-y-2 p-4">
+            <input type="hidden" name="playbookPath" value={playbookPath} />
+            <input type="hidden" name="templateId" value={playbookPath ? "" : templateId} />
+
+            {PLAYBOOK_PATHS.map((path) => {
+              const meta = PLAYBOOK_PATH_META[path];
+              const tpl = templates.find((t) => t.playbookPath === path || t.code === meta.code);
+              return (
+                <label
+                  key={path}
+                  className={`flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors ${
+                    playbookPath === path
+                      ? "border-brand bg-brand-soft"
+                      : "border-border hover:bg-surface-2"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="_playbookPath"
+                    checked={playbookPath === path}
+                    onChange={() => {
+                      setPlaybookPath(path);
+                      setTemplateId("");
+                    }}
+                    className="mt-0.5"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-medium text-ink">{meta.title}</span>
+                    <span className="mt-0.5 block text-[12px] leading-snug text-ink-3">
+                      {meta.subtitle}
+                    </span>
+                    {tpl ? (
+                      <span className="mt-1.5 flex flex-wrap gap-1">
+                        <Badge>{tpl.phaseCount} phases</Badge>
+                        <Badge>{tpl.taskCount} tasks</Badge>
+                        {tpl.customerTaskCount > 0 ? (
+                          <Badge tone="violet">{tpl.customerTaskCount} customer</Badge>
+                        ) : null}
+                        <Badge>
+                          {scoped && chosen && path === "EHR" ? chosen.calendarDays : tpl.durationDays} days
+                        </Badge>
+                      </span>
+                    ) : (
+                      <span className="mt-1.5 block text-[11.5px] text-amber">
+                        Seed templates to load this playbook.
+                      </span>
+                    )}
+                  </span>
+                </label>
+              );
+            })}
+
             <label
               className={`flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors ${
-                templateId === "" ? "border-brand bg-brand-soft" : "border-border hover:bg-surface-2"
+                playbookPath === "" && templateId === ""
+                  ? "border-brand bg-brand-soft"
+                  : "border-border hover:bg-surface-2"
               }`}
             >
               <input
                 type="radio"
-                name="templateId"
-                value=""
-                checked={templateId === ""}
-                onChange={() => setTemplateId("")}
+                name="_playbookPath"
+                checked={playbookPath === "" && templateId === ""}
+                onChange={() => {
+                  setPlaybookPath("");
+                  setTemplateId("");
+                }}
                 className="mt-0.5"
               />
               <span>
@@ -400,49 +483,141 @@ export function NewProjectForm({
               </span>
             </label>
 
-            {templates.map((t) => (
+            {templates.filter((t) => !t.playbookPath).map((t) => (
               <label
                 key={t.id}
                 className={`flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors ${
-                  templateId === t.id
+                  playbookPath === "" && templateId === t.id
                     ? "border-brand bg-brand-soft"
                     : "border-border hover:bg-surface-2"
                 }`}
               >
                 <input
                   type="radio"
-                  name="templateId"
-                  value={t.id}
-                  checked={templateId === t.id}
-                  onChange={() => setTemplateId(t.id)}
+                  name="_playbookPath"
+                  checked={playbookPath === "" && templateId === t.id}
+                  onChange={() => {
+                    setPlaybookPath("");
+                    setTemplateId(t.id);
+                  }}
                   className="mt-0.5"
                 />
                 <span className="min-w-0">
                   <span className="block text-[13px] font-medium text-ink">{t.name}</span>
-                  {t.description ? (
-                    <span className="mt-0.5 block text-[12px] leading-snug text-ink-3">
-                      {t.description}
-                    </span>
-                  ) : null}
                   <span className="mt-1.5 flex flex-wrap gap-1">
                     <Badge>{t.phaseCount} phases</Badge>
                     <Badge>{t.taskCount} tasks</Badge>
-                    {t.customerTaskCount > 0 ? (
-                      <Badge tone="violet">{t.customerTaskCount} customer</Badge>
-                    ) : null}
-                    <Badge>
-                      {scoped && chosen ? chosen.calendarDays : t.durationDays} days
-                    </Badge>
                   </span>
                 </span>
               </label>
             ))}
+          </div>
+        </Card>
 
-            {templates.length === 0 ? (
-              <p className="px-1 py-3 text-[12.5px] text-ink-3">
-                No templates yet. An admin can create one under Templates.
+        {isPrismPath ? (
+          <Card>
+            <CardHeader
+              title="Existing EHR site"
+              subtitle="Reactivates that project and adds RCM with separate metrics. EHR dates stay put."
+            />
+            <div className="p-4">
+              <Field label="Attach to project" htmlFor="sourceProjectId">
+                <select
+                  id="sourceProjectId"
+                  name="sourceProjectId"
+                  className={inputClass}
+                  value={sourceProjectId}
+                  onChange={(e) => setSourceProjectId(e.target.value)}
+                >
+                  <option value="">Create a new RCM-only project…</option>
+                  {customerProjects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.code} — {p.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <p className="mt-2 text-[12px] text-ink-3">
+                Overlapping standard-implementation tasks auto-complete. Pick a site to keep the
+                EHR timeline and add an RCM track.
               </p>
-            ) : null}
+            </div>
+          </Card>
+        ) : null}
+
+        {optionalAreas.length > 0 ? (
+          <Card>
+            <CardHeader
+              title="Optional areas"
+              subtitle="Uncheck anything that is not applicable. This only affects the new site, not the template."
+            />
+            <div className="space-y-2 p-4">
+              {optionalAreas.map((area) => {
+                const checked = includedAreas[area.key] !== false;
+                return (
+                  <label key={area.key} className="flex cursor-pointer items-start gap-2.5">
+                    <input type="hidden" name="optionalArea" value={area.key} />
+                    <input
+                      type="checkbox"
+                      name="includeArea"
+                      value={area.key}
+                      checked={checked}
+                      onChange={(e) =>
+                        setIncludedAreas((prev) => ({ ...prev, [area.key]: e.target.checked }))
+                      }
+                      className="mt-0.5 size-4 accent-[var(--color-brand)]"
+                    />
+                    <span>
+                      <span className="block text-[13px] font-medium text-ink">{area.label}</span>
+                      <span className="block text-[12px] text-ink-3">
+                        {area.hint}
+                        {area.taskCount ? ` · ${area.taskCount} items` : ""}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </Card>
+        ) : null}
+
+        <Card>
+          <CardHeader
+            title="Staffing"
+            subtitle="Tasks auto-assign from these roles. Managers still get a site overview without owning every task."
+          />
+          <div className="space-y-3 p-4">
+            {STAFFING_ROLES.map((role) => {
+              const suggested =
+                staff.find((s) => s.staffingRole === role)?.id ??
+                (role === "IMPLEMENTATION_SPECIALIST" ? defaultLeadId : "");
+              return (
+                <Field key={role} label={STAFFING_ROLE_LABELS[role]} htmlFor={`role-${role}`}>
+                  <select
+                    id={`role-${role}`}
+                    name={`roleAssignment:${role}`}
+                    className={inputClass}
+                    value={roleAssignments[role] ?? suggested}
+                    onChange={(e) =>
+                      setRoleAssignments((prev) => ({ ...prev, [role]: e.target.value }))
+                    }
+                  >
+                    <option value="">— Not assigned —</option>
+                    {staff.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                        {s.staffingRole === role ? " · usual role" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {MANAGER_OVERVIEW_ROLES.includes(role) ? (
+                    <p className="mt-1 text-[11.5px] text-ink-3">
+                      Overview card on the dashboard even if they are not on every task.
+                    </p>
+                  ) : null}
+                </Field>
+              );
+            })}
           </div>
         </Card>
 

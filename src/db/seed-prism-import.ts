@@ -31,6 +31,7 @@
 
 import { eq } from "drizzle-orm";
 import { db } from "./index";
+import { staffingRoleFromTitle } from "@/lib/staffing";
 import { customerAccounts, users, projects, projectMembers, projectScopes, slipEvents } from "./schema";
 import { audit } from "@/lib/audit";
 import { env } from "@/lib/env";
@@ -220,6 +221,7 @@ async function upsertStaff(): Promise<Record<StaffKey, string>> {
           prismTeamId: s.prismTeamId || null,
           // Prefer Outlook-canonical short emails; title reflects Dock-ish function.
           title: s.title,
+          staffingRole: staffingRoleFromTitle(s.title),
         })
         .where(eq(users.id, existing.id));
       continue;
@@ -245,6 +247,7 @@ async function upsertStaff(): Promise<Record<StaffKey, string>> {
         canLead: s.canLead,
         isDirector: s.isDirector,
         prismTeamId: s.prismTeamId || null,
+        staffingRole: staffingRoleFromTitle(isBootstrapOwner ? "Implementation Director" : s.title),
       })
       .returning({ id: users.id });
     ids[s.key] = row.id;

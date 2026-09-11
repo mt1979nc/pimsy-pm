@@ -8,7 +8,9 @@ import {
   waitingOnCustomer,
   waitingOnThreadRollup,
   upcomingMilestones,
+  managedSiteCards,
 } from "@/lib/queries";
+import { pctComplete } from "@/lib/rollup";
 import { listInboxThreads, isUnread } from "@/lib/threads";
 import {
   Card,
@@ -31,15 +33,17 @@ export const metadata = { title: "Dashboard" };
 export default async function DashboardPage() {
   const actor = await requireStaff();
 
-  const [summary, attention, tasks, chase, milestones, threads, waitingThreads] = await Promise.all([
-    portfolioSummary(actor),
-    attentionProjects(actor, 6),
-    myTasks(actor),
-    waitingOnCustomer(actor, 8),
-    upcomingMilestones(actor, 30, 8),
-    listInboxThreads(actor, 8),
-    waitingOnThreadRollup(actor),
-  ]);
+  const [summary, attention, tasks, chase, milestones, threads, waitingThreads, managed] =
+    await Promise.all([
+      portfolioSummary(actor),
+      attentionProjects(actor, 6),
+      myTasks(actor),
+      waitingOnCustomer(actor, 8),
+      upcomingMilestones(actor, 30, 8),
+      listInboxThreads(actor, 8),
+      waitingOnThreadRollup(actor),
+      managedSiteCards(actor, 8),
+    ]);
   const waitingThreadFlat = waitingThreads
     .flatMap((r) =>
       r.threads
@@ -120,6 +124,51 @@ export default async function DashboardPage() {
               </div>
             )}
           </Card>
+
+          {managed.length > 0 ? (
+            <Card>
+              <CardHeader
+                title="Sites you oversee"
+                subtitle="Assigned as lead or director/manager — even if you are not on every task"
+              />
+              <div className="divide-y divide-border">
+                {managed.map((p) => {
+                  const ehrPct = pctComplete(p.ehrTaskCountDone, p.ehrTaskCountTotal);
+                  const rcmPct = pctComplete(p.rcmTaskCountDone, p.rcmTaskCountTotal);
+                  return (
+                    <Link
+                      key={p.id}
+                      href={`/projects/${p.id}`}
+                      className="block px-5 py-3 hover:bg-surface-2"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="truncate text-[13.5px] font-medium text-ink">
+                            {p.customerAccount?.name ?? p.name}
+                          </div>
+                          <div className="truncate text-[12px] text-ink-3">
+                            {p.code}
+                            {p.playbookPath ? ` · ${p.playbookPath.replaceAll("_", " + ")}` : ""}
+                          </div>
+                        </div>
+                        <HealthBadge health={p.health} />
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-3">
+                        <span>EHR {ehrPct}%</span>
+                        {p.rcmTaskCountTotal > 0 ? <span>RCM {rcmPct}%</span> : null}
+                        {p.targetGoLiveDate ? (
+                          <span>Go-live {fmtShort(p.targetGoLiveDate)}</span>
+                        ) : null}
+                        {p.rcmTargetGoLiveDate ? (
+                          <span>RCM target {fmtShort(p.rcmTargetGoLiveDate)}</span>
+                        ) : null}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </Card>
+          ) : null}
 
           <Card>
             <CardHeader

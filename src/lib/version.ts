@@ -8,10 +8,16 @@
  *
  * Bump this AND the "version" field in package.json together.
  */
-export const APP_VERSION = "1.8.4";
+export const APP_VERSION = "1.9.0";
 
 /** One line per release, newest first. Kept short on purpose. */
 export const RELEASE_NOTES: { version: string; date: string; summary: string }[] = [
+  {
+    version: "1.9.0",
+    date: "2026-09-11",
+    summary:
+      "Editable playbooks (add/remove + drag-reorder phases and tasks); four site paths (EHR, EHR+RCM, RCM Legacy, Existing EHR+RCM/Prism); optional areas on create; per-project N/A; staffing roles with auto-assign and manager overview cards.",
+  },
   {
     version: "1.8.4",
     date: "2026-09-11",

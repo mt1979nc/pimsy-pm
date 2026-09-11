@@ -49,10 +49,11 @@ delivered; only email is configurable.
 
 **Outlook and Teams** — see [Notifications](#notifications) below.
 
-**Templates** — your Dock Implementation Template, ported: 12 phases, 143
-tasks, 8 milestones, with Dock's internal/external flags preserved. Creating a
-project from it materializes the whole plan with dates computed from the
-kickoff date.
+**Templates** — Dock Implementation Template plus three RCM paths, fully
+editable (add/remove + drag-reorder phases and tasks). Creating a project
+materializes the chosen playbook with dates from kickoff → go-live. Optional
+areas can be excluded on create; a live project can mark a task or section
+N/A without changing the template.
 
 ---
 

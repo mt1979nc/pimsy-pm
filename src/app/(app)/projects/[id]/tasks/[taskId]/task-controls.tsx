@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { updateTask, setTaskStatus, setTaskVisibility } from "@/actions/tasks";
+import { updateTask, setTaskStatus, setTaskVisibility, markTaskNotApplicable } from "@/actions/tasks";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Button, Field, inputClass, VisibilityBadge } from "@/components/ui";
 
@@ -27,6 +27,7 @@ export function TaskDetailControls({
     ownerSide: "INTERNAL" | "CUSTOMER";
     dueDate: string;
     estimateHours: number | null;
+    notApplicable?: boolean;
   };
 }) {
   const [state, action] = useActionState(updateTask, {});
@@ -92,6 +93,13 @@ export function TaskDetailControls({
           </button>
 
           <div className="flex-1" />
+          <Button
+            size="sm"
+            disabled={pending}
+            onClick={() => change(() => markTaskNotApplicable(task.id, !task.notApplicable))}
+          >
+            {task.notApplicable ? "Restore from N/A" : "Not applicable"}
+          </Button>
           <Button size="sm" onClick={() => setEditing(true)}>
             Edit
           </Button>

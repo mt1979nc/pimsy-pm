@@ -12,7 +12,8 @@ Priority epics for Nathan / PIMSY Implementations. Status reflects what this bra
 |------|--------|-------|
 | **About / site profile** | **Shipped** (v1.7) | HubSpot deal, Prism client id, CRM acronym/key, Zoom booking, notes, custom fields. Staff edit + portal read-only. |
 | **Waiting-on threads** | **Shipped** (v1.7) | `waitingOn`: PIMSY / CUSTOMER / UNKNOWN + aging. Staff badge/set; portfolio rollup of open SHARED threads; portal read-only badge. |
-| **Prism Management (v1.8)** | **In progress / shipping** (this branch → v1.8.0) | Team roster flags + billable hrs + engagement roster/edit in PM. OWNER/ADMIN/MANAGER only. Native Postgres (no Prism Azure SQL dual-write). |
+| **Prism Management (v1.8)** | **Shipped** (v1.8.0–1.8.4) | Team roster flags + billable hrs + engagement roster/edit in PM. OWNER/ADMIN/MANAGER only. Native Postgres (no Prism Azure SQL dual-write). |
+| **Playbook / staffing (v1.9)** | **Shipping** (this branch → v1.9.0) | Editable templates, four site paths, optional areas, per-project N/A, staffing roles + auto-assign + manager overview. Not Prism forecast. |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
 | Portfolio WIP view | Planned | Callouts powered by waiting-on rollup + customer-side tasks. |
@@ -23,13 +24,14 @@ Priority epics for Nathan / PIMSY Implementations. Status reflects what this bra
 
 | Step | Version / gate | Status | Scope |
 |------|----------------|--------|-------|
-| 1. Management hub | **v1.8** | **Shipping** (this branch) | Capacity settings + team roster / flags + engagement edit. Native Postgres (not dual-write Prism SQL). OWNER/ADMIN/MANAGER only. |
-| 2. Forecast | **v1.9** | Planned | Weights, Hire now, exclusions — forecast parity with Prism. |
-| 3. Dual-read | After v1.9 | Planned | Point Director / Pipeline routines at pimsy-pm; **dual-read Prism DB before any write cutover**. |
-| 4. Write cutover | After dual-read proven | Planned | Writes land only in pimsy-pm; Prism becomes read-only fallback then dark. |
-| 5. **Retire standalone Prism** | After cutover | Planned | Archive / shut down purple-beach once Management Capacity → Forecast → routines are live in pimsy-pm. |
+| 1. Management hub | **v1.8** | **Shipped** | Capacity settings + team roster / flags + engagement edit. Native Postgres (not dual-write Prism SQL). OWNER/ADMIN/MANAGER only. |
+| 2. Playbook + staffing | **v1.9.0** | **Shipping** (this branch) | Editable templates, four paths, optional areas, N/A, staffing roles. |
+| 3. Forecast | **v1.10** | Planned | Weights, Hire now, exclusions — forecast parity with Prism. |
+| 4. Dual-read | After forecast | Planned | Point Director / Pipeline routines at pimsy-pm; **dual-read Prism DB before any write cutover**. |
+| 5. Write cutover | After dual-read proven | Planned | Writes land only in pimsy-pm; Prism becomes read-only fallback then dark. |
+| 6. **Retire standalone Prism** | After cutover | Planned | Archive / shut down purple-beach once Management Capacity → Forecast → routines are live in pimsy-pm. |
 
-Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (this branch)** → v1.9 Forecast → dual-read → write cutover → **Milestone: Retire standalone Prism**. Contacts / HubSpot-on-create wait until after v1.8.
+Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shipped)** → **v1.9 playbook/staffing (this branch)** → v1.10 Forecast → dual-read → write cutover → **Milestone: Retire standalone Prism**. Contacts / HubSpot-on-create wait until after v1.8.
 
 ## Demo polish
 
@@ -56,7 +58,7 @@ Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (thi
 
 | Epic | Status |
 |------|--------|
-| RCM | Later |
+| RCM (full forecast/analysis) | Later — v1.9 ships RCM *playbook paths* only |
 | Health score | Later |
 | In-app daily review | Later |
 | SSO | Later |

@@ -41,6 +41,7 @@ export async function portalActionItems(actor: CustomerActor) {
       eq(tasks.ownerSide, "CUSTOMER"),
       eq(tasks.visibility, "SHARED"),
       ne(tasks.status, "CANCELLED"),
+      eq(tasks.notApplicable, false),
     ),
     orderBy: [asc(tasks.dueDate)],
     with: {
@@ -61,11 +62,19 @@ export async function portalPlan(actor: CustomerActor, projectId: string) {
   if (!ids.includes(projectId)) return { phases: [], looseTasks: [] };
 
   const rows = await db.query.phases.findMany({
-    where: and(eq(phases.projectId, projectId), eq(phases.visibility, "SHARED")),
+    where: and(
+      eq(phases.projectId, projectId),
+      eq(phases.visibility, "SHARED"),
+      eq(phases.notApplicable, false),
+    ),
     orderBy: [asc(phases.order)],
     with: {
       tasks: {
-        where: and(eq(tasks.visibility, "SHARED"), ne(tasks.status, "CANCELLED")),
+        where: and(
+          eq(tasks.visibility, "SHARED"),
+          ne(tasks.status, "CANCELLED"),
+          eq(tasks.notApplicable, false),
+        ),
         orderBy: [asc(tasks.order)],
         with: {
           comments: {
@@ -83,6 +92,7 @@ export async function portalPlan(actor: CustomerActor, projectId: string) {
       isNull(tasks.phaseId),
       eq(tasks.visibility, "SHARED"),
       ne(tasks.status, "CANCELLED"),
+      eq(tasks.notApplicable, false),
     ),
     orderBy: [asc(tasks.order)],
     with: {
@@ -101,7 +111,11 @@ export async function portalPhaseTabs(actor: CustomerActor, projectId: string) {
   const ids = await portalProjectIds(actor);
   if (!ids.includes(projectId)) return [];
   return db.query.phases.findMany({
-    where: and(eq(phases.projectId, projectId), eq(phases.visibility, "SHARED")),
+    where: and(
+      eq(phases.projectId, projectId),
+      eq(phases.visibility, "SHARED"),
+      eq(phases.notApplicable, false),
+    ),
     orderBy: [asc(phases.order)],
     columns: { id: true, name: true, order: true },
   });
@@ -114,10 +128,19 @@ export async function portalPhase(actor: CustomerActor, projectId: string, phase
   if (!ids.includes(projectId)) return null;
 
   const phase = await db.query.phases.findFirst({
-    where: and(eq(phases.id, phaseId), eq(phases.projectId, projectId), eq(phases.visibility, "SHARED")),
+    where: and(
+      eq(phases.id, phaseId),
+      eq(phases.projectId, projectId),
+      eq(phases.visibility, "SHARED"),
+      eq(phases.notApplicable, false),
+    ),
     with: {
       tasks: {
-        where: and(eq(tasks.visibility, "SHARED"), ne(tasks.status, "CANCELLED")),
+        where: and(
+          eq(tasks.visibility, "SHARED"),
+          ne(tasks.status, "CANCELLED"),
+          eq(tasks.notApplicable, false),
+        ),
         orderBy: [asc(tasks.order)],
         with: {
           comments: {

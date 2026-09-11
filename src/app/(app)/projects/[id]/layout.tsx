@@ -98,20 +98,44 @@ export default async function ProjectLayout({
             </div>
 
             <div className="min-w-[130px]">
-              <div className="text-[11.5px] uppercase tracking-wide text-ink-3">Progress</div>
+              <div className="text-[11.5px] uppercase tracking-wide text-ink-3">
+                {project.rcmTaskCountTotal > 0 ? "EHR progress" : "Progress"}
+              </div>
               <div className="mt-0.5 text-[13.5px] font-medium text-ink">
-                {pct}%
+                {project.rcmTaskCountTotal > 0
+                  ? pctComplete(project.ehrTaskCountDone, project.ehrTaskCountTotal)
+                  : pct}
+                %
                 <span className="ml-1.5 text-[12px] font-normal text-ink-3">
-                  {project.taskCountDone}/{project.taskCountTotal}
+                  {project.rcmTaskCountTotal > 0
+                    ? `${project.ehrTaskCountDone}/${project.ehrTaskCountTotal}`
+                    : `${project.taskCountDone}/${project.taskCountTotal}`}
                 </span>
               </div>
               <ProgressBar
-                value={project.taskCountDone}
-                total={project.taskCountTotal}
+                value={project.rcmTaskCountTotal > 0 ? project.ehrTaskCountDone : project.taskCountDone}
+                total={project.rcmTaskCountTotal > 0 ? project.ehrTaskCountTotal : project.taskCountTotal}
                 tone={pct === 100 ? "green" : "brand"}
                 className="mt-1.5"
               />
             </div>
+            {project.rcmTaskCountTotal > 0 ? (
+              <div className="min-w-[130px]">
+                <div className="text-[11.5px] uppercase tracking-wide text-ink-3">RCM progress</div>
+                <div className="mt-0.5 text-[13.5px] font-medium text-ink">
+                  {pctComplete(project.rcmTaskCountDone, project.rcmTaskCountTotal)}%
+                  <span className="ml-1.5 text-[12px] font-normal text-ink-3">
+                    {project.rcmTaskCountDone}/{project.rcmTaskCountTotal}
+                  </span>
+                </div>
+                <ProgressBar
+                  value={project.rcmTaskCountDone}
+                  total={project.rcmTaskCountTotal}
+                  tone="violet"
+                  className="mt-1.5"
+                />
+              </div>
+            ) : null}
 
             {project.lead ? (
               <div>

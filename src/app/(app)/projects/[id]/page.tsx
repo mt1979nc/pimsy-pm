@@ -24,6 +24,7 @@ import {
   RiskStatusControl,
 } from "./overview-forms";
 import { cn } from "@/lib/cn";
+import { staffingRoleLabel } from "@/lib/staffing";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +70,7 @@ export default async function ProjectOverviewPage({
         eq(tasks.ownerSide, "CUSTOMER"),
         ne(tasks.status, "DONE"),
         ne(tasks.status, "CANCELLED"),
+        eq(tasks.notApplicable, false),
       ),
       orderBy: [asc(tasks.dueDate)],
       limit: 10,
@@ -270,7 +272,7 @@ export default async function ProjectOverviewPage({
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13px] text-ink">{m.user.name}</div>
                   <div className="truncate text-[12px] capitalize text-ink-3">
-                    {m.role.toLowerCase().replace("_", " ")}
+                    {staffingRoleLabel(m.role)}
                   </div>
                 </div>
               </div>

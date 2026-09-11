@@ -11,9 +11,11 @@ import {
   notifications,
   slipEvents,
   messageThreads,
+  projectMembers,
   type ComplexityTier,
   type WaitingOn,
 } from "@/db/schema";
+import { isManagerOverviewRole } from "@/lib/staffing";
 import { accessibleProjectIds, type Actor } from "./authz";
 import { addDays, startOfDay, differenceInCalendarDays } from "./dates";
 
@@ -101,6 +103,7 @@ export async function portfolioSummary(actor: Actor) {
         lt(tasks.dueDate, startOfDay(new Date())),
         ne(tasks.status, "DONE"),
         ne(tasks.status, "CANCELLED"),
+        eq(tasks.notApplicable, false),
       ),
     );
 
@@ -113,6 +116,7 @@ export async function portfolioSummary(actor: Actor) {
         eq(tasks.ownerSide, "CUSTOMER"),
         ne(tasks.status, "DONE"),
         ne(tasks.status, "CANCELLED"),
+        eq(tasks.notApplicable, false),
       ),
     );
 
@@ -181,6 +185,7 @@ export async function myTasks(actor: Actor) {
       eq(tasks.assigneeId, actor.id),
       ne(tasks.status, "DONE"),
       ne(tasks.status, "CANCELLED"),
+      eq(tasks.notApplicable, false),
     ),
     orderBy: [asc(tasks.dueDate), desc(tasks.priority)],
     limit: 200,
@@ -204,6 +209,7 @@ export async function waitingOnCustomer(actor: Actor, limit = 50) {
       eq(tasks.ownerSide, "CUSTOMER"),
       ne(tasks.status, "DONE"),
       ne(tasks.status, "CANCELLED"),
+      eq(tasks.notApplicable, false),
     ),
     orderBy: [asc(tasks.dueDate)],
     limit,
@@ -269,7 +275,7 @@ export async function teamCapacity() {
       overdue: sql<number>`count(*) filter (where ${tasks.dueDate} < now() and ${tasks.status} not in ('DONE','CANCELLED'))::int`,
     })
     .from(tasks)
-    .where(and(ne(tasks.status, "DONE"), ne(tasks.status, "CANCELLED")))
+    .where(and(ne(tasks.status, "DONE"), ne(tasks.status, "CANCELLED"), eq(tasks.notApplicable, false)))
     .groupBy(tasks.assigneeId);
 
   const leads = await db
@@ -706,4 +712,34 @@ export async function waitingOnThreadRollup(actor: Actor) {
     const bAge = b.oldestSince?.getTime() ?? 0;
     return aAge - bAge;
   });
+}
+
+/** Sites a manager/director oversees even when they are not on every task. */
+export async function managedSiteCards(actor: Actor, limit = 8) {
+  const memberships = await db.query.projectMembers.findMany({
+    where: eq(projectMembers.userId, actor.id),
+    with: {
+      project: {
+        with: {
+          customerAccount: { columns: { id: true, name: true } },
+          lead: { columns: { id: true, name: true, image: true } },
+        },
+      },
+    },
+  });
+
+  const cards = memberships
+    .filter((m) => isManagerOverviewRole(m.role) || m.role === "LEAD")
+    .map((m) => m.project)
+    .filter((p) => p && !p.archivedAt && OPEN_STATUSES.includes(p.status as (typeof OPEN_STATUSES)[number]));
+
+  const unique = new Map(cards.map((p) => [p.id, p]));
+  return [...unique.values()]
+    .sort((a, b) => {
+      const aRisk = a.health === "RED" ? 2 : a.health === "YELLOW" ? 1 : 0;
+      const bRisk = b.health === "RED" ? 2 : b.health === "YELLOW" ? 1 : 0;
+      if (bRisk !== aRisk) return bRisk - aRisk;
+      return (a.targetGoLiveDate?.getTime() ?? 0) - (b.targetGoLiveDate?.getTime() ?? 0);
+    })
+    .slice(0, limit);
 }

@@ -21,6 +21,7 @@ import { refreshProjectCounters } from "@/lib/rollup";
 import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
 import { fmtDate } from "@/lib/dates";
+import { setTaskNotApplicable } from "@/lib/playbook";
 import type { ActionState } from "./messages";
 
 const optionalDate = z
@@ -351,6 +352,28 @@ export async function deleteTask(taskId: string) {
     metadata: { projectId: task.projectId },
   });
   revalidatePath(`/projects/${task.projectId}/tasks`);
+}
+
+/** Marks a task (and its children) N/A on this project only — template unchanged. */
+export async function markTaskNotApplicable(taskId: string, notApplicable: boolean) {
+  const actor = await requireUser();
+  if (isCustomer(actor)) throw new ForbiddenError();
+  const task = await loadTaskForActor(actor, taskId);
+  await assertProjectWrite(actor, task.projectId);
+  await setTaskNotApplicable(taskId, notApplicable);
+  await audit({
+    actor,
+    action: notApplicable ? "task.marked_na" : "task.restored_from_na",
+    entityType: "task",
+    entityId: taskId,
+    summary: `${task.title}: ${notApplicable ? "not applicable on this project" : "restored"}`,
+    metadata: { projectId: task.projectId },
+  });
+  revalidatePath(`/projects/${task.projectId}`);
+  revalidatePath(`/projects/${task.projectId}/tasks`);
+  revalidatePath(`/projects/${task.projectId}/tasks/${taskId}`);
+  revalidatePath(`/portal/projects/${task.projectId}`);
+  revalidatePath("/my-work");
 }
 
 // ---------------------------------------------------------------------------

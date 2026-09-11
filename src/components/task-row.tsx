@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { setTaskStatus, setTaskVisibility } from "@/actions/tasks";
+import { setTaskStatus, setTaskVisibility, markTaskNotApplicable } from "@/actions/tasks";
 import { Badge, PriorityBadge, VisibilityBadge, Avatar } from "@/components/ui";
 import { dueLabel, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -20,6 +20,8 @@ export type TaskRowData = {
   completedAt: Date | string | null;
   assignee?: { id: string; name: string | null; image?: string | null } | null;
   project?: { id: string; name: string; code: string } | null;
+  notApplicable?: boolean;
+  workTrack?: "EHR" | "RCM" | "SHARED";
 };
 
 export function TaskRow({
@@ -38,6 +40,7 @@ export function TaskRow({
   const projectId = task.projectId ?? task.project?.id;
   const href = projectId ? `/projects/${projectId}/tasks/${task.id}` : null;
   const done = task.status === "DONE";
+  const na = Boolean(task.notApplicable);
   const completedAt = done && task.completedAt ? new Date(task.completedAt) : null;
   const overdue = isOverdue(task.dueDate, completedAt);
 
@@ -69,12 +72,13 @@ export function TaskRow({
       className={cn(
         "group flex items-start gap-3 px-4 py-2.5 transition-colors hover:bg-surface-2",
         pending && "opacity-60",
+        na && "opacity-70",
       )}
     >
       <button
         type="button"
         onClick={toggle}
-        disabled={!canEdit || pending}
+        disabled={!canEdit || pending || na}
         aria-label={done ? `Mark ${task.title} not done` : `Mark ${task.title} done`}
         className={cn(
           "mt-0.5 flex size-[17px] shrink-0 items-center justify-center rounded-[5px] border transition-colors",
@@ -116,6 +120,8 @@ export function TaskRow({
           <PriorityBadge priority={task.priority} />
           {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer action</Badge> : null}
           {task.status === "BLOCKED" ? <Badge tone="red">Blocked</Badge> : null}
+          {na ? <Badge tone="amber">N/A</Badge> : null}
+          {task.workTrack === "RCM" ? <Badge tone="violet">RCM</Badge> : null}
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-3">
@@ -141,6 +147,25 @@ export function TaskRow({
               className="rounded transition-opacity hover:opacity-80 disabled:cursor-default"
             >
               <VisibilityBadge visibility={task.visibility} />
+            </button>
+          ) : null}
+          {canEdit ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  try {
+                    await markTaskNotApplicable(task.id, !na);
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "Could not update that item.");
+                  }
+                })
+              }
+              className="hover:text-ink hover:underline"
+              title="Remove from this project only — does not change the template"
+            >
+              {na ? "Restore" : "N/A"}
             </button>
           ) : null}
         </div>
