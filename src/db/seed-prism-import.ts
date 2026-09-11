@@ -42,12 +42,12 @@ import { env } from "@/lib/env";
 // ---------------------------------------------------------------------------
 
 const PRISM_STAFF = [
-  { key: "Alexander", email: "alexander@pimsyehr.com", name: "Alexander Morse", capacityHoursPerWeek: 30, active: true },
-  { key: "Danielle", email: "danielle.piper@pimsyehr.com", name: "Danielle Piper", capacityHoursPerWeek: 30, active: true },
-  { key: "Jeremy", email: "jeremy.reals@pimsyehr.com", name: "Jeremy Reals", capacityHoursPerWeek: 30, active: true },
-  { key: "Morgan", email: "morgan.davis@pimsyehr.com", name: "Morgan Davis", capacityHoursPerWeek: 23, active: true },
+  { key: "Alexander", email: "alexander@pimsyehr.com", name: "Alexander Morse", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: true, prismTeamId: "am" },
+  { key: "Danielle", email: "danielle.piper@pimsyehr.com", name: "Danielle Piper", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "dp" },
+  { key: "Jeremy", email: "jeremy.reals@pimsyehr.com", name: "Jeremy Reals", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "jr" },
+  { key: "Morgan", email: "morgan.davis@pimsyehr.com", name: "Morgan Davis", capacityHoursPerWeek: 23, active: true, capacityExempt: true, canLead: false, isDirector: false, prismTeamId: "md" },
   // Departed before this import — kept for history, not for assignment.
-  { key: "ReShawn", email: "reshawn.beard@pimsyehr.com", name: "ReShawn Beard", capacityHoursPerWeek: 30, active: false },
+  { key: "ReShawn", email: "reshawn.beard@pimsyehr.com", name: "ReShawn Beard", capacityHoursPerWeek: 30, active: false, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "" },
 ] as const;
 
 type StaffKey = (typeof PRISM_STAFF)[number]["key"];
@@ -174,6 +174,10 @@ async function upsertStaff(): Promise<Record<StaffKey, string>> {
           name: existing.name ?? s.name,
           capacityHoursPerWeek: s.capacityHoursPerWeek,
           isActive: s.active,
+          capacityExempt: s.capacityExempt,
+          canLead: s.canLead,
+          isDirector: s.isDirector,
+          prismTeamId: s.prismTeamId || null,
         })
         .where(eq(users.id, existing.id));
       continue;
@@ -195,6 +199,10 @@ async function upsertStaff(): Promise<Record<StaffKey, string>> {
         title: isBootstrapOwner ? "Owner" : "Implementation Specialist",
         capacityHoursPerWeek: s.capacityHoursPerWeek,
         isActive: s.active,
+        capacityExempt: s.capacityExempt,
+        canLead: s.canLead,
+        isDirector: s.isDirector,
+        prismTeamId: s.prismTeamId || null,
       })
       .returning({ id: users.id });
     ids[s.key] = row.id;
@@ -247,6 +255,10 @@ async function importActive(staffIds: Record<StaffKey, string>) {
         estimatedHours: Math.round(row.estimatedHours),
         portalEnabled: true,
         description: "Imported from PRISM — the pipeline/capacity forecasting tool this project's data used to live in, before PRISM's estimator and analytics were folded into Patio.",
+        prismClientId: row.acronym,
+        crmAcronym: row.acronym,
+        prismStatus: row.prekickoff ? "pre-kickoff" : "active",
+        ownerSplitPercent: 100,
       })
       .returning({ id: projects.id });
 
