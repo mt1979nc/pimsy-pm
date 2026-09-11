@@ -2,7 +2,8 @@ import { requireStaff } from "@/lib/guard";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { PageHeader, Card, CardHeader, Badge } from "@/components/ui";
+import { PageHeader, Card, CardHeader, Badge, LinkButton } from "@/components/ui";
+import { APP_VERSION } from "@/lib/version";
 import { ProfileForm } from "./profile-form";
 import { PasswordForm } from "@/components/password-form";
 import { MyAlertSettings } from "@/components/alert-settings";
@@ -60,6 +61,21 @@ export default async function SettingsPage() {
             usingDefaults={!me.notificationPrefs}
             audienceNote="Only for the projects and conversations you're part of."
           />
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Update History"
+            subtitle={`Staff-only release notes. Currently v${APP_VERSION}.`}
+            action={
+              <LinkButton href="/updates" size="sm" variant="secondary">
+                What&apos;s new
+              </LinkButton>
+            }
+          />
+          <div className="px-5 py-4 text-[13px] leading-relaxed text-ink-2">
+            Feature changes for this workspace. Customers never see this list.
+          </div>
         </Card>
 
         <Card>

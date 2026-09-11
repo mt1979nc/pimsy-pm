@@ -6,17 +6,36 @@
  * looked identical to a working one, because reads were fine. Nothing on screen
  * distinguished them.
  *
- * Bump this AND the "version" field in package.json together.
+ * Bump this AND the "version" field in package.json together. Then add a
+ * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
+ * reads that list. Do not invent a separate CMS.
  */
 export const APP_VERSION = "1.9.0";
 
-/** One line per release, newest first. Kept short on purpose. */
-export const RELEASE_NOTES: { version: string; date: string; summary: string }[] = [
+export type ReleaseNote = {
+  version: string;
+  /** ISO date (YYYY-MM-DD). */
+  date: string;
+  summary: string;
+  /** Optional bullets for the staff Update History page. */
+  highlights?: string[];
+};
+
+/** One entry per release, newest first. Staff-only `/updates` is fed by this. */
+export const RELEASE_NOTES: ReleaseNote[] = [
   {
     version: "1.9.0",
     date: "2026-09-11",
     summary:
-      "Editable playbooks (add/remove + drag-reorder phases and tasks); four site paths (EHR, EHR+RCM, RCM Legacy, Existing EHR+RCM/Prism); optional areas on create; per-project N/A; staffing roles with auto-assign and manager overview cards.",
+      "Editable playbooks (add/remove + drag-reorder phases and tasks); four site paths (EHR, EHR+RCM, RCM Legacy, Existing EHR+RCM/Prism); optional areas on create; per-project N/A; staffing roles with auto-assign and manager overview cards; staff-only Update History.",
+    highlights: [
+      "Templates are fully editable: add/remove tasks and phases, drag-and-drop reorder both.",
+      "Four site paths: EHR only, EHR + RCM, Existing EHR + RCM Legacy (no Prism), Existing EHR + RCM (Prism data).",
+      "Optional areas on create (import, ePrescribe, Inpatient/MAT, group notes, payroll).",
+      "Per-project N/A on a task or a whole section — does not change the template.",
+      "Staffing roles with auto-assign; managers/directors get a site overview card; task assignee stays editable.",
+      "Staff-only Update History (`What's new`) so the team can see what shipped. Customers never see it.",
+    ],
   },
   {
     version: "1.8.4",
@@ -116,3 +135,17 @@ export const RELEASE_NOTES: { version: string; date: string; summary: string }[]
   },
   { version: "1.0.0", date: "2026-08-21", summary: "First build." },
 ];
+
+/** Newest release — must match APP_VERSION. */
+export function currentRelease(): ReleaseNote {
+  const note = RELEASE_NOTES[0];
+  if (!note) {
+    throw new Error("RELEASE_NOTES is empty — add an entry when bumping APP_VERSION.");
+  }
+  return note;
+}
+
+/** Staff Update History source. Newest first. Customers never receive this list. */
+export function staffUpdateHistory(): ReleaseNote[] {
+  return RELEASE_NOTES;
+}

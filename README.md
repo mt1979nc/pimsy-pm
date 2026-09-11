@@ -55,6 +55,10 @@ materializes the chosen playbook with dates from kickoff → go-live. Optional
 areas can be excluded on create; a live project can mark a task or section
 N/A without changing the template.
 
+**Update History** — staff sidebar **What’s new** (`/updates`) lists product
+changes from `RELEASE_NOTES` in `src/lib/version.ts`. Customer portal users
+never see this area. When you bump `APP_VERSION`, add a newest-first note.
+
 ---
 
 ## The safety boundary
