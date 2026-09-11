@@ -46,6 +46,8 @@ export const isStaff = (a: Pick<Actor, "role">) => STAFF_ROLES.includes(a.role);
 export const isCustomer = (a: Pick<Actor, "role">) => a.role === "CUSTOMER";
 export const isAdmin = (a: Pick<Actor, "role">) => ADMIN_ROLES.includes(a.role);
 export const canSeePortfolio = (a: Pick<Actor, "role">) => PORTFOLIO_ROLES.includes(a.role);
+/** Alias: Prism Management staffing / engagement edit (OWNER/ADMIN/MANAGER). */
+export const canManagePrismCapacity = (a: Pick<Actor, "role">) => canSeePortfolio(a);
 export const canReadAllProjects = (a: Pick<Actor, "role">) => READ_ALL_ROLES.includes(a.role);
 
 /** Only staff may ever read INTERNAL rows. */
