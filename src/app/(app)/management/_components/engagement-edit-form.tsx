@@ -195,6 +195,10 @@ export function EngagementEditForm({
 
       <section className="space-y-4">
         <h3 className="text-[12px] font-semibold uppercase tracking-wide text-ink-3">Dates</h3>
+        <p className="text-[12px] text-ink-3">
+          Kickoff and current go-live drive the schedule — incomplete phase/task dates rescale when
+          this window changes. A slip must push go-live (new date or +days), not just add a note.
+        </p>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Kickoff" htmlFor="kickoffDate">
             <input
@@ -222,7 +226,11 @@ export function EngagementEditForm({
               <input type="hidden" name="initialGoLiveDate" value={toDateInput(initialGoLiveDate)} />
             ) : null}
           </Field>
-          <Field label="Current go-live" htmlFor="targetGoLiveDate">
+          <Field
+            label="Current go-live"
+            htmlFor="targetGoLiveDate"
+            hint="Change this date, or use slip days below, to push the schedule."
+          >
             <input
               id="targetGoLiveDate"
               name="targetGoLiveDate"
@@ -232,8 +240,22 @@ export function EngagementEditForm({
             />
           </Field>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Slip cause (if go-live moves)" htmlFor="slipCause">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field
+            label="Slip days (+N)"
+            htmlFor="slipDays"
+            hint="Pushes current go-live by N days (e.g. 7). Required with cause/note unless the date above already moved."
+          >
+            <input
+              id="slipDays"
+              name="slipDays"
+              type="number"
+              step={1}
+              placeholder="e.g. 7"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Slip cause" htmlFor="slipCause">
             <select id="slipCause" name="slipCause" defaultValue="" className={inputClass}>
               <option value="">— Untagged —</option>
               <option value="CUSTOMER">Customer</option>

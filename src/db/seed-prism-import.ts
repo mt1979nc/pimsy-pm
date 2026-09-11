@@ -41,14 +41,37 @@ import { env } from "@/lib/env";
 // missing; an existing role (e.g. the bootstrap OWNER) is never downgraded.
 // ---------------------------------------------------------------------------
 
+/** App `users.role` for new inserts. OWNER only via bootstrap match. */
+type StaffSeed = {
+  key: string;
+  email: string;
+  name: string;
+  capacityHoursPerWeek: number;
+  active: boolean;
+  capacityExempt: boolean;
+  canLead: boolean;
+  isDirector: boolean;
+  prismTeamId: string;
+  /** App-level role (not project_member_role). */
+  appRole: "SPECIALIST" | "MEMBER";
+  title: string;
+};
+
 const PRISM_STAFF = [
-  { key: "Alexander", email: "alexander@pimsyehr.com", name: "Alexander Morse", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: true, prismTeamId: "am" },
-  { key: "Danielle", email: "danielle.piper@pimsyehr.com", name: "Danielle Piper", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "dp" },
-  { key: "Jeremy", email: "jeremy.reals@pimsyehr.com", name: "Jeremy Reals", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "jr" },
-  { key: "Morgan", email: "morgan.davis@pimsyehr.com", name: "Morgan Davis", capacityHoursPerWeek: 23, active: true, capacityExempt: true, canLead: false, isDirector: false, prismTeamId: "md" },
+  // Implementation specialists (Dock SPECIALIST)
+  { key: "Alexander", email: "alexander@pimsyehr.com", name: "Alexander Morse", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: true, prismTeamId: "am", appRole: "SPECIALIST", title: "Implementation Specialist" },
+  { key: "Danielle", email: "danielle@pimsyehr.com", name: "Danielle Piper", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "dp", appRole: "SPECIALIST", title: "Implementation Specialist" },
+  { key: "Jeremy", email: "jeremy@pimsyehr.com", name: "Jeremy Reals", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "jr", appRole: "SPECIALIST", title: "Implementation Specialist" },
+  { key: "Morgan", email: "morgan@pimsyehr.com", name: "Morgan Davis", capacityHoursPerWeek: 23, active: true, capacityExempt: true, canLead: false, isDirector: false, prismTeamId: "md", appRole: "SPECIALIST", title: "Implementation Specialist" },
+  // RCM (project_member_role RCM; app role MEMBER)
+  { key: "Mindy", email: "mindy@pimsyehr.com", name: "Mindy Douglas", capacityHoursPerWeek: 30, active: true, capacityExempt: true, canLead: false, isDirector: false, prismTeamId: "mind", appRole: "MEMBER", title: "RCM" },
+  { key: "Dave", email: "david@pimsyehr.com", name: "Dave Shepard", capacityHoursPerWeek: 30, active: true, capacityExempt: true, canLead: false, isDirector: false, prismTeamId: "dave", appRole: "MEMBER", title: "RCM" },
+  // Billing support
+  { key: "Anna", email: "anna@pimsyehr.com", name: "Anna Stokes", capacityHoursPerWeek: 30, active: true, capacityExempt: true, canLead: false, isDirector: false, prismTeamId: "anna", appRole: "MEMBER", title: "Billing Support" },
+  { key: "Kori", email: "kori@pimsyehr.com", name: "Kori Hale", capacityHoursPerWeek: 30, active: true, capacityExempt: true, canLead: false, isDirector: true, prismTeamId: "kori", appRole: "MEMBER", title: "Director of Support" },
   // Departed before this import — kept for history, not for assignment.
-  { key: "ReShawn", email: "reshawn.beard@pimsyehr.com", name: "ReShawn Beard", capacityHoursPerWeek: 30, active: false, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "" },
-] as const;
+  { key: "ReShawn", email: "reshawn.beard@pimsyehr.com", name: "ReShawn Beard", capacityHoursPerWeek: 30, active: false, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "", appRole: "SPECIALIST", title: "Implementation Specialist" },
+] as const satisfies readonly StaffSeed[];
 
 type StaffKey = (typeof PRISM_STAFF)[number]["key"];
 
@@ -159,7 +182,24 @@ function addDaysUTC(d: Date, days: number) {
   return copy;
 }
 
+/** Legacy Prism seed used dotted emails; Outlook directory is short @pimsyehr.com. */
+const EMAIL_ALIASES: Record<string, string> = {
+  "danielle.piper@pimsyehr.com": "danielle@pimsyehr.com",
+  "jeremy.reals@pimsyehr.com": "jeremy@pimsyehr.com",
+  "morgan.davis@pimsyehr.com": "morgan@pimsyehr.com",
+};
+
 async function upsertStaff(): Promise<Record<StaffKey, string>> {
+  // Collapse legacy dotted emails onto Outlook-canonical addresses when present.
+  for (const [from, to] of Object.entries(EMAIL_ALIASES)) {
+    const legacy = await db.query.users.findFirst({ where: eq(users.email, from), columns: { id: true } });
+    if (!legacy) continue;
+    const canonical = await db.query.users.findFirst({ where: eq(users.email, to), columns: { id: true } });
+    if (canonical) continue; // both exist — leave alone; assignment already works by id
+    await db.update(users).set({ email: to }).where(eq(users.id, legacy.id));
+    console.log(`  · remapped ${from} → ${to}`);
+  }
+
   const ids = {} as Record<StaffKey, string>;
   for (const s of PRISM_STAFF) {
     const existing = await db.query.users.findFirst({
@@ -178,6 +218,8 @@ async function upsertStaff(): Promise<Record<StaffKey, string>> {
           canLead: s.canLead,
           isDirector: s.isDirector,
           prismTeamId: s.prismTeamId || null,
+          // Prefer Outlook-canonical short emails; title reflects Dock-ish function.
+          title: s.title,
         })
         .where(eq(users.id, existing.id));
       continue;
@@ -195,8 +237,8 @@ async function upsertStaff(): Promise<Record<StaffKey, string>> {
       .values({
         email: s.email,
         name: s.name,
-        role: isBootstrapOwner ? "OWNER" : "SPECIALIST",
-        title: isBootstrapOwner ? "Owner" : "Implementation Specialist",
+        role: isBootstrapOwner ? "OWNER" : s.appRole,
+        title: isBootstrapOwner ? "Owner" : s.title,
         capacityHoursPerWeek: s.capacityHoursPerWeek,
         isActive: s.active,
         capacityExempt: s.capacityExempt,

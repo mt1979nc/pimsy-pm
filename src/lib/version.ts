@@ -8,10 +8,16 @@
  *
  * Bump this AND the "version" field in package.json together.
  */
-export const APP_VERSION = "1.8.0";
+export const APP_VERSION = "1.8.1";
 
 /** One line per release, newest first. Kept short on purpose. */
 export const RELEASE_NOTES: { version: string; date: string; summary: string }[] = [
+  {
+    version: "1.8.1",
+    date: "2026-09-11",
+    summary:
+      "Timeline auto-schedule from Prism kickoff→go-live (create + management cascade); slips must push go-live (+days or new date) then rescale open work; Dock-style project roles SPECIALIST/RCM/BILLING_SUPPORT + Outlook staff seed.",
+  },
   {
     version: "1.8.0",
     date: "2026-09-10",

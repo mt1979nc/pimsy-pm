@@ -37,7 +37,6 @@ export function ProjectSettingsForm({
 }) {
   const [state, action] = useActionState(updateProject, {});
   const [goLive, setGoLive] = useState(project.targetGoLiveDate ?? "");
-  const goLiveMoved = goLive !== (project.targetGoLiveDate ?? "") && goLive !== "";
 
   return (
     <form action={action} className="space-y-4 p-5">
@@ -79,7 +78,11 @@ export function ProjectSettingsForm({
             <option value="RED">At risk</option>
           </select>
         </Field>
-        <Field label="Target go-live" htmlFor="targetGoLiveDate">
+        <Field
+          label="Target go-live"
+          htmlFor="targetGoLiveDate"
+          hint="Kickoff → go-live drives the schedule; slips must push this date."
+        >
           <input
             id="targetGoLiveDate"
             name="targetGoLiveDate"
@@ -91,28 +94,27 @@ export function ProjectSettingsForm({
         </Field>
       </div>
 
-      {goLiveMoved ? (
-        <div className="rounded-xl border border-transparent bg-amber-soft p-4">
+      <div className="rounded-xl border border-transparent bg-amber-soft p-4">
           <p className="mb-2 text-[12.5px] font-medium text-ink">
-            This moves the go-live date — what caused the slip?
+            Recording a slip pushes go-live and rescales open phase/task dates. Move the date
+            above, or enter slip days (+N). Cause/note alone is not enough.
           </p>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Slip days (+N)" htmlFor="slipDays" hint="Optional if the date above already moved.">
+              <input id="slipDays" name="slipDays" type="number" step={1} placeholder="e.g. 7" className={inputClass} />
+            </Field>
             <Field label="Cause" htmlFor="slipCause">
               <select id="slipCause" name="slipCause" defaultValue="" className={inputClass}>
-                <option value="">Skip for now</option>
-                <option value="CUSTOMER">Customer-caused</option>
-                <option value="PIMSY">PIMSY-caused</option>
+                <option value="">— Untagged —</option>
+                <option value="CUSTOMER">Customer</option>
+                <option value="PIMSY">PIMSY</option>
               </select>
             </Field>
             <Field label="Note (optional)" htmlFor="slipNote">
               <input id="slipNote" name="slipNote" className={inputClass} />
             </Field>
           </div>
-          <p className="mt-2 text-[11.5px] text-ink-3">
-            Skippable, but shows up as untagged on the Analysis report until someone tags it.
-          </p>
         </div>
-      ) : null}
 
       <Field label="Implementation lead" htmlFor="leadId">
         <select
@@ -193,11 +195,14 @@ export function AddMemberForm({
           ))}
         </select>
       </Field>
-      <Field label="Role" htmlFor="memberRole" className="w-[160px]">
-        <select id="memberRole" name="role" defaultValue="CONTRIBUTOR" className={inputClass}>
+      <Field label="Role" htmlFor="memberRole" className="w-[180px]">
+        <select id="memberRole" name="role" defaultValue="SPECIALIST" className={inputClass}>
+          <option value="SPECIALIST">Specialist</option>
+          <option value="RCM">RCM</option>
+          <option value="BILLING_SUPPORT">Billing support</option>
+          <option value="LEAD">Lead</option>
           <option value="CONTRIBUTOR">Contributor</option>
           <option value="OBSERVER">Observer</option>
-          <option value="LEAD">Lead</option>
         </select>
       </Field>
       <SubmitButton size="sm">Add</SubmitButton>

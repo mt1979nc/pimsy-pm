@@ -160,10 +160,10 @@ export function NewProjectForm({
               htmlFor="targetGoLiveDate"
               hint={
                 scoped
-                  ? "Computed from the scope below — see the scenario you pick on the right."
+                  ? "Computed from the scope below — phase/task dates scale to kickoff → go-live."
                   : selected
-                    ? `Leave blank to use the template's ${selected.durationDays}-day timeline.`
-                    : "Optional."
+                    ? `Kickoff + go-live scale the playbook (blank = template's ${selected.durationDays} days).`
+                    : "Kickoff + go-live drive the schedule when a template is applied."
               }
             >
               <input
@@ -174,6 +174,11 @@ export function NewProjectForm({
                 className={inputClass}
               />
             </Field>
+
+            <p className="text-[12px] text-ink-3">
+              Kickoff and go-live set the implementation window; template phase and task dates
+              auto-populate scaled to that span.
+            </p>
 
             <Field label="Description" htmlFor="description">
               <textarea

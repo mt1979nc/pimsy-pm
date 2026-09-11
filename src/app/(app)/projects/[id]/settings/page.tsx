@@ -153,7 +153,7 @@ export default async function ProjectSettingsPage({
                     {m.user.role === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
                   </div>
                   <div className="truncate text-[12px] capitalize text-ink-3">
-                    {m.role.toLowerCase().replace("_", " ")}
+                    {m.role.toLowerCase().replaceAll("_", " ")}
                   </div>
                 </div>
                 <RemoveMemberButton projectId={id} userId={m.userId} />
