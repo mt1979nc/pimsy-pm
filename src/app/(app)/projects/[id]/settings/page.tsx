@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { projects, users, customerAccounts, phases, fileAssets } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess } from "@/lib/authz";
+import { toDateInput } from "@/lib/dates";
 import { Card, CardHeader, Badge, Avatar, VisibilityBadge } from "@/components/ui";
 import {
   ProjectSettingsForm,
@@ -107,7 +108,7 @@ export default async function ProjectSettingsPage({
             health: project.health,
             leadId: project.leadId,
             targetGoLiveDate: project.targetGoLiveDate
-              ? new Date(project.targetGoLiveDate).toISOString().slice(0, 10)
+              ? toDateInput(project.targetGoLiveDate) || null
               : null,
             portalEnabled: project.portalEnabled,
             portalWelcomeMessage: project.portalWelcomeMessage,

@@ -32,7 +32,7 @@ import {
 import { refreshProjectCounters } from "@/lib/rollup";
 import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
-import { addDays } from "@/lib/dates";
+import { addDays, parseDateInput } from "@/lib/dates";
 import { forecastImplementation, type ImplementationScope } from "@/lib/estimator";
 import {
   cascadeRescheduleProject,
@@ -144,7 +144,7 @@ export async function createProject(
     return { error: "Pick the customer this project belongs to." };
   }
 
-  const start = d.startDate ? new Date(d.startDate) : new Date();
+  const start = d.startDate ? (parseDateInput(d.startDate) ?? new Date()) : new Date();
   const code = await nextProjectCode(d.type);
 
   let template = null;
@@ -177,14 +177,14 @@ export async function createProject(
         kickoff: start,
         templateDurationDays: template.durationDays,
         forecastCalendarDays: scenarioProjection?.calendarDays ?? null,
-        targetGoLive: d.targetGoLiveDate ? new Date(d.targetGoLiveDate) : null,
+        targetGoLive: d.targetGoLiveDate ? parseDateInput(d.targetGoLiveDate) : null,
       })
     : null;
   const scaleFactor = playbook?.scaleFactor ?? 1;
   const targetGoLive = scenarioProjection
     ? scenarioProjection.goLiveDate
     : d.targetGoLiveDate
-      ? new Date(d.targetGoLiveDate)
+      ? parseDateInput(d.targetGoLiveDate)
       : playbook
         ? playbook.goLive
         : null;
@@ -373,7 +373,7 @@ export async function updateProject(
   const requestedGoLive =
     targetGoLiveDate !== undefined
       ? targetGoLiveDate
-        ? new Date(targetGoLiveDate)
+        ? parseDateInput(targetGoLiveDate)
         : null
       : before.targetGoLiveDate
         ? new Date(before.targetGoLiveDate)

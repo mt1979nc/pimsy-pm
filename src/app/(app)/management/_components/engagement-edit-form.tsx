@@ -6,14 +6,7 @@ import { SubmitButton, FormError } from "@/components/submit-button";
 import { Badge, Field, inputClass } from "@/components/ui";
 import { SERVICE_LINE_LABELS } from "@/lib/estimator";
 import { PRISM_STATUSES, PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
-import { fmtDate } from "@/lib/dates";
-
-function toDateInput(d: Date | string | null | undefined) {
-  if (!d) return "";
-  const dt = new Date(d);
-  if (Number.isNaN(dt.getTime())) return "";
-  return dt.toISOString().slice(0, 10);
-}
+import { fmtDate, toDateInput } from "@/lib/dates";
 
 type LeadOption = {
   id: string;

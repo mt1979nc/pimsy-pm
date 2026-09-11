@@ -30,6 +30,7 @@ import {
   resolveSlipPush,
   shouldCascadeReschedule,
 } from "@/lib/project-timeline";
+import { parseDateInput } from "@/lib/dates";
 import type { ActionState } from "@/actions/messages";
 
 export async function listEngagements() {
@@ -140,13 +141,6 @@ export async function getEngagementForEdit(projectId: string) {
       startDate: project.startDate,
     }),
   };
-}
-
-function parseDateInput(raw: string | undefined): Date | null {
-  if (!raw) return null;
-  // date inputs are YYYY-MM-DD; parse as UTC noon to avoid TZ day-shift
-  const d = new Date(`${raw}T12:00:00.000Z`);
-  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 export async function updateEngagement(
