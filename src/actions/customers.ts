@@ -6,12 +6,13 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { customerAccounts, users, projectMembers, projects } from "@/db/schema";
+import { customerAccounts, users, projectMembers, projects, passwordResetTokens } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { isAdmin, ForbiddenError, canCreateCustomers } from "@/lib/authz";
 import { audit } from "@/lib/audit";
 import { sendEmail, layout } from "@/lib/email";
 import { env } from "@/lib/env";
+import { generateResetToken, RESET_TOKEN_TTL_MS } from "@/lib/password";
 import type { ActionState } from "./messages";
 
 function slugify(s: string) {
@@ -244,6 +245,22 @@ export async function inviteCustomerContact(
     summary: `${d.email} → ${account.name}`,
     metadata: { customerAccountId: d.customerAccountId },
   });
+
+  // When email is disabled (typical Azure/demo without Resend), mint a
+  // set-password link staff can copy instead of sending. Never blocks import
+  // scripts — those paths do not call this action.
+  if (!env.EMAIL_ENABLED) {
+    const { raw, hash } = generateResetToken();
+    await db.insert(passwordResetTokens).values({
+      userId,
+      tokenHash: hash,
+      expires: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    });
+    const inviteUrl = `${env.APP_URL}/reset-password?token=${raw}`;
+    revalidatePath(`/customers/${d.customerAccountId}`);
+    if (d.projectId) revalidatePath(`/projects/${d.projectId}`);
+    return { ok: true, inviteUrl, emailSkipped: true };
+  }
 
   await sendEmail({
     to: d.email,

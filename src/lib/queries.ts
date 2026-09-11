@@ -185,6 +185,7 @@ export async function myTasks(actor: Actor) {
     orderBy: [asc(tasks.dueDate), desc(tasks.priority)],
     limit: 200,
     with: {
+      phase: { columns: { id: true, name: true, order: true } },
       project: {
         columns: { id: true, name: true, code: true },
         with: { customerAccount: { columns: { id: true, name: true } } },

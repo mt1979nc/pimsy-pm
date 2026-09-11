@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireStaff } from "@/lib/guard";
 import { canSeePortfolio, canManageTemplates } from "@/lib/authz";
 import { unreadThreadCount } from "@/lib/threads";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const actor = await requireStaff();
+  if (actor.mustChangePassword) redirect("/change-password");
   const unread = await unreadThreadCount(actor);
 
   return (

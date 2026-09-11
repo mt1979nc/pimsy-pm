@@ -72,6 +72,7 @@ export async function signInWithPassword(
   await createDatabaseSession(user.id);
   await db.update(users).set({ lastSeenAt: new Date() }).where(eq(users.id, user.id));
 
+  if (user.mustChangePassword) redirect("/change-password");
   redirect(landingPathFor(user.role));
 }
 
@@ -177,7 +178,10 @@ export async function resetPassword(
   const passwordHash = await hashPassword(parsed.data.password);
   const isNew = !user.passwordHash;
 
-  await db.update(users).set({ passwordHash }).where(eq(users.id, user.id));
+  await db
+    .update(users)
+    .set({ passwordHash, mustChangePassword: false })
+    .where(eq(users.id, user.id));
   await db
     .update(passwordResetTokens)
     .set({ usedAt: new Date() })
@@ -254,7 +258,11 @@ export async function changeOwnPassword(
 
   const passwordHash = await hashPassword(parsed.data.newPassword);
   const isNew = !user.passwordHash;
-  await db.update(users).set({ passwordHash }).where(eq(users.id, user.id));
+  const wasForced = !!user.mustChangePassword;
+  await db
+    .update(users)
+    .set({ passwordHash, mustChangePassword: false })
+    .where(eq(users.id, user.id));
 
   await audit({
     actor,
@@ -264,5 +272,6 @@ export async function changeOwnPassword(
     summary: isNew ? "Set a password" : "Changed password",
   });
 
+  if (wasForced) redirect(landingPathFor(user.role));
   return { ok: true };
 }
