@@ -5,7 +5,14 @@ import { changeOwnPassword } from "@/actions/auth";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Field, inputClass } from "@/components/ui";
 
-export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
+export function PasswordForm({
+  hasPassword,
+  forced = false,
+}: {
+  hasPassword: boolean;
+  /** Forced change after temp password — still requires current password. */
+  forced?: boolean;
+}) {
   const [state, action] = useActionState(changeOwnPassword, {});
 
   return (
@@ -17,7 +24,13 @@ export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
         </p>
       ) : null}
 
-      {!hasPassword ? (
+      {forced ? (
+        <p className="rounded-lg bg-amber-soft px-3 py-2 text-[12.5px] text-amber">
+          Enter the temporary password you were given, then choose a new permanent password.
+        </p>
+      ) : null}
+
+      {!hasPassword && !forced ? (
         <p className="text-[12.5px] leading-relaxed text-ink-3">
           You don&apos;t have a password yet — you sign in with an emailed link. Set one
           here if you&apos;d rather log in that way instead.
