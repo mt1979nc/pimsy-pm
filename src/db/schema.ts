@@ -92,6 +92,9 @@ export const ownerSideEnum = pgEnum("owner_side", ["INTERNAL", "CUSTOMER"]);
 
 export const projectMemberRoleEnum = pgEnum("project_member_role", [
   "LEAD",
+  "SPECIALIST",
+  "RCM",
+  "BILLING_SUPPORT",
   "CONTRIBUTOR",
   "OBSERVER",
   "CUSTOMER_CONTACT",
