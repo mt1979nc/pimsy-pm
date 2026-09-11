@@ -30,7 +30,7 @@ const createThreadSchema = z.object({
   visibility: z.enum(["INTERNAL", "SHARED"]),
 });
 
-export type ActionState = { error?: string; ok?: boolean };
+export type ActionState = { error?: string; ok?: boolean; inviteUrl?: string; emailSkipped?: boolean };
 
 export async function createThread(
   _prev: ActionState,
