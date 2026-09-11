@@ -34,6 +34,13 @@ import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
 import { addDays } from "@/lib/dates";
 import { forecastImplementation, type ImplementationScope } from "@/lib/estimator";
+import {
+  cascadeRescheduleProject,
+  resolvePlaybookScale,
+  resolveSlipPush,
+  scheduleFromOffsets,
+  shouldCascadeReschedule,
+} from "@/lib/project-timeline";
 import type { ActionState } from "./messages";
 
 const scopeSchema = z.object({
@@ -162,22 +169,25 @@ export async function createProject(
     (s) => s.scenario === (d.discoveryScenario ?? "TYPICAL"),
   );
 
+  // Scale template offsets to the kickoff→go-live window: forecast scenario
+  // days when scoped, otherwise explicit targetGoLiveDate / template duration.
+  // create-without-scope + target still scales (calendarDays / template.durationDays).
+  const playbook = template
+    ? resolvePlaybookScale({
+        kickoff: start,
+        templateDurationDays: template.durationDays,
+        forecastCalendarDays: scenarioProjection?.calendarDays ?? null,
+        targetGoLive: d.targetGoLiveDate ? new Date(d.targetGoLiveDate) : null,
+      })
+    : null;
+  const scaleFactor = playbook?.scaleFactor ?? 1;
   const targetGoLive = scenarioProjection
     ? scenarioProjection.goLiveDate
     : d.targetGoLiveDate
       ? new Date(d.targetGoLiveDate)
-      : template
-        ? addDays(start, template.durationDays)
+      : playbook
+        ? playbook.goLive
         : null;
-
-  // Scale the template's static day offsets to the scoped timeline when both
-  // are in play, so the phase list/order stays intact but the pacing reflects
-  // this specific implementation's estimate rather than the template default.
-  const scaleFactor =
-    scenarioProjection && template && template.durationDays > 0
-      ? scenarioProjection.calendarDays / template.durationDays
-      : 1;
-  const scaled = (days: number) => Math.max(0, Math.round(days * scaleFactor));
 
   let projectId: string;
   try {
@@ -224,7 +234,12 @@ export async function createProject(
 
       if (template) {
         for (const tp of template.phases) {
-          const phaseStart = addDays(start, scaled(tp.offsetDays));
+          const { startDate: phaseStart, dueDate: phaseDue } = scheduleFromOffsets({
+            anchor: start,
+            offsetDays: tp.offsetDays,
+            durationDays: tp.durationDays,
+            scaleFactor,
+          });
           const [phase] = await tx
             .insert(phases)
             .values({
@@ -234,7 +249,7 @@ export async function createProject(
               order: tp.order,
               visibility: tp.visibility,
               startDate: phaseStart,
-              dueDate: addDays(phaseStart, scaled(tp.durationDays)),
+              dueDate: phaseDue,
             })
             .returning({ id: phases.id });
 
@@ -244,7 +259,12 @@ export async function createProject(
           const parents = orderedTasks.filter((tt) => !tt.parentTaskId);
           const children = orderedTasks.filter((tt) => tt.parentTaskId);
           for (const tt of [...parents, ...children]) {
-            const taskStart = addDays(phaseStart, scaled(tt.offsetDays));
+            const { startDate: taskStart, dueDate: taskDue } = scheduleFromOffsets({
+              anchor: phaseStart,
+              offsetDays: tt.offsetDays,
+              durationDays: tt.durationDays,
+              scaleFactor,
+            });
             const parentLiveId = tt.parentTaskId
               ? templateIdToTaskId.get(tt.parentTaskId) ?? null
               : null;
@@ -262,7 +282,7 @@ export async function createProject(
                 ownerSide: tt.ownerSide,
                 order: tt.order,
                 startDate: taskStart,
-                dueDate: addDays(taskStart, scaled(tt.durationDays)),
+                dueDate: taskDue,
                 estimateHours: tt.estimateHours,
                 assigneeId: tt.ownerSide === "INTERNAL" ? (d.leadId || actor.id) : null,
                 createdById: actor.id,
@@ -274,16 +294,23 @@ export async function createProject(
 
         if (template.milestones.length > 0) {
           await tx.insert(milestones).values(
-            template.milestones.map((tm) => ({
-              projectId: project.id,
-              name: tm.name,
-              description: tm.description,
-              order: tm.order,
-              visibility: tm.visibility,
-              isGoLive: tm.isGoLive,
-              dueDate:
-                tm.isGoLive && targetGoLive ? targetGoLive : addDays(start, scaled(tm.offsetDays)),
-            })),
+            template.milestones.map((tm) => {
+              const { startDate: msDue } = scheduleFromOffsets({
+                anchor: start,
+                offsetDays: tm.offsetDays,
+                durationDays: 0,
+                scaleFactor,
+              });
+              return {
+                projectId: project.id,
+                name: tm.name,
+                description: tm.description,
+                order: tm.order,
+                visibility: tm.visibility,
+                isGoLive: tm.isGoLive,
+                dueDate: tm.isGoLive && targetGoLive ? targetGoLive : msDue,
+              };
+            }),
           );
         }
       }
@@ -337,11 +364,29 @@ export async function updateProject(
   const targetGoLiveDate = formData.get("targetGoLiveDate")?.toString();
   const slipCause = formData.get("slipCause")?.toString(); // "CUSTOMER" | "PIMSY" | undefined
   const slipNote = formData.get("slipNote")?.toString();
+  const slipDaysRaw = formData.get("slipDays")?.toString();
   const portalEnabled = formData.get("portalEnabled");
   const portalWelcomeMessage = formData.get("portalWelcomeMessage")?.toString();
 
-  const nextTargetGoLive =
-    targetGoLiveDate !== undefined ? (targetGoLiveDate ? new Date(targetGoLiveDate) : null) : undefined;
+  // Slip = schedule push. Accept a new target date and/or +slipDays; reject
+  // cause/note-only metadata that would not move go-live.
+  const requestedGoLive =
+    targetGoLiveDate !== undefined
+      ? targetGoLiveDate
+        ? new Date(targetGoLiveDate)
+        : null
+      : before.targetGoLiveDate
+        ? new Date(before.targetGoLiveDate)
+        : null;
+  const slip = resolveSlipPush({
+    currentGoLive: before.targetGoLiveDate ? new Date(before.targetGoLiveDate) : null,
+    requestedGoLive,
+    slipDaysRaw,
+    slipCause,
+    slipNote,
+  });
+  if (!slip.ok) return { error: slip.error };
+  const nextTargetGoLive = slip.nextGoLive;
 
   await db
     .update(projects)
@@ -351,7 +396,7 @@ export async function updateProject(
       ...(status ? { status: status as never } : {}),
       ...(health ? { health: health as never } : {}),
       ...(leadId !== undefined ? { leadId: leadId || null } : {}),
-      ...(nextTargetGoLive !== undefined ? { targetGoLiveDate: nextTargetGoLive } : {}),
+      targetGoLiveDate: nextTargetGoLive,
       // The initial commitment is set once, at creation, and never moves here.
       ...(before.initialGoLiveDate === null && nextTargetGoLive
         ? { initialGoLiveDate: nextTargetGoLive }
@@ -367,26 +412,14 @@ export async function updateProject(
     })
     .where(eq(projects.id, projectId));
 
-  // A go-live that moves after it already had a date is a slip. Log it —
-  // cause tagging is prompted for in the UI but skippable, same as the old
-  // PRISM tool: an untagged event stays visible rather than silently
-  // disappearing from the attribution split.
-  if (
-    nextTargetGoLive !== undefined &&
-    before.targetGoLiveDate &&
-    nextTargetGoLive &&
-    nextTargetGoLive.getTime() !== new Date(before.targetGoLiveDate).getTime()
-  ) {
-    const days = Math.round(
-      (nextTargetGoLive.getTime() - new Date(before.targetGoLiveDate).getTime()) / 86_400_000,
-    );
+  if (slip.slipped) {
     await db.insert(slipEvents).values({
       projectId,
-      fromDate: before.targetGoLiveDate,
-      toDate: nextTargetGoLive,
-      days,
-      cause: slipCause === "CUSTOMER" || slipCause === "PIMSY" ? slipCause : null,
-      note: slipNote || null,
+      fromDate: slip.fromDate,
+      toDate: slip.nextGoLive,
+      days: slip.days,
+      cause: slip.cause,
+      note: slip.note,
       createdById: actor.id,
     });
     await audit({
@@ -394,8 +427,24 @@ export async function updateProject(
       action: "project.go_live.slipped",
       entityType: "project",
       entityId: projectId,
-      summary: `${before.code}: go-live moved ${days > 0 ? "+" : ""}${days}d`,
-      metadata: { days, cause: slipCause ?? null },
+      summary: `${before.code}: go-live moved ${slip.days > 0 ? "+" : ""}${slip.days}d`,
+      metadata: { days: slip.days, cause: slip.cause, source: "settings" },
+    });
+  }
+
+  // Cascade open phase/task dates when the kickoff→go-live window changed.
+  const cascadePlan = shouldCascadeReschedule({
+    previousKickoff: before.startDate ? new Date(before.startDate) : null,
+    previousGoLive: before.targetGoLiveDate ? new Date(before.targetGoLiveDate) : null,
+    nextKickoff: before.startDate ? new Date(before.startDate) : null,
+    nextGoLive: nextTargetGoLive,
+  });
+  if (cascadePlan.cascade && cascadePlan.next) {
+    await cascadeRescheduleProject({
+      projectId,
+      templateId: before.templateId,
+      previous: cascadePlan.previous,
+      next: cascadePlan.next,
     });
   }
 
@@ -438,11 +487,19 @@ export async function addProjectMember(
   const actor = await requireStaff();
   const projectId = String(formData.get("projectId") ?? "");
   const userId = String(formData.get("userId") ?? "");
-  const role = (formData.get("role")?.toString() ?? "CONTRIBUTOR") as
-    | "LEAD"
-    | "CONTRIBUTOR"
-    | "OBSERVER"
-    | "CUSTOMER_CONTACT";
+  const roleRaw = formData.get("role")?.toString() ?? "CONTRIBUTOR";
+  const allowedRoles = [
+    "LEAD",
+    "SPECIALIST",
+    "RCM",
+    "BILLING_SUPPORT",
+    "CONTRIBUTOR",
+    "OBSERVER",
+  ] as const;
+  if (!allowedRoles.includes(roleRaw as (typeof allowedRoles)[number])) {
+    return { error: "Pick a valid project role." };
+  }
+  const role = roleRaw as (typeof allowedRoles)[number];
   if (!projectId || !userId) return { error: "Pick someone to add." };
 
   await assertProjectWrite(actor, projectId);

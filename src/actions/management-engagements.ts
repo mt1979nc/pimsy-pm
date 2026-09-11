@@ -25,6 +25,11 @@ import {
   mapPrismStatusToEnums,
   type PrismStatus,
 } from "@/lib/prism-status";
+import {
+  cascadeRescheduleProject,
+  resolveSlipPush,
+  shouldCascadeReschedule,
+} from "@/lib/project-timeline";
 import type { ActionState } from "@/actions/messages";
 
 export async function listEngagements() {
@@ -192,9 +197,10 @@ export async function updateEngagement(
 
   const kickoffDate = parseDateInput(formData.get("kickoffDate")?.toString());
   const initialGoLiveDate = parseDateInput(formData.get("initialGoLiveDate")?.toString());
-  const targetGoLiveDate = parseDateInput(formData.get("targetGoLiveDate")?.toString());
+  const requestedTargetGoLive = parseDateInput(formData.get("targetGoLiveDate")?.toString());
   const slipCause = formData.get("slipCause")?.toString();
   const slipNote = formData.get("slipNote")?.toString();
+  const slipDaysRaw = formData.get("slipDays")?.toString();
 
   const userCount = Math.max(1, Number.parseInt(String(formData.get("userCount") ?? "1"), 10) || 1);
   const locationCount = Math.max(
@@ -228,6 +234,40 @@ export async function updateEngagement(
   const estimatedHours = estimate.hours.totalHours;
 
   const mapped = mapPrismStatusToEnums(prismStatus);
+
+  const typicalForecastDays =
+    estimate.scenarios.find((s) => s.scenario === (before.scope?.discoveryScenario ?? "TYPICAL"))
+      ?.calendarDays ??
+    estimate.scenarios[1]?.calendarDays ??
+    null;
+  const previousForecastDays = before.scope
+    ? (
+        forecastImplementation(
+          {
+            userCount: before.scope.userCount,
+            locationCount: before.scope.locationCount,
+            formPageCount: before.scope.formPageCount,
+            trainingsPerWeek: before.scope.trainingsPerWeek,
+            serviceLines: before.scope.serviceLines ?? [],
+            stateCompliance: before.scope.stateCompliance,
+            minimalOrgStructure: before.scope.minimalOrgStructure,
+          },
+          before.startDate ?? kickoffForEstimate,
+        ).scenarios.find((s) => s.scenario === (before.scope?.discoveryScenario ?? "TYPICAL"))
+          ?.calendarDays ?? null
+      )
+    : null;
+
+  // Slip = schedule push (new date and/or +slipDays). Reject note-only slips.
+  const slip = resolveSlipPush({
+    currentGoLive: before.targetGoLiveDate ? new Date(before.targetGoLiveDate) : null,
+    requestedGoLive: requestedTargetGoLive,
+    slipDaysRaw,
+    slipCause,
+    slipNote,
+  });
+  if (!slip.ok) return { error: slip.error };
+  const targetGoLiveDate = slip.nextGoLive;
 
   // Initial go-live locks after first commit (never overwrite once set).
   const resolvedInitial =
@@ -287,21 +327,14 @@ export async function updateEngagement(
     await db.insert(projectScopes).values({ projectId, ...scopeValues });
   }
 
-  if (
-    targetGoLiveDate &&
-    before.targetGoLiveDate &&
-    targetGoLiveDate.getTime() !== new Date(before.targetGoLiveDate).getTime()
-  ) {
-    const days = Math.round(
-      (targetGoLiveDate.getTime() - new Date(before.targetGoLiveDate).getTime()) / 86_400_000,
-    );
+  if (slip.slipped) {
     await db.insert(slipEvents).values({
       projectId,
-      fromDate: before.targetGoLiveDate,
-      toDate: targetGoLiveDate,
-      days,
-      cause: slipCause === "CUSTOMER" || slipCause === "PIMSY" ? slipCause : null,
-      note: slipNote || null,
+      fromDate: slip.fromDate,
+      toDate: slip.nextGoLive,
+      days: slip.days,
+      cause: slip.cause,
+      note: slip.note,
       createdById: actor.id,
     });
     await audit({
@@ -309,8 +342,25 @@ export async function updateEngagement(
       action: "project.go_live.slipped",
       entityType: "project",
       entityId: projectId,
-      summary: `${before.code}: go-live moved ${days > 0 ? "+" : ""}${days}d`,
-      metadata: { days, cause: slipCause ?? null, source: "management" },
+      summary: `${before.code}: go-live moved ${slip.days > 0 ? "+" : ""}${slip.days}d`,
+      metadata: { days: slip.days, cause: slip.cause, source: "management" },
+    });
+  }
+
+  const cascadePlan = shouldCascadeReschedule({
+    previousKickoff: before.startDate ? new Date(before.startDate) : null,
+    previousGoLive: before.targetGoLiveDate ? new Date(before.targetGoLiveDate) : null,
+    previousForecastCalendarDays: previousForecastDays,
+    nextKickoff: kickoffDate ?? (before.startDate ? new Date(before.startDate) : null),
+    nextGoLive: targetGoLiveDate,
+    nextForecastCalendarDays: typicalForecastDays,
+  });
+  if (cascadePlan.cascade && cascadePlan.next) {
+    await cascadeRescheduleProject({
+      projectId,
+      templateId: before.templateId,
+      previous: cascadePlan.previous,
+      next: cascadePlan.next,
     });
   }
 
