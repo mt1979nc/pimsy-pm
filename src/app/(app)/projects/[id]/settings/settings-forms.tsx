@@ -196,10 +196,14 @@ export function AddMemberForm({
         </select>
       </Field>
       <Field label="Role" htmlFor="memberRole" className="w-[180px]">
-        <select id="memberRole" name="role" defaultValue="SPECIALIST" className={inputClass}>
-          <option value="SPECIALIST">Specialist</option>
-          <option value="RCM">RCM</option>
-          <option value="BILLING_SUPPORT">Billing support</option>
+        <select id="memberRole" name="role" defaultValue="IMPLEMENTATION_SPECIALIST" className={inputClass}>
+          <option value="IMPLEMENTATION_SPECIALIST">Implementation Specialist</option>
+          <option value="T1_BILLING_SUPPORT">T1 Billing Support</option>
+          <option value="T2_BILLING_SUPPORT">T2 Billing Support</option>
+          <option value="RCM_IMPLEMENTATION_SPECIALIST">RCM Implementation Specialist</option>
+          <option value="RCM_MANAGER">RCM Manager</option>
+          <option value="IMPLEMENTATION_DIRECTOR">Implementation Director</option>
+          <option value="SUPPORT_DIRECTOR">Support Director</option>
           <option value="LEAD">Lead</option>
           <option value="CONTRIBUTOR">Contributor</option>
           <option value="OBSERVER">Observer</option>

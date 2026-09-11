@@ -12,7 +12,6 @@ import {
   phases,
   tasks,
   milestones,
-  projectTemplates,
   projectScopes,
   slipEvents,
   statusUpdates,
@@ -38,9 +37,20 @@ import {
   cascadeRescheduleProject,
   resolvePlaybookScale,
   resolveSlipPush,
-  scheduleFromOffsets,
   shouldCascadeReschedule,
 } from "@/lib/project-timeline";
+import {
+  addRcmTrackToProject,
+  applyRoleMemberships,
+  loadTemplateById,
+  materializeTemplatesOnProject,
+  parseExcludedAreaKeys,
+  parsePlaybookPath,
+  parseRoleAssignments,
+  resolveTemplatesForPath,
+  setPhaseNotApplicable,
+} from "@/lib/playbook";
+import { ASSIGNABLE_PROJECT_ROLES } from "@/lib/staffing";
 import type { ActionState } from "./messages";
 
 const scopeSchema = z.object({
@@ -74,9 +84,12 @@ const createProjectSchema = z.object({
   type: z.enum(["IMPLEMENTATION", "MIGRATION", "TRAINING", "SUPPORT", "INTERNAL"]),
   customerAccountId: z.string().optional(),
   templateId: z.string().optional(),
+  playbookPath: z.enum(["EHR", "EHR_RCM", "RCM_LEGACY", "RCM_PRISM"]).optional(),
+  sourceProjectId: z.string().optional(),
   leadId: z.string().optional(),
   startDate: z.string().optional(),
   targetGoLiveDate: z.string().optional(),
+  rcmTargetGoLiveDate: z.string().optional(),
   description: z.string().trim().max(5000).optional(),
   scopeJson: z.string().optional(),
   discoveryScenario: z.enum(["OPTIMISTIC", "TYPICAL", "PESSIMISTIC"]).optional(),
@@ -128,9 +141,12 @@ export async function createProject(
     type: formData.get("type") ?? "IMPLEMENTATION",
     customerAccountId: formData.get("customerAccountId") || undefined,
     templateId: formData.get("templateId") || undefined,
+    playbookPath: parsePlaybookPath(formData.get("playbookPath")?.toString()) ?? undefined,
+    sourceProjectId: formData.get("sourceProjectId")?.toString() || undefined,
     leadId: formData.get("leadId") || undefined,
     startDate: formData.get("startDate")?.toString() || undefined,
     targetGoLiveDate: formData.get("targetGoLiveDate")?.toString() || undefined,
+    rcmTargetGoLiveDate: formData.get("rcmTargetGoLiveDate")?.toString() || undefined,
     description: formData.get("description")?.toString() || undefined,
     scopeJson: formData.get("scopeJson")?.toString() || undefined,
     discoveryScenario: (formData.get("discoveryScenario")?.toString() as never) || undefined,
@@ -147,15 +163,68 @@ export async function createProject(
   const start = d.startDate ? (parseDateInput(d.startDate) ?? new Date()) : new Date();
   const code = await nextProjectCode(d.type);
 
-  let template = null;
-  if (d.templateId) {
-    template = await db.query.projectTemplates.findFirst({
-      where: eq(projectTemplates.id, d.templateId),
-      with: {
-        phases: { with: { tasks: true }, orderBy: (p, { asc }) => [asc(p.order)] },
-        milestones: { orderBy: (m, { asc }) => [asc(m.order)] },
-      },
+  const excludedAreaKeys = parseExcludedAreaKeys(formData);
+  const roleAssignments = parseRoleAssignments(formData);
+  const playbookPath = d.playbookPath ?? null;
+
+  let loadedTemplates = playbookPath ? await resolveTemplatesForPath(playbookPath) : [];
+  if (d.templateId && loadedTemplates.length === 0) {
+    const one = await loadTemplateById(d.templateId);
+    if (one) loadedTemplates = [one];
+  }
+  // Explicit template wins when the user picked a custom playbook, not a path card.
+  if (d.templateId && !playbookPath) {
+    const one = await loadTemplateById(d.templateId);
+    loadedTemplates = one ? [one] : [];
+  }
+  const template = loadedTemplates[0] ?? null;
+
+  // Path 4: attach RCM to an existing EHR site instead of creating a new project.
+  if (playbookPath === "RCM_PRISM" && d.sourceProjectId) {
+    await assertProjectWrite(actor, d.sourceProjectId);
+    const rcmTemplates =
+      loadedTemplates.length > 0 ? loadedTemplates : await resolveTemplatesForPath("RCM_PRISM");
+    if (rcmTemplates.length === 0) {
+      return { error: "The RCM (Prism data) playbook is not seeded yet. Run npm run db:seed -- --templates-only." };
+    }
+    const rcmStart = d.startDate ? (parseDateInput(d.startDate) ?? new Date()) : new Date();
+    const rcmTarget = d.rcmTargetGoLiveDate
+      ? parseDateInput(d.rcmTargetGoLiveDate)
+      : d.targetGoLiveDate
+        ? parseDateInput(d.targetGoLiveDate)
+        : null;
+    const rcmPlaybook = resolvePlaybookScale({
+      kickoff: rcmStart,
+      templateDurationDays: rcmTemplates[0]?.durationDays ?? 45,
+      forecastCalendarDays: null,
+      targetGoLive: rcmTarget,
     });
+    try {
+      await addRcmTrackToProject({
+        projectId: d.sourceProjectId,
+        actorId: actor.id,
+        templates: rcmTemplates,
+        excludedAreaKeys,
+        roleAssignments,
+        rcmStart,
+        rcmTargetGoLive: rcmPlaybook.goLive,
+        scaleFactor: rcmPlaybook.scaleFactor,
+      });
+    } catch (err) {
+      console.error("addRcmTrackToProject failed", err);
+      return { error: "Could not add the RCM track to that project." };
+    }
+    await audit({
+      actor,
+      action: "project.rcm_track.added",
+      entityType: "project",
+      entityId: d.sourceProjectId,
+      summary: "RCM track added (Prism data path)",
+      metadata: { playbookPath, excludedAreaKeys },
+    });
+    revalidatePath("/projects");
+    revalidatePath(`/projects/${d.sourceProjectId}`);
+    redirect(`/projects/${d.sourceProjectId}`);
   }
 
   // Scoping (PRISM's Forecast+, ported) is optional. When present, it's the
@@ -172,10 +241,10 @@ export async function createProject(
   // Scale template offsets to the kickoff→go-live window: forecast scenario
   // days when scoped, otherwise explicit targetGoLiveDate / template duration.
   // create-without-scope + target still scales (calendarDays / template.durationDays).
-  const playbook = template
+  const playbook = loadedTemplates.length > 0
     ? resolvePlaybookScale({
         kickoff: start,
-        templateDurationDays: template.durationDays,
+        templateDurationDays: Math.max(...loadedTemplates.map((t) => t.durationDays)),
         forecastCalendarDays: scenarioProjection?.calendarDays ?? null,
         targetGoLive: d.targetGoLiveDate ? parseDateInput(d.targetGoLiveDate) : null,
       })
@@ -207,14 +276,17 @@ export async function createProject(
           targetGoLiveDate: targetGoLive,
           estimatedHours: forecast ? Math.round(forecast.hours.totalHours) : null,
           templateId: template?.id ?? null,
+          playbookPath,
           portalEnabled: d.type !== "INTERNAL",
         })
         .returning({ id: projects.id });
 
-      await tx
-        .insert(projectMembers)
-        .values({ projectId: project.id, userId: d.leadId || actor.id, role: "LEAD" })
-        .onConflictDoNothing();
+      await applyRoleMemberships({
+        tx,
+        projectId: project.id,
+        roleAssignments,
+        leadId: d.leadId || actor.id,
+      });
 
       if (scope && forecast) {
         await tx.insert(projectScopes).values({
@@ -232,86 +304,26 @@ export async function createProject(
         });
       }
 
-      if (template) {
-        for (const tp of template.phases) {
-          const { startDate: phaseStart, dueDate: phaseDue } = scheduleFromOffsets({
-            anchor: start,
-            offsetDays: tp.offsetDays,
-            durationDays: tp.durationDays,
-            scaleFactor,
-          });
-          const [phase] = await tx
-            .insert(phases)
-            .values({
-              projectId: project.id,
-              name: tp.name,
-              description: tp.description,
-              order: tp.order,
-              visibility: tp.visibility,
-              startDate: phaseStart,
-              dueDate: phaseDue,
+      if (loadedTemplates.length > 0) {
+        await materializeTemplatesOnProject({
+          tx,
+          projectId: project.id,
+          templates: loadedTemplates,
+          actorId: actor.id,
+          start,
+          scaleFactor,
+          excludedAreaKeys,
+          roleAssignments,
+          defaultInternalAssigneeId: d.leadId || actor.id,
+        });
+        if (playbookPath === "EHR_RCM" || playbookPath === "RCM_LEGACY" || playbookPath === "RCM_PRISM") {
+          await tx
+            .update(projects)
+            .set({
+              rcmStartedAt: start,
+              rcmTargetGoLiveDate: targetGoLive,
             })
-            .returning({ id: phases.id });
-
-          const orderedTasks = [...tp.tasks].sort((a, b) => a.order - b.order);
-          const templateIdToTaskId = new Map<string, string>();
-          // Parents first so subtasks can reference them (Dock section → checklist).
-          const parents = orderedTasks.filter((tt) => !tt.parentTaskId);
-          const children = orderedTasks.filter((tt) => tt.parentTaskId);
-          for (const tt of [...parents, ...children]) {
-            const { startDate: taskStart, dueDate: taskDue } = scheduleFromOffsets({
-              anchor: phaseStart,
-              offsetDays: tt.offsetDays,
-              durationDays: tt.durationDays,
-              scaleFactor,
-            });
-            const parentLiveId = tt.parentTaskId
-              ? templateIdToTaskId.get(tt.parentTaskId) ?? null
-              : null;
-            const [created] = await tx
-              .insert(tasks)
-              .values({
-                projectId: project.id,
-                phaseId: phase.id,
-                parentTaskId: parentLiveId,
-                title: tt.title,
-                description: tt.description,
-                priority: tt.priority,
-                // Customer-side work is always visible; otherwise honor the template.
-                visibility: tt.ownerSide === "CUSTOMER" ? ("SHARED" as const) : tt.visibility,
-                ownerSide: tt.ownerSide,
-                order: tt.order,
-                startDate: taskStart,
-                dueDate: taskDue,
-                estimateHours: tt.estimateHours,
-                assigneeId: tt.ownerSide === "INTERNAL" ? (d.leadId || actor.id) : null,
-                createdById: actor.id,
-              })
-              .returning({ id: tasks.id });
-            templateIdToTaskId.set(tt.id, created.id);
-          }
-        }
-
-        if (template.milestones.length > 0) {
-          await tx.insert(milestones).values(
-            template.milestones.map((tm) => {
-              const { startDate: msDue } = scheduleFromOffsets({
-                anchor: start,
-                offsetDays: tm.offsetDays,
-                durationDays: 0,
-                scaleFactor,
-              });
-              return {
-                projectId: project.id,
-                name: tm.name,
-                description: tm.description,
-                order: tm.order,
-                visibility: tm.visibility,
-                isGoLive: tm.isGoLive,
-                dueDate: tm.isGoLive && targetGoLive ? targetGoLive : msDue,
-              };
-            }),
-          );
+            .where(eq(projects.id, project.id));
         }
       }
 
@@ -488,14 +500,7 @@ export async function addProjectMember(
   const projectId = String(formData.get("projectId") ?? "");
   const userId = String(formData.get("userId") ?? "");
   const roleRaw = formData.get("role")?.toString() ?? "CONTRIBUTOR";
-  const allowedRoles = [
-    "LEAD",
-    "SPECIALIST",
-    "RCM",
-    "BILLING_SUPPORT",
-    "CONTRIBUTOR",
-    "OBSERVER",
-  ] as const;
+  const allowedRoles = ASSIGNABLE_PROJECT_ROLES;
   if (!allowedRoles.includes(roleRaw as (typeof allowedRoles)[number])) {
     return { error: "Pick a valid project role." };
   }
@@ -610,6 +615,77 @@ export async function createPhase(
  * `visibility` column the portal's task/milestone queries already filter on,
  * just exposed as a per-phase switch instead of being fixed by the template.
  */
+export async function markPhaseNotApplicable(phaseId: string, notApplicable: boolean) {
+  const actor = await requireStaff();
+  const phase = await db.query.phases.findFirst({
+    where: eq(phases.id, phaseId),
+    columns: { id: true, projectId: true, name: true },
+  });
+  if (!phase) throw new NotFoundError("Phase not found.");
+  await assertProjectWrite(actor, phase.projectId);
+  await setPhaseNotApplicable(phaseId, notApplicable);
+  await audit({
+    actor,
+    action: notApplicable ? "phase.marked_na" : "phase.restored_from_na",
+    entityType: "phase",
+    entityId: phaseId,
+    summary: `${phase.name}: ${notApplicable ? "not applicable on this project" : "restored"}`,
+    metadata: { projectId: phase.projectId },
+  });
+  revalidatePath(`/projects/${phase.projectId}`);
+  revalidatePath(`/projects/${phase.projectId}/tasks`);
+  revalidatePath(`/portal/projects/${phase.projectId}`);
+}
+
+export async function addRcmTrack(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const projectId = String(formData.get("projectId") ?? "");
+  if (!projectId) return { error: "Missing project." };
+  await assertProjectWrite(actor, projectId);
+
+  const templates = await resolveTemplatesForPath("RCM_PRISM");
+  if (templates.length === 0) {
+    return { error: "The RCM (Prism data) playbook is not seeded yet." };
+  }
+  const excludedAreaKeys = parseExcludedAreaKeys(formData);
+  const roleAssignments = parseRoleAssignments(formData);
+  const rcmStart = parseDateInput(formData.get("rcmStartDate")?.toString() ?? "") ?? new Date();
+  const rcmTarget = parseDateInput(formData.get("rcmTargetGoLiveDate")?.toString() ?? "");
+  const scale = resolvePlaybookScale({
+    kickoff: rcmStart,
+    templateDurationDays: templates[0].durationDays,
+    forecastCalendarDays: null,
+    targetGoLive: rcmTarget,
+  });
+  try {
+    await addRcmTrackToProject({
+      projectId,
+      actorId: actor.id,
+      templates,
+      excludedAreaKeys,
+      roleAssignments,
+      rcmStart,
+      rcmTargetGoLive: scale.goLive,
+      scaleFactor: scale.scaleFactor,
+    });
+  } catch (err) {
+    console.error("addRcmTrack failed", err);
+    return { error: "Could not add the RCM track." };
+  }
+  await audit({
+    actor,
+    action: "project.rcm_track.added",
+    entityType: "project",
+    entityId: projectId,
+    summary: "RCM track added from project settings",
+  });
+  revalidatePath(`/projects/${projectId}`);
+  return { ok: true };
+}
+
 export async function setPhaseVisibility(phaseId: string, visible: boolean) {
   const actor = await requireStaff();
   const phase = await db.query.phases.findFirst({ where: eq(phases.id, phaseId) });

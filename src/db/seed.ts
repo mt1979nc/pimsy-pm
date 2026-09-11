@@ -28,18 +28,26 @@ import {
   messages,
   threadParticipants,
 } from "./schema";
-import { IMPLEMENTATION_TEMPLATE, RCM_TEMPLATE } from "./template-implementation";
+import { ALL_PLAYBOOKS, type PlaybookSeed } from "./template-playbooks";
 import { addDays } from "@/lib/dates";
+import type { SeedTask } from "./template-implementation";
 
-type TemplateSeed = typeof IMPLEMENTATION_TEMPLATE | typeof RCM_TEMPLATE;
+/** Retired names from earlier seeds — delete so we do not leave duplicates. */
+const RETIRED_TEMPLATE_NAMES = ["RCM (Existing Customer)"];
 
-async function seedTemplate(seed: TemplateSeed) {
-  const existing = await db.query.projectTemplates.findFirst({
-    where: eq(projectTemplates.name, seed.name),
-    columns: { id: true },
-  });
+async function seedTemplate(seed: PlaybookSeed) {
+  const existing =
+    (await db.query.projectTemplates.findFirst({
+      where: eq(projectTemplates.code, seed.code),
+      columns: { id: true },
+    })) ??
+    (await db.query.projectTemplates.findFirst({
+      where: eq(projectTemplates.name, seed.name),
+      columns: { id: true },
+    }));
   if (existing) {
-    // Cascades to phases, tasks and milestones.
+    // Cascades to phases, tasks and milestones. Existing projects keep their
+    // already-materialized rows — only the playbook definition is replaced.
     await db.delete(projectTemplates).where(eq(projectTemplates.id, existing.id));
   }
 
@@ -50,12 +58,34 @@ async function seedTemplate(seed: TemplateSeed) {
       description: seed.description,
       type: seed.type,
       durationDays: seed.durationDays,
+      code: seed.code,
+      playbookPath: seed.playbookPath,
       isActive: true,
     })
     .returning({ id: projectTemplates.id });
 
   let phaseOrder = 0;
   let taskTotal = 0;
+
+  function taskValues(phaseId: string, t: SeedTask, order: number, parentTaskId?: string) {
+    return {
+      phaseId,
+      parentTaskId: parentTaskId ?? null,
+      title: t.title,
+      order,
+      priority: t.priority ?? ("MEDIUM" as const),
+      visibility: t.ownerSide === "CUSTOMER" ? ("SHARED" as const) : (t.visibility ?? "INTERNAL"),
+      ownerSide: t.ownerSide,
+      offsetDays: t.offsetDays ?? 0,
+      durationDays: t.durationDays ?? 2,
+      estimateHours: t.estimateHours ?? null,
+      isOptional: t.isOptional ?? false,
+      areaKey: t.areaKey ?? null,
+      defaultRole: t.defaultRole ?? null,
+      workTrack: t.workTrack ?? ("EHR" as const),
+      overlapKey: t.overlapKey ?? null,
+    };
+  }
 
   for (const p of seed.phases) {
     const [phase] = await db
@@ -68,6 +98,9 @@ async function seedTemplate(seed: TemplateSeed) {
         visibility: p.visibility,
         offsetDays: p.offsetDays,
         durationDays: p.durationDays,
+        isOptional: p.isOptional ?? false,
+        areaKey: p.areaKey ?? null,
+        workTrack: p.workTrack ?? "EHR",
       })
       .returning({ id: templatePhases.id });
 
@@ -75,33 +108,11 @@ async function seedTemplate(seed: TemplateSeed) {
     for (const t of p.tasks) {
       const [parent] = await db
         .insert(templateTasks)
-        .values({
-          phaseId: phase.id,
-          title: t.title,
-          order: taskOrder++,
-          priority: t.priority ?? ("MEDIUM" as const),
-          visibility: t.ownerSide === "CUSTOMER" ? ("SHARED" as const) : (t.visibility ?? "INTERNAL"),
-          ownerSide: t.ownerSide,
-          offsetDays: t.offsetDays ?? 0,
-          durationDays: t.durationDays ?? 2,
-          estimateHours: t.estimateHours ?? null,
-        })
+        .values(taskValues(phase.id, t, taskOrder++))
         .returning({ id: templateTasks.id });
       taskTotal += 1;
       for (const child of t.children ?? []) {
-        await db.insert(templateTasks).values({
-          phaseId: phase.id,
-          parentTaskId: parent.id,
-          title: child.title,
-          order: taskOrder++,
-          priority: child.priority ?? ("MEDIUM" as const),
-          visibility:
-            child.ownerSide === "CUSTOMER" ? ("SHARED" as const) : (child.visibility ?? "INTERNAL"),
-          ownerSide: child.ownerSide,
-          offsetDays: child.offsetDays ?? 0,
-          durationDays: child.durationDays ?? 2,
-          estimateHours: child.estimateHours ?? null,
-        });
+        await db.insert(templateTasks).values(taskValues(phase.id, child, taskOrder++, parent.id));
         taskTotal += 1;
       }
     }
@@ -394,8 +405,22 @@ async function main() {
   const templatesOnly = process.argv.includes("--templates-only");
 
   console.log("\nSeeding templates…");
-  const implId = await seedTemplate(IMPLEMENTATION_TEMPLATE);
-  await seedTemplate(RCM_TEMPLATE);
+  for (const name of RETIRED_TEMPLATE_NAMES) {
+    const retired = await db.query.projectTemplates.findFirst({
+      where: eq(projectTemplates.name, name),
+      columns: { id: true },
+    });
+    if (retired) {
+      await db.delete(projectTemplates).where(eq(projectTemplates.id, retired.id));
+      console.log(`  ✓ retired template “${name}”`);
+    }
+  }
+  let implId: string | null = null;
+  for (const playbook of ALL_PLAYBOOKS) {
+    const id = await seedTemplate(playbook);
+    if (playbook.code === "ehr") implId = id;
+  }
+  if (!implId) implId = await seedTemplate(ALL_PLAYBOOKS[0]);
 
   if (templatesOnly) {
     console.log("\nTemplates only — skipping demo data.\n");

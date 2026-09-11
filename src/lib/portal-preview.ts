@@ -28,11 +28,19 @@ export async function previewPortalProject(projectId: string) {
 
 export async function previewPortalPlan(projectId: string) {
   const rows = await db.query.phases.findMany({
-    where: and(eq(phases.projectId, projectId), eq(phases.visibility, "SHARED")),
+    where: and(
+      eq(phases.projectId, projectId),
+      eq(phases.visibility, "SHARED"),
+      eq(phases.notApplicable, false),
+    ),
     orderBy: [asc(phases.order)],
     with: {
       tasks: {
-        where: and(eq(tasks.visibility, "SHARED"), ne(tasks.status, "CANCELLED")),
+        where: and(
+          eq(tasks.visibility, "SHARED"),
+          ne(tasks.status, "CANCELLED"),
+          eq(tasks.notApplicable, false),
+        ),
         orderBy: [asc(tasks.order)],
         with: {
           comments: {
@@ -50,6 +58,7 @@ export async function previewPortalPlan(projectId: string) {
       isNull(tasks.phaseId),
       eq(tasks.visibility, "SHARED"),
       ne(tasks.status, "CANCELLED"),
+      eq(tasks.notApplicable, false),
     ),
     orderBy: [asc(tasks.order)],
     with: {

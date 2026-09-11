@@ -126,6 +126,7 @@ export default async function TaskDetailPage({
                 ownerSide: task.ownerSide,
                 dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : "",
                 estimateHours: task.estimateHours,
+                notApplicable: task.notApplicable,
               }}
             />
           </Card>

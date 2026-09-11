@@ -413,7 +413,7 @@ async function proportionalCascade(opts: {
     where: eq(tasks.projectId, projectId),
   });
   for (const task of projectTasks) {
-    if (!isOpenTaskStatus(task.status)) continue;
+    if (!isOpenTaskStatus(task.status) || task.notApplicable) continue;
     const startDate = mapDateAcrossWindows(
       task.startDate,
       previous.kickoff,
@@ -519,7 +519,7 @@ async function templateCascade(opts: {
     for (let j = 0; j < taskCount; j++) {
       const lt = liveTasks[j]!;
       const tt = tmplTasks[j]!;
-      if (!isOpenTaskStatus(lt.status)) continue;
+      if (!isOpenTaskStatus(lt.status) || lt.notApplicable) continue;
       const { startDate, dueDate } = scheduleFromOffsets({
         anchor: phaseStart,
         offsetDays: tt.offsetDays,

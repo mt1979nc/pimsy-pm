@@ -17,6 +17,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
+import { staffingRoleFromTitle } from "@/lib/staffing";
 
 const TEMP_PASSWORD = "Demo-Nathan-2026!";
 
@@ -154,6 +155,7 @@ async function main() {
       isDirector: s.isDirector,
       prismTeamId: s.prismTeamId,
       isActive: true,
+      staffingRole: staffingRoleFromTitle(s.title),
     } as const;
 
     if (existing) {

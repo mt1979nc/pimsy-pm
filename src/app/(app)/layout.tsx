@@ -6,6 +6,7 @@ import { unreadThreadCount } from "@/lib/threads";
 import { NavLink } from "@/components/nav-link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Avatar } from "@/components/ui";
+import { APP_VERSION } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Setup
           </div>
           {canManageTemplates(actor) ? <NavLink href="/templates">Templates</NavLink> : null}
+          <NavLink href="/updates">What&apos;s new</NavLink>
           <NavLink href="/settings">Settings</NavLink>
         </nav>
 
@@ -77,6 +79,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               </div>
             </div>
           </Link>
+          <Link
+            href="/updates"
+            className="mt-0.5 block rounded-lg px-2 py-1 text-[11.5px] text-ink-3 hover:bg-surface-2 hover:text-ink"
+          >
+            v{APP_VERSION} · What&apos;s new
+          </Link>
           <SignOutButton />
         </div>
       </aside>
@@ -92,6 +100,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Inbox
           </NavLink>
           <NavLink href="/my-work">Mine</NavLink>
+          <NavLink href="/updates">New</NavLink>
         </nav>
       </div>
 

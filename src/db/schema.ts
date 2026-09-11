@@ -98,7 +98,26 @@ export const projectMemberRoleEnum = pgEnum("project_member_role", [
   "CONTRIBUTOR",
   "OBSERVER",
   "CUSTOMER_CONTACT",
+  /** v1.9 staffing roles — keep the v1.8.1 values above as aliases. */
+  "IMPLEMENTATION_SPECIALIST",
+  "T1_BILLING_SUPPORT",
+  "T2_BILLING_SUPPORT",
+  "RCM_IMPLEMENTATION_SPECIALIST",
+  "RCM_MANAGER",
+  "IMPLEMENTATION_DIRECTOR",
+  "SUPPORT_DIRECTOR",
 ]);
+
+/** Which playbook path was chosen when the site was created or reactivated. */
+export const playbookPathEnum = pgEnum("playbook_path", [
+  "EHR",
+  "EHR_RCM",
+  "RCM_LEGACY",
+  "RCM_PRISM",
+]);
+
+/** Separate EHR vs RCM work on a project so metrics can stay independent. */
+export const workTrackEnum = pgEnum("work_track", ["EHR", "RCM", "SHARED"]);
 
 export const riskSeverityEnum = pgEnum("risk_severity", ["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 
@@ -226,6 +245,12 @@ export const users = pgTable(
     prismTeamId: text("prism_team_id"),
 
     /**
+     * Default project staffing role for this person (v1.9). Used to auto-assign
+     * template tasks and to pre-fill the create-project roster. Null until set.
+     */
+    staffingRole: projectMemberRoleEnum("staffing_role"),
+
+    /**
      * Optional email+password login, alongside magic-link and Google.
      * Null until the person sets one (via "Forgot password?" or Settings) —
      * most users go on using magic links and never touch this. bcrypt hash,
@@ -348,10 +373,16 @@ export const projectTemplates = pgTable(
     isActive: boolean("is_active").notNull().default(true),
     /** Typical duration in days, used to propose a go-live date. */
     durationDays: integer("duration_days").notNull().default(60),
+    /** Stable key for the four playbook paths, e.g. ehr / ehr_rcm / rcm_legacy / rcm_prism. */
+    code: text("code"),
+    playbookPath: playbookPathEnum("playbook_path"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("project_template_active_idx").on(t.isActive, t.type)],
+  (t) => [
+    index("project_template_active_idx").on(t.isActive, t.type),
+    uniqueIndex("project_template_code_idx").on(t.code),
+  ],
 );
 
 export const templatePhases = pgTable(
@@ -368,6 +399,10 @@ export const templatePhases = pgTable(
     /** Days from project start when this phase begins. */
     offsetDays: integer("offset_days").notNull().default(0),
     durationDays: integer("duration_days").notNull().default(7),
+    /** Optional area — can be excluded when creating a site. */
+    isOptional: boolean("is_optional").notNull().default(false),
+    areaKey: text("area_key"),
+    workTrack: workTrackEnum("work_track").notNull().default("EHR"),
   },
   (t) => [index("template_phase_order_idx").on(t.templateId, t.order)],
 );
@@ -393,6 +428,12 @@ export const templateTasks = pgTable(
     offsetDays: integer("offset_days").notNull().default(0),
     durationDays: integer("duration_days").notNull().default(1),
     estimateHours: real("estimate_hours"),
+    isOptional: boolean("is_optional").notNull().default(false),
+    areaKey: text("area_key"),
+    defaultRole: projectMemberRoleEnum("default_role"),
+    workTrack: workTrackEnum("work_track").notNull().default("EHR"),
+    /** Shared key used to auto-complete overlapping EHR/RCM work. */
+    overlapKey: text("overlap_key"),
   },
   (t) => [index("template_task_order_idx").on(t.phaseId, t.order)],
 );
@@ -476,6 +517,19 @@ export const projects = pgTable(
     templateId: text("template_id").references(() => projectTemplates.id, {
       onDelete: "set null",
     }),
+
+    /** Which of the four playbook paths this site was created (or reactivated) with. */
+    playbookPath: playbookPathEnum("playbook_path"),
+    /** When adding RCM onto an existing EHR site, the project that was reactivated. */
+    sourceProjectId: text("source_project_id").references((): AnyPgColumn => projects.id, {
+      onDelete: "set null",
+    }),
+    rcmStartedAt: timestamp("rcm_started_at", { withTimezone: true }),
+    rcmTargetGoLiveDate: timestamp("rcm_target_go_live_date", { withTimezone: true }),
+    rcmTaskCountTotal: integer("rcm_task_count_total").notNull().default(0),
+    rcmTaskCountDone: integer("rcm_task_count_done").notNull().default(0),
+    ehrTaskCountTotal: integer("ehr_task_count_total").notNull().default(0),
+    ehrTaskCountDone: integer("ehr_task_count_done").notNull().default(0),
 
     /**
      * Site / About profile — Dock-replacement fields for HubSpot, Prism, CRM
@@ -591,6 +645,10 @@ export const phases = pgTable(
     visibility: visibilityEnum("visibility").notNull().default("SHARED"),
     startDate: timestamp("start_date", { withTimezone: true }),
     dueDate: timestamp("due_date", { withTimezone: true }),
+    /** Per-project only — does not change the template. */
+    notApplicable: boolean("not_applicable").notNull().default(false),
+    workTrack: workTrackEnum("work_track").notNull().default("EHR"),
+    areaKey: text("area_key"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -630,6 +688,13 @@ export const tasks = pgTable(
     parentTaskId: text("parent_task_id").references((): AnyPgColumn => tasks.id, {
       onDelete: "cascade",
     }),
+
+    /** Per-project only — does not change the template. */
+    notApplicable: boolean("not_applicable").notNull().default(false),
+    workTrack: workTrackEnum("work_track").notNull().default("EHR"),
+    defaultRole: projectMemberRoleEnum("default_role"),
+    overlapKey: text("overlap_key"),
+    areaKey: text("area_key"),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -1173,11 +1238,17 @@ export const templatePhasesRelations = relations(templatePhases, ({ one, many })
   tasks: many(templateTasks),
 }));
 
-export const templateTasksRelations = relations(templateTasks, ({ one }) => ({
+export const templateTasksRelations = relations(templateTasks, ({ one, many }) => ({
   phase: one(templatePhases, {
     fields: [templateTasks.phaseId],
     references: [templatePhases.id],
   }),
+  parentTask: one(templateTasks, {
+    fields: [templateTasks.parentTaskId],
+    references: [templateTasks.id],
+    relationName: "TemplateSubtasks",
+  }),
+  subtasks: many(templateTasks, { relationName: "TemplateSubtasks" }),
 }));
 
 export const templateMilestonesRelations = relations(templateMilestones, ({ one }) => ({
@@ -1249,6 +1320,8 @@ export type SlipCause = (typeof slipCauseEnum.enumValues)[number];
 export type WaitingOn = (typeof waitingOnEnum.enumValues)[number];
 export type PhaseStatus = (typeof phaseStatusEnum.enumValues)[number];
 export type ProjectMemberRole = (typeof projectMemberRoleEnum.enumValues)[number];
+export type PlaybookPath = (typeof playbookPathEnum.enumValues)[number];
+export type WorkTrack = (typeof workTrackEnum.enumValues)[number];
 export type NotificationType = (typeof notificationTypeEnum.enumValues)[number];
 
 export { sql };

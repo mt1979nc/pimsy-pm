@@ -68,11 +68,14 @@ export default async function TemplatesPage() {
                   }
                   subtitle={t.description}
                   action={
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <Badge>{t.phases.length} phases</Badge>
                       <Badge>{allTasks.length} tasks</Badge>
                       <Badge tone="violet">{customerTasks.length} customer</Badge>
                       <Badge>{t.durationDays} days</Badge>
+                      <LinkButton href={`/templates/${t.id}`} size="sm" variant="primary">
+                        Edit
+                      </LinkButton>
                     </div>
                   }
                 />
@@ -137,15 +140,13 @@ export default async function TemplatesPage() {
       )}
 
       <p className="mt-5 max-w-2xl text-[12.5px] leading-relaxed text-ink-3">
-        Templates are edited in the database for now — see{" "}
-        <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
-          src/db/template-implementation.ts
-        </code>{" "}
-        and re-run{" "}
+        Open a playbook and edit it like Dock: add or remove tasks, drag phases and tasks to
+        reorder. Live projects are not rewritten when the template changes. To reset the four
+        standard paths from code, run{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
           npm run db:seed -- --templates-only
         </code>
-        . A visual template editor is the natural next addition.
+        .
       </p>
     </>
   );
