@@ -1,6 +1,6 @@
 {
   "name": "pimsy-pm",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "description": "Implementation & project management platform with customer portal for PIMSY EHR",
   "scripts": {
     "dev": "next dev",
@@ -17,7 +17,9 @@
     "setup": "node scripts/setup-local.mjs",
     "setup:reset": "node scripts/setup-local.mjs --reset",
     "demo:content": "tsx --env-file-if-exists=.env.local demo-content.ts",
-    "db:seed:demo-logins": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/seed-demo-logins.ts"
+    "db:seed:demo-logins": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/seed-demo-logins.ts",
+    "db:seed:staff-logins": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/seed-staff-logins.ts",
+    "db:import:dock-wip": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/import-dock-wip.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

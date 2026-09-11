@@ -2,7 +2,7 @@
 
 **Live:** https://pimsy-app.azurewebsites.net  
 **Repo:** https://github.com/mt1979nc/pimsy-pm  
-**Version:** v1.6.1  
+**Version:** v1.8.3  
 **Pitch in one line:** Same Implementation playbook as Dock, with an internal back-channel Dock can’t do, plus an API we own — without Dock Enterprise (~$1k/mo) pricing.
 
 This app holds **no PHI** (logistics only). Footer on sign-in says so.
@@ -11,32 +11,40 @@ This app holds **no PHI** (logistics only). Footer on sign-in says so.
 
 ## Demo logins (password)
 
-Shared password for all three (and OWNER if present):
+Shared temporary password:
 
 ```
 Demo-Nathan-2026!
 ```
 
-| Role | Email | Lands on |
+| Role | Email | Notes |
 |---|---|---|
-| **Management** | `demo.manager@pimsyehr.com` | `/dashboard` — full portfolio + reports |
-| **Specialist** | `demo.specialist@pimsyehr.com` | `/dashboard` — assigned projects only |
-| **Customer** | `contact@riverbend-counseling.example.com` | `/portal` — Riverbend / IMP-9001 |
+| **Owner / Director** | `alexander@pimsyehr.com` | OWNER + canLead + isDirector. **Must change password** on first login → `/change-password`. |
+| **Specialist** | `morgan@pimsyehr.com` | SPECIALIST, capacityExempt, canLead=false. **Must change password** on first login. |
+| **Management (demo)** | `demo.manager@pimsyehr.com` | Full portfolio (legacy Nathan demo). |
+| **Specialist (demo)** | `demo.specialist@pimsyehr.com` | Assigned projects only. |
+| **Customer (demo)** | `contact@riverbend-counseling.example.com` | `/portal` — Riverbend / IMP-9001 |
 
 Use **email + password** on the sign-in page (magic link needs Resend configured).
 
-Seed on any environment (after full `npm run db:seed`, not `--templates-only`):
+Seed staff + Dock WIP (Azure / any env with `DATABASE_URL`):
 
 ```bash
+npm run db:seed -- --templates-only   # if templates missing
+npm run db:seed:staff-logins          # Alexander + Morgan (+ roster)
+npm run db:import:dock-wip            # 15 live Dock WIP sites, no contact emails
+# optional Nathan demos:
 npm run db:seed:demo-logins
 npm run demo:content
 ```
+
+See `/workspace/pimsy-pm-ops/v1.8.3-WIP-IMPORT.md` for Azure `DATABASE_URL` steps.
 
 ---
 
 ## Before you present (5 minutes)
 
-1. Confirm sign-in shows **v1.6.1**.
+1. Confirm sign-in shows **v1.8.3**.
 2. Sign in as Management, Specialist, and Customer (private window) using the table above.
 3. Open project **IMP-9001**. If screens look empty, re-run seed + `demo:content` + `db:seed:demo-logins` against that database.
 4. Optional: Management → Alerts → show Teams webhook is available.
