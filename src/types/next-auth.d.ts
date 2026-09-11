@@ -8,6 +8,7 @@ declare module "next-auth" {
       role: Role;
       customerAccountId: string | null;
       isActive: boolean;
+      mustChangePassword?: boolean;
     } & DefaultSession["user"];
   }
 
@@ -15,5 +16,15 @@ declare module "next-auth" {
     role?: Role;
     customerAccountId?: string | null;
     isActive?: boolean;
+    mustChangePassword?: boolean;
+  }
+}
+
+declare module "@auth/core/adapters" {
+  interface AdapterUser {
+    role?: Role;
+    customerAccountId?: string | null;
+    isActive?: boolean;
+    mustChangePassword?: boolean;
   }
 }
