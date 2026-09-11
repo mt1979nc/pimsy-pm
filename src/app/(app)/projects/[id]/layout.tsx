@@ -132,6 +132,7 @@ export default async function ProjectLayout({
         <SubNavLink href={`/projects/${id}/tasks`}>Tasks</SubNavLink>
         <SubNavLink href={`/projects/${id}/messages`}>Messages</SubNavLink>
         <SubNavLink href={`/projects/${id}/settings`}>Settings</SubNavLink>
+        <SubNavLink href={`/projects/${id}/customer-view`}>Customer view</SubNavLink>
       </div>
 
       {children}

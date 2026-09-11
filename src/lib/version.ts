@@ -8,10 +8,16 @@
  *
  * Bump this AND the "version" field in package.json together.
  */
-export const APP_VERSION = "1.8.3";
+export const APP_VERSION = "1.8.4";
 
 /** One line per release, newest first. Kept short on purpose. */
 export const RELEASE_NOTES: { version: string; date: string; summary: string }[] = [
+  {
+    version: "1.8.4",
+    date: "2026-09-11",
+    summary:
+      "Needs Attention shows bold site acronym (hover full name); invite form layout fix + always-copyable invite link (Resend when keyed); project slip history with delete/cascade revert; staff Customer view preview mirroring portal.",
+  },
   {
     version: "1.8.3",
     date: "2026-09-11",

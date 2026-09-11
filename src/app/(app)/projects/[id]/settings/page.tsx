@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { and, eq, ne, asc, desc } from "drizzle-orm";
 import { db } from "@/db";
-import { projects, users, customerAccounts, phases, fileAssets } from "@/db/schema";
+import { projects, users, customerAccounts, phases, fileAssets, slipEvents } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess } from "@/lib/authz";
 import { toDateInput } from "@/lib/dates";
@@ -15,6 +15,7 @@ import {
   RecordingsManager,
 } from "./settings-forms";
 import { ProjectContacts } from "./contacts";
+import { SlipHistoryList } from "@/components/slip-history";
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +96,11 @@ export default async function ProjectSettingsPage({
     orderBy: [desc(fileAssets.createdAt)],
   });
 
+  const projectSlips = await db.query.slipEvents.findMany({
+    where: eq(slipEvents.projectId, id),
+    orderBy: [desc(slipEvents.createdAt)],
+  });
+
   return (
     <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.3fr_1fr]">
       <Card>
@@ -115,6 +121,11 @@ export default async function ProjectSettingsPage({
           }}
           staff={staff}
         />
+        {projectSlips.length > 0 ? (
+          <div className="border-t border-border px-5 py-4">
+            <SlipHistoryList slips={projectSlips} />
+          </div>
+        ) : null}
       </Card>
 
       <div className="space-y-5">

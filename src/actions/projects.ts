@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, desc } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -820,6 +820,83 @@ export async function updateProjectAbout(
   revalidatePath(`/projects/${projectId}/about`);
   revalidatePath(`/portal/projects/${projectId}`);
   revalidatePath(`/portal/projects/${projectId}/about`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Slip history — undo a mistaken go-live push
+// ---------------------------------------------------------------------------
+
+/**
+ * Delete the most recent slip for a project, restore target go-live to the
+ * slip's fromDate, and cascade-rescale open phase/task dates back. Older slips
+ * must be deleted newest-first so timeline math stays consistent.
+ */
+export async function deleteSlipEvent(slipId: string): Promise<ActionState> {
+  const actor = await requireStaff();
+  const slip = await db.query.slipEvents.findFirst({
+    where: eq(slipEvents.id, slipId),
+  });
+  if (!slip) return { error: "That slip was already removed." };
+
+  const project = await assertProjectWrite(actor, slip.projectId);
+
+  const latest = await db.query.slipEvents.findFirst({
+    where: eq(slipEvents.projectId, slip.projectId),
+    orderBy: [desc(slipEvents.createdAt)],
+  });
+  if (!latest || latest.id !== slip.id) {
+    return {
+      error: "Only the most recent slip can be deleted. Remove newer slips first.",
+    };
+  }
+
+  const previousGoLive = project.targetGoLiveDate ? new Date(project.targetGoLiveDate) : null;
+  const restoredGoLive = new Date(slip.fromDate);
+  const kickoff = project.startDate ? new Date(project.startDate) : null;
+
+  await db
+    .update(projects)
+    .set({ targetGoLiveDate: restoredGoLive, updatedAt: new Date() })
+    .where(eq(projects.id, slip.projectId));
+
+  const cascadePlan = shouldCascadeReschedule({
+    previousKickoff: kickoff,
+    previousGoLive,
+    nextKickoff: kickoff,
+    nextGoLive: restoredGoLive,
+  });
+  if (cascadePlan.cascade && cascadePlan.next) {
+    await cascadeRescheduleProject({
+      projectId: slip.projectId,
+      templateId: project.templateId,
+      previous: cascadePlan.previous,
+      next: cascadePlan.next,
+    });
+  }
+
+  await db.delete(slipEvents).where(eq(slipEvents.id, slip.id));
+
+  await audit({
+    actor,
+    action: "project.go_live.slip_deleted",
+    entityType: "project",
+    entityId: slip.projectId,
+    summary: `${project.code}: slip undone (${slip.days > 0 ? "+" : ""}${slip.days}d)`,
+    metadata: {
+      slipId: slip.id,
+      days: slip.days,
+      fromDate: slip.fromDate,
+      toDate: slip.toDate,
+      restoredGoLive,
+    },
+  });
+
+  revalidatePath(`/projects/${slip.projectId}`);
+  revalidatePath(`/projects/${slip.projectId}/settings`);
+  revalidatePath(`/management/engagements/${slip.projectId}`);
+  revalidatePath("/management/engagements");
+  revalidatePath("/reports/analysis");
   return { ok: true };
 }
 
