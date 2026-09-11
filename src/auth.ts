@@ -103,6 +103,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: true,
           email: true,
           image: true,
+          mustChangePassword: true,
         },
       });
       if (row) {
@@ -113,6 +114,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.name = row.name;
         session.user.email = row.email;
         session.user.image = row.image;
+        session.user.mustChangePassword = row.mustChangePassword;
       }
       return session;
     },
@@ -187,6 +189,7 @@ async function actorFromSessionCookie(): Promise<Actor | null> {
       role: true,
       customerAccountId: true,
       isActive: true,
+      mustChangePassword: true,
     },
   });
 
@@ -200,6 +203,7 @@ async function actorFromSessionCookie(): Promise<Actor | null> {
     role: user.role,
     customerAccountId: user.customerAccountId ?? null,
     isActive: true,
+    mustChangePassword: user.mustChangePassword,
   };
 }
 
@@ -215,6 +219,7 @@ export async function getActor(): Promise<Actor | null> {
       role: session.user.role,
       customerAccountId: session.user.customerAccountId ?? null,
       isActive: session.user.isActive ?? true,
+      mustChangePassword: session.user.mustChangePassword ?? false,
     };
   }
   // Server-action path — see actorFromSessionCookie above.
