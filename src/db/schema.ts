@@ -234,6 +234,12 @@ export const users = pgTable(
     passwordHash: text("password_hash"),
 
     /**
+     * When true, password sign-in lands on /change-password and other app
+     * routes are blocked until the user sets a new password (clears this flag).
+     */
+    mustChangePassword: boolean("must_change_password").notNull().default(false),
+
+    /**
      * Per-person alert preferences. Null means "use the org defaults".
      * Shape: { emailEnabled: boolean, types: { [NotificationType]: boolean } }
      */
