@@ -14,6 +14,7 @@ type Row = {
   id: string;
   name: string;
   code: string;
+  crmAcronym?: string | null;
   status: string;
   health: string;
   targetGoLiveDate: Date | string | null;
@@ -23,25 +24,34 @@ type Row = {
   lead?: { id: string; name: string | null; image?: string | null } | null;
 };
 
+/** Site acronym for list rows — CRM key when present, else project code. */
+export function siteAcronym(project: Pick<Row, "crmAcronym" | "code">) {
+  const a = project.crmAcronym?.trim();
+  return a && a.length > 0 ? a : project.code;
+}
+
 export function ProjectRow({ project, href }: { project: Row; href?: string }) {
   const pct = pctComplete(project.taskCountDone, project.taskCountTotal);
   const days = daysUntil(project.targetGoLiveDate);
   const late = days !== null && days < 0 && project.status !== "COMPLETED";
+  const acronym = siteAcronym(project);
+  const siteName = project.customerAccount?.name ?? project.name;
+  const hoverTitle = [acronym, siteName, project.name !== siteName ? project.name : null]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <Link
       href={href ?? `/projects/${project.id}`}
+      title={hoverTitle}
       className="group flex items-center gap-4 px-4 py-3 transition-colors hover:bg-surface-2"
     >
       <div className="min-w-0 flex-[2.2]">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-[13.5px] font-medium text-ink group-hover:text-brand">
-            {project.name}
-          </span>
-          <span className="shrink-0 font-mono text-[11px] text-ink-3">{project.code}</span>
+        <div className="truncate text-[13.5px] font-semibold text-ink group-hover:text-brand">
+          {acronym}
         </div>
-        <div className="mt-0.5 truncate text-[12.5px] text-ink-3">
-          {project.customerAccount?.name ?? "Internal project"}
+        <div className="mt-0.5 truncate text-[12.5px] text-ink-3" title={siteName}>
+          {siteName}
         </div>
       </div>
 
@@ -92,7 +102,7 @@ export function ProjectRow({ project, href }: { project: Row; href?: string }) {
 export function ProjectListHeader() {
   return (
     <div className="flex items-center gap-4 border-b border-border bg-surface-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-      <div className="flex-[2.2]">Project</div>
+      <div className="flex-[2.2]">Site</div>
       <div className="hidden w-[110px] shrink-0 sm:block">Progress</div>
       <div className="hidden w-[128px] shrink-0 lg:block">Go-live</div>
       <div className="hidden w-[130px] shrink-0 md:block">Health</div>
