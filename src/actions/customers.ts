@@ -246,39 +246,37 @@ export async function inviteCustomerContact(
     metadata: { customerAccountId: d.customerAccountId },
   });
 
-  // When email is disabled (typical Azure/demo without Resend), mint a
-  // set-password link staff can copy instead of sending. Never blocks import
-  // scripts — those paths do not call this action.
-  if (!env.EMAIL_ENABLED) {
-    const { raw, hash } = generateResetToken();
-    await db.insert(passwordResetTokens).values({
-      userId,
-      tokenHash: hash,
-      expires: new Date(Date.now() + RESET_TOKEN_TTL_MS),
-    });
-    const inviteUrl = `${env.APP_URL}/reset-password?token=${raw}`;
-    revalidatePath(`/customers/${d.customerAccountId}`);
-    if (d.projectId) revalidatePath(`/projects/${d.projectId}`);
-    return { ok: true, inviteUrl, emailSkipped: true };
-  }
-
-  await sendEmail({
-    to: d.email,
-    subject: `You've been invited to your PIMSY implementation workspace`,
-    html: layout({
-      heading: `Welcome, ${d.name.split(" ")[0]}`,
-      body: `<p style="margin:0 0 12px">${escapeHtml(actor.name ?? actor.email)} has set up a workspace for <strong>${escapeHtml(account.name)}</strong>'s PIMSY implementation.</p>
-             <p style="margin:0">You'll find your project timeline, the items we need from you, shared documents, and a direct line to your implementation team.</p>`,
-      cta: { label: "Open your workspace", url: `${env.APP_URL}/signin` },
-      footer:
-        "Sign in with this email address — we'll send you a one-click link, so there's no password to remember. This workspace is for implementation logistics only; never post patient information here.",
-    }),
-    replyTo: actor.email,
+  // Always mint a set-password / invite link staff can copy in the UI.
+  // When RESEND_API_KEY is present (env.EMAIL_ENABLED), also email it via Resend.
+  const { raw, hash } = generateResetToken();
+  await db.insert(passwordResetTokens).values({
+    userId,
+    tokenHash: hash,
+    expires: new Date(Date.now() + RESET_TOKEN_TTL_MS),
   });
+  const inviteUrl = `${env.APP_URL}/reset-password?token=${raw}`;
+
+  let emailSkipped = true;
+  if (env.EMAIL_ENABLED) {
+    await sendEmail({
+      to: d.email,
+      subject: `You've been invited to your PIMSY implementation workspace`,
+      html: layout({
+        heading: `Welcome, ${d.name.split(" ")[0]}`,
+        body: `<p style="margin:0 0 12px">${escapeHtml(actor.name ?? actor.email)} has set up a workspace for <strong>${escapeHtml(account.name)}</strong>'s PIMSY implementation.</p>
+               <p style="margin:0">Use the button below to set a password and open your workspace. You'll find your project timeline, the items we need from you, shared documents, and a direct line to your implementation team.</p>`,
+        cta: { label: "Open your workspace", url: inviteUrl },
+        footer:
+          "This link works once and expires in one hour. This workspace is for implementation logistics only; never post patient information here.",
+      }),
+      replyTo: actor.email,
+    });
+    emailSkipped = false;
+  }
 
   revalidatePath(`/customers/${d.customerAccountId}`);
   if (d.projectId) revalidatePath(`/projects/${d.projectId}`);
-  return { ok: true };
+  return { ok: true, inviteUrl, emailSkipped };
 }
 
 export async function setUserActive(userId: string, isActive: boolean) {
