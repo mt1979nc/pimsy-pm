@@ -34,6 +34,13 @@ export default async function CapacityPage() {
         }
       />
 
+      <p className="mb-4 rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] text-ink-2">
+        Load is task-estimate based until v1.9 phase model. Edit billable hours and Prism flags under{" "}
+        <a href="/management/team" className="font-medium text-brand hover:underline">
+          Staffing → Team
+        </a>
+        . Capacity-exempt people are excluded from department headroom there.
+      </p>
       <Card className="mb-5">
         <CardHeader
           title="Weekly capacity forecast"

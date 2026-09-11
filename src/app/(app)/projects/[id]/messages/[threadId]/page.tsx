@@ -7,8 +7,9 @@ import { requireStaff } from "@/lib/guard";
 import { NotFoundError, ForbiddenError, canSeeInternal } from "@/lib/authz";
 import { assertThreadAccess } from "@/lib/threads";
 import { markThreadRead } from "@/actions/messages";
-import { Card, Badge, VisibilityBadge } from "@/components/ui";
+import { Card, Badge, VisibilityBadge, WaitingOnBadge } from "@/components/ui";
 import { MessageList } from "@/components/thread-list";
+import { differenceInCalendarDays, startOfDay } from "@/lib/dates";
 import { MessageComposer, ThreadActions } from "@/components/message-composer";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,15 @@ export default async function ThreadPage({
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-[16px] font-semibold tracking-tight text-ink">{thread.subject}</h1>
             <VisibilityBadge visibility={thread.visibility} />
+            {!thread.isResolved && thread.visibility === "SHARED" ? (
+              <WaitingOnBadge
+                waitingOn={thread.waitingOn}
+                agingDays={differenceInCalendarDays(
+                  startOfDay(new Date()),
+                  startOfDay(new Date(thread.waitingOnSince)),
+                )}
+              />
+            ) : null}
             {thread.isResolved ? <Badge tone="green">Resolved</Badge> : null}
           </div>
           <p className="mt-1.5 text-[12.5px] text-ink-3">
@@ -64,6 +74,7 @@ export default async function ThreadPage({
               isResolved={thread.isResolved}
               visibility={thread.visibility}
               canShare={canSeeInternal(actor)}
+              waitingOn={thread.waitingOn}
             />
           </div>
         </div>

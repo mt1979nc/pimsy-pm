@@ -8,10 +8,22 @@
  *
  * Bump this AND the "version" field in package.json together.
  */
-export const APP_VERSION = "1.6.4";
+export const APP_VERSION = "1.8.0";
 
 /** One line per release, newest first. Kept short on purpose. */
 export const RELEASE_NOTES: { version: string; date: string; summary: string }[] = [
+  {
+    version: "1.8.0",
+    date: "2026-09-10",
+    summary:
+      "Management staffing + engagement edit (Prism manual parity); team flags (exempt/canLead/director); native Postgres — no Prism Azure SQL dual-write.",
+  },
+  {
+    version: "1.7.0",
+    date: "2026-09-10",
+    summary:
+      "About/site profile (staff edit + portal read-only); waiting-on threads with aging and portfolio WIP rollup; ROADMAP.md for Nathan/Dock replacement.",
+  },
   {
     version: "1.6.4",
     date: "2026-09-10",

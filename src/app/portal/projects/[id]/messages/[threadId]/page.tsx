@@ -7,9 +7,10 @@ import { requireCustomer } from "@/lib/guard";
 import { NotFoundError, ForbiddenError } from "@/lib/authz";
 import { assertThreadAccess } from "@/lib/threads";
 import { markThreadRead } from "@/actions/messages";
-import { Card, Badge } from "@/components/ui";
+import { Card, Badge, WaitingOnBadge } from "@/components/ui";
 import { MessageList } from "@/components/thread-list";
 import { MessageComposer } from "@/components/message-composer";
+import { differenceInCalendarDays, startOfDay } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,15 @@ export default async function PortalThreadPage({
         <div className="border-b border-border px-5 py-4">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-[16px] font-semibold tracking-tight text-ink">{thread.subject}</h1>
+            {!thread.isResolved ? (
+              <WaitingOnBadge
+                waitingOn={thread.waitingOn}
+                agingDays={differenceInCalendarDays(
+                  startOfDay(new Date()),
+                  startOfDay(new Date(thread.waitingOnSince)),
+                )}
+              />
+            ) : null}
             {thread.isResolved ? <Badge tone="green">Resolved</Badge> : null}
           </div>
         </div>

@@ -10,7 +10,9 @@ import {
   timeEntries,
   notifications,
   slipEvents,
+  messageThreads,
   type ComplexityTier,
+  type WaitingOn,
 } from "@/db/schema";
 import { accessibleProjectIds, type Actor } from "./authz";
 import { addDays, startOfDay, differenceInCalendarDays } from "./dates";
@@ -254,7 +256,7 @@ export async function openRisks(actor: Actor, limit = 25) {
 export async function teamCapacity() {
   const staff = await db.query.users.findMany({
     where: and(eq(users.isActive, true), ne(users.role, "CUSTOMER")),
-    columns: { id: true, name: true, email: true, role: true, capacityHoursPerWeek: true, image: true },
+    columns: { id: true, name: true, email: true, role: true, capacityHoursPerWeek: true, capacityExempt: true, canLead: true, isDirector: true, image: true },
     orderBy: [asc(users.name)],
   });
 
@@ -621,4 +623,86 @@ export async function slipAttribution() {
     untaggedCount,
     byOwner: [...byOwner.values()].sort((a, b) => b.events - a.events),
   };
+}
+
+/**
+ * Portfolio WIP: open SHARED threads grouped by project, with PIMSY vs customer
+ * waiting-on counts. Powers the Dock-style chase / WIP callouts.
+ */
+export async function waitingOnThreadRollup(actor: Actor) {
+  const ids = await accessibleProjectIds(actor);
+  if (ids.length === 0) return [];
+
+  const threads = await db.query.messageThreads.findMany({
+    where: and(
+      inArray(messageThreads.projectId, ids),
+      eq(messageThreads.visibility, "SHARED"),
+      eq(messageThreads.isResolved, false),
+    ),
+    orderBy: [asc(messageThreads.waitingOnSince)],
+    with: {
+      project: {
+        columns: { id: true, name: true, code: true, health: true, status: true },
+        with: {
+          customerAccount: { columns: { id: true, name: true } },
+          lead: { columns: { id: true, name: true, image: true } },
+        },
+      },
+    },
+  });
+
+  type Row = {
+    project: NonNullable<(typeof threads)[number]["project"]>;
+    pimsyCount: number;
+    customerCount: number;
+    unknownCount: number;
+    oldestSince: Date | null;
+    threads: {
+      id: string;
+      subject: string;
+      waitingOn: WaitingOn;
+      waitingOnSince: Date;
+      lastMessageAt: Date;
+      messageCount: number;
+    }[];
+  };
+
+  const byProject = new Map<string, Row>();
+  for (const t of threads) {
+    if (!t.projectId || !t.project) continue;
+    let row = byProject.get(t.projectId);
+    if (!row) {
+      row = {
+        project: t.project,
+        pimsyCount: 0,
+        customerCount: 0,
+        unknownCount: 0,
+        oldestSince: null,
+        threads: [],
+      };
+      byProject.set(t.projectId, row);
+    }
+    if (t.waitingOn === "PIMSY") row.pimsyCount++;
+    else if (t.waitingOn === "CUSTOMER") row.customerCount++;
+    else row.unknownCount++;
+    const since = new Date(t.waitingOnSince);
+    if (!row.oldestSince || since < row.oldestSince) row.oldestSince = since;
+    row.threads.push({
+      id: t.id,
+      subject: t.subject,
+      waitingOn: t.waitingOn,
+      waitingOnSince: since,
+      lastMessageAt: new Date(t.lastMessageAt),
+      messageCount: t.messageCount,
+    });
+  }
+
+  return [...byProject.values()].sort((a, b) => {
+    const aOpen = a.pimsyCount + a.customerCount;
+    const bOpen = b.pimsyCount + b.customerCount;
+    if (bOpen !== aOpen) return bOpen - aOpen;
+    const aAge = a.oldestSince?.getTime() ?? 0;
+    const bAge = b.oldestSince?.getTime() ?? 0;
+    return aAge - bAge;
+  });
 }

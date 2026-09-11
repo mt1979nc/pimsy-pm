@@ -6,6 +6,7 @@ import {
   attentionProjects,
   myTasks,
   waitingOnCustomer,
+  waitingOnThreadRollup,
   upcomingMilestones,
 } from "@/lib/queries";
 import { listInboxThreads, isUnread } from "@/lib/threads";
@@ -18,10 +19,11 @@ import {
   LinkButton,
   Badge,
   HealthBadge,
+  WaitingOnBadge,
 } from "@/components/ui";
 import { ProjectRow } from "@/components/project-row";
 import { TaskRow } from "@/components/task-row";
-import { fmtShort, dueLabel, fmtRelative } from "@/lib/dates";
+import { fmtShort, dueLabel, fmtRelative, differenceInCalendarDays, startOfDay } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard" };
@@ -29,14 +31,22 @@ export const metadata = { title: "Dashboard" };
 export default async function DashboardPage() {
   const actor = await requireStaff();
 
-  const [summary, attention, tasks, chase, milestones, threads] = await Promise.all([
+  const [summary, attention, tasks, chase, milestones, threads, waitingThreads] = await Promise.all([
     portfolioSummary(actor),
     attentionProjects(actor, 6),
     myTasks(actor),
     waitingOnCustomer(actor, 8),
     upcomingMilestones(actor, 30, 8),
     listInboxThreads(actor, 8),
+    waitingOnThreadRollup(actor),
   ]);
+  const waitingThreadFlat = waitingThreads
+    .flatMap((r) =>
+      r.threads
+        .filter((t) => t.waitingOn === "PIMSY" || t.waitingOn === "CUSTOMER")
+        .map((t) => ({ ...t, project: r.project })),
+    )
+    .slice(0, 8);
 
   const unread = threads.filter((t) => isUnread(t, actor.id));
   const dueSoon = tasks.filter((t) => {
@@ -181,6 +191,48 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader
+              title="Waiting-on threads"
+              subtitle="Open shared conversations — ball in court"
+              action={
+                <Link
+                  href="/reports/waiting-on"
+                  className="text-[12.5px] font-medium text-brand hover:underline"
+                >
+                  WIP rollup
+                </Link>
+              }
+            />
+            {waitingThreadFlat.length === 0 ? (
+              <EmptyState title="No tagged open threads" description="Shared conversations with a waiting-on side show up here." />
+            ) : (
+              <div className="divide-y divide-border">
+                {waitingThreadFlat.map((t) => {
+                  const days = differenceInCalendarDays(
+                    startOfDay(new Date()),
+                    startOfDay(t.waitingOnSince),
+                  );
+                  return (
+                    <Link
+                      key={t.id}
+                      href={`/projects/${t.project.id}/messages/${t.id}`}
+                      className="block px-4 py-2.5 hover:bg-surface-2"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-[13px] font-medium text-ink">{t.subject}</span>
+                        <WaitingOnBadge waitingOn={t.waitingOn} agingDays={days} />
+                      </div>
+                      <div className="mt-0.5 truncate text-[12px] text-ink-3">
+                        {t.project.customerAccount?.name ?? t.project.name}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <CardHeader
               title="Waiting on customers"
               subtitle="Open action items on their side"
             />
@@ -262,9 +314,12 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               </div>
-              <div className="border-t border-border px-4 py-3">
-                <Link href="/reports" className="text-[12.5px] font-medium text-brand hover:underline">
+              <div className="space-y-1 border-t border-border px-4 py-3">
+                <Link href="/reports" className="block text-[12.5px] font-medium text-brand hover:underline">
                   Open the full portfolio report →
+                </Link>
+                <Link href="/reports/waiting-on" className="block text-[12.5px] font-medium text-brand hover:underline">
+                  Waiting-on WIP rollup →
                 </Link>
               </div>
             </Card>

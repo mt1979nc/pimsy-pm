@@ -63,6 +63,7 @@ export default async function PortalProjectLayout({
               Areas
             </div>
             <SideNavLink href={`/portal/projects/${id}`}>Overview</SideNavLink>
+            <SideNavLink href={`/portal/projects/${id}/about`}>About</SideNavLink>
             {phaseTabs.map((phase) => (
               <SideNavLink key={phase.id} href={`/portal/projects/${id}/phases/${phase.id}`}>
                 {phase.name}
