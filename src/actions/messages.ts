@@ -56,6 +56,8 @@ export async function createThread(
   let threadId: string;
   try {
     threadId = await db.transaction(async (tx) => {
+      const initialWaiting =
+        visibility === "SHARED" ? (isCustomer(actor) ? "PIMSY" : "CUSTOMER") : "UNKNOWN";
       const [thread] = await tx
         .insert(messageThreads)
         .values({
@@ -63,6 +65,8 @@ export async function createThread(
           visibility,
           projectId,
           createdById: actor.id,
+          waitingOn: initialWaiting,
+          waitingOnSince: new Date(),
           lastMessageAt: new Date(),
           messageCount: 1,
         })
@@ -210,6 +214,18 @@ export async function postMessage(
     }
   }
 
+  // Ball-in-court: a reply on an open SHARED thread flips waiting-on to the
+  // other side unless staff already resolved it. Staff can still override.
+  if (thread.visibility === "SHARED" && !thread.isResolved) {
+    const nextWaiting = isCustomer(actor) ? "PIMSY" : "CUSTOMER";
+    if (thread.waitingOn !== nextWaiting) {
+      await db
+        .update(messageThreads)
+        .set({ waitingOn: nextWaiting, waitingOnSince: now, updatedAt: now })
+        .where(eq(messageThreads.id, threadId));
+    }
+  }
+
   await notify({
     userIds: await threadRecipients(threadId, actor.id),
     type: "MESSAGE_POSTED",
@@ -293,4 +309,39 @@ export async function shareThreadWithCustomer(threadId: string) {
   });
 
   revalidatePath(linkFor(thread.projectId, threadId, false));
+}
+
+const waitingOnSchema = z.enum(["PIMSY", "CUSTOMER", "UNKNOWN"]);
+
+/** Staff sets ball-in-court on a thread. Customers may only read the badge. */
+export async function setThreadWaitingOn(threadId: string, waitingOn: "PIMSY" | "CUSTOMER" | "UNKNOWN") {
+  const actor = await requireUser();
+  if (isCustomer(actor)) throw new ForbiddenError("Only staff can set waiting-on.");
+  const parsed = waitingOnSchema.safeParse(waitingOn);
+  if (!parsed.success) throw new ForbiddenError("Invalid waiting-on value.");
+
+  const thread = await assertThreadAccess(actor, threadId);
+  const next = parsed.data;
+  if (thread.waitingOn === next) return;
+
+  const now = new Date();
+  await db
+    .update(messageThreads)
+    .set({ waitingOn: next, waitingOnSince: now, updatedAt: now })
+    .where(eq(messageThreads.id, threadId));
+
+  await audit({
+    actor,
+    action: "thread.waiting_on.changed",
+    entityType: "message_thread",
+    entityId: threadId,
+    summary: `“${thread.subject}” waiting on ${next}`,
+    metadata: { from: thread.waitingOn, to: next },
+  });
+
+  revalidatePath(linkFor(thread.projectId, threadId, false));
+  revalidatePath(linkFor(thread.projectId, threadId, true));
+  revalidatePath("/reports/waiting-on");
+  revalidatePath("/dashboard");
+  revalidatePath("/reports");
 }
