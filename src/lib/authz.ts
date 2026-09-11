@@ -23,6 +23,8 @@ export type Actor = {
   role: Role;
   customerAccountId: string | null;
   isActive: boolean;
+  /** When true, app layouts redirect to /change-password until cleared. */
+  mustChangePassword?: boolean;
 };
 
 // ---------------------------------------------------------------------------
