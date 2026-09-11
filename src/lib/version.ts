@@ -8,10 +8,16 @@
  *
  * Bump this AND the "version" field in package.json together.
  */
-export const APP_VERSION = "1.8.1";
+export const APP_VERSION = "1.8.2";
 
 /** One line per release, newest first. Kept short on purpose. */
 export const RELEASE_NOTES: { version: string; date: string; summary: string }[] = [
+  {
+    version: "1.8.2",
+    date: "2026-09-11",
+    summary:
+      "Fix slip +N days ignored when form default targetGoLiveDate round-trips ±1 day (UTC midnight vs noon / CT); slipDays now wins over same-form date noise.",
+  },
   {
     version: "1.8.1",
     date: "2026-09-11",

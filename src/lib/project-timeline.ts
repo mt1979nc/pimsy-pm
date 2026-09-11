@@ -14,7 +14,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { milestones, phases, projectTemplates, tasks } from "@/db/schema";
-import { addDays, differenceInCalendarDays } from "@/lib/dates";
+import { addDays, differenceInCalendarDays, utcCalendarDaysBetween, utcDayKey } from "@/lib/dates";
 
 const MS_PER_DAY = 86_400_000;
 
@@ -230,8 +230,9 @@ export function shouldCascadeReschedule(opts: {
 
 /**
  * Resolve a slip into a pushed go-live. Slip = schedule push, not a note.
- * Requires either a new target date different from the current one, or +slipDays
- * against an existing go-live. Rejects cause/note-only slips.
+ * Prefer +slipDays when set (form always posts targetGoLiveDate). Otherwise a
+ * new target calendar day (UTC YYYY-MM-DD ≠ current) is the push. Rejects
+ * cause/note-only slips.
  */
 export function resolveSlipPush(opts: {
   currentGoLive: Date | null;
@@ -268,21 +269,10 @@ export function resolveSlipPush(opts: {
   const current = opts.currentGoLive;
   const requested = opts.requestedGoLive;
 
-  // Explicit new date that differs from current → that's the push.
-  if (requested && current && requested.getTime() !== current.getTime()) {
-    const days = Math.round((requested.getTime() - current.getTime()) / MS_PER_DAY);
-    return {
-      ok: true,
-      nextGoLive: requested,
-      slipped: true,
-      fromDate: current,
-      days,
-      cause,
-      note,
-    };
-  }
-
-  // +N / -N days against the current go-live.
+  // Prefer explicit slipDays when set. The engagement/settings form always posts
+  // targetGoLiveDate (default value); date round-trip noise (UTC midnight vs
+  // UTC noon, or toISOString day-shift in CT) can make requested look ±1 day
+  // off and would otherwise steal the push with a bogus +1d history.
   if (slipDays != null) {
     if (!current) {
       return {
@@ -302,9 +292,28 @@ export function resolveSlipPush(opts: {
     };
   }
 
+  // Explicit new calendar day (no slipDays) → that's the push.
+  // Compare UTC YYYY-MM-DD, not raw getTime, so noon vs midnight is not a slip.
+  if (requested && current && utcDayKey(requested) !== utcDayKey(current)) {
+    const days = utcCalendarDaysBetween(current, requested);
+    return {
+      ok: true,
+      nextGoLive: requested,
+      slipped: true,
+      fromDate: current,
+      days,
+      cause,
+      note,
+    };
+  }
+
   // Cause/note without an actual date push — reject.
   if (hasSlipMeta && (cause || note)) {
-    if (!requested || !current || requested.getTime() === current.getTime()) {
+    if (
+      !requested ||
+      !current ||
+      utcDayKey(requested) === utcDayKey(current)
+    ) {
       return {
         ok: false,
         error:
