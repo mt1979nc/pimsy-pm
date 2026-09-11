@@ -3,10 +3,11 @@
 import { useActionState } from "react";
 import { updateEngagement } from "@/actions/management-engagements";
 import { SubmitButton, FormError } from "@/components/submit-button";
-import { Badge, Field, inputClass } from "@/components/ui";
+import { Field, inputClass } from "@/components/ui";
+import { SlipHistoryList } from "@/components/slip-history";
 import { SERVICE_LINE_LABELS } from "@/lib/estimator";
 import { PRISM_STATUSES, PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
-import { fmtDate, toDateInput } from "@/lib/dates";
+import { toDateInput } from "@/lib/dates";
 
 type LeadOption = {
   id: string;
@@ -351,25 +352,8 @@ export function EngagementEditForm({
       </section>
 
       {slips.length > 0 ? (
-        <section className="space-y-2">
-          <h3 className="text-[12px] font-semibold uppercase tracking-wide text-ink-3">
-            Slip history
-          </h3>
-          <ul className="divide-y divide-border rounded-lg border border-border">
-            {slips.map((s) => (
-              <li key={s.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-[12.5px]">
-                <span className="tabular-nums text-ink">
-                  {fmtDate(s.fromDate)} → {fmtDate(s.toDate)}
-                </span>
-                <Badge tone={s.days > 0 ? "amber" : "green"}>
-                  {s.days > 0 ? "+" : ""}
-                  {s.days}d
-                </Badge>
-                {s.cause ? <Badge>{s.cause}</Badge> : <Badge tone="neutral">untagged</Badge>}
-                {s.note ? <span className="text-ink-3">{s.note}</span> : null}
-              </li>
-            ))}
-          </ul>
+        <section>
+          <SlipHistoryList slips={slips} />
         </section>
       ) : null}
 
