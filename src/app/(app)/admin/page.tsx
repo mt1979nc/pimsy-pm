@@ -24,6 +24,7 @@ import {
   Avatar,
   LinkButton,
 } from "@/components/ui";
+import { siteAcronym } from "@/components/project-row";
 import { pctComplete } from "@/lib/rollup";
 import { fmtRelative, daysUntil, addDays } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -134,8 +135,11 @@ export default async function AdminOverviewPage() {
                       className="flex items-center gap-4 px-4 py-3 hover:bg-surface-2"
                     >
                       <div className="min-w-0 flex-[2]">
-                        <div className="truncate text-[13.5px] font-medium text-ink">
-                          {p.customerAccount?.name ?? p.name}
+                        <div
+                          className="truncate text-[13.5px] font-semibold text-ink"
+                          title={[siteAcronym(p), p.customerAccount?.name ?? p.name].filter(Boolean).join(" · ")}
+                        >
+                          {siteAcronym(p)}
                         </div>
                         <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                           <HealthBadge health={p.health} />
