@@ -15,7 +15,7 @@ import {
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Badge, Button, Card, CardHeader, Field, VisibilityBadge, inputClass } from "@/components/ui";
 import { STAFFING_ROLES, STAFFING_ROLE_LABELS, staffingRoleLabel } from "@/lib/staffing";
-import { OPTIONAL_AREA_CATALOG, PLAYBOOK_PATH_META } from "@/lib/playbook";
+import { OPTIONAL_AREA_CATALOG, PLAYBOOK_PATH_META } from "@/lib/playbook-meta";
 import type { PlaybookPath, WorkTrack } from "@/db/schema";
 
 type EditorTask = {

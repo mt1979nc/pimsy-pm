@@ -13,7 +13,7 @@ import {
   type ImplementationScope,
 } from "@/lib/estimator";
 import type { ComplexityTier, DiscoveryScenario, PlaybookPath } from "@/db/schema";
-import { PLAYBOOK_PATHS, PLAYBOOK_PATH_META } from "@/lib/playbook";
+import { PLAYBOOK_PATHS, PLAYBOOK_PATH_META } from "@/lib/playbook-meta";
 import { STAFFING_ROLES, STAFFING_ROLE_LABELS, MANAGER_OVERVIEW_ROLES } from "@/lib/staffing";
 
 type Option = { id: string; name: string | null; staffingRole?: string | null };

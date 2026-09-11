@@ -133,7 +133,9 @@ export function resolveAssigneeForRole(
 export function staffingRoleFromTitle(title: string | null | undefined): StaffingRole | null {
   if (!title) return null;
   const t = title.toLowerCase();
-  if (t.includes("support director")) return "SUPPORT_DIRECTOR";
+  if (t.includes("support director") || t.includes("director of support")) {
+    return "SUPPORT_DIRECTOR";
+  }
   if (t.includes("implementation director") || t.includes("director of implementation")) {
     return "IMPLEMENTATION_DIRECTOR";
   }
