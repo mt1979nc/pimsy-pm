@@ -7,6 +7,20 @@ export const metadata = { title: "Staffing" };
 export default function ManagementHubPage() {
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      <Card className="md:col-span-2">
+        <CardHeader
+          title="Forecast"
+          subtitle="Weekly hours, peak week, headroom, hire-now. Management only."
+        />
+        <p className="px-4 pb-3 text-[13px] text-ink-3">
+          Daily Capacity / Forecast+ workflow in PM: team load, department headroom, peak week, and
+          hire-now. Slips dilute weekly hours unless an engagement has custom hrs/wk. Pipeline and
+          capacity-exempt staff stay out of department math.
+        </p>
+        <div className="px-4 pb-4">
+          <LinkButton href="/management/forecast">Open forecast</LinkButton>
+        </div>
+      </Card>
       <Card>
         <CardHeader
           title="Team roster"
@@ -35,12 +49,12 @@ export default function ManagementHubPage() {
       </Card>
       <Card className="md:col-span-2">
         <CardHeader
-          title="Read-only capacity"
-          subtitle="Existing task-hour report until v1.9 phase model."
+          title="Task-hour snapshot"
+          subtitle="Open-task estimates vs declared weekly capacity."
         />
         <p className="px-4 pb-3 text-[13px] text-ink-3">
-          Load is task-estimate based until v1.9. Edit billable hours and flags under Team; this
-          report remains the depth view.
+          The weekly hours model lives on Forecast. This report is still the open-task snapshot —
+          useful when estimates are on tasks, not only on the engagement.
         </p>
         <div className="px-4 pb-4">
           <Link href="/reports/capacity" className="text-[13px] font-medium text-brand hover:underline">

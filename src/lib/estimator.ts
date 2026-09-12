@@ -148,12 +148,34 @@ export type HourEstimate = {
   trainingSessions: number;
 };
 
-const ORG_SETUP_HOURS = 1;
-const BILLING_CONFIG_HOURS = 1;
-const OTHER_SETTINGS_HOURS = 1;
-const MINUTES_PER_USER = 5;
-const MINUTES_PER_FORM_PAGE = 15;
-const CORE_TRAINING_SESSIONS = 7;
+/**
+ * Forecast+ weights — the Prism constants this estimator carries.
+ * Shown on Management → Forecast. Override via org_settings is out of
+ * this slice; change here (and tests) when tuning against Analysis.
+ */
+export const FORECAST_WEIGHTS = {
+  orgSetupHours: 1,
+  billingConfigHours: 1,
+  otherSettingsHours: 1,
+  minutesPerUser: 5,
+  minutesPerFormPage: 15,
+  coreTrainingSessions: 7,
+  stateComplianceHours: 2,
+  minimalOrgHoursPerWeek: 1,
+  kickoffDays: 1,
+  configOverhangDays: 7,
+  schedulingBufferDays: 2,
+  kickoffStaffHours: 0.5,
+  discoveryStaffHours: 1.5,
+  trainingHoursPerSession: 1.25,
+} as const;
+
+const ORG_SETUP_HOURS = FORECAST_WEIGHTS.orgSetupHours;
+const BILLING_CONFIG_HOURS = FORECAST_WEIGHTS.billingConfigHours;
+const OTHER_SETTINGS_HOURS = FORECAST_WEIGHTS.otherSettingsHours;
+const MINUTES_PER_USER = FORECAST_WEIGHTS.minutesPerUser;
+const MINUTES_PER_FORM_PAGE = FORECAST_WEIGHTS.minutesPerFormPage;
+const CORE_TRAINING_SESSIONS = FORECAST_WEIGHTS.coreTrainingSessions;
 
 export function estimateHours(scope: ImplementationScope, estimatedWeeks: number): HourEstimate {
   const lineItems: HourLineItem[] = [
@@ -171,10 +193,12 @@ export function estimateHours(scope: ImplementationScope, estimatedWeeks: number
     const hrs = SERVICE_LINE_HOURS[line];
     if (hrs) lineItems.push({ label: SERVICE_LINE_LABELS[line] ?? line, hours: hrs });
   }
-  if (scope.stateCompliance) lineItems.push({ label: "State compliance", hours: 2 });
+  if (scope.stateCompliance) {
+    lineItems.push({ label: "State compliance", hours: FORECAST_WEIGHTS.stateComplianceHours });
+  }
 
   if (scope.minimalOrgStructure) {
-    const structureHours = round1(estimatedWeeks * 1);
+    const structureHours = round1(estimatedWeeks * FORECAST_WEIGHTS.minimalOrgHoursPerWeek);
     lineItems.push({
       label: `Minimal Org Structure (+1h/wk × ${estimatedWeeks} est. weeks)`,
       hours: structureHours,
@@ -216,9 +240,9 @@ export type ForecastResult = {
   scenarios: ScenarioProjection[];
 };
 
-const KICKOFF_DAYS = 1;
-const CONFIG_OVERHANG_DAYS = 7;
-const SCHEDULING_BUFFER_DAYS = 2;
+const KICKOFF_DAYS = FORECAST_WEIGHTS.kickoffDays;
+const CONFIG_OVERHANG_DAYS = FORECAST_WEIGHTS.configOverhangDays;
+const SCHEDULING_BUFFER_DAYS = FORECAST_WEIGHTS.schedulingBufferDays;
 
 const DISCOVERY_DAYS: Record<DiscoveryScenario, number> = {
   OPTIMISTIC: 7,
@@ -260,17 +284,19 @@ export function forecastImplementation(
       const hours = estimateHours(scope, estimatedWeeks);
 
       const phases: PhaseProjection[] = [
-        { name: "Kickoff", calendarDays: KICKOFF_DAYS, staffHours: 0.5, notes: "Kickoff call + schedule touchpoints" },
+        { name: "Kickoff", calendarDays: KICKOFF_DAYS, staffHours: FORECAST_WEIGHTS.kickoffStaffHours, notes: "Kickoff call + schedule touchpoints" },
         {
           name: "Discovery",
           calendarDays: discoveryDays,
-          staffHours: 1.5,
+          staffHours: FORECAST_WEIGHTS.discoveryStaffHours,
           notes: "Customer-led; config starts as items are submitted",
         },
         {
           name: "Config",
           calendarDays: CONFIG_OVERHANG_DAYS,
-          staffHours: round1(hours.totalHours - 1.5 - 0.5),
+          staffHours: round1(
+            hours.totalHours - FORECAST_WEIGHTS.discoveryStaffHours - FORECAST_WEIGHTS.kickoffStaffHours,
+          ),
           notes: "Org, billing, forms, service-line setup — finishes after discovery",
         },
         {
@@ -282,7 +308,7 @@ export function forecastImplementation(
         {
           name: "Training",
           calendarDays: trainDays,
-          staffHours: round1(hours.trainingSessions * 1.25),
+          staffHours: round1(hours.trainingSessions * FORECAST_WEIGHTS.trainingHoursPerSession),
           notes: `${hours.trainingSessions} sessions × ${scope.trainingsPerWeek}/week`,
         },
       ];

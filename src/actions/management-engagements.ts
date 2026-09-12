@@ -375,6 +375,7 @@ export async function updateEngagement(
 
   revalidatePath("/management");
   revalidatePath("/management/engagements");
+  revalidatePath("/management/forecast");
   revalidatePath(`/management/engagements/${projectId}`);
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/reports/capacity");

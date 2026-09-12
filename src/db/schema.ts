@@ -1041,6 +1041,12 @@ export const orgSettings = pgTable("org_settings", {
    */
   teamsEnabled: boolean("teams_enabled").notNull().default(false),
   teamsWebhookUrl: text("teams_webhook_url"),
+  /**
+   * Project codes excluded from Analysis *primary* averages (v1.10).
+   * Default / Prism lock: SENSORI, MHC, LECHRIS. Null means use that default
+   * in code (`DEFAULT_ANALYSIS_EXCLUSION_CODES`). Empty array = exclude none.
+   */
+  forecastAnalysisExclusions: jsonb("forecast_analysis_exclusions").$type<string[]>(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

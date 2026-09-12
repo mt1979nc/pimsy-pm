@@ -78,6 +78,13 @@
       "when": 1789064000000,
       "tag": "0010_playbook_staffing",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789065000000,
+      "tag": "0011_forecast",
+      "breakpoints": true
     }
   ]
 }

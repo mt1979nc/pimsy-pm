@@ -5,6 +5,7 @@ import {
   onTimeByComplexityTier,
   slipAttribution,
 } from "@/lib/queries";
+import { loadForecastExclusions } from "@/lib/forecast-data";
 import { Card, CardHeader, PageHeader, Stat, EmptyState, Badge, LinkButton } from "@/components/ui";
 import { cn } from "@/lib/cn";
 
@@ -21,10 +22,11 @@ const TIER_LABEL: Record<string, string> = {
 export default async function AnalysisPage() {
   await requirePortfolioAccess();
 
+  const exclusions = await loadForecastExclusions();
   const [accuracy, owners, tiers, slips] = await Promise.all([
-    forecastAccuracy(),
-    onTimeByOwner(),
-    onTimeByComplexityTier(),
+    forecastAccuracy(exclusions),
+    onTimeByOwner(exclusions),
+    onTimeByComplexityTier(exclusions),
     slipAttribution(),
   ]);
 
@@ -33,8 +35,30 @@ export default async function AnalysisPage() {
       <PageHeader
         title="Analysis"
         subtitle="Forecast accuracy and delivery patterns across completed implementations"
-        actions={<LinkButton href="/reports/capacity">Team capacity</LinkButton>}
+        actions={
+          <>
+            <LinkButton href="/management/forecast">Forecast</LinkButton>
+            <LinkButton href="/reports/capacity">Team capacity</LinkButton>
+          </>
+        }
       />
+
+      <p className="mb-4 rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] text-ink-2">
+        Primary averages exclude{" "}
+        {exclusions.length > 0 ? (
+          <span className="font-medium text-ink">{exclusions.join(", ")}</span>
+        ) : (
+          <span>no codes</span>
+        )}
+        . Configure on{" "}
+        <a href="/management/forecast" className="font-medium text-brand hover:underline">
+          Staffing → Forecast
+        </a>
+        {accuracy.allCompleted > accuracy.completed
+          ? ` · all-in sample is ${accuracy.allCompleted} (on-time ${accuracy.allOnTimeRate ?? "—"}%)`
+          : null}
+        .
+      </p>
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Stat label="Completed" value={accuracy.completed} hint="with a recorded forecast" />

@@ -38,6 +38,13 @@ documents, and their conversation with your team. Nothing else.
 schedule, median cycle time, on-time rate, risk register, and per-specialist
 capacity against declared weekly hours.
 
+**Forecast** (`/management/forecast`) — Management-only (OWNER / ADMIN /
+MANAGER) weekly-hours forecast: team load, department headroom, peak week,
+hire-now. Capacity-exempt staff are excluded from department math. Analysis
+primary averages exclude SENSORI / MHC / LECHRIS by default (configurable).
+Specialists are redirected; customers never see it. Native Postgres — Prism
+Azure SQL dual-read is planned for v1.11, not this release.
+
 **Management area** (`/admin`) — one place for org-wide numbers, every project
 in a filterable table, every customer with rollups, people, and alert policy.
 Open to OWNER, ADMIN and MANAGER; the People and Alerts tabs are admin-only.

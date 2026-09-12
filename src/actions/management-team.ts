@@ -97,6 +97,7 @@ export async function updateTeamMemberFlags(
 
   revalidatePath("/management");
   revalidatePath("/management/team");
+  revalidatePath("/management/forecast");
   revalidatePath("/reports/capacity");
   return { ok: true };
 }
