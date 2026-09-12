@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, asc, eq, isNull, ne } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 
 import { db } from "@/db";
 import { projects } from "@/db/schema";
@@ -24,7 +24,9 @@ export async function getManagementForecast(weeksAhead = 12) {
 
 export async function listImplementationCodes(): Promise<string[]> {
   const rows = await db.query.projects.findMany({
-    where: and(isNull(projects.archivedAt), eq(projects.type, "IMPLEMENTATION"), ne(projects.status, "CANCELLED")),
+    // Include archived completed implementations (Prism history sets archivedAt)
+    // so SENSORI-style outliers appear on the exclusions checklist.
+    where: and(eq(projects.type, "IMPLEMENTATION"), ne(projects.status, "CANCELLED")),
     columns: { code: true, crmAcronym: true, prismClientId: true },
     orderBy: [asc(projects.code)],
   });

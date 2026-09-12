@@ -14,8 +14,7 @@ export function ForecastExclusionsForm({
 }) {
   const [state, action] = useActionState(updateForecastExclusions, {});
   const selected = new Set(exclusions);
-  const extras = exclusions.filter((c) => !knownCodes.includes(c));
-  const codes = knownCodes;
+  const codes = [...new Set([...knownCodes, ...exclusions])].sort();
 
   return (
     <form action={action} className="space-y-3 px-4 pb-4">
@@ -48,7 +47,7 @@ export function ForecastExclusionsForm({
         <input
           id="exclusions"
           name="exclusions"
-          defaultValue={extras.join(", ")}
+          defaultValue=""
           placeholder="e.g. OUTLIER"
           className="h-9 w-full max-w-md rounded-lg border border-border-strong bg-surface px-3 text-[13px] text-ink"
         />

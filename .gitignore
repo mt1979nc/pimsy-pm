@@ -15,3 +15,4 @@ coverage/
 SIGN-IN-LINK.txt
 PASSWORD-RESET-LINK.txt
 .pglite/
+.pglite-test/
