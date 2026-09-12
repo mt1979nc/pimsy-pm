@@ -13,6 +13,7 @@ import {
   materializeTemplatesOnProject,
   applyRoleMemberships,
   addRcmTrackToProject,
+  RCM_TRACK_ALREADY_PRESENT,
   setTaskNotApplicable,
   setPhaseNotApplicable,
   type LoadedTemplate,
@@ -350,5 +351,102 @@ describe("materialize + N/A + RCM attach (postgres)", () => {
       where: eq(templateTasks.phaseId, ehrTemplate.phases[0].id),
     });
     expect(tplCount).toHaveLength(3);
+  });
+
+  it("rejects attaching RCM when the project already has an RCM track", async () => {
+    const [project] = await db
+      .insert(projects)
+      .values({
+        name: "Harbor EHR+RCM",
+        code: "IMP-P002",
+        customerAccountId: customerId,
+        leadId: specialistId,
+        playbookPath: "EHR",
+        portalEnabled: true,
+      })
+      .returning({ id: projects.id });
+
+    await addRcmTrackToProject({
+      projectId: project.id,
+      actorId: rcmId,
+      templates: [rcmTemplate],
+      excludedAreaKeys: [],
+      roleAssignments: { RCM_IMPLEMENTATION_SPECIALIST: rcmId },
+      rcmStart: new Date("2026-10-01T12:00:00Z"),
+      rcmTargetGoLive: new Date("2026-11-15T12:00:00Z"),
+      scaleFactor: 1,
+    });
+
+    await expect(
+      addRcmTrackToProject({
+        projectId: project.id,
+        actorId: rcmId,
+        templates: [rcmTemplate],
+        excludedAreaKeys: [],
+        roleAssignments: { RCM_IMPLEMENTATION_SPECIALIST: rcmId },
+        rcmStart: new Date("2026-10-15T12:00:00Z"),
+        rcmTargetGoLive: new Date("2026-11-30T12:00:00Z"),
+        scaleFactor: 1,
+      }),
+    ).rejects.toThrow(RCM_TRACK_ALREADY_PRESENT);
+
+    const rcmTasks = (await db.query.tasks.findMany({ where: eq(tasks.projectId, project.id) })).filter(
+      (t) => t.workTrack === "RCM",
+    );
+    expect(rcmTasks).toHaveLength(2);
+
+    const [alreadyPrism] = await db
+      .insert(projects)
+      .values({
+        name: "Already Prism",
+        code: "IMP-P003",
+        customerAccountId: customerId,
+        leadId: specialistId,
+        playbookPath: "RCM_PRISM",
+        portalEnabled: true,
+      })
+      .returning({ id: projects.id });
+
+    await expect(
+      addRcmTrackToProject({
+        projectId: alreadyPrism.id,
+        actorId: rcmId,
+        templates: [rcmTemplate],
+        excludedAreaKeys: [],
+        roleAssignments: { RCM_IMPLEMENTATION_SPECIALIST: rcmId },
+        rcmStart: new Date("2026-10-01T12:00:00Z"),
+        rcmTargetGoLive: null,
+        scaleFactor: 1,
+      }),
+    ).rejects.toThrow(RCM_TRACK_ALREADY_PRESENT);
+
+    const [ehrWithRcm] = await db
+      .insert(projects)
+      .values({
+        name: "EHR leftover RCM",
+        code: "IMP-P004",
+        customerAccountId: customerId,
+        leadId: specialistId,
+        playbookPath: "EHR",
+        portalEnabled: true,
+      })
+      .returning({ id: projects.id });
+    await db.insert(tasks).values({
+      projectId: ehrWithRcm.id,
+      title: "Existing RCM work",
+      workTrack: "RCM",
+    });
+    await expect(
+      addRcmTrackToProject({
+        projectId: ehrWithRcm.id,
+        actorId: rcmId,
+        templates: [rcmTemplate],
+        excludedAreaKeys: [],
+        roleAssignments: { RCM_IMPLEMENTATION_SPECIALIST: rcmId },
+        rcmStart: new Date("2026-10-01T12:00:00Z"),
+        rcmTargetGoLive: null,
+        scaleFactor: 1,
+      }),
+    ).rejects.toThrow(RCM_TRACK_ALREADY_PRESENT);
   });
 });

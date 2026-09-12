@@ -43,6 +43,9 @@ export function ProjectContacts({
   const [addState, addAction] = useActionState(addProjectMember, {});
   const [inviteState, inviteAction] = useActionState(inviteCustomerContact, {});
   const [inviting, setInviting] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [emailSkipped, setEmailSkipped] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const inviteRef = useRef<HTMLFormElement>(null);
@@ -51,8 +54,23 @@ export function ProjectContacts({
     if (inviteState.ok) {
       inviteRef.current?.reset();
       setInviting(false);
+      if (inviteState.inviteUrl) {
+        setInviteUrl(inviteState.inviteUrl);
+        setEmailSkipped(Boolean(inviteState.emailSkipped));
+        setCopied(false);
+      }
     }
-  }, [inviteState.ok]);
+  }, [inviteState]);
+
+  async function copyLink() {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
 
   if (!customerId) {
     return (
@@ -116,6 +134,30 @@ export function ProjectContacts({
       )}
 
       {error ? <p className="px-4 pb-2 text-[12px] text-red">{error}</p> : null}
+
+      {inviteUrl ? (
+        <div className="space-y-2 border-t border-border bg-brand-soft px-4 py-3">
+          <p className="text-[12.5px] font-medium text-ink">
+            {emailSkipped
+              ? "Invite created — email was not sent (no Resend key). Copy this link for the contact:"
+              : "Invite sent. Staff copy of the magic/set-password link:"}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              readOnly
+              value={inviteUrl}
+              className={`${inputClass} min-w-0 flex-1 font-mono text-[12px]`}
+              onFocus={(e) => e.currentTarget.select()}
+            />
+            <Button size="sm" variant="secondary" type="button" onClick={() => void copyLink()}>
+              {copied ? "Copied" : "Copy link"}
+            </Button>
+            <Button size="sm" type="button" onClick={() => setInviteUrl(null)}>
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {available.length > 0 ? (
         <form action={addAction} className="flex flex-wrap items-end gap-2 border-t border-border p-4">

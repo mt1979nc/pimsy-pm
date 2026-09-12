@@ -42,6 +42,7 @@ import {
 import {
   addRcmTrackToProject,
   applyRoleMemberships,
+  RCM_TRACK_ALREADY_PRESENT,
   loadTemplateById,
   materializeTemplatesOnProject,
   parseExcludedAreaKeys,
@@ -212,6 +213,9 @@ export async function createProject(
       });
     } catch (err) {
       console.error("addRcmTrackToProject failed", err);
+      if (err instanceof Error && err.message === RCM_TRACK_ALREADY_PRESENT) {
+        return { error: err.message };
+      }
       return { error: "Could not add the RCM track to that project." };
     }
     await audit({
@@ -673,6 +677,9 @@ export async function addRcmTrack(
     });
   } catch (err) {
     console.error("addRcmTrack failed", err);
+    if (err instanceof Error && err.message === RCM_TRACK_ALREADY_PRESENT) {
+      return { error: err.message };
+    }
     return { error: "Could not add the RCM track." };
   }
   await audit({

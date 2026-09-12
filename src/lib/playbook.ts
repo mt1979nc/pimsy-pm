@@ -342,6 +342,15 @@ function titlesMatch(a: string, b: string): boolean {
   return na === nb || na.includes(nb) || nb.includes(na);
 }
 
+export const RCM_TRACK_ALREADY_PRESENT = "This project already has an RCM track.";
+
+function projectHasRcmTrack(
+  playbookPath: PlaybookPath | null | undefined,
+  taskRows: { workTrack: string }[],
+): boolean {
+  return playbookPath === "RCM_PRISM" || taskRows.some((t) => t.workTrack === "RCM");
+}
+
 /**
  * Path 4: add RCM work to an existing EHR site, auto-complete overlapping
  * standard-implementation tasks, reactivate if needed, keep EHR dates.
@@ -387,6 +396,10 @@ export async function addRcmTrackToProject(opts: {
       notApplicable: true,
     },
   });
+
+  if (projectHasRcmTrack(existing.playbookPath, existingTasks)) {
+    throw new Error(RCM_TRACK_ALREADY_PRESENT);
+  }
 
   let autoCompleted = 0;
   const result = await db.transaction(async (tx) => {
