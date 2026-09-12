@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.9.0";
+export const APP_VERSION = "1.9.1";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.9.1",
+    date: "2026-09-12",
+    summary:
+      "Hotfix: playbook editor shows newly added phases/tasks without remount; project-settings invite keeps a copyable link; Resend failure still returns the invite URL; duplicate RCM attach is rejected; director/manager roles default to Not assigned on create.",
+    highlights: [
+      "Playbook editor syncs phase/task order with the latest template so add no longer vanishes until remount.",
+      "Project settings invite shows a copyable invite URL after success, matching the customer-page form.",
+      "If Resend fails after the invite token is minted, staff still get `{ ok, inviteUrl, emailSkipped: true }`.",
+      "Attaching RCM (path 4 / addRcmTrackToProject) is rejected when the project is already RCM_PRISM or has RCM tasks.",
+      "New-site staffing: director/manager roles default to Not assigned; only Implementation Specialist (and T1/RCM specialist when already the pattern) auto-suggest.",
+    ],
+  },
   {
     version: "1.9.0",
     date: "2026-09-11",

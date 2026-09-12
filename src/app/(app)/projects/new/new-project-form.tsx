@@ -588,9 +588,14 @@ export function NewProjectForm({
           />
           <div className="space-y-3 p-4">
             {STAFFING_ROLES.map((role) => {
-              const suggested =
-                staff.find((s) => s.staffingRole === role)?.id ??
-                (role === "IMPLEMENTATION_SPECIALIST" ? defaultLeadId : "");
+              const autoSuggest =
+                role === "IMPLEMENTATION_SPECIALIST" ||
+                role === "T1_BILLING_SUPPORT" ||
+                role === "RCM_IMPLEMENTATION_SPECIALIST";
+              const suggested = autoSuggest
+                ? (staff.find((s) => s.staffingRole === role)?.id ??
+                  (role === "IMPLEMENTATION_SPECIALIST" ? defaultLeadId : ""))
+                : "";
               return (
                 <Field key={role} label={STAFFING_ROLE_LABELS[role]} htmlFor={`role-${role}`}>
                   <select

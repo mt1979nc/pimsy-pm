@@ -50,6 +50,16 @@ type EditorPhase = {
   tasks: EditorTask[];
 };
 
+/** Keep drag order, append newly created ids, drop deleted ones. */
+function mergeOrder(current: string[], incoming: string[]): string[] {
+  const incomingSet = new Set(incoming);
+  const kept = current.filter((id) => incomingSet.has(id));
+  const keptSet = new Set(kept);
+  const added = incoming.filter((id) => !keptSet.has(id));
+  if (kept.length === current.length && added.length === 0) return current;
+  return [...kept, ...added];
+}
+
 export function TemplateEditor({
   template,
 }: {
@@ -68,12 +78,16 @@ export function TemplateEditor({
   const [pending, start] = useTransition();
   const [dragPhase, setDragPhase] = useState<string | null>(null);
 
+  const incomingPhaseIds = template.phases.map((p) => p.id);
+  const nextPhaseOrder = mergeOrder(phaseOrder, incomingPhaseIds);
+  if (nextPhaseOrder !== phaseOrder) setPhaseOrder(nextPhaseOrder);
+
   const phaseById = new Map(template.phases.map((p) => [p.id, p]));
-  const orderedPhases = phaseOrder.map((id) => phaseById.get(id)).filter(Boolean) as EditorPhase[];
+  const orderedPhases = nextPhaseOrder.map((id) => phaseById.get(id)).filter(Boolean) as EditorPhase[];
 
   function onDropPhase(targetId: string) {
     if (!dragPhase || dragPhase === targetId) return;
-    const next = phaseOrder.filter((id) => id !== dragPhase);
+    const next = nextPhaseOrder.filter((id) => id !== dragPhase);
     const idx = next.indexOf(targetId);
     next.splice(idx, 0, dragPhase);
     setPhaseOrder(next);
@@ -180,12 +194,16 @@ function PhaseEditor({
   const [taskOrder, setTaskOrder] = useState(phase.tasks.map((t) => t.id));
   const [dragTask, setDragTask] = useState<string | null>(null);
 
+  const incomingTaskIds = phase.tasks.map((t) => t.id);
+  const nextTaskOrder = mergeOrder(taskOrder, incomingTaskIds);
+  if (nextTaskOrder !== taskOrder) setTaskOrder(nextTaskOrder);
+
   const taskById = new Map(phase.tasks.map((t) => [t.id, t]));
-  const orderedTasks = taskOrder.map((id) => taskById.get(id)).filter(Boolean) as EditorTask[];
+  const orderedTasks = nextTaskOrder.map((id) => taskById.get(id)).filter(Boolean) as EditorTask[];
 
   function onDropTask(targetId: string) {
     if (!dragTask || dragTask === targetId) return;
-    const next = taskOrder.filter((id) => id !== dragTask);
+    const next = nextTaskOrder.filter((id) => id !== dragTask);
     const idx = next.indexOf(targetId);
     next.splice(idx, 0, dragTask);
     setTaskOrder(next);

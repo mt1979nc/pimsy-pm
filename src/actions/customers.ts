@@ -258,20 +258,25 @@ export async function inviteCustomerContact(
 
   let emailSkipped = true;
   if (env.EMAIL_ENABLED) {
-    await sendEmail({
-      to: d.email,
-      subject: `You've been invited to your PIMSY implementation workspace`,
-      html: layout({
-        heading: `Welcome, ${d.name.split(" ")[0]}`,
-        body: `<p style="margin:0 0 12px">${escapeHtml(actor.name ?? actor.email)} has set up a workspace for <strong>${escapeHtml(account.name)}</strong>'s PIMSY implementation.</p>
-               <p style="margin:0">Use the button below to set a password and open your workspace. You'll find your project timeline, the items we need from you, shared documents, and a direct line to your implementation team.</p>`,
-        cta: { label: "Open your workspace", url: inviteUrl },
-        footer:
-          "This link works once and expires in one hour. This workspace is for implementation logistics only; never post patient information here.",
-      }),
-      replyTo: actor.email,
-    });
-    emailSkipped = false;
+    try {
+      await sendEmail({
+        to: d.email,
+        subject: `You've been invited to your PIMSY implementation workspace`,
+        html: layout({
+          heading: `Welcome, ${d.name.split(" ")[0]}`,
+          body: `<p style="margin:0 0 12px">${escapeHtml(actor.name ?? actor.email)} has set up a workspace for <strong>${escapeHtml(account.name)}</strong>'s PIMSY implementation.</p>
+                 <p style="margin:0">Use the button below to set a password and open your workspace. You'll find your project timeline, the items we need from you, shared documents, and a direct line to your implementation team.</p>`,
+          cta: { label: "Open your workspace", url: inviteUrl },
+          footer:
+            "This link works once and expires in one hour. This workspace is for implementation logistics only; never post patient information here.",
+        }),
+        replyTo: actor.email,
+      });
+      emailSkipped = false;
+    } catch (err) {
+      console.error("inviteCustomerContact email failed; invite link still valid", err);
+      emailSkipped = true;
+    }
   }
 
   revalidatePath(`/customers/${d.customerAccountId}`);
