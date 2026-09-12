@@ -7,6 +7,7 @@ import {
   resolveVisibilityForActor,
   canSeeInternal,
   canSeePortfolio,
+  canManagePrismCapacity,
   canManageTemplates,
   NotFoundError,
   ForbiddenError,
@@ -207,6 +208,12 @@ describe("staff access", () => {
     expect(canSeePortfolio(f.actors.manager)).toBe(true);
     expect(canSeePortfolio(f.actors.specialist)).toBe(false);
     expect(canSeePortfolio(f.actors.customerA)).toBe(false);
+  });
+
+  it("Forecast / Prism capacity is the same Management gate (not specialists or customers)", () => {
+    expect(canManagePrismCapacity(f.actors.manager)).toBe(true);
+    expect(canManagePrismCapacity(f.actors.specialist)).toBe(false);
+    expect(canManagePrismCapacity(f.actors.customerA)).toBe(false);
   });
 
   it("templates are an OWNER/ADMIN-only setup concern, hidden from specialists and managers alike", () => {

@@ -1,6 +1,7 @@
 import { requirePortfolioAccess } from "@/lib/guard";
-import { teamCapacity, weeklyCapacityForecast } from "@/lib/queries";
-import { PageHeader, Card, CardHeader, EmptyState, Badge, Avatar, LinkButton } from "@/components/ui";
+import { teamCapacity } from "@/lib/queries";
+import { loadCapacityForecast } from "@/lib/forecast-data";
+import { PageHeader, Card, CardHeader, EmptyState, Badge, Avatar, LinkButton, Stat } from "@/components/ui";
 import { fmtShort } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 
@@ -16,7 +17,7 @@ function utilizationTone(pct: number) {
 
 export default async function CapacityPage() {
   await requirePortfolioAccess();
-  const [team, forecast] = await Promise.all([teamCapacity(), weeklyCapacityForecast(10)]);
+  const [team, forecast] = await Promise.all([teamCapacity(), loadCapacityForecast(12)]);
 
   const over = team.filter((t) => t.utilization > 110);
   const idle = team.filter((t) => t.utilization < 40);
@@ -28,6 +29,7 @@ export default async function CapacityPage() {
         subtitle="Committed hours against declared weekly capacity, per specialist."
         actions={
           <>
+            <LinkButton href="/management/forecast">Forecast</LinkButton>
             <LinkButton href="/reports/analysis">Analysis</LinkButton>
             <LinkButton href="/reports">Portfolio</LinkButton>
           </>
@@ -35,16 +37,38 @@ export default async function CapacityPage() {
       />
 
       <p className="mb-4 rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] text-ink-2">
-        Load is task-estimate based until v1.9 phase model. Edit billable hours and Prism flags under{" "}
+        Weekly hours below use the v1.10 Forecast model (scoped hours across kickoff → go-live;
+        exempt staff excluded from department headroom). The workload list is still open-task
+        estimates. Edit flags under{" "}
         <a href="/management/team" className="font-medium text-brand hover:underline">
           Staffing → Team
         </a>
-        . Capacity-exempt people are excluded from department headroom there.
+        .
       </p>
+
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Dept capacity" value={`${forecast.deptCapacityHours}h`} hint="exempt excluded" />
+        <Stat
+          label="Peak week"
+          value={`${forecast.peakWeek?.billableHours ?? 0}h`}
+          hint={forecast.peakWeek ? fmtShort(forecast.peakWeek.weekOf) : undefined}
+        />
+        <Stat
+          label="Peak headroom"
+          value={`${forecast.peakHeadroom}h`}
+          tone={forecast.peakHeadroom < 0 ? "red" : forecast.peakHeadroom < 10 ? "amber" : "green"}
+        />
+        <Stat
+          label="Hire now"
+          value={forecast.hire.hireNow ? "Yes" : "No"}
+          tone={forecast.hire.hireNow ? "red" : "green"}
+          href="/management/forecast"
+        />
+      </div>
       <Card className="mb-5">
         <CardHeader
           title="Weekly capacity forecast"
-          subtitle="Each project's estimated hours spread across its start → target go-live window"
+          subtitle="Scoped hours across kickoff → go-live; pipeline omitted; exempt excluded from billable totals"
         />
         {forecast.staff.length === 0 ? (
           <EmptyState title="No staff yet" />
@@ -59,33 +83,52 @@ export default async function CapacityPage() {
                       {(s.name ?? "—").split(" ")[0]}
                       <span className="ml-1 font-normal normal-case text-ink-3">
                         {s.capacityHoursPerWeek}h
+                        {s.capacityExempt ? " · ex" : ""}
                       </span>
                     </th>
                   ))}
-                  <th className="px-4 py-2 text-right">Total</th>
+                  <th className="px-4 py-2 text-right">Billable</th>
+                  <th className="px-4 py-2 text-right">Headroom</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {forecast.weeks.map((w) => (
-                  <tr key={w.weekOf.toISOString()}>
-                    <td className="px-4 py-2 text-ink-2">{fmtShort(w.weekOf)}</td>
-                    {w.byPerson.map((p) => (
-                      <td key={p.id} className="px-3 py-2 text-right tabular-nums text-ink-2">
-                        {p.hours > 0 ? p.hours : "—"}
+                {forecast.weeks.map((w) => {
+                  const isPeak = forecast.peakWeek?.weekOf.getTime() === w.weekOf.getTime();
+                  return (
+                    <tr key={w.weekOf.toISOString()} className={cn(isPeak && "bg-amber-soft/40")}>
+                      <td className="px-4 py-2 text-ink-2">
+                        {fmtShort(w.weekOf)}
+                        {isPeak ? <span className="ml-2 text-[11px] font-semibold text-amber">Peak</span> : null}
                       </td>
-                    ))}
-                    <td className="px-4 py-2 text-right font-medium tabular-nums text-ink">
-                      {w.totalHours}
-                    </td>
-                  </tr>
-                ))}
+                      {w.byPerson.map((p) => (
+                        <td key={p.id} className="px-3 py-2 text-right tabular-nums text-ink-2">
+                          {p.hours > 0 ? p.hours : "—"}
+                        </td>
+                      ))}
+                      <td className="px-4 py-2 text-right font-medium tabular-nums text-ink">
+                        {w.billableHours}
+                      </td>
+                      <td
+                        className={cn(
+                          "px-4 py-2 text-right tabular-nums",
+                          w.headroom < 0 ? "text-red" : "text-ink-2",
+                        )}
+                      >
+                        {w.headroom}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
         <p className="border-t border-border px-4 py-3 text-[12px] text-ink-3">
-          Only projects with an estimated-hours figure (from Forecast+ scoping, or imported PRISM
-          history) contribute — an unscoped project undercounts here rather than guessing.
+          Daily workflow lives under{" "}
+          <a href="/management/forecast" className="font-medium text-brand hover:underline">
+            Staffing → Forecast
+          </a>
+          . Unscoped projects undercount rather than guessing.
         </p>
       </Card>
 

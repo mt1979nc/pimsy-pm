@@ -136,22 +136,27 @@ password set — it's only the "email me a link" flows that need it.
 Nothing extra needed — every push to `main` re-runs the same GitHub Actions
 workflow: build image, push, migrate, redeploy.
 
-**v1.9.0** adds migration `0010_playbook_staffing` (playbook paths, optional
-areas, per-project N/A, staffing roles, EHR/RCM counters). The deploy workflow
-applies it automatically. To apply by hand against Azure Postgres:
+**v1.10.0** adds migration `0011_forecast` (`org_settings.forecast_analysis_exclusions`
+for Analysis primary averages; default SENSORI / MHC / LECHRIS in code when
+null). The deploy workflow applies it automatically. To apply by hand against
+Azure Postgres:
 
 ```
 npm run db:migrate
 ```
 
-Then, if you want the four standard playbooks refreshed (does not rewrite
-existing project tasks, does not send invite emails):
+No Prism Azure SQL connection string is required. Dual-read is v1.11
+(`PRISM_SQL_CONNECTION_STRING` is documented in `.env.example` but unused).
+
+See `v1.10-REPORT.md` in the repo root.
+
+**v1.9.0** added `0010_playbook_staffing`. To refresh the four standard
+playbooks (does not rewrite existing project tasks, does not send invite
+emails):
 
 ```
 npm run db:seed -- --templates-only
-```
-
-See `v1.9-REPORT.md` in the repo root. To change infrastructure
+``` To change infrastructure
 (bump the App Service Plan tier, for instance), edit `azure/main.parameters.json`
 or `azure/main.bicep` and re-run `./azure/deploy.sh` — it's a diff-and-apply
 deployment, not a from-scratch one, so existing data is untouched.

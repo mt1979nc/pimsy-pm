@@ -77,4 +77,11 @@ export const env = {
   get STORAGE_BACKEND(): "local" | "azure-blob" {
     return optional("AZURE_STORAGE_CONNECTION_STRING").length > 0 ? "azure-blob" : "local";
   },
+  /**
+   * v1.11 hook only. v1.10 Forecast does not read Prism Azure SQL.
+   * Leave blank until dual-read of Director / Pipeline routines.
+   */
+  get PRISM_SQL_CONNECTION_STRING() {
+    return optional("PRISM_SQL_CONNECTION_STRING");
+  },
 };

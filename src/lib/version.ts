@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.9.1";
+export const APP_VERSION = "1.10.0";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,22 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.10.0",
+    date: "2026-09-12",
+    summary:
+      "Management Forecast: weekly hours, peak week, department headroom, hire-now; capacity-exempt staff excluded from dept math; configurable Analysis exclusions (default SENSORI / MHC / LECHRIS). Native Postgres — Prism SQL dual-read is v1.11.",
+    highlights: [
+      "Staffing → Forecast is the daily Capacity / Forecast+ screen (OWNER / ADMIN / MANAGER only).",
+      "Weekly hours from scoped estimates or custom hrs/wk across kickoff → current go-live; pipeline stays off the load.",
+      "Peak week, this-week headroom, and a hire-now signal when peak billable load exceeds department capacity.",
+      "Go-live slips dilute weekly hours unless the engagement has custom hrs/wk — same estimate, longer window.",
+      "Capacity-exempt people still show personal load but are excluded from department headroom and hire-now.",
+      "Analysis primary averages exclude SENSORI, MHC, and LECHRIS by default; the list is editable on Forecast.",
+      "Forecast+ estimator weights are listed on the Forecast page (service-line hours, minutes, phase days).",
+      "Customers never see Forecast. Specialists are redirected from Management. No Prism Azure SQL in this release.",
+    ],
+  },
   {
     version: "1.9.1",
     date: "2026-09-12",

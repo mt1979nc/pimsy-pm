@@ -18,6 +18,11 @@ import {
 import { isManagerOverviewRole } from "@/lib/staffing";
 import { accessibleProjectIds, type Actor } from "./authz";
 import { addDays, startOfDay, differenceInCalendarDays } from "./dates";
+import {
+  applyPrimaryAverageExclusions,
+  DEFAULT_ANALYSIS_EXCLUSION_CODES,
+  summarizeForecastAccuracy,
+} from "@/lib/forecast";
 
 const OPEN_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "ON_HOLD", "BLOCKED"] as const;
 
@@ -453,6 +458,7 @@ export async function weeklyCapacityForecast(weeksAhead = 12) {
 
 type CompletedForAnalysis = {
   id: string;
+  code: string;
   leadId: string | null;
   leadName: string | null;
   complexityTier: ComplexityTier | null;
@@ -466,7 +472,16 @@ type CompletedForAnalysis = {
 async function completedImplementationsForAnalysis(): Promise<CompletedForAnalysis[]> {
   const rows = await db.query.projects.findMany({
     where: and(eq(projects.status, "COMPLETED"), eq(projects.type, "IMPLEMENTATION")),
-    columns: { id: true, leadId: true, startDate: true, initialGoLiveDate: true, actualGoLiveDate: true },
+    columns: {
+      id: true,
+      code: true,
+      crmAcronym: true,
+      prismClientId: true,
+      leadId: true,
+      startDate: true,
+      initialGoLiveDate: true,
+      actualGoLiveDate: true,
+    },
     with: {
       lead: { columns: { id: true, name: true } },
       scope: { columns: { complexityTier: true } },
@@ -484,6 +499,7 @@ async function completedImplementationsForAnalysis(): Promise<CompletedForAnalys
         : null;
     return {
       id: p.id,
+      code: p.crmAcronym || p.prismClientId || p.code,
       leadId: p.leadId,
       leadName: p.lead?.name ?? null,
       complexityTier: p.scope?.complexityTier ?? null,
@@ -507,27 +523,32 @@ function avg(nums: number[]) {
  * loop the estimator constants in src/lib/estimator.ts should eventually be
  * tuned against.
  */
-export async function forecastAccuracy() {
+export async function forecastAccuracy(
+  exclusions: readonly string[] = DEFAULT_ANALYSIS_EXCLUSION_CODES,
+) {
   const rows = (await completedImplementationsForAnalysis()).filter((r) => r.variance !== null);
-  const withData = rows.length;
-  const onTime = rows.filter((r) => (r.variance ?? 0) <= 0).length;
-  const misses = rows.filter((r) => (r.variance ?? 0) > 0);
+  const { primary, excluded } = applyPrimaryAverageExclusions(rows, exclusions);
+  const misses = primary.filter((r) => (r.variance ?? 0) > 0);
+  const all = summarizeForecastAccuracy(rows);
 
   return {
-    completed: withData,
-    onTimeRate: withData > 0 ? Math.round((onTime / withData) * 100) : null,
-    lateCount: misses.length,
-    avgVariance: avg(rows.map((r) => r.variance!)),
+    ...summarizeForecastAccuracy(primary),
     avgMissSeverity: avg(misses.map((r) => r.variance!)),
-    avgDuration: avg(rows.filter((r) => r.durationDays !== null).map((r) => r.durationDays!)),
+    excludedCodes: excluded.map((r) => r.code),
+    allCompleted: all.completed,
+    allOnTimeRate: all.onTimeRate,
+    allAvgVariance: all.avgVariance,
   };
 }
 
 /** On-time rate and miss severity, one row per implementation lead. */
-export async function onTimeByOwner() {
-  const rows = (await completedImplementationsForAnalysis()).filter(
-    (r) => r.variance !== null && r.leadId,
-  );
+export async function onTimeByOwner(
+  exclusions: readonly string[] = DEFAULT_ANALYSIS_EXCLUSION_CODES,
+) {
+  const rows = applyPrimaryAverageExclusions(
+    (await completedImplementationsForAnalysis()).filter((r) => r.variance !== null && r.leadId),
+    exclusions,
+  ).primary;
   const byOwner = new Map<string, { name: string; rows: CompletedForAnalysis[] }>();
   for (const r of rows) {
     const key = r.leadId!;
@@ -551,10 +572,13 @@ export async function onTimeByOwner() {
 }
 
 /** On-time rate and average duration/variance, one row per complexity tier. */
-export async function onTimeByComplexityTier() {
-  const rows = (await completedImplementationsForAnalysis()).filter(
-    (r) => r.variance !== null && r.complexityTier,
-  );
+export async function onTimeByComplexityTier(
+  exclusions: readonly string[] = DEFAULT_ANALYSIS_EXCLUSION_CODES,
+) {
+  const rows = applyPrimaryAverageExclusions(
+    (await completedImplementationsForAnalysis()).filter((r) => r.variance !== null && r.complexityTier),
+    exclusions,
+  ).primary;
   const tiers: ComplexityTier[] = ["STANDARD", "MODERATE", "HIGH", "ENTERPRISE"];
   return tiers
     .map((tier) => {
