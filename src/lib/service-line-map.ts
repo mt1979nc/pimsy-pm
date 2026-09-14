@@ -1,6 +1,6 @@
 /**
  * Prism `sel` keys ↔ pimsy-pm SERVICE_LINE_* keys used in project_scope.
- * Engagement edit UI stores PM keys; this map is for import/display parity.
+ * Engagement edit UI stores PATH service-line keys; this map is for import/display parity.
  */
 
 import { SERVICE_LINE_LABELS } from "@/lib/estimator";

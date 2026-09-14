@@ -1,5 +1,5 @@
 /**
- * One-time Prism → PM import (idempotent by acronym / prism_team_id).
+ * One-time Prism → PATH import (idempotent by acronym / prism_team_id).
  *
  * Native Postgres is the write store. This never POSTs Prism saveState.
  * WIP playbooks, demo logins, and protected codes are left intact.
@@ -244,9 +244,9 @@ export function planPrismImport(dump: PrismDump, existing: ExistingPmState): Imp
         kind: "completed",
         key: c.id,
         action: "protect-wip",
-        detail: `Prism lists ${c.id} completed but PM still has WIP — status not flipped`,
+        detail: `Prism lists ${c.id} completed but PATH still has WIP — status not flipped`,
       });
-      warnings.push(`${c.id}: Prism completed, PM has a live playbook — left in progress.`);
+      warnings.push(`${c.id}: Prism completed, PATH has a live playbook — left in progress.`);
       continue;
     }
     completed.push({
