@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.11.1";
+export const APP_VERSION = "1.11.2";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.11.2",
+    date: "2026-09-14",
+    summary:
+      "Hotfix: Forecast Headroom chart draws weekly load bars; team member cards show this-week / peak vs capacity; owners/admins/managers can delete a project or customer with typed confirmation.",
+    highlights: [
+      "Headroom bars use pixel heights on a fixed 160px track. Percentage heights inside a flex `items-end` row had collapsed to 0px (only the peak-week ring remained), which matched Alexander’s blank chart on live PATH.",
+      "Team load cards always list rostered people with this-week hours, peak hours, and declared cap — same mapping on Staffing, Forecast, Team, and Capacity.",
+      "Week labels keep the day (Sep 14) so the horizon is readable.",
+      "Danger zone: delete project from project settings (type acronym or name). Deletes tasks, threads, slips, memberships, files via existing FK cascades. Archive remains for hiding without delete.",
+      "Delete customer from the customer page (type name). Refuses if staff users are linked. Remaining projects require the “Also delete projects” checkbox. Portal contacts may be removed; named staff logins are never deleted.",
+    ],
+  },
   {
     version: "1.11.1",
     date: "2026-09-14",

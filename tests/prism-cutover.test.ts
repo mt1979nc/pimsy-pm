@@ -279,6 +279,10 @@ describe("Director / morning snapshot", () => {
     expect(snap.pipeline[0]?.acronym).toBe("PIPEX");
     expect(snap.goLivesNext14.map((g) => g.acronym)).toContain("CEDAR");
     expect(snap.analysisExclusions).toEqual(["SENSORI"]);
+    expect(snap.team).toHaveLength(1);
+    expect(snap.team[0]?.thisWeekHours).toBeGreaterThan(0);
+    expect(snap.team[0]?.peakHours).toBeGreaterThanOrEqual(snap.team[0]!.thisWeekHours);
+    expect(snap.forecastWeeks.filter((w) => w.billableHours > 0).length).toBeGreaterThan(1);
   });
 
   it("keeps runtime dual-read off so PATH is the only live source", () => {

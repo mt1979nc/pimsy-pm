@@ -6,7 +6,7 @@ import { HeadroomChart, MemberLoadCards } from "@/components/charts";
 import { fmtShort } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { FORECAST_WEIGHTS, SERVICE_LINE_HOURS, SERVICE_LINE_LABELS } from "@/lib/estimator";
-import { TYPICAL_HIRE_HOURS_PER_WEEK } from "@/lib/forecast";
+import { memberLoadsFromForecast, TYPICAL_HIRE_HOURS_PER_WEEK } from "@/lib/forecast";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Forecast — Prism" };
@@ -185,26 +185,7 @@ export default async function ManagementForecastPage() {
           <EmptyState title="No staff yet" />
         ) : (
           <div className="p-4">
-            <MemberLoadCards
-              members={forecast.staff.map((s) => {
-                const thisHrs = forecast.thisWeek?.byPerson.find((p) => p.id === s.id)?.hours ?? 0;
-                const peakHrs = Math.max(
-                  ...forecast.weeks.map((w) => w.byPerson.find((p) => p.id === s.id)?.hours ?? 0),
-                  0,
-                );
-                return {
-                  id: s.id,
-                  name: s.name,
-                  email: s.email,
-                  image: s.image,
-                  capacityHoursPerWeek: s.capacityHoursPerWeek,
-                  capacityExempt: s.capacityExempt,
-                  isDirector: s.isDirector,
-                  thisWeekHours: thisHrs,
-                  peakHours: peakHrs,
-                };
-              })}
-            />
+            <MemberLoadCards members={memberLoadsFromForecast(forecast)} />
           </div>
         )}
       </Card>

@@ -25,10 +25,16 @@ import {
   assertProjectAccess,
   assertProjectWrite,
   canCreateProjects,
+  canDeletePortfolioRecords,
   isCustomer,
   ForbiddenError,
   NotFoundError,
 } from "@/lib/authz";
+import {
+  hardDeleteProject,
+  loadProjectForDelete,
+  planProjectDelete,
+} from "@/lib/delete-records";
 import { refreshProjectCounters } from "@/lib/rollup";
 import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
@@ -574,6 +580,49 @@ export async function archiveProject(projectId: string) {
     entityId: projectId,
   });
   revalidatePath("/projects");
+  redirect("/projects");
+}
+
+export async function deleteProject(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const projectId = String(formData.get("projectId") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+  if (!projectId) return { error: "Missing project." };
+  if (!canDeletePortfolioRecords(actor)) {
+    return { error: "Only owners, admins, and managers can delete a project." };
+  }
+
+  const project = await loadProjectForDelete(projectId);
+  if (!project) return { error: "Project not found." };
+
+  const planned = planProjectDelete({
+    actor,
+    confirmation,
+    name: project.name,
+    code: project.code,
+    acronym: project.crmAcronym || project.prismClientId,
+  });
+  if (!planned.ok) return { error: planned.error };
+
+  await hardDeleteProject(projectId);
+  await audit({
+    actor,
+    action: "project.deleted",
+    entityType: "project",
+    entityId: projectId,
+    summary: `${project.code} ${project.name}`,
+    metadata: {
+      code: project.code,
+      name: project.name,
+      customerAccountId: project.customerAccountId,
+    },
+  });
+  revalidatePrismSurfaces(projectId);
+  revalidatePath("/projects");
+  revalidatePath("/customers");
   redirect("/projects");
 }
 

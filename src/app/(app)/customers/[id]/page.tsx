@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAccounts } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
-import { canCreateProjects } from "@/lib/authz";
+import { canCreateProjects, canDeletePortfolioRecords } from "@/lib/authz";
 import {
   PageHeader,
   Card,
@@ -18,6 +18,8 @@ import {
 } from "@/components/ui";
 import { ProjectRow, ProjectListHeader } from "@/components/project-row";
 import { PortalContactsPanel, ToggleContactActive } from "./invite-contact-form";
+import { ConfirmDeleteForm } from "@/components/confirm-delete";
+import { deleteCustomer } from "@/actions/customers";
 import { fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 
@@ -193,6 +195,34 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               <p className="whitespace-pre-wrap px-5 py-4 text-[13px] leading-relaxed text-ink-2">
                 {customer.internalNotes}
               </p>
+            </Card>
+          ) : null}
+
+          {canDeletePortfolioRecords(actor) ? (
+            <Card>
+              <CardHeader title="Danger zone" subtitle="Permanent delete" />
+              <div className="p-5">
+                <ConfirmDeleteForm
+                  action={deleteCustomer}
+                  hiddenFields={{ customerId: customer.id }}
+                  confirmLabel={`Type ${customer.name} to confirm`}
+                  confirmHint="Customer name or slug."
+                  submitLabel="Delete customer permanently"
+                  warning={
+                    customer.projects.length > 0
+                      ? `This deletes the customer account and portal contacts. ${customer.projects.length} project${customer.projects.length === 1 ? "" : "s"} will also be removed if you check the box. Staff logins are never deleted.`
+                      : "This deletes the customer account and portal contacts. Staff logins are never deleted."
+                  }
+                  cascade={
+                    customer.projects.length > 0
+                      ? {
+                          name: "cascadeProjects",
+                          label: `Also delete ${customer.projects.length} project${customer.projects.length === 1 ? "" : "s"} (tasks, threads, slips)`,
+                        }
+                      : undefined
+                  }
+                />
+              </div>
             </Card>
           ) : null}
 
