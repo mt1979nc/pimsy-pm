@@ -2,8 +2,8 @@
  * Seed Dock-parity catalogs: reusable library files, template checklists /
  * default attachments, and the customer Learning Center IA.
  */
-import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { basename } from "node:path";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -14,14 +14,25 @@ import {
   templateTaskChecklistItems,
   templateTasks,
 } from "@/db/schema";
-import { DEFAULT_LIBRARY_ASSETS } from "@/db/dock-default-attachments";
+import { DEFAULT_LIBRARY_ASSETS, libraryDefsForTaskTitle } from "@/db/dock-default-attachments";
 import { checklistForTaskTitle, trainingDescriptionForTitle } from "@/db/dock-training-checklists";
 import { LEARNING_CENTER_SECTIONS } from "@/db/learning-center-catalog";
-import { normalizeOverlapTitle } from "@/lib/playbook-meta";
 import { putFile } from "@/lib/storage";
+import { resolveLibrarySourceFile } from "@/lib/template-attachment-pack";
+import { propagateLibraryFileToCopies } from "@/lib/template-attachments";
 
-function placeholderPath(fileName: string) {
-  return resolve(process.cwd(), "content/default-attachments", fileName);
+function mimeForPackFile(fileName: string, fallback: string | null): string | null {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".xlsx")) {
+    return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  }
+  if (lower.endsWith(".xls")) return "application/vnd.ms-excel";
+  if (lower.endsWith(".csv")) return "text/csv";
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".docx")) {
+    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  }
+  return fallback;
 }
 
 export async function seedLibraryPlaceholders() {
@@ -31,8 +42,9 @@ export async function seedLibraryPlaceholders() {
     });
     const kind = def.kind ?? "FILE";
     const isLink = kind === "LINK";
+    const source = resolveLibrarySourceFile(def);
 
-    if (existing && !existing.isPlaceholder && existing.storageKey && !isLink) {
+    if (existing && !existing.isPlaceholder && existing.storageKey && !isLink && !source?.fromPack) {
       console.log(`  · library ${def.slug}: keeping uploaded file`);
       continue;
     }
@@ -41,17 +53,15 @@ export async function seedLibraryPlaceholders() {
     let sizeBytes = existing?.sizeBytes ?? null;
     let mimeType = def.mimeType ?? existing?.mimeType ?? null;
 
-    if (!isLink && def.fileName) {
-      const path = placeholderPath(def.fileName);
-      if (existsSync(path)) {
-        const bytes = readFileSync(path);
-        storageKey = await putFile(def.fileName, bytes);
-        sizeBytes = bytes.length;
-        mimeType = def.mimeType ?? mimeType;
-      }
+    if (!isLink && source) {
+      const bytes = readFileSync(source.path);
+      const storedName = basename(source.path);
+      storageKey = await putFile(storedName, bytes);
+      sizeBytes = bytes.length;
+      mimeType = source.fromPack ? mimeForPackFile(storedName, mimeType) : (def.mimeType ?? mimeType);
     }
 
-    const isPlaceholder = def.isPlaceholder ?? !isLink;
+    const isPlaceholder = isLink ? false : source?.fromPack ? false : (def.isPlaceholder ?? true);
     const values = {
       name: def.name,
       description: def.description,
@@ -66,17 +76,35 @@ export async function seedLibraryPlaceholders() {
       updatedAt: new Date(),
     };
 
+    let libraryId = existing?.id;
     if (existing) {
       await db.update(libraryAssets).set(values).where(eq(libraryAssets.id, existing.id));
     } else {
-      await db.insert(libraryAssets).values({
-        slug: def.slug,
-        ...values,
+      const inserted = await db
+        .insert(libraryAssets)
+        .values({
+          slug: def.slug,
+          ...values,
+        })
+        .returning({ id: libraryAssets.id });
+      libraryId = inserted[0]!.id;
+    }
+
+    if (libraryId && !isLink && source?.fromPack) {
+      await propagateLibraryFileToCopies(db, {
+        libraryAssetId: libraryId,
+        storageKey: values.storageKey,
+        mimeType: values.mimeType,
+        sizeBytes: values.sizeBytes,
+        url: values.url,
+        kind,
+        name: def.name,
+        description: def.description,
       });
     }
-    console.log(
-      `  ✓ library ${def.slug}${isLink ? " (link)" : storageKey ? "" : " (no file on disk)"}`,
-    );
+
+    const origin = isLink ? " (link)" : source?.fromPack ? " (content pack)" : storageKey ? " (placeholder)" : " (no file on disk)";
+    console.log(`  ✓ library ${def.slug}${origin}`);
   }
 }
 
@@ -119,9 +147,7 @@ export async function applyTemplateDockExtras() {
     await db
       .delete(templateTaskAttachments)
       .where(eq(templateTaskAttachments.templateTaskId, task.id));
-    const key = normalizeOverlapTitle(task.title);
-    for (const def of DEFAULT_LIBRARY_ASSETS) {
-      if (!def.attachToTitles.some((t) => normalizeOverlapTitle(t) === key)) continue;
+    for (const def of libraryDefsForTaskTitle(task.title)) {
       const lib = libBySlug.get(def.slug);
       if (!lib) continue;
       await db.insert(templateTaskAttachments).values({

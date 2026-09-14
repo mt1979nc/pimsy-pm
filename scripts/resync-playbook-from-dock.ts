@@ -1,7 +1,8 @@
 /**
  * Re-seed Dock-parity playbooks (templates + checklists + default files +
- * Learning Center), then carefully add missing nested tasks onto existing
- * WIP projects. Does not wipe completion state — match by title within a phase.
+ * Learning Center), then carefully add missing nested tasks **and default
+ * attachments** onto existing WIP projects. Does not wipe completion state
+ * or user-uploaded files. Match by title (catalog + template join).
  *
  * Dry-run by default.
  *
@@ -84,7 +85,8 @@ async function main() {
     console.log("  1. npm run db:seed -- --templates-only");
     console.log("  2. npm run db:resync:playbook-from-dock          # review");
     console.log("  3. npm run db:resync:playbook-from-dock -- --apply");
-    console.log("Completed / cancelled sites are skipped so history stays intact.\n");
+    console.log("Missing Discovery Wizard LINKs and billing-sheet defaults are attached.");
+    console.log("User-uploaded files are never deleted. Completed / cancelled sites are skipped.\n");
     return;
   }
 

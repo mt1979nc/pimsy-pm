@@ -16,4 +16,8 @@ SIGN-IN-LINK.txt
 PASSWORD-RESET-LINK.txt
 .pglite/
 .pglite-test/
+.pglite-att-test/
 uploads/
+content/template-attachments/*
+!content/template-attachments/README.md
+!content/template-attachments/.gitkeep

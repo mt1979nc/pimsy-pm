@@ -34,6 +34,7 @@ type EditorTask = {
   defaultRole: string | null;
   workTrack: WorkTrack;
   overlapKey: string | null;
+  attachments?: Array<{ name: string; kind: string; isPlaceholder: boolean }>;
 };
 
 type EditorPhase = {
@@ -391,6 +392,11 @@ function TaskEditor({
             {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
             {task.isOptional ? <Badge tone="amber">Optional</Badge> : null}
             {task.defaultRole ? <Badge>{staffingRoleLabel(task.defaultRole)}</Badge> : null}
+            {(task.attachments ?? []).map((att) => (
+              <Badge key={`${task.id}-${att.name}`} tone={att.kind === "LINK" ? "green" : "neutral"}>
+                {att.kind === "LINK" ? "Link" : att.isPlaceholder ? "Placeholder" : "File"}: {att.name}
+              </Badge>
+            ))}
           </div>
         </div>
         <button

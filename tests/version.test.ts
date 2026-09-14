@@ -14,6 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
+    expect(APP_VERSION).toBe("1.12.3");
     expect(APP_VERSION).toMatch(/^1\.12\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -72,6 +73,20 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /polyline|line/i.test(h) && /dashed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Peak week/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /weeks/.test(h) && /capacityHours/.test(h))).toBe(true);
+  });
+
+  it("documents v1.12.2 template attachments on matching PATH tasks", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.12.2");
+    expect(note?.summary).toMatch(/attachment/i);
+    expect(note?.summary).toMatch(/Discovery Wizard/i);
+    expect(note?.highlights?.some((h) => /calm-mud/i.test(h) || /azurestaticapps/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /db:resync:playbook-from-dock/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /content\/template-attachments/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /TANC/.test(h) && /RAC/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /consolidat/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/\bPHI\b/.test(h) || /No invented PHI|no invented PHI/i.test(h))).toBe(
+      true,
+    );
   });
 
   it("documents the v1.12.1 Engagements roster hotfix", () => {

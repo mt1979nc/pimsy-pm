@@ -19,7 +19,7 @@ export default async function LibraryPage() {
     <>
       <PageHeader
         title="File library"
-        subtitle="Reusable Dock defaults. Discovery Wizard is the live Azure Static Web App link. Billing sheets ship as placeholders until you drop the live files. New workspaces copy them onto matching tasks. Same Azure Blob / local disk storage as task uploads — do not put secrets in this page."
+        subtitle="Reusable Dock defaults. Discovery Wizard is a live LINK on Guided Discovery tasks (not a description URL). Billing sheets ship as placeholders until you drop the live files here or in content/template-attachments/. New workspaces copy them onto matching tasks. Resync backfills WIP without deleting user uploads."
       />
       <div className="space-y-4">
         {assets.map((asset) => (
