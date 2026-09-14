@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.11.2";
+export const APP_VERSION = "1.11.3";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.11.3",
+    date: "2026-09-14",
+    summary:
+      "Hotfix: Headroom card is a line chart — weekly billable load vs department capacity — instead of bars.",
+    highlights: [
+      "Load vs capacity on Staffing, Forecast, and Capacity is an SVG line: weekly billable load as a polyline, department cap as a dashed horizontal.",
+      "Peak week is marked with a ring, a dot, and a Peak callout. Near-cap / over-cap coloring stays on the load line and points.",
+      "Same data props (`weeks`, `capacityHours`, `peakWeekOf`) and y-scale as v1.11.2 (fixed plot height, +15% head). Week labels still show the day (Sep 14).",
+      "No new charting library — inline SVG, same as the rest of the Headroom graphic.",
+    ],
+  },
   {
     version: "1.11.2",
     date: "2026-09-14",

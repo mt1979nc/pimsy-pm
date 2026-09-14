@@ -2,11 +2,11 @@ import { Avatar, Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { fmtShort } from "@/lib/dates";
 import {
-  HEADROOM_CHART_HEIGHT_PX,
-  headroomBarHeightPx,
-  headroomChartScale,
+  buildHeadroomPlot,
   numericHours,
   weekDayKey,
+  worseHeadroomTone,
+  type HeadroomWeekTone,
 } from "@/lib/headroom-chart";
 
 function utilizationTone(pct: number, exempt: boolean) {
@@ -23,7 +23,13 @@ export type HeadroomWeek = {
   utilization?: number;
 };
 
-/** Weekly billable load vs department capacity — Prism Capacity-style headroom graphic. */
+function loadStroke(tone: HeadroomWeekTone) {
+  if (tone === "over") return "var(--color-red)";
+  if (tone === "near") return "var(--color-amber)";
+  return "var(--color-brand)";
+}
+
+/** Weekly billable load vs department capacity — line + dashed cap, not bars. */
 export function HeadroomChart({
   weeks,
   capacityHours,
@@ -39,8 +45,8 @@ export function HeadroomChart({
     return <p className="px-4 py-6 text-[13px] text-ink-3">No weekly hours on the calendar yet.</p>;
   }
 
-  const peakKey = peakWeekOf ? weekDayKey(peakWeekOf) : null;
-  const { chartMax, capPx, chartHeightPx } = headroomChartScale(weeks, capacityHours);
+  const plot = buildHeadroomPlot(weeks, capacityHours, peakWeekOf);
+  const labelPad = `${(plot.padX / plot.viewWidth) * 100}%`;
 
   return (
     <div className={cn("px-4 pb-4 pt-3", className)}>
@@ -48,46 +54,88 @@ export function HeadroomChart({
         <span>Billable hours / week (exempt excluded)</span>
         <span className="tabular-nums">Cap {numericHours(capacityHours)}h</span>
       </div>
-      <div
-        className="relative flex items-end gap-1"
-        style={{ height: `${chartHeightPx}px` }}
+      <svg
+        viewBox={`0 0 ${plot.viewWidth} ${plot.viewHeight}`}
+        className="h-auto w-full overflow-visible"
         role="img"
         aria-label={`Weekly load against ${numericHours(capacityHours)} hour department capacity`}
+        preserveAspectRatio="xMidYMid meet"
+        overflow="visible"
       >
-        {capPx > 0 ? (
-          <div
-            className="pointer-events-none absolute inset-x-0 border-t border-dashed border-ink-3/50"
-            style={{ bottom: `${capPx}px` }}
+        {plot.capY != null ? (
+          <line
+            x1={plot.padX}
+            x2={plot.viewWidth - plot.padX}
+            y1={plot.capY}
+            y2={plot.capY}
+            stroke="var(--color-ink-3)"
+            strokeOpacity={0.55}
+            strokeWidth={1.25}
+            strokeDasharray="5 4"
+            vectorEffect="non-scaling-stroke"
             aria-hidden
           />
         ) : null}
-        {weeks.map((w) => {
-          const key = weekDayKey(w.weekOf);
-          const hours = numericHours(w.billableHours);
-          const isPeak = peakKey === key;
-          const heightPx = headroomBarHeightPx(hours, chartMax, chartHeightPx);
-          const over = numericHours(w.headroom) < 0;
-          const near = !over && numericHours(w.headroom) < 10;
+        {plot.points.slice(1).map((p, i) => {
+          const prev = plot.points[i]!;
           return (
-            <div
-              key={key}
-              className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
-            >
-              <div
-                className={cn(
-                  "w-full max-w-[28px] rounded-t-sm",
-                  over ? "bg-red" : near ? "bg-amber" : "bg-brand",
-                  isPeak && "ring-2 ring-amber ring-offset-1 ring-offset-surface",
-                  heightPx === 0 && "invisible",
-                )}
-                style={{ height: `${heightPx}px` }}
-                title={`${fmtShort(w.weekOf)}: ${hours}h load, ${numericHours(w.headroom)}h headroom`}
-              />
-            </div>
+            <line
+              key={`${prev.key}-${p.key}`}
+              x1={prev.x}
+              y1={prev.y}
+              x2={p.x}
+              y2={p.y}
+              stroke={loadStroke(worseHeadroomTone(prev.tone, p.tone))}
+              strokeWidth={2}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
           );
         })}
-      </div>
-      <div className="mt-1.5 flex gap-1">
+        {plot.points.map((p, i) => {
+          const week = weeks[i]!;
+          return (
+            <g key={p.key}>
+              {p.isPeak ? (
+                <>
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={9}
+                    fill="none"
+                    stroke="var(--color-amber)"
+                    strokeWidth={2}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  <text
+                    x={p.x}
+                    y={Math.max(11, p.y - 14)}
+                    textAnchor="middle"
+                    fill="var(--color-ink-2)"
+                    fontSize={10}
+                  >
+                    Peak
+                  </text>
+                </>
+              ) : null}
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={p.isPeak ? 4.5 : 3.25}
+                fill={loadStroke(p.tone)}
+                stroke="var(--color-surface)"
+                strokeWidth={1.25}
+                vectorEffect="non-scaling-stroke"
+              >
+                <title>
+                  {`${fmtShort(week.weekOf)}: ${p.hours}h load, ${p.headroom}h headroom`}
+                </title>
+              </circle>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="mt-1.5 flex gap-1" style={{ paddingLeft: labelPad, paddingRight: labelPad }}>
         {weeks.map((w) => (
           <div
             key={weekDayKey(w.weekOf)}
@@ -99,13 +147,13 @@ export function HeadroomChart({
       </div>
       <div className="mt-3 flex flex-wrap gap-4 text-[12px] text-ink-2">
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-sm bg-brand" aria-hidden /> Load
+          <span className="h-px w-3.5 bg-brand" aria-hidden /> Load
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-sm bg-amber" aria-hidden /> Near / peak
+          <span className="size-2 rounded-full bg-amber" aria-hidden /> Near / peak
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2 rounded-sm bg-red" aria-hidden /> Over cap
+          <span className="size-2 rounded-full bg-red" aria-hidden /> Over cap
         </span>
         <span className="text-ink-3">Dashed line = department capacity</span>
       </div>
