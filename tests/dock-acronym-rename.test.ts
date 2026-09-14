@@ -84,13 +84,25 @@ describe("Dock acronym rename (RAC → TANC)", () => {
     expect(plan.collisions[0]?.detail).toMatch(/unique code/);
   });
 
-  it("ships RAC → TANC from the allowlist aliases", () => {
+  it("does not auto-remap RAC → TANC while keepBothUntilConsolidated is set", () => {
     const remaps = remapsFromAliases(loadRepoDockAllowlistDocument().aliases);
-    expect(remaps).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ from: "RAC", to: "TANC" }),
+    expect(remaps).toEqual([]);
+    const alias = loadRepoDockAllowlistDocument().aliases.find((a) => a.from === "RAC");
+    expect(alias?.keepBothUntilConsolidated).toBe(true);
+    expect(alias?.to).toBe("TANC");
+  });
+
+  it("still remaps aliases that are not marked keep-both", () => {
+    expect(
+      remapsFromAliases([
+        {
+          from: "FOO",
+          to: "BAR",
+          names: [],
+          note: "Rename — do not delete.",
+          keepBothUntilConsolidated: false,
+        },
       ]),
-    );
-    expect(remaps[0]?.note).toMatch(/do not delete/i);
+    ).toEqual([{ from: "FOO", to: "BAR", note: "Rename — do not delete." }]);
   });
 });

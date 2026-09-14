@@ -13,11 +13,9 @@
  *   npm run db:cleanup:non-dock -- ./dock-wip-acronyms.csv --apply
  *   npm run db:cleanup:non-dock -- --keep-prism-analytics
  *
- * RAC / TANC: Dock WIP acronym for Transformation ANew / Redemption Alliance
- * is TANC. PATH may still store RAC. Rename first:
- *   npm run db:rename:dock-acronym
- * The shipped allowlist keeps RAC as an alias so this prune does not delete
- * that site. Overlay JSON without aliases will still flag RAC as DELETE.
+ * RAC / TANC: Alexander (2026-09-14) — keep both on the allowlist until he
+ * consolidates. Do not delete either site. Overlay JSON that omits RAC will
+ * still flag RAC as DELETE; use the shipped fixture.
  *
  * Azure Cloud Shell: copy DATABASE_URL from App Service Configuration —
  * do not invent the connection string. See azure/README.md and v1.12-DOCK-PARITY.md.
@@ -99,10 +97,11 @@ their acronym is on the allowlist. Named staff are never deleted. Playbooks are 
   console.log(`  ${redactDatabaseUrl(env.DATABASE_URL)}`);
   console.log(`  allowlist: ${abs} (${allowlist.size} acronyms)`);
   if (allowDoc.aliases.length > 0) {
-    console.log("  aliases (PATH/Prism lag — rename, do not delete):");
+    console.log("  related codes (keep both until Alexander consolidates):");
     for (const alias of allowDoc.aliases) {
       const names = alias.names.length > 0 ? `  ${alias.names.join(" / ")}` : "";
-      console.log(`    ${alias.from} → ${alias.to}${names}`);
+      const hold = alias.keepBothUntilConsolidated ? "  keep-both" : "";
+      console.log(`    ${alias.from} / ${alias.to}${hold}${names}`);
     }
   }
   console.log(`  keep Prism analytics extras: ${keepPrismAnalytics ? "yes" : "no (default)"}`);
@@ -256,20 +255,19 @@ their acronym is on the allowlist. Named staff are never deleted. Playbooks are 
     const label = `${tag(p)}  ${p.customerName ?? p.name ?? ""}`;
     if (stillFrom) {
       aliasNotes.push(
-        `${label}  — Dock acronym is ${alias.to}. Rename with npm run db:rename:dock-acronym (never delete).`,
+        `${label}  — ${alias.from} and ${alias.to} both stay until Alexander consolidates. Do not delete.`,
       );
     }
   }
   if (aliasNotes.length > 0) {
-    printBlock("ALIAS — PATH/Prism code lags Dock (rename, do not delete)", aliasNotes);
+    printBlock("RELATED — RAC + TANC both stay until Alexander consolidates", aliasNotes);
   }
 
   if (!apply) {
     console.log("Dry-run only. Re-run with --apply to delete the DELETE lists above.");
     console.log("Post go-live legacy sites are kept unless you are looking at the DELETE list.");
-    if (allowDoc.aliases.length > 0) {
-      console.log("If RAC still appears, rename first: npm run db:rename:dock-acronym then prune again.");
-      console.log("Transformation ANew / Redemption Alliance is TANC on Dock — keep that site.\n");
+    if (allowDoc.aliases.some((a) => a.keepBothUntilConsolidated)) {
+      console.log("RAC and TANC both stay on the shipped allowlist until Alexander consolidates. Do not delete either.\n");
     } else {
       console.log("");
     }

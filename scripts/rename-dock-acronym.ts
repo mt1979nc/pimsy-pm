@@ -1,15 +1,11 @@
 /**
- * Rename PATH/Prism project acronyms to Dock WIP canonical codes.
+ * Optional rename of PATH/Prism project acronyms to a Dock WIP canonical code.
  * Never deletes a project or customer.
  *
- * Shipped case: RAC → TANC (Transformation ANew / Redemption Alliance).
- * Dock WIP acronym is TANC; PATH prune flagged RAC because it was not on the
- * allowlist. Safe path is rename code / crmAcronym / prismClientId.
+ * Current decision (2026-09-14): keep both RAC and TANC. Shipped aliases with
+ * keepBothUntilConsolidated do not auto-remap. When Alexander consolidates:
  *
- * Dry-run by default.
- *
- *   npm run db:rename:dock-acronym
- *   npm run db:rename:dock-acronym -- --apply
+ *   npm run db:rename:dock-acronym -- --from RAC --to TANC
  *   npm run db:rename:dock-acronym -- --from RAC --to TANC --apply
  */
 import { eq } from "drizzle-orm";
@@ -44,8 +40,17 @@ async function main() {
   console.log(`  ${redactDatabaseUrl(env.DATABASE_URL)}`);
   console.log(`  mode: ${apply ? "APPLY" : "DRY-RUN (pass --apply to write)"}`);
   if (remaps.length === 0) {
-    console.log("  No aliases in content/dock-wip-allowlist.json and no --from/--to.");
-    console.log("  Example: npm run db:rename:dock-acronym -- --from RAC --to TANC\n");
+    const deferred = doc.aliases.filter((a) => a.keepBothUntilConsolidated);
+    if (deferred.length > 0) {
+      console.log("  Keep-both (no auto-rename until Alexander consolidates):");
+      for (const alias of deferred) {
+        console.log(`    ${alias.from} + ${alias.to}  ${alias.note || alias.names.join(" / ")}`);
+      }
+      console.log("  When consolidating: npm run db:rename:dock-acronym -- --from RAC --to TANC\n");
+    } else {
+      console.log("  No aliases in content/dock-wip-allowlist.json and no --from/--to.");
+      console.log("  Example: npm run db:rename:dock-acronym -- --from RAC --to TANC\n");
+    }
     return;
   }
 
@@ -115,9 +120,9 @@ async function main() {
   }
 
   if (!apply) {
-    console.log("\nDry-run only. Re-run with --apply to write. Then:");
+    console.log("\nDry-run only. Re-run with --apply to write. Then prune:");
     console.log("  npm run db:cleanup:non-dock");
-    console.log("RAC/TANC: prune should KEEP this site as TANC. Do not delete it.\n");
+    console.log("RAC and TANC both stay until Alexander consolidates. Do not delete either.\n");
     return;
   }
 

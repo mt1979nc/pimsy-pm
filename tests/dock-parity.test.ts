@@ -58,26 +58,30 @@ describe("Dock WIP allowlist parsing", () => {
     expect([...parseDockAllowlist('{"acronyms":["BHC"]}')]).toEqual(["BHC"]);
   });
 
-  it("ships the 2026-09-14 Dock Implementation WIP acronyms plus RAC→TANC alias", () => {
+  it("ships the 2026-09-14 Dock Implementation WIP acronyms including RAC and TANC", () => {
     const raw = readFileSync(resolve(process.cwd(), "content/dock-wip-allowlist.json"), "utf8");
     const data = JSON.parse(raw) as {
       asOf: string;
       acronyms: string[];
-      aliases: Array<{ from: string; to: string }>;
+      aliases: Array<{ from: string; to: string; keepBothUntilConsolidated?: boolean }>;
     };
     expect(data.asOf).toBe("2026-09-14");
     expect(data.acronyms).toContain("TANC");
-    expect(data.acronyms).not.toContain("RAC");
+    expect(data.acronyms).toContain("RAC");
     const alias = data.aliases.find((a) => a.from === "RAC");
     expect(alias?.to).toBe("TANC");
+    expect(alias?.keepBothUntilConsolidated).toBe(true);
     const doc = loadRepoDockAllowlistDocument();
-    expect(doc.aliases.some((a) => a.from === "RAC" && a.to === "TANC")).toBe(true);
+    expect(doc.aliases.some((a) => a.from === "RAC" && a.to === "TANC" && a.keepBothUntilConsolidated)).toBe(
+      true,
+    );
     const set = loadRepoDockWipAllowlist();
     expect(set.has("TANC")).toBe(true);
     expect(set.has("RAC")).toBe(true);
-    expect(set.size).toBeGreaterThan(data.acronyms.length);
+    expect(set.size).toBe(data.acronyms.length);
     for (const code of [
       "TANC",
+      "RAC",
       "THS",
       "BHC",
       "CEDAR",
@@ -239,7 +243,7 @@ describe("non-Dock prune classifiers", () => {
     expect(isDockTestOrDraftWorkspace({ name: "CEDAR Health", code: "CEDAR" })).toBe(false);
   });
 
-  it("keeps RAC active WIP on the shipped allowlist (TANC alias) and deletes it on a BHC-only overlay", () => {
+  it("keeps RAC and TANC active WIP on the shipped allowlist and deletes RAC on a BHC-only overlay", () => {
     const rac = {
       id: "rac",
       code: "RAC",

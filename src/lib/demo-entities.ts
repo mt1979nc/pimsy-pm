@@ -70,7 +70,8 @@ export const PROTECTED_STAFF_LOCAL_PARTS = [
 /**
  * Historical Prism/PATH acronyms not on the 2026-09-14 Dock WIP scrape as
  * canonical codes. Demo cleanup still protects them so Forecast/Analysis
- * history (and leftover RAC rows before the TANC rename) are not wiped.
+ * history (and RAC rows kept alongside TANC until Alexander consolidates)
+ * are not wiped.
  */
 export const LEGACY_PROTECTED_WIP_ACRONYMS = ["RAC", "LBH"] as const;
 

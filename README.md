@@ -288,13 +288,10 @@ in the active book but **not** on the current Dock Implementation WIP list.
 Completed / post go-live / archived sites stay for Forecast and Analysis.
 Allowlist: `content/dock-wip-allowlist.json` (live Dock scrape 2026-09-14).
 Dock test/draft spaces (MT Test, Test Dock, DRAFT Impl, …) are excluded.
-**RAC → TANC:** Transformation ANew / Redemption Alliance is TANC on Dock.
-PATH may still store RAC. Rename first (`npm run db:rename:dock-acronym`);
-the allowlist alias keeps RAC so prune does not delete that site.
+**RAC + TANC:** Alexander is keeping both until he consolidates.
+Transformation ANew / Redemption Alliance must not be pruned under either code.
 
 ```bash
-npm run db:rename:dock-acronym
-npm run db:rename:dock-acronym -- --apply
 npm run db:cleanup:non-dock
 npm run db:cleanup:non-dock -- --apply
 ```

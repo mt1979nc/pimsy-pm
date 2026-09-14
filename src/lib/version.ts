@@ -34,7 +34,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       "Billing spreadsheet, billing questionnaire, clinical workflows sheet, organization details form, and RCM intake seed as placeholders. Drop real Dock files once in content/template-attachments/ (`npm run db:upload:template-attachments -- --apply`) or replace at Templates → File library. No invented PHI or fake xlsx bytes.",
       "`npm run db:resync:playbook-from-dock -- --apply` attaches missing defaults by task title. User-uploaded files stay. Same URL or library clone is not duplicated.",
       "Templates list/editor show default attachment chips so the playbook is auditable without opening every live site.",
-      "Production data: Transformation ANew / Redemption Alliance is **TANC** on Dock WIP. PATH prune flagged **RAC**. Rename `code` / `crmAcronym` / `prismClientId` with `npm run db:rename:dock-acronym` (never delete). Allowlist alias keeps RAC until that rename lands.",
+      "Production data: keep **RAC and TANC** on the Dock WIP allowlist until Alexander consolidates. Transformation ANew / Redemption Alliance must not be pruned under either code. Do not auto-rename.",
     ],
   },
   {

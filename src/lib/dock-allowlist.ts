@@ -8,8 +8,8 @@
  *   - JSON Dock snapshot `{ "workspaces": [{ "acronym": "BHC" }] }`
  *   - CSV with an `acronym` header, or one acronym per line
  *
- * Alias `from` keys are treated as keep-allowlist so prune does not delete a
- * site whose PATH/Prism code still lags Dock (RAC → TANC). Rename; do not delete.
+ * Alias `from` keys are also keep-allowlist. RAC and TANC are both listed on
+ * the shipped fixture until Alexander consolidates — do not delete either.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -23,6 +23,8 @@ export type DockAcronymAlias = {
   to: string;
   names: string[];
   note: string;
+  /** Keep both codes on the book; do not auto-rename. */
+  keepBothUntilConsolidated: boolean;
 };
 
 export type DockAllowlistDocument = {
@@ -181,7 +183,9 @@ function aliasFromUnknown(row: unknown): DockAcronymAlias | null {
       ? o.alsoKnownAs.filter((n): n is string => typeof n === "string" && n.trim().length > 0)
       : [];
   const note = typeof o.note === "string" ? o.note : "";
-  return { from, to, names, note };
+  const keepBothUntilConsolidated =
+    o.keepBothUntilConsolidated === true || o.keepBoth === true;
+  return { from, to, names, note, keepBothUntilConsolidated };
 }
 
 export function aliasForAcronym(

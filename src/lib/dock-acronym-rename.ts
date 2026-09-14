@@ -1,9 +1,9 @@
 /**
  * Rename a PATH/Prism project acronym to the Dock WIP canonical code.
  *
- * Production case (2026-09-14): Transformation ANew / Redemption Alliance is
- * TANC on Dock, but PATH stored it as RAC. Alexander's path is rename
- * code / crmAcronym / prismClientId RAC → TANC. Never delete the site.
+ * Optional later: when Alexander consolidates, rename PATH/Prism
+ * code / crmAcronym / prismClientId (e.g. RAC → TANC). Never deletes a site.
+ * Current decision (2026-09-14): keep both RAC and TANC on the allowlist.
  */
 import { normalizeKey, projectAcronyms, type DemoProjectRef } from "@/lib/demo-entities";
 import type { DockAcronymAlias } from "@/lib/dock-allowlist";
@@ -157,9 +157,13 @@ export function remapsFromAliases(aliases: readonly DockAcronymAlias[]): Array<{
   to: string;
   note: string;
 }> {
-  return aliases.map((a) => ({
-    from: a.from,
-    to: a.to,
-    note: a.note || `${a.from} is the PATH/Prism code; Dock WIP acronym is ${a.to}. Rename — do not delete.`,
-  }));
+  return aliases
+    .filter((a) => !a.keepBothUntilConsolidated)
+    .map((a) => ({
+      from: a.from,
+      to: a.to,
+      note:
+        a.note ||
+        `${a.from} is the PATH/Prism code; Dock WIP acronym is ${a.to}. Rename — do not delete.`,
+    }));
 }
