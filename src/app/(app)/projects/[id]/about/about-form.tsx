@@ -17,6 +17,7 @@ export function ProjectAboutForm({
     zoomBookingUrl: string | null;
     aboutNotes: string | null;
     customFields: Record<string, string>;
+    onboarded: boolean;
   };
 }) {
   const [state, action] = useActionState(updateProjectAbout, {});
@@ -31,6 +32,24 @@ export function ProjectAboutForm({
       {state.ok ? (
         <p className="rounded-lg bg-green-soft px-3 py-2 text-[12.5px] text-green">Saved.</p>
       ) : null}
+
+      <div className="rounded-xl border border-border p-4">
+        <label className="flex items-start gap-2.5">
+          <input
+            type="checkbox"
+            name="onboarded"
+            defaultChecked={project.onboarded}
+            className="mt-0.5 size-4 rounded border-border-strong"
+          />
+          <span>
+            <span className="block text-[13.5px] font-medium text-ink">Onboarded</span>
+            <span className="block text-[12.5px] text-ink-3">
+              When checked, overdue and upcoming-due tasks for this site leave the dashboard, My
+              Work, and Portfolio rollups. They stay on this project hub.
+            </span>
+          </span>
+        </label>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="CRM acronym" htmlFor="crmAcronym">

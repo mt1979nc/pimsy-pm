@@ -1,6 +1,6 @@
 {
   "name": "pimsy-pm",
-  "version": "1.12.1",
+  "version": "1.12.3",
   "description": "Implementation & project management platform with customer portal for PIMSY EHR",
   "scripts": {
     "dev": "next dev",
@@ -24,7 +24,8 @@
     "db:import:dock-wip": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/import-dock-wip.ts",
     "db:cleanup:demo": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/cleanup-demo.ts",
     "db:cleanup:non-dock": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/cleanup-non-dock.ts",
-    "db:resync:playbook-from-dock": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/resync-playbook-from-dock.ts"
+    "db:resync:playbook-from-dock": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/resync-playbook-from-dock.ts",
+    "db:complete:historical-on-time": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/complete-historical-on-time.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

@@ -38,6 +38,7 @@ import {
 import { refreshProjectCounters } from "@/lib/rollup";
 import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
+import { completeHistoricalProjectOnTime } from "@/lib/historical-complete";
 import { addDays, parseDateInput } from "@/lib/dates";
 import { forecastImplementation, type ImplementationScope } from "@/lib/estimator";
 import {
@@ -911,6 +912,7 @@ export async function updateProjectAbout(
   const crmKey = formData.get("crmKey")?.toString().trim() ?? "";
   const zoomBookingUrl = formData.get("zoomBookingUrl")?.toString().trim() ?? "";
   const aboutNotes = formData.get("aboutNotes")?.toString() ?? "";
+  const onboarded = formData.get("onboarded") === "on";
 
   // Optional free-form custom fields as "key=value" lines.
   const customRaw = formData.get("customFields")?.toString() ?? "";
@@ -934,6 +936,7 @@ export async function updateProjectAbout(
       crmKey: crmKey || null,
       zoomBookingUrl: zoomBookingUrl || null,
       aboutNotes: aboutNotes || null,
+      onboarded,
       customFields,
       updatedAt: new Date(),
     })
@@ -951,6 +954,9 @@ export async function updateProjectAbout(
   revalidatePath(`/projects/${projectId}/about`);
   revalidatePath(`/portal/projects/${projectId}`);
   revalidatePath(`/portal/projects/${projectId}/about`);
+  revalidatePath("/dashboard");
+  revalidatePath("/my-work");
+  revalidatePath("/reports");
   return { ok: true };
 }
 
@@ -1055,4 +1061,51 @@ export async function inviteExistingContactToProject(projectId: string, userId: 
     .values({ projectId, userId, role: "CUSTOMER_CONTACT" })
     .onConflictDoNothing();
   revalidatePath(`/projects/${projectId}`);
+}
+
+// ---------------------------------------------------------------------------
+// Historical complete-on-time (PATH-native)
+// ---------------------------------------------------------------------------
+
+export async function completeHistoricalTasksOnTime(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const projectId = String(formData.get("projectId") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "").trim();
+  if (!projectId) return { error: "Missing project." };
+
+  const project = await assertProjectWrite(actor, projectId);
+  const token = (project.crmAcronym || project.code || project.name).trim();
+  const okConfirm =
+    confirmation.localeCompare(token, undefined, { sensitivity: "accent" }) === 0 ||
+    confirmation.localeCompare(project.code, undefined, { sensitivity: "accent" }) === 0 ||
+    confirmation.localeCompare(project.name, undefined, { sensitivity: "accent" }) === 0;
+  if (!okConfirm) {
+    return { error: `Type ${token} to confirm.` };
+  }
+
+  const result = await completeHistoricalProjectOnTime(projectId, { apply: true });
+  if (!result.assessment.ok) return { error: result.assessment.reason };
+  if (result.planned.length === 0) {
+    return { error: "No open tasks to complete." };
+  }
+
+  await audit({
+    actor,
+    action: "project.historical_complete_on_time",
+    entityType: "project",
+    entityId: projectId,
+    summary: `${project.code}: marked ${result.applied} open task${result.applied === 1 ? "" : "s"} complete on time`,
+    metadata: { applied: result.applied, gate: result.assessment.gate },
+  });
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/tasks`);
+  revalidatePath(`/projects/${projectId}/settings`);
+  revalidatePath("/dashboard");
+  revalidatePath("/my-work");
+  revalidatePath("/reports");
+  return { ok: true };
 }

@@ -75,6 +75,7 @@ export default async function ProjectLayout({
               <HealthBadge health={project.health} />
               <ProjectStatusBadge status={project.status} />
               {!project.portalEnabled ? <Badge tone="amber">Portal off</Badge> : null}
+              {project.onboarded ? <Badge tone="green">Onboarded</Badge> : null}
               {project.archivedAt ? <Badge>Archived</Badge> : null}
             </div>
           </div>

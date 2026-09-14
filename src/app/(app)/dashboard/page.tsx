@@ -26,6 +26,7 @@ import {
 import { ProjectRow } from "@/components/project-row";
 import { TaskRow } from "@/components/task-row";
 import { fmtShort, dueLabel, fmtRelative, differenceInCalendarDays, startOfDay } from "@/lib/dates";
+import { isOverviewUpcomingDue } from "@/lib/onboarded";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard" };
@@ -53,11 +54,7 @@ export default async function DashboardPage() {
     .slice(0, 8);
 
   const unread = threads.filter((t) => isUnread(t, actor.id));
-  const dueSoon = tasks.filter((t) => {
-    if (!t.dueDate) return false;
-    const days = (new Date(t.dueDate).getTime() - Date.now()) / 86_400_000;
-    return days < 7;
-  });
+  const dueSoon = tasks.filter((t) => isOverviewUpcomingDue(t.dueDate));
 
   const firstName = (actor.name ?? actor.email).split(" ")[0];
 

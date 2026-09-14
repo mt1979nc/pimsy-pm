@@ -84,6 +84,17 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
   });
 
+  it("documents v1.12.3 Onboarded and historical complete-on-time", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.12.3");
+    expect(note?.summary).toMatch(/Onboarded/i);
+    expect(note?.summary).toMatch(/complete on time/i);
+    expect(note?.highlights?.some((h) => /About/.test(h) && /Onboarded/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /dashboard|My Work|Portfolio/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /db:complete:historical-on-time/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /0013_onboarded/.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/Dock Spaces|pimsyehr\.dock/i.test(h))).toBe(true);
+  });
+
   it("documents v1.12 Dock parity, prune-keep-legacy, and Learning Center", () => {
     const note = RELEASE_NOTES.find((n) => n.version === "1.12.0");
     expect(note?.summary).toMatch(/Dock/i);

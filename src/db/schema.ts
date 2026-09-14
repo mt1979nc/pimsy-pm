@@ -558,6 +558,12 @@ export const projects = pgTable(
     zoomBookingUrl: text("zoom_booking_url"),
     aboutNotes: text("about_notes"),
     customFields: jsonb("custom_fields").$type<Record<string, string>>().notNull().default({}),
+    /**
+     * PATH-native staff flag. When true, this site's tasks drop off overview
+     * overdue / upcoming-due rollups (dashboard, My Work, Portfolio). Tasks
+     * stay visible on the project hub. Default false (not onboarded).
+     */
+    onboarded: boolean("onboarded").notNull().default(false),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -572,6 +578,7 @@ export const projects = pgTable(
     index("project_status_idx").on(t.status),
     index("project_health_idx").on(t.health),
     index("project_go_live_idx").on(t.targetGoLiveDate),
+    index("project_onboarded_idx").on(t.onboarded),
   ],
 );
 

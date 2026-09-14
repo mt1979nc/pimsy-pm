@@ -1,4 +1,4 @@
-import { and, eq, ne, inArray, isNull, isNotNull, lt, lte, gte, desc, asc, sql, count } from "drizzle-orm";
+import { and, eq, ne, inArray, notInArray, isNull, isNotNull, lt, lte, gte, desc, asc, sql, count } from "drizzle-orm";
 import { db } from "@/db";
 import {
   projects,
@@ -25,6 +25,26 @@ import {
 } from "@/lib/forecast";
 
 const OPEN_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "ON_HOLD", "BLOCKED"] as const;
+
+/** Accessible projects that still participate in overdue / upcoming-due rollups. */
+async function dueOverviewProjectIds(accessibleIds: string[]): Promise<string[]> {
+  if (accessibleIds.length === 0) return [];
+  const rows = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(inArray(projects.id, accessibleIds), eq(projects.onboarded, false)));
+  return rows.map((r) => r.id);
+}
+
+/** Assigned-work overview skips onboarded sites entirely. Null means none are onboarded. */
+async function onboardedProjectIds(): Promise<string[] | null> {
+  const rows = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(eq(projects.onboarded, true));
+  const ids = rows.map((r) => r.id);
+  return ids.length === 0 ? null : ids;
+}
 
 /** Projects visible to the actor, with the joins the list views need. */
 export async function listProjects(
@@ -99,18 +119,22 @@ export async function portfolioSummary(actor: Actor) {
       ),
     );
 
-  const [overdue] = await db
-    .select({ n: count() })
-    .from(tasks)
-    .where(
-      and(
-        inArray(tasks.projectId, ids),
-        lt(tasks.dueDate, startOfDay(new Date())),
-        ne(tasks.status, "DONE"),
-        ne(tasks.status, "CANCELLED"),
-        eq(tasks.notApplicable, false),
-      ),
-    );
+  const dueIds = await dueOverviewProjectIds(ids);
+  const [overdue] =
+    dueIds.length === 0
+      ? [{ n: 0 }]
+      : await db
+          .select({ n: count() })
+          .from(tasks)
+          .where(
+            and(
+              inArray(tasks.projectId, dueIds),
+              lt(tasks.dueDate, startOfDay(new Date())),
+              ne(tasks.status, "DONE"),
+              ne(tasks.status, "CANCELLED"),
+              eq(tasks.notApplicable, false),
+            ),
+          );
 
   const [customerActions] = await db
     .select({ n: count() })
@@ -150,6 +174,7 @@ export async function attentionProjects(actor: Actor, limit = 12) {
     where: and(
       inArray(projects.id, ids),
       isNull(projects.archivedAt),
+      eq(projects.onboarded, false),
       inArray(projects.status, [...OPEN_STATUSES]),
     ),
     with: {
@@ -185,13 +210,17 @@ export async function attentionProjects(actor: Actor, limit = 12) {
 
 /** Tasks assigned to the actor across every project they can reach. */
 export async function myTasks(actor: Actor) {
+  const skipOnboarded = await onboardedProjectIds();
+  const conditions = [
+    eq(tasks.assigneeId, actor.id),
+    ne(tasks.status, "DONE"),
+    ne(tasks.status, "CANCELLED"),
+    eq(tasks.notApplicable, false),
+  ];
+  if (skipOnboarded) conditions.push(notInArray(tasks.projectId, skipOnboarded));
+
   return db.query.tasks.findMany({
-    where: and(
-      eq(tasks.assigneeId, actor.id),
-      ne(tasks.status, "DONE"),
-      ne(tasks.status, "CANCELLED"),
-      eq(tasks.notApplicable, false),
-    ),
+    where: and(...conditions),
     orderBy: [asc(tasks.dueDate), desc(tasks.priority)],
     limit: 200,
     with: {

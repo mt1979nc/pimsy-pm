@@ -31,6 +31,7 @@ export default async function ProjectAboutPage({
       zoomBookingUrl: true,
       aboutNotes: true,
       customFields: true,
+      onboarded: true,
     },
   });
   if (!project) notFound();
@@ -39,7 +40,7 @@ export default async function ProjectAboutPage({
     <Card>
       <CardHeader
         title="About / site profile"
-        subtitle="HubSpot, Prism, CRM keys, Zoom booking, and notes — Dock’s About tab."
+        subtitle="HubSpot, Prism, CRM keys, Zoom booking, Onboarded, and notes."
       />
       <ProjectAboutForm
         project={{
@@ -51,6 +52,7 @@ export default async function ProjectAboutPage({
           zoomBookingUrl: project.zoomBookingUrl,
           aboutNotes: project.aboutNotes,
           customFields: project.customFields ?? {},
+          onboarded: project.onboarded,
         }}
       />
     </Card>
