@@ -6,6 +6,7 @@ import {
   addProjectMember,
   removeProjectMember,
   archiveProject,
+  deleteProject,
   setPhaseVisibility,
 } from "@/actions/projects";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/actions/attachments";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Button, Field, inputClass, VisibilityBadge } from "@/components/ui";
+import { ConfirmDeleteForm } from "@/components/confirm-delete";
 
 type Option = { id: string; name: string | null };
 
@@ -433,5 +435,24 @@ export function ArchiveProjectButton({ projectId }: { projectId: string }) {
         Cancel
       </Button>
     </div>
+  );
+}
+
+export function DeleteProjectForm({
+  projectId,
+  confirmToken,
+}: {
+  projectId: string;
+  confirmToken: string;
+}) {
+  return (
+    <ConfirmDeleteForm
+      action={deleteProject}
+      hiddenFields={{ projectId }}
+      confirmLabel={`Type ${confirmToken} to confirm`}
+      confirmHint="Acronym, project code, or the full project name."
+      submitLabel="Delete project permanently"
+      warning="This permanently deletes the project, tasks, threads, slips, memberships, and files. Staff logins are not deleted. This cannot be undone."
+    />
   );
 }

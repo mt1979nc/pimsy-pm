@@ -8,7 +8,13 @@ import { z } from "zod";
 import { db } from "@/db";
 import { customerAccounts, users, projectMembers, projects, passwordResetTokens } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
-import { isAdmin, ForbiddenError, canCreateCustomers } from "@/lib/authz";
+import { isAdmin, ForbiddenError, canCreateCustomers, canDeletePortfolioRecords } from "@/lib/authz";
+import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
+import {
+  hardDeleteCustomer,
+  loadCustomerForDelete,
+  planCustomerDelete,
+} from "@/lib/delete-records";
 import { audit } from "@/lib/audit";
 import { sendEmail, layout } from "@/lib/email";
 import { env } from "@/lib/env";
@@ -306,6 +312,54 @@ export async function setUserActive(userId: string, isActive: boolean) {
 
   if (target.customerAccountId) revalidatePath(`/customers/${target.customerAccountId}`);
   revalidatePath("/admin/users");
+}
+
+export async function deleteCustomer(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const customerId = String(formData.get("customerId") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+  const cascadeProjects = formData.get("cascadeProjects") === "on";
+  if (!customerId) return { error: "Missing customer." };
+  if (!canDeletePortfolioRecords(actor)) {
+    return { error: "Only owners, admins, and managers can delete a customer." };
+  }
+
+  const loaded = await loadCustomerForDelete(customerId);
+  if (!loaded) return { error: "Customer not found." };
+
+  const planned = planCustomerDelete({
+    actor,
+    confirmation,
+    name: loaded.customer.name,
+    slug: loaded.customer.slug,
+    projectCount: loaded.projects.length,
+    cascadeProjects,
+    linkedUsers: loaded.linkedUsers,
+  });
+  if (!planned.ok) return { error: planned.error };
+
+  await hardDeleteCustomer(customerId);
+  await audit({
+    actor,
+    action: "customer.deleted",
+    entityType: "customer_account",
+    entityId: customerId,
+    summary: loaded.customer.name,
+    metadata: {
+      slug: loaded.customer.slug,
+      projectCount: loaded.projects.length,
+      contactCount: loaded.linkedUsers.length,
+      cascadeProjects,
+    },
+  });
+  revalidatePrismSurfaces();
+  revalidatePath("/customers");
+  revalidatePath("/projects");
+  revalidatePath("/admin/customers");
+  redirect("/customers");
 }
 
 function escapeHtml(s: string) {

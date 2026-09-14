@@ -65,6 +65,14 @@ export const canCreateProjects = (a: Pick<Actor, "role">) =>
 export const canCreateCustomers = (a: Pick<Actor, "role">) =>
   ["OWNER", "ADMIN", "MANAGER"].includes(a.role);
 
+/**
+ * Permanent delete of a project or customer account.
+ * Matches who can create portfolio structure (OWNER / ADMIN / MANAGER).
+ * Specialists may still archive a project they can write, but not hard-delete.
+ */
+export const canDeletePortfolioRecords = (a: Pick<Actor, "role">) =>
+  ["OWNER", "ADMIN", "MANAGER"].includes(a.role);
+
 // ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@ import { addDays, startOfDay } from "date-fns";
 import { loadCapacityForecast, loadForecastExclusions } from "@/lib/forecast-data";
 import {
   DEFAULT_ANALYSIS_EXCLUSION_CODES,
+  memberLoadsFromForecast,
   type CapacityForecast,
   type EngagementLoadRow,
 } from "@/lib/forecast";
@@ -70,6 +71,7 @@ export type DirectorSnapshot = {
     canLead: boolean;
     isDirector: boolean;
     thisWeekHours: number;
+    peakHours: number;
   }[];
   forecastWeeks: {
     weekOf: string;
@@ -116,9 +118,8 @@ export function buildDirectorSnapshot(input: {
   const engagements = input.forecast.engagements.map((e) => toEngagement(e, nameById));
   const pipeline = engagements.filter((e) => e.status === "pipeline");
   const slipped = engagements.filter((e) => e.countsTowardLoad && e.slipDays != null && e.slipDays !== 0);
-  const thisWeekHours = new Map(
-    (input.forecast.thisWeek?.byPerson ?? []).map((p) => [p.id, p.hours]),
-  );
+  const memberLoads = memberLoadsFromForecast(input.forecast);
+  const loadById = new Map(memberLoads.map((m) => [m.id, m]));
 
   const goLivesNext14: SnapshotGoLive[] = [];
   for (const e of input.forecast.engagements) {
@@ -155,16 +156,20 @@ export function buildDirectorSnapshot(input: {
     pipeline,
     slipped,
     engagements,
-    team: input.forecast.staff.map((s) => ({
-      id: s.id,
-      name: s.name ?? null,
-      email: s.email ?? null,
-      capacityHoursPerWeek: s.capacityHoursPerWeek,
-      capacityExempt: s.capacityExempt,
-      canLead: Boolean(s.canLead),
-      isDirector: Boolean(s.isDirector),
-      thisWeekHours: thisWeekHours.get(s.id) ?? 0,
-    })),
+    team: input.forecast.staff.map((s) => {
+      const load = loadById.get(s.id);
+      return {
+        id: s.id,
+        name: s.name ?? null,
+        email: s.email ?? null,
+        capacityHoursPerWeek: s.capacityHoursPerWeek,
+        capacityExempt: s.capacityExempt,
+        canLead: Boolean(s.canLead),
+        isDirector: Boolean(s.isDirector),
+        thisWeekHours: load?.thisWeekHours ?? 0,
+        peakHours: load?.peakHours ?? 0,
+      };
+    }),
     forecastWeeks: input.forecast.weeks.map((w) => ({
       weekOf: utcDayKey(w.weekOf),
       billableHours: w.billableHours,

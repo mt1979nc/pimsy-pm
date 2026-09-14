@@ -75,6 +75,7 @@ export default async function ManagementHubPage() {
               capacityExempt: m.capacityExempt,
               isDirector: m.isDirector,
               thisWeekHours: m.thisWeekHours,
+              peakHours: m.peakHours,
             }))}
           />
         </div>

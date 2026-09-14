@@ -2,6 +2,7 @@ import { Card, CardHeader, EmptyState } from "@/components/ui";
 import { listManagementTeam } from "@/actions/management-team";
 import { TeamFlagsForm } from "../_components/team-flags-form";
 import { loadCapacityForecast } from "@/lib/forecast-data";
+import { memberLoadsFromForecast } from "@/lib/forecast";
 import { MemberLoadCards } from "@/components/charts";
 
 export const dynamic = "force-dynamic";
@@ -11,13 +12,7 @@ export default async function ManagementTeamPage() {
   const [team, forecast] = await Promise.all([listManagementTeam(), loadCapacityForecast(12)]);
   const billable = team.filter((m) => !m.capacityExempt);
   const deptCap = billable.reduce((sum, m) => sum + m.capacityHoursPerWeek, 0);
-  const thisWeek = new Map((forecast.thisWeek?.byPerson ?? []).map((p) => [p.id, p.hours]));
-  const peakById = new Map<string, number>();
-  for (const w of forecast.weeks) {
-    for (const p of w.byPerson) {
-      peakById.set(p.id, Math.max(peakById.get(p.id) ?? 0, p.hours));
-    }
-  }
+  const loadById = new Map(memberLoadsFromForecast(forecast).map((m) => [m.id, m]));
 
   return (
     <div className="space-y-4">
@@ -28,17 +23,20 @@ export default async function ManagementTeamPage() {
       </p>
       {team.length > 0 ? (
         <MemberLoadCards
-          members={team.map((m) => ({
-            id: m.id,
-            name: m.name,
-            email: m.email,
-            image: m.image,
-            capacityHoursPerWeek: m.capacityHoursPerWeek,
-            capacityExempt: m.capacityExempt,
-            isDirector: m.isDirector,
-            thisWeekHours: thisWeek.get(m.id) ?? 0,
-            peakHours: peakById.get(m.id) ?? 0,
-          }))}
+          members={team.map((m) => {
+            const load = loadById.get(m.id);
+            return {
+              id: m.id,
+              name: m.name,
+              email: m.email,
+              image: m.image,
+              capacityHoursPerWeek: m.capacityHoursPerWeek,
+              capacityExempt: m.capacityExempt,
+              isDirector: m.isDirector,
+              thisWeekHours: load?.thisWeekHours ?? 0,
+              peakHours: load?.peakHours ?? 0,
+            };
+          })}
         />
       ) : null}
       <Card>

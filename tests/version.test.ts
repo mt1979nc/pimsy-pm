@@ -53,4 +53,14 @@ describe("staff Update History source", () => {
     expect(note?.summary).toMatch(/Waiting-on/);
     expect(note?.highlights?.some((h) => h.includes("db:cleanup:demo"))).toBe(true);
   });
+
+  it("documents the v1.11.2 headroom chart hotfix", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.11.2");
+    expect(note?.summary).toMatch(/Headroom/i);
+    expect(note?.highlights?.some((h) => h.includes("pixel heights"))).toBe(true);
+    expect(note?.highlights?.some((h) => /this-week/i.test(h))).toBe(true);
+    expect(note?.summary).toMatch(/delete/i);
+    expect(note?.highlights?.some((h) => /delete project/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Delete customer/i.test(h))).toBe(true);
+  });
 });

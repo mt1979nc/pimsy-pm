@@ -350,6 +350,42 @@ export function buildCapacityForecast(input: {
   };
 }
 
+/** Per-person this-week / peak hours for MemberLoadCards (rostered staff). */
+export type MemberLoadView = {
+  id: string;
+  name: string | null;
+  email?: string | null;
+  image?: string | null;
+  capacityHoursPerWeek: number;
+  capacityExempt: boolean;
+  isDirector?: boolean;
+  thisWeekHours: number;
+  peakHours: number;
+};
+
+export function memberLoadsFromForecast(
+  forecast: Pick<CapacityForecast, "staff" | "weeks" | "thisWeek">,
+): MemberLoadView[] {
+  const thisById = new Map((forecast.thisWeek?.byPerson ?? []).map((p) => [p.id, p.hours]));
+  const peakById = new Map<string, number>();
+  for (const w of forecast.weeks) {
+    for (const p of w.byPerson ?? []) {
+      peakById.set(p.id, Math.max(peakById.get(p.id) ?? 0, p.hours));
+    }
+  }
+  return forecast.staff.map((s) => ({
+    id: s.id,
+    name: s.name,
+    email: s.email,
+    image: s.image,
+    capacityHoursPerWeek: s.capacityHoursPerWeek,
+    capacityExempt: s.capacityExempt,
+    isDirector: s.isDirector,
+    thisWeekHours: thisById.get(s.id) ?? 0,
+    peakHours: peakById.get(s.id) ?? 0,
+  }));
+}
+
 export type AccuracyRow = {
   code?: string | null;
   variance: number | null;

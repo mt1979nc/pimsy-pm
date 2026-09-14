@@ -3,7 +3,7 @@ import { and, eq, ne, asc, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { projects, users, customerAccounts, phases, fileAssets, slipEvents } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
-import { assertProjectAccess } from "@/lib/authz";
+import { assertProjectAccess, canDeletePortfolioRecords } from "@/lib/authz";
 import { toDateInput } from "@/lib/dates";
 import { Card, CardHeader, Badge, Avatar, VisibilityBadge } from "@/components/ui";
 import {
@@ -11,6 +11,7 @@ import {
   AddMemberForm,
   RemoveMemberButton,
   ArchiveProjectButton,
+  DeleteProjectForm,
   PhaseVisibilityList,
   RecordingsManager,
 } from "./settings-forms";
@@ -219,12 +220,22 @@ export default async function ProjectSettingsPage({
 
         <Card>
           <CardHeader title="Danger zone" />
-          <div className="p-5">
-            <ArchiveProjectButton projectId={id} />
-            <p className="mt-2 text-[12px] text-ink-3">
-              Archiving hides the project from lists and immediately revokes portal access. Nothing
-              is deleted.
-            </p>
+          <div className="space-y-5 p-5">
+            <div>
+              <ArchiveProjectButton projectId={id} />
+              <p className="mt-2 text-[12px] text-ink-3">
+                Archiving hides the project from lists and immediately revokes portal access. Nothing
+                is deleted.
+              </p>
+            </div>
+            {canDeletePortfolioRecords(actor) ? (
+              <div className="border-t border-border pt-5">
+                <DeleteProjectForm
+                  projectId={id}
+                  confirmToken={project.crmAcronym || project.code}
+                />
+              </div>
+            ) : null}
           </div>
         </Card>
       </div>
