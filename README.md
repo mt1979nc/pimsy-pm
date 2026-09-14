@@ -42,8 +42,9 @@ capacity against declared weekly hours.
 MANAGER) weekly-hours forecast: team load, department headroom, peak week,
 hire-now. Capacity-exempt staff are excluded from department math. Analysis
 primary averages exclude SENSORI / MHC / LECHRIS by default (configurable).
-Specialists are redirected; customers never see it. Native Postgres — Prism
-Azure SQL dual-read is planned for v1.11, not this release.
+Specialists are redirected; customers never see it. Native Postgres is the
+source of truth after the v1.11 Prism cutover (`GET /api/prism/snapshot` for
+Director / Pipeline routines).
 
 **Management area** (`/admin`) — one place for org-wide numbers, every project
 in a filterable table, every customer with rollups, people, and alert policy.
@@ -257,6 +258,16 @@ npm run db:seed -- --templates-only
 ```
 
 Loads the templates and skips the demo customers.
+
+Prism cutover (Capacity / Forecast / Analysis as source of truth): see
+`v1.11-PRISM-CUTOVER.md`. Dump Prism SQL (or a JSON file from Cloud Shell), then:
+
+```bash
+npm run db:import:prism -- ./prism-dump.json
+```
+
+Director / Pipeline / morning snapshot: `GET /api/prism/snapshot` with
+`PRISM_READ_API_KEY`. Do not keep writing to Prism Azure SQL.
 
 ---
 

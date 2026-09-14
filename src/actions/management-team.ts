@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
 import { and, asc, eq, ne } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -95,9 +95,6 @@ export async function updateTeamMemberFlags(
     metadata: { capacityHoursPerWeek: hrs, capacityExempt, canLead, isDirector, prismTeamId },
   });
 
-  revalidatePath("/management");
-  revalidatePath("/management/team");
-  revalidatePath("/management/forecast");
-  revalidatePath("/reports/capacity");
+  revalidatePrismSurfaces();
   return { ok: true };
 }

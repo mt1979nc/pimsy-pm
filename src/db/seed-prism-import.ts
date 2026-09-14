@@ -11,6 +11,10 @@
  * project code, and every customer on a slug derived from its name, so a
  * partial run gets repaired rather than duplicated.
  *
+ * For a **live cutover** that updates existing rows from Azure SQL / JSON,
+ * use `npm run db:import:prism` instead (see v1.11-PRISM-CUTOVER.md). This
+ * seed skips acronyms already in PM.
+ *
  *   npm run db:seed:prism-import
  *
  * What this does NOT attempt to bring over, and why:

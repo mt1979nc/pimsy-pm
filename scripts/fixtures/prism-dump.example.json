@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "exportedAt": "2026-09-14T12:00:00.000Z",
+  "source": "example",
+  "team": [
+    {
+      "TeamId": "am",
+      "Name": "Alexander Morse",
+      "HoursPerWeek": 30,
+      "Flags": "{\"capacityExempt\":false,\"canLead\":true,\"director\":true}"
+    },
+    {
+      "TeamId": "md",
+      "Name": "Morgan Davis",
+      "HoursPerWeek": 23,
+      "Flags": "{\"capacityExempt\":true,\"canLead\":false,\"director\":false}"
+    }
+  ],
+  "formerTeam": [],
+  "customers": [
+    {
+      "CustomerId": "CEDAR",
+      "AccountName": "CEDAR Health",
+      "Status": "active",
+      "Owner": "am",
+      "Data": {
+        "id": "CEDAR",
+        "acct": "CEDAR Health",
+        "owner": "am",
+        "owner2": null,
+        "split": 100,
+        "users": 9,
+        "fp": 25,
+        "locations": 1,
+        "trainingsPerWeek": 2,
+        "sel": { "outpatient": true, "eprescribe": true, "mat": false },
+        "status": "active",
+        "note": null,
+        "kickoffDate": "2026-08-12",
+        "goliveDate": "2026-10-05",
+        "initialGolive": "2026-10-05",
+        "stateComp": false,
+        "supportStruct": true,
+        "customHpw": null,
+        "slipLog": []
+      }
+    },
+    {
+      "CustomerId": "PIPEX",
+      "AccountName": "Pipeline Example",
+      "Status": "pipeline",
+      "Owner": "am",
+      "Data": {
+        "id": "PIPEX",
+        "acct": "Pipeline Example",
+        "owner": "am",
+        "users": 4,
+        "fp": 25,
+        "locations": 1,
+        "trainingsPerWeek": 2,
+        "sel": { "outpatient": true },
+        "status": "pipeline",
+        "kickoffDate": null,
+        "goliveDate": null,
+        "initialGolive": null
+      }
+    }
+  ],
+  "completed": [
+    {
+      "CustomerId": "ROH",
+      "AccountName": "Rae of Hope",
+      "Era": "current",
+      "Data": {
+        "id": "ROH",
+        "acct": "Rae of Hope",
+        "owner": "dp",
+        "users": 8,
+        "complexity": "STANDARD",
+        "estimatedHours": 28.3,
+        "kickoffDate": "2026-04-27",
+        "goliveDate": "2026-06-22",
+        "forecastDays": 35
+      }
+    }
+  ]
+}

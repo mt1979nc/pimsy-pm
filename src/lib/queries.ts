@@ -469,12 +469,18 @@ type CompletedForAnalysis = {
   durationDays: number | null;
 };
 
-async function completedImplementationsForAnalysis(): Promise<CompletedForAnalysis[]> {
+export type CompletedImplementationRow = CompletedForAnalysis & {
+  name: string;
+};
+
+/** Completed implementations with forecast vs actual — Analysis table + accuracy. */
+export async function listCompletedForAnalysis(): Promise<CompletedImplementationRow[]> {
   const rows = await db.query.projects.findMany({
     where: and(eq(projects.status, "COMPLETED"), eq(projects.type, "IMPLEMENTATION")),
     columns: {
       id: true,
       code: true,
+      name: true,
       crmAcronym: true,
       prismClientId: true,
       leadId: true,
@@ -485,7 +491,9 @@ async function completedImplementationsForAnalysis(): Promise<CompletedForAnalys
     with: {
       lead: { columns: { id: true, name: true } },
       scope: { columns: { complexityTier: true } },
+      customerAccount: { columns: { name: true } },
     },
+    orderBy: [desc(projects.actualGoLiveDate)],
   });
 
   return rows.map((p) => {
@@ -500,6 +508,7 @@ async function completedImplementationsForAnalysis(): Promise<CompletedForAnalys
     return {
       id: p.id,
       code: p.crmAcronym || p.prismClientId || p.code,
+      name: p.customerAccount?.name ?? p.name,
       leadId: p.leadId,
       leadName: p.lead?.name ?? null,
       complexityTier: p.scope?.complexityTier ?? null,
@@ -510,6 +519,10 @@ async function completedImplementationsForAnalysis(): Promise<CompletedForAnalys
       durationDays,
     };
   });
+}
+
+async function completedImplementationsForAnalysis(): Promise<CompletedForAnalysis[]> {
+  return listCompletedForAnalysis();
 }
 
 function avg(nums: number[]) {

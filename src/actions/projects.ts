@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq, sql, and, desc } from "drizzle-orm";
@@ -226,7 +227,7 @@ export async function createProject(
       summary: "RCM track added (Prism data path)",
       metadata: { playbookPath, excludedAreaKeys },
     });
-    revalidatePath("/projects");
+    revalidatePrismSurfaces(d.sourceProjectId);
     revalidatePath(`/projects/${d.sourceProjectId}`);
     redirect(`/projects/${d.sourceProjectId}`);
   }
@@ -353,7 +354,7 @@ export async function createProject(
     },
   });
 
-  revalidatePath("/projects");
+  revalidatePrismSurfaces(projectId);
   revalidatePath("/dashboard");
   redirect(`/projects/${projectId}`);
 }
@@ -490,9 +491,7 @@ export async function updateProject(
     }
   }
 
-  revalidatePath(`/projects/${projectId}`);
-  revalidatePath("/projects");
-  revalidatePath("/reports");
+  revalidatePrismSurfaces(projectId);
   return { ok: true };
 }
 
@@ -975,11 +974,7 @@ export async function deleteSlipEvent(slipId: string): Promise<ActionState> {
     },
   });
 
-  revalidatePath(`/projects/${slip.projectId}`);
-  revalidatePath(`/projects/${slip.projectId}/settings`);
-  revalidatePath(`/management/engagements/${slip.projectId}`);
-  revalidatePath("/management/engagements");
-  revalidatePath("/reports/analysis");
+  revalidatePrismSurfaces(slip.projectId);
   return { ok: true };
 }
 

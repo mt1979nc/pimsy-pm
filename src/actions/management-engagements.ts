@@ -1,11 +1,12 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { and, asc, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { and, asc, desc, eq, inArray, isNull, ne, or } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
   customerAccounts,
+  projectMembers,
   projectScopes,
   projects,
   slipEvents,
@@ -31,6 +32,8 @@ import {
   shouldCascadeReschedule,
 } from "@/lib/project-timeline";
 import { parseDateInput } from "@/lib/dates";
+import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
+import { acronymKey } from "@/lib/prism-dump";
 import type { ActionState } from "@/actions/messages";
 
 export async function listEngagements() {
@@ -373,12 +376,175 @@ export async function updateEngagement(
     },
   });
 
-  revalidatePath("/management");
-  revalidatePath("/management/engagements");
-  revalidatePath("/management/forecast");
-  revalidatePath(`/management/engagements/${projectId}`);
-  revalidatePath(`/projects/${projectId}`);
-  revalidatePath("/reports/capacity");
-  revalidatePath("/reports/analysis");
+  revalidatePrismSurfaces(projectId);
   return { ok: true };
+}
+
+export async function listLeadOptions() {
+  await requirePortfolioAccess();
+  return db.query.users.findMany({
+    where: and(eq(users.isActive, true), ne(users.role, "CUSTOMER"), eq(users.canLead, true)),
+    columns: { id: true, name: true, email: true, canLead: true, isDirector: true },
+    orderBy: [asc(users.name)],
+  });
+}
+
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+}
+
+export async function createEngagement(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requirePortfolioAccess();
+  if (!canManagePrismCapacity(actor)) {
+    throw new ForbiddenError("Management access required.");
+  }
+
+  const acronym = acronymKey(formData.get("acronym")?.toString());
+  const accountName = formData.get("accountName")?.toString().trim() ?? "";
+  if (!/^[A-Z0-9][A-Z0-9-]{1,19}$/.test(acronym)) {
+    return { error: "Acronym must be 2–20 letters/numbers (e.g. CEDAR)." };
+  }
+  if (!accountName) return { error: "Customer name is required." };
+
+  const clash = await db.query.projects.findFirst({
+    where: or(eq(projects.code, acronym), eq(projects.prismClientId, acronym), eq(projects.crmAcronym, acronym)),
+    columns: { id: true, code: true },
+  });
+  if (clash) return { error: `Acronym ${acronym} already exists (${clash.code}).` };
+
+  const leadId = formData.get("leadId")?.toString() || null;
+  const coLeadId = formData.get("coLeadId")?.toString() || null;
+  const splitRaw = formData.get("ownerSplitPercent")?.toString() ?? "100";
+  const ownerSplitPercent = Number.parseInt(splitRaw, 10);
+  if (!Number.isFinite(ownerSplitPercent) || ownerSplitPercent < 1 || ownerSplitPercent > 100) {
+    return { error: "Owner split must be 1–100." };
+  }
+  if (coLeadId && coLeadId === leadId) {
+    return { error: "Co-lead must be different from primary owner." };
+  }
+
+  const customHpwRaw = formData.get("customHoursPerWeek")?.toString().trim() ?? "";
+  let customHoursPerWeek: number | null = null;
+  if (customHpwRaw !== "") {
+    const n = Number.parseFloat(customHpwRaw);
+    if (!Number.isFinite(n) || n < 0 || n > 80) {
+      return { error: "Custom hrs/wk must be between 0 and 80." };
+    }
+    customHoursPerWeek = n;
+  }
+
+  const prismStatusRaw = formData.get("prismStatus")?.toString() ?? "pipeline";
+  if (!isPrismStatus(prismStatusRaw)) {
+    return { error: "Status must be active, pre-kickoff, or pipeline." };
+  }
+  const prismStatus = prismStatusRaw as PrismStatus;
+  const prismNote = formData.get("prismNote")?.toString().trim() || null;
+  const kickoffDate = parseDateInput(formData.get("kickoffDate")?.toString());
+  const targetGoLiveDate = parseDateInput(formData.get("targetGoLiveDate")?.toString());
+
+  const userCount = Math.max(1, Number.parseInt(String(formData.get("userCount") ?? "1"), 10) || 1);
+  const locationCount = Math.max(1, Number.parseInt(String(formData.get("locationCount") ?? "1"), 10) || 1);
+  const formPageCount = Math.max(0, Number.parseInt(String(formData.get("formPageCount") ?? "25"), 10) || 25);
+  const trainingsPerWeek = Math.max(0, Number.parseInt(String(formData.get("trainingsPerWeek") ?? "2"), 10) || 2);
+  const stateCompliance = formData.get("stateCompliance") === "on";
+  const minimalOrgStructure = formData.get("minimalOrgStructure") === "on";
+  const serviceLines = formData.getAll("serviceLines").map(String).filter(Boolean);
+
+  const scopeInput: ImplementationScope = {
+    userCount,
+    locationCount,
+    formPageCount,
+    trainingsPerWeek,
+    serviceLines,
+    stateCompliance,
+    minimalOrgStructure,
+  };
+  const kickoffForEstimate = kickoffDate ?? new Date();
+  const estimate = forecastImplementation(scopeInput, kickoffForEstimate);
+  const tier = complexityTier(scopeInput);
+  const estimatedHours = estimate.hours.totalHours;
+  const mapped = mapPrismStatusToEnums(prismStatus);
+
+  let slug = slugify(accountName);
+  let customerId: string;
+  const existingCustomer = await db.query.customerAccounts.findFirst({
+    where: eq(customerAccounts.slug, slug),
+    columns: { id: true },
+  });
+  if (existingCustomer) {
+    customerId = existingCustomer.id;
+    await db
+      .update(customerAccounts)
+      .set({ seatCount: userCount, status: mapped.customerStatus, updatedAt: new Date() })
+      .where(eq(customerAccounts.id, customerId));
+  } else {
+    const [row] = await db
+      .insert(customerAccounts)
+      .values({ name: accountName, slug, seatCount: userCount, status: mapped.customerStatus })
+      .returning({ id: customerAccounts.id });
+    customerId = row.id;
+  }
+
+  const [project] = await db
+    .insert(projects)
+    .values({
+      name: `${accountName} — PIMSY implementation`,
+      code: acronym,
+      type: "IMPLEMENTATION",
+      status: mapped.projectStatus,
+      customerAccountId: customerId,
+      leadId,
+      coLeadId,
+      ownerSplitPercent,
+      customHoursPerWeek,
+      prismStatus,
+      prismNote,
+      startDate: kickoffDate,
+      initialGoLiveDate: targetGoLiveDate,
+      targetGoLiveDate,
+      estimatedHours: Math.round(estimatedHours),
+      portalEnabled: prismStatus !== "pipeline",
+      prismClientId: acronym,
+      crmAcronym: acronym,
+      description: "Added to the Prism roster in PM. Playbook can be attached later from New project.",
+    })
+    .returning({ id: projects.id });
+
+  if (leadId) {
+    await db.insert(projectMembers).values({ projectId: project.id, userId: leadId, role: "LEAD" }).onConflictDoNothing();
+  }
+  if (coLeadId && coLeadId !== leadId) {
+    await db
+      .insert(projectMembers)
+      .values({ projectId: project.id, userId: coLeadId, role: "CONTRIBUTOR" })
+      .onConflictDoNothing();
+  }
+
+  await db.insert(projectScopes).values({
+    projectId: project.id,
+    userCount,
+    locationCount,
+    formPageCount,
+    trainingsPerWeek,
+    serviceLines,
+    stateCompliance,
+    minimalOrgStructure,
+    complexityTier: tier,
+    estimatedHours,
+  });
+
+  await audit({
+    actor,
+    action: "management.engagement.created",
+    entityType: "project",
+    entityId: project.id,
+    summary: `${acronym}: added to roster (${prismStatus})`,
+    metadata: { prismStatus, leadId, estimatedHours },
+  });
+
+  revalidatePrismSurfaces(project.id);
+  redirect(`/management/engagements/${project.id}`);
 }
