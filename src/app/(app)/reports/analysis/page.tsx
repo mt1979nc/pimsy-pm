@@ -4,13 +4,17 @@ import {
   onTimeByOwner,
   onTimeByComplexityTier,
   slipAttribution,
+  listCompletedForAnalysis,
 } from "@/lib/queries";
 import { loadForecastExclusions } from "@/lib/forecast-data";
+import { isExcludedFromPrimaryAverages } from "@/lib/forecast";
+import Link from "next/link";
 import { Card, CardHeader, PageHeader, Stat, EmptyState, Badge, LinkButton } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { fmtShort } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Analysis" };
+export const metadata = { title: "Analysis — Prism" };
 
 const TIER_LABEL: Record<string, string> = {
   STANDARD: "Standard",
@@ -23,18 +27,24 @@ export default async function AnalysisPage() {
   await requirePortfolioAccess();
 
   const exclusions = await loadForecastExclusions();
-  const [accuracy, owners, tiers, slips] = await Promise.all([
+  const [accuracy, owners, tiers, slips, completed] = await Promise.all([
     forecastAccuracy(exclusions),
     onTimeByOwner(exclusions),
     onTimeByComplexityTier(exclusions),
     slipAttribution(),
+    listCompletedForAnalysis(),
   ]);
 
   return (
     <>
       <PageHeader
         title="Analysis"
-        subtitle="Forecast accuracy and delivery patterns across completed implementations"
+        breadcrumb={
+          <Link href="/management" className="hover:text-ink">
+            Prism
+          </Link>
+        }
+        subtitle="Prism · forecast accuracy and delivery patterns across completed implementations"
         actions={
           <>
             <LinkButton href="/management/forecast">Forecast</LinkButton>
@@ -204,6 +214,62 @@ export default async function AnalysisPage() {
               )}
             </Card>
           </div>
+
+          <Card>
+            <CardHeader
+              title="Forecast vs actual"
+              subtitle="Initial go-live commitment vs actual. Positive variance is late. Strikethrough codes are excluded from primary averages."
+            />
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] border-collapse text-[12.5px]">
+                <thead>
+                  <tr className="border-b border-border bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+                    <th className="px-3 py-2 text-left">Acronym</th>
+                    <th className="px-3 py-2 text-left">Owner</th>
+                    <th className="px-3 py-2 text-left">Tier</th>
+                    <th className="px-3 py-2 text-left">Kickoff</th>
+                    <th className="px-3 py-2 text-left">Forecast GL</th>
+                    <th className="px-3 py-2 text-left">Actual GL</th>
+                    <th className="px-3 py-2 text-right">Variance</th>
+                    <th className="px-3 py-2 text-right">Duration</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {completed.map((row) => {
+                    const excluded = isExcludedFromPrimaryAverages(row.code, exclusions);
+                    return (
+                      <tr key={row.id} className={cn(excluded && "text-ink-3")}>
+                        <td className="px-3 py-2 font-medium text-ink">
+                          <span className={cn(excluded && "line-through")}>{row.code}</span>
+                          {excluded ? (
+                            <Badge className="ml-2" tone="amber">
+                              excl
+                            </Badge>
+                          ) : null}
+                        </td>
+                        <td className="px-3 py-2 text-ink-2">{row.leadName ?? "—"}</td>
+                        <td className="px-3 py-2 text-ink-2">{row.complexityTier ?? "—"}</td>
+                        <td className="px-3 py-2 text-ink-2">{fmtShort(row.startDate)}</td>
+                        <td className="px-3 py-2 text-ink-2">{fmtShort(row.initialGoLiveDate)}</td>
+                        <td className="px-3 py-2 text-ink-2">{fmtShort(row.actualGoLiveDate)}</td>
+                        <td
+                          className={cn(
+                            "px-3 py-2 text-right tabular-nums",
+                            (row.variance ?? 0) > 0 ? "text-red" : "text-ink-2",
+                          )}
+                        >
+                          {row.variance == null ? "—" : `${row.variance > 0 ? "+" : ""}${row.variance}d`}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-ink-2">
+                          {row.durationDays != null ? `${row.durationDays}d` : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>
       )}
     </>

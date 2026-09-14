@@ -8,7 +8,7 @@ import { FORECAST_WEIGHTS, SERVICE_LINE_HOURS, SERVICE_LINE_LABELS } from "@/lib
 import { TYPICAL_HIRE_HOURS_PER_WEEK } from "@/lib/forecast";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Forecast — Staffing" };
+export const metadata = { title: "Forecast — Prism" };
 
 function pct(n: number) {
   return `${Math.round(n * 100)}%`;
@@ -30,8 +30,8 @@ export default async function ManagementForecastPage() {
       <p className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] leading-relaxed text-ink-2">
         Weekly hours from scoped estimates (or custom hrs/wk), spread across kickoff → current
         go-live. Pipeline is off the load. Capacity-exempt people still show on the grid but are
-        excluded from department headroom and hire-now. Native Postgres — Prism SQL dual-read is
-        v1.11.
+        excluded from department headroom and hire-now. Saving an engagement (dates, slip, hours)
+        refreshes this table automatically — PATH Postgres is the only source.
       </p>
 
       {forecast.hire.hireNow ? (

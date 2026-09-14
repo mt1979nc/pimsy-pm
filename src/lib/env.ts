@@ -31,7 +31,7 @@ export const env = {
     return optional("RESEND_API_KEY");
   },
   get EMAIL_FROM() {
-    return optional("EMAIL_FROM", "PIMSY Implementations <onboarding@resend.dev>");
+    return optional("EMAIL_FROM", "PATH <onboarding@resend.dev>");
   },
   get GOOGLE_ID() {
     return optional("AUTH_GOOGLE_ID");
@@ -78,10 +78,18 @@ export const env = {
     return optional("AZURE_STORAGE_CONNECTION_STRING").length > 0 ? "azure-blob" : "local";
   },
   /**
-   * v1.11 hook only. v1.10 Forecast does not read Prism Azure SQL.
-   * Leave blank until dual-read of Director / Pipeline routines.
+   * Optional one-time dump from Prism Azure SQL (`npm run db:dump:prism`).
+   * Not used by the running app. Copy from the Prism SWA app setting
+   * SQL_CONNECTION_STRING — do not invent credentials.
    */
   get PRISM_SQL_CONNECTION_STRING() {
     return optional("PRISM_SQL_CONNECTION_STRING");
+  },
+  /**
+   * Bearer token for GET /api/prism/snapshot (Director / Pipeline / morning
+   * routines). If unset, only a signed-in OWNER/ADMIN/MANAGER session works.
+   */
+  get PRISM_READ_API_KEY() {
+    return optional("PRISM_READ_API_KEY");
   },
 };

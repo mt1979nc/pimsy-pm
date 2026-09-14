@@ -7,6 +7,7 @@ import { NavLink } from "@/components/nav-link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Avatar } from "@/components/ui";
 import { APP_VERSION } from "@/lib/version";
+import { PRODUCT_EXPANSION, PRODUCT_NAME, PRISM_MODULE_NAME } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -23,9 +24,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <img src="/brand/pimsy-icon-color.png" alt="" className="size-7 shrink-0" />
           <div className="min-w-0">
             <div className="truncate text-[13px] font-semibold leading-tight text-ink">
-              Implementations
+              {PRODUCT_NAME}
             </div>
-            <div className="truncate text-[11.5px] leading-tight text-ink-3">PIMSY EHR</div>
+            <div className="text-[11.5px] leading-tight text-ink-3">{PRODUCT_EXPANSION}</div>
           </div>
         </div>
 
@@ -48,10 +49,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 Leadership
               </div>
               <NavLink href="/admin">Management</NavLink>
-              <NavLink href="/management">Staffing</NavLink>
-              <NavLink href="/management/forecast">Forecast</NavLink>
               <NavLink href="/reports">Portfolio</NavLink>
               <NavLink href="/reports/waiting-on">Waiting on</NavLink>
+
+              <div className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+                {PRISM_MODULE_NAME}
+              </div>
+              <NavLink href="/management">Staffing</NavLink>
+              <NavLink href="/management/forecast">Forecast</NavLink>
               <NavLink href="/reports/capacity">Team capacity</NavLink>
               <NavLink href="/reports/analysis">Analysis</NavLink>
             </>

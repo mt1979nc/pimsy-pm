@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePortfolioAccess } from "@/lib/guard";
 import { teamCapacity } from "@/lib/queries";
 import { loadCapacityForecast } from "@/lib/forecast-data";
@@ -6,7 +7,7 @@ import { fmtShort } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Team capacity" };
+export const metadata = { title: "Team capacity — Prism" };
 
 function utilizationTone(pct: number) {
   if (pct > 110) return { cls: "bg-red", label: "Over capacity", tone: "red" as const };
@@ -26,7 +27,12 @@ export default async function CapacityPage() {
     <>
       <PageHeader
         title="Team capacity"
-        subtitle="Committed hours against declared weekly capacity, per specialist."
+        breadcrumb={
+          <Link href="/management" className="hover:text-ink">
+            Prism
+          </Link>
+        }
+        subtitle="Prism · committed hours against declared weekly capacity, per specialist."
         actions={
           <>
             <LinkButton href="/management/forecast">Forecast</LinkButton>

@@ -1,67 +1,145 @@
 import Link from "next/link";
-import { Card, CardHeader, LinkButton } from "@/components/ui";
+import { loadDirectorSnapshot } from "@/lib/prism-snapshot";
+import { Card, CardHeader, LinkButton, Stat, Badge } from "@/components/ui";
+import { fmtShort } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Staffing" };
+export const metadata = { title: "Staffing — Prism" };
 
-export default function ManagementHubPage() {
+export default async function ManagementHubPage() {
+  const snap = await loadDirectorSnapshot(12);
+
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Card className="md:col-span-2">
-        <CardHeader
-          title="Forecast"
-          subtitle="Weekly hours, peak week, headroom, hire-now. Management only."
-        />
-        <p className="px-4 pb-3 text-[13px] text-ink-3">
-          Daily Capacity / Forecast+ workflow in PM: team load, department headroom, peak week, and
-          hire-now. Slips dilute weekly hours unless an engagement has custom hrs/wk. Pipeline and
-          capacity-exempt staff stay out of department math.
-        </p>
-        <div className="px-4 pb-4">
-          <LinkButton href="/management/forecast">Open forecast</LinkButton>
+    <div className="space-y-5">
+      <p className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] leading-relaxed text-ink-2">
+        <strong className="font-semibold text-ink">Prism lives in PATH.</strong> Capacity, Forecast+,
+        engagement edits, and Analysis all read PATH Postgres. Director / Pipeline / morning snapshot
+        routines should call{" "}
+        <code className="text-[12px]">GET /api/prism/snapshot</code> — not standalone Prism Azure SQL.
+      </p>
+
+      {snap.hireNow ? (
+        <div className="rounded-xl border border-transparent bg-red-soft px-4 py-3 text-[13px] text-red">
+          <strong className="font-semibold">Hire now.</strong> Peak week {snap.peakWeekOf ?? "—"} is
+          over billable capacity ({snap.deptCapacityHours}h/wk).
         </div>
-      </Card>
-      <Card>
-        <CardHeader
-          title="Team roster"
-          subtitle="Billable hrs/week, capacity-exempt, can-lead, director."
-        />
-        <p className="px-4 pb-4 text-[13px] text-ink-3">
-          Editable team flags and capacity. Capacity-exempt people still show personal load but are
-          excluded from department headroom math. Specialists never see this surface.
-        </p>
-        <div className="px-4 pb-4">
-          <LinkButton href="/management/team">Open team</LinkButton>
+      ) : snap.nearCapacity ? (
+        <div className="rounded-xl border border-transparent bg-amber-soft px-4 py-3 text-[13px] text-amber">
+          <strong className="font-semibold">Near capacity.</strong> Watch slips and new kickoffs.
         </div>
-      </Card>
-      <Card>
-        <CardHeader
-          title="Engagement roster"
-          subtitle="Prism-parity edit: owners, split, scope, dates, status."
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Stat label="This week load" value={`${snap.thisWeekLoad}h`} hint={`headroom ${snap.thisWeekHeadroom}h`} />
+        <Stat
+          label="Peak week"
+          value={`${snap.peakWeekLoad}h`}
+          hint={snap.peakWeekOf ?? undefined}
+          tone={snap.hireNow ? "red" : snap.nearCapacity ? "amber" : undefined}
         />
-        <p className="px-4 pb-4 text-[13px] text-ink-3">
-          Manual engagement edits land in PM Postgres (not Prism Azure SQL). Pipeline / pre-kickoff /
-          active map onto project + customer status.
-        </p>
-        <div className="px-4 pb-4">
-          <LinkButton href="/management/engagements">Open engagements</LinkButton>
-        </div>
-      </Card>
-      <Card className="md:col-span-2">
-        <CardHeader
-          title="Task-hour snapshot"
-          subtitle="Open-task estimates vs declared weekly capacity."
-        />
-        <p className="px-4 pb-3 text-[13px] text-ink-3">
-          The weekly hours model lives on Forecast. This report is still the open-task snapshot —
-          useful when estimates are on tasks, not only on the engagement.
-        </p>
-        <div className="px-4 pb-4">
-          <Link href="/reports/capacity" className="text-[13px] font-medium text-brand hover:underline">
-            Team capacity report →
-          </Link>
-        </div>
-      </Card>
+        <Stat label="Hire now" value={snap.hireNow ? "Yes" : "No"} tone={snap.hireNow ? "red" : "green"} />
+        <Stat label="Active / pre-KO" value={snap.activeCount} />
+        <Stat label="Pipeline" value={snap.pipelineCount} href="/management/engagements?status=pipeline" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader
+            title="Go-lives next 14 days"
+            subtitle="Morning snapshot — current target dates"
+            action={
+              <Link href="/management/forecast" className="text-[12.5px] font-medium text-brand hover:underline">
+                Forecast →
+              </Link>
+            }
+          />
+          {snap.goLivesNext14.length === 0 ? (
+            <p className="px-4 py-4 text-[13px] text-ink-3">None on the calendar in the next two weeks.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {snap.goLivesNext14.map((g) => (
+                <li key={g.acronym} className="flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]">
+                  <span className="font-medium text-ink">{g.acronym}</span>
+                  <span className="truncate text-ink-3">{g.name}</span>
+                  <span className="tabular-nums text-ink-2">
+                    {fmtShort(g.goLive)} · {g.daysUntil}d
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+        <Card>
+          <CardHeader
+            title="Slipped engagements"
+            subtitle="Later go-live dilutes weekly hours unless custom hrs/wk is set"
+          />
+          {snap.slipped.length === 0 ? (
+            <p className="px-4 py-4 text-[13px] text-ink-3">No active slips on the book.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {snap.slipped.slice(0, 8).map((e) => (
+                <li key={e.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]">
+                  <Link href={`/management/engagements/${e.id}`} className="font-medium text-ink hover:text-brand">
+                    {e.acronym}
+                  </Link>
+                  <span className="tabular-nums text-ink-2">
+                    {e.slipDays != null && e.slipDays !== 0 ? `${e.slipDays > 0 ? "+" : ""}${e.slipDays}d` : "—"}
+                    {e.slipWeeklyDelta != null && e.slipWeeklyDelta !== 0
+                      ? ` · Δ ${e.slipWeeklyDelta > 0 ? "+" : ""}${e.slipWeeklyDelta}h/wk`
+                      : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      {snap.pipeline.length > 0 ? (
+        <Card>
+          <CardHeader
+            title="Pipeline (off load)"
+            subtitle={`${snap.pipeline.length} site${snap.pipeline.length === 1 ? "" : "s"} excluded from department hours until status changes`}
+            action={
+              <Link
+                href="/management/engagements?status=pipeline"
+                className="text-[12.5px] font-medium text-brand hover:underline"
+              >
+                Roster →
+              </Link>
+            }
+          />
+          <div className="flex flex-wrap gap-1.5 px-4 py-3">
+            {snap.pipeline.map((p) => (
+              <Link key={p.id} href={`/management/engagements/${p.id}`}>
+                <Badge>{p.acronym}</Badge>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader title="Forecast" subtitle="Weekly hours, peak, hire-now." />
+          <div className="px-4 pb-4">
+            <LinkButton href="/management/forecast">Open forecast</LinkButton>
+          </div>
+        </Card>
+        <Card>
+          <CardHeader title="Team" subtitle="Billable hrs, exempt, can-lead, director." />
+          <div className="px-4 pb-4">
+            <LinkButton href="/management/team">Open team</LinkButton>
+          </div>
+        </Card>
+        <Card>
+          <CardHeader title="Engagements" subtitle="Edit owners, dates, status, scope." />
+          <div className="px-4 pb-4">
+            <LinkButton href="/management/engagements">Open roster</LinkButton>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

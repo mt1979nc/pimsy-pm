@@ -70,7 +70,7 @@ export async function inviteStaff(
 
   await sendEmail({
     to: d.email,
-    subject: "You've been added to PIMSY Implementations",
+    subject: "You've been added to PATH",
     html: layout({
       heading: "Your account is ready",
       body: `<p style="margin:0">${escapeHtml(actor.name ?? actor.email)} added you to the PIMSY implementation workspace as <strong>${d.role.toLowerCase()}</strong>. Sign in with this email address.</p>`,

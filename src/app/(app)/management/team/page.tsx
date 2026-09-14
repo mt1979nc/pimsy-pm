@@ -3,7 +3,7 @@ import { listManagementTeam } from "@/actions/management-team";
 import { TeamFlagsForm } from "../_components/team-flags-form";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Team — Staffing" };
+export const metadata = { title: "Team — Prism" };
 
 export default async function ManagementTeamPage() {
   const team = await listManagementTeam();

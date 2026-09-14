@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.10.0";
+export const APP_VERSION = "1.11.0";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,22 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.11.0",
+    date: "2026-09-14",
+    summary:
+      "PATH is the Dock replacement; Prism (capacity, forecast, analysis) lives inside PATH. Standalone nice-rock is retired as the book of business. One-time Prism SQL/JSON import, Director/Pipeline morning snapshot API, add-to-roster, pipeline filter. No ongoing Prism SQL dual-write.",
+    highlights: [
+      "Product name: PATH (Plan · Assign · Track · Handoff). Prism stays the analytics module (Portfolio · Readiness · Insight · Staffing · Metrics) — sidebar section, Forecast, Analysis, Staffing hub.",
+      "Staffing hub is the morning snapshot: this-week load, peak/hire-now, go-lives next 14 days, slips, pipeline.",
+      "Add to roster (Forecast+ scope + Prism status) without waiting on a playbook; pipeline filter on the engagement list.",
+      "Analysis now lists forecast vs actual per completed site (SENSORI / MHC / LECHRIS still excluded from primary averages by default).",
+      "Kickoff / go-live / slip saves refresh Forecast weekly hours automatically (same even-spread model).",
+      "One-time import: npm run db:dump:prism / db:import:prism (JSON dump + Azure Cloud Shell runbook). Idempotent by acronym / prism_team_id; WIP playbooks and demo logins are protected.",
+      "Director / Pipeline routines: GET /api/prism/snapshot with PRISM_READ_API_KEY (or a Management session). Do not query Prism Azure SQL after cutover.",
+      "Standalone Prism (nice-rock) can go read-only then dark after Alexander confirms the go/no-go checklist in v1.11-PRISM-CUTOVER.md.",
+    ],
+  },
   {
     version: "1.10.0",
     date: "2026-09-12",

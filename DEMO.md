@@ -1,9 +1,8 @@
-# Nathan demo — PIMSY Implementations (Dock replacement)
+# Nathan demo — PATH (Dock replacement)
 
 **Live:** https://pimsy-app.azurewebsites.net  
 **Repo:** https://github.com/mt1979nc/pimsy-pm  
-**Version:** v1.8.3  
-**Pitch in one line:** Same Implementation playbook as Dock, with an internal back-channel Dock can’t do, plus an API we own — without Dock Enterprise (~$1k/mo) pricing.
+**Product:** PATH — Plan · Assign · Track · Handoff. **Prism** (capacity / forecast / analysis) is a module inside PATH.
 
 This app holds **no PHI** (logistics only). Footer on sign-in says so.
 
@@ -82,7 +81,7 @@ Private window → `contact@riverbend-counseling.example.com`:
 
 ## Talking points vs Dock
 
-| Dock today | PIMSY Implementations |
+| Dock today | PATH |
 |---|---|
 | Polished customer rooms | Customer portal + staff app |
 | Template clone | Same Dock playbook, dates from kickoff |

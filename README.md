@@ -1,7 +1,10 @@
-# PIMSY Implementations
+# PATH
 
-Implementation and project management for PIMSY EHR, with a customer-facing
-portal and two-channel messaging. Built to replace Dock.
+**PATH** — Plan · Assign · Track · Handoff. Dock replacement for PIMSY EHR implementations, with a customer-facing portal and two-channel messaging.
+
+**Prism** (inside PATH) — Portfolio · Readiness · Insight · Staffing · Metrics: capacity, forecast, analysis, and the engagement roster. The standalone nice-rock app is retired after the v1.11 cutover.
+
+Repo remains `pimsy-pm`.
 
 **This system holds no PHI.** It tracks implementation logistics only —
 timelines, configuration checklists, training scheduling and correspondence.
@@ -38,12 +41,13 @@ documents, and their conversation with your team. Nothing else.
 schedule, median cycle time, on-time rate, risk register, and per-specialist
 capacity against declared weekly hours.
 
-**Forecast** (`/management/forecast`) — Management-only (OWNER / ADMIN /
+**Forecast** (`/management/forecast`) — Prism, Management-only (OWNER / ADMIN /
 MANAGER) weekly-hours forecast: team load, department headroom, peak week,
 hire-now. Capacity-exempt staff are excluded from department math. Analysis
 primary averages exclude SENSORI / MHC / LECHRIS by default (configurable).
-Specialists are redirected; customers never see it. Native Postgres — Prism
-Azure SQL dual-read is planned for v1.11, not this release.
+Specialists are redirected; customers never see it. Native Postgres is the
+source of truth after the v1.11 cutover (`GET /api/prism/snapshot` for
+Director / Pipeline routines).
 
 **Management area** (`/admin`) — one place for org-wide numbers, every project
 in a filterable table, every customer with rollups, people, and alert policy.
@@ -257,6 +261,16 @@ npm run db:seed -- --templates-only
 ```
 
 Loads the templates and skips the demo customers.
+
+Prism cutover (Capacity / Forecast / Analysis as source of truth in PATH): see
+`v1.11-PRISM-CUTOVER.md`. Dump standalone Prism SQL (or a JSON file from Cloud Shell), then:
+
+```bash
+npm run db:import:prism -- ./prism-dump.json
+```
+
+Director / Pipeline / morning snapshot: `GET /api/prism/snapshot` with
+`PRISM_READ_API_KEY`. Do not keep writing to standalone Prism Azure SQL.
 
 ---
 

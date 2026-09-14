@@ -1,10 +1,10 @@
 @echo off
 setlocal
-title PIMSY Implementations - local setup
+title PATH - local setup
 
 echo.
-echo   PIMSY Implementations
-echo   =====================
+echo   PATH  (Plan · Assign · Track · Handoff)
+echo   ======================================
 echo.
 echo   This window will set the app up and start it. First run takes a few
 echo   minutes, mostly downloading packages. Leave this window OPEN - closing

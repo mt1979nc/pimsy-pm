@@ -13,8 +13,8 @@
  * Analysis "primary averages" exclude SENSORI / MHC / LECHRIS by default —
  * the locked Prism outliers — and the list is org-configurable.
  *
- * Native Postgres only. Dual-read of Prism Azure SQL is v1.11
- * (see src/lib/prism-dual-read.ts).
+ * Native Postgres only. After v1.11 cutover, Director / Pipeline routines
+ * read GET /api/prism/snapshot — not Prism Azure SQL.
  */
 
 import { addDays, startOfDay, startOfWeek } from "date-fns";
