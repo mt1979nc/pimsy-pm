@@ -8,6 +8,7 @@ import {
   archiveProject,
   deleteProject,
   setPhaseVisibility,
+  completeHistoricalTasksOnTime,
 } from "@/actions/projects";
 import {
   addProjectRecording,
@@ -435,6 +436,51 @@ export function ArchiveProjectButton({ projectId }: { projectId: string }) {
         Cancel
       </Button>
     </div>
+  );
+}
+
+export function CompleteHistoricalOnTimeForm({
+  projectId,
+  confirmToken,
+  openCount,
+}: {
+  projectId: string;
+  confirmToken: string;
+  openCount: number;
+}) {
+  const [state, formAction] = useActionState(completeHistoricalTasksOnTime, {});
+
+  return (
+    <form action={formAction} className="space-y-3">
+      <input type="hidden" name="projectId" value={projectId} />
+      <p className="text-[12.5px] leading-relaxed text-ink-2">
+        Mark {openCount} open task{openCount === 1 ? "" : "s"} complete on time (completed on or
+        before the due date, or spread across kickoff → go-live when a due is missing). They leave
+        overdue / upcoming-due rollups; the hub still lists them as done.
+      </p>
+      <Field
+        label={`Type ${confirmToken} to confirm`}
+        htmlFor="historical-complete-confirmation"
+        hint="Acronym, project code, or the full project name."
+      >
+        <input
+          id="historical-complete-confirmation"
+          name="confirmation"
+          autoComplete="off"
+          className={inputClass}
+          required
+        />
+      </Field>
+      <FormError error={state.error} />
+      {state.ok ? (
+        <p className="rounded-lg bg-green-soft px-3 py-2 text-[12.5px] text-green">
+          Open tasks marked complete on time.
+        </p>
+      ) : null}
+      <SubmitButton variant="danger" size="sm" pendingLabel="Completing…">
+        Mark tasks complete on time
+      </SubmitButton>
+    </form>
   );
 }
 

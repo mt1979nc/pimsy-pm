@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.12.2";
+export const APP_VERSION = "1.12.3";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.12.3",
+    date: "2026-09-14",
+    summary:
+      "PATH-native Onboarded checkbox hides a site’s overdue / upcoming-due tasks from staff overviews; historical sites with kickoff and go-live can mark remaining tasks complete on time.",
+    highlights: [
+      "About → Onboarded (staff with project write access: OWNER / ADMIN / MANAGER, and specialists who can already edit About). Default off. Project hub still shows every task; dashboard Needs Attention, My Work, and Portfolio overdue / upcoming-due rollups skip onboarded sites.",
+      "PATH-only project flag. Customer portal About is unchanged.",
+      "Settings danger zone: Complete historical tasks on time. Requires kickoff + go-live (or actual end) and a gate: COMPLETED, cancelled, archived, post go-live (actual go-live in the past), or Onboarded. Typed confirmation. Active WIP without that gate is refused.",
+      "Ops: `npm run db:complete:historical-on-time` (dry-run) / `--apply` / `--project CODE`. Completes open tasks with completedAt on or before the due date, or spread evenly kickoff → go-live when dues are missing.",
+      "Migration `0013_onboarded`: boolean `project.onboarded` default false.",
+    ],
+  },
   {
     version: "1.12.2",
     date: "2026-09-14",

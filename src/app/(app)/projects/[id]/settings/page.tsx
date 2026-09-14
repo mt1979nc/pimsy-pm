@@ -12,6 +12,7 @@ import {
   RemoveMemberButton,
   ArchiveProjectButton,
   DeleteProjectForm,
+  CompleteHistoricalOnTimeForm,
   PhaseVisibilityList,
   RecordingsManager,
 } from "./settings-forms";
@@ -19,6 +20,7 @@ import { ProjectContacts } from "./contacts";
 import { SlipHistoryList } from "@/components/slip-history";
 import { staffingRoleLabel } from "@/lib/staffing";
 import { AddRcmTrackForm } from "./add-rcm-track-form";
+import { assessHistoricalComplete, loadOpenHistoricalTasks } from "@/lib/historical-complete";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +105,9 @@ export default async function ProjectSettingsPage({
     where: eq(slipEvents.projectId, id),
     orderBy: [desc(slipEvents.createdAt)],
   });
+
+  const historicalEligibility = assessHistoricalComplete(project);
+  const openHistoricalTasks = historicalEligibility.ok ? await loadOpenHistoricalTasks(id) : [];
 
   return (
     <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.3fr_1fr]">
@@ -222,6 +227,25 @@ export default async function ProjectSettingsPage({
           <CardHeader title="Danger zone" />
           <div className="space-y-5 p-5">
             <div>
+              <h3 className="text-[13px] font-medium text-ink">Complete historical tasks on time</h3>
+              {!historicalEligibility.ok ? (
+                <p className="mt-2 text-[12.5px] text-ink-3">
+                  {historicalEligibility.reason} Use About → Onboarded for overview exclusion
+                  without rewriting task history, or add kickoff and go-live dates first.
+                </p>
+              ) : openHistoricalTasks.length === 0 ? (
+                <p className="mt-2 text-[12.5px] text-ink-3">No open tasks to complete.</p>
+              ) : (
+                <div className="mt-2">
+                  <CompleteHistoricalOnTimeForm
+                    projectId={id}
+                    confirmToken={project.crmAcronym || project.code}
+                    openCount={openHistoricalTasks.length}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="border-t border-border pt-5">
               <ArchiveProjectButton projectId={id} />
               <p className="mt-2 text-[12px] text-ink-3">
                 Archiving hides the project from lists and immediately revokes portal access. Nothing

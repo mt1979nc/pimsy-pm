@@ -92,6 +92,13 @@
       "when": 1789066000000,
       "tag": "0012_dock_parity",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789067000000,
+      "tag": "0013_onboarded",
+      "breakpoints": true
     }
   ]
 }
