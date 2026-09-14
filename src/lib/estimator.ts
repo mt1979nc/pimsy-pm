@@ -244,17 +244,25 @@ const KICKOFF_DAYS = FORECAST_WEIGHTS.kickoffDays;
 const CONFIG_OVERHANG_DAYS = FORECAST_WEIGHTS.configOverhangDays;
 const SCHEDULING_BUFFER_DAYS = FORECAST_WEIGHTS.schedulingBufferDays;
 
-const DISCOVERY_DAYS: Record<DiscoveryScenario, number> = {
+export const DISCOVERY_SCENARIOS = ["OPTIMISTIC", "TYPICAL", "PESSIMISTIC"] as const satisfies readonly DiscoveryScenario[];
+
+export const DISCOVERY_DAYS: Record<DiscoveryScenario, number> = {
   OPTIMISTIC: 7,
   TYPICAL: 14,
   PESSIMISTIC: 21,
 };
 
-const SCENARIO_LABELS: Record<DiscoveryScenario, string> = {
+export const SCENARIO_LABELS: Record<DiscoveryScenario, string> = {
   OPTIMISTIC: "Optimistic · continuous discovery submissions",
   TYPICAL: "Typical · mid-discovery submissions",
   PESSIMISTIC: "Pessimistic · day-7 batch submit",
 };
+
+export function parseDiscoveryScenario(raw: unknown): DiscoveryScenario {
+  const s = String(raw ?? "").trim().toUpperCase();
+  if (s === "OPTIMISTIC" || s === "TYPICAL" || s === "PESSIMISTIC") return s;
+  return "TYPICAL";
+}
 
 function trainingDays(sessions: number, perWeek: number) {
   return Math.ceil(sessions / Math.max(1, perWeek)) * 7;
@@ -271,7 +279,7 @@ export function forecastImplementation(
 ): ForecastResult {
   const tier = complexityTier(scope);
 
-  const scenarios: ScenarioProjection[] = (["OPTIMISTIC", "TYPICAL", "PESSIMISTIC"] as const).map(
+  const scenarios: ScenarioProjection[] = DISCOVERY_SCENARIOS.map(
     (scenario) => {
       const discoveryDays = DISCOVERY_DAYS[scenario];
       const trainDays = trainingDays(

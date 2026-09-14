@@ -14,6 +14,8 @@ import {
   type ForecastEngagement,
   type ForecastStaffMember,
 } from "@/lib/forecast";
+import type { DurationSample } from "@/lib/go-live-recommendation";
+import { listCompletedForAnalysis } from "@/lib/queries";
 import { inferPrismStatus } from "@/lib/prism-status";
 
 export async function loadForecastExclusions(): Promise<string[]> {
@@ -99,6 +101,29 @@ export async function loadForecastEngagements(): Promise<ForecastEngagement[]> {
 export async function loadCapacityForecast(weeksAhead = 12, asOf = new Date()): Promise<CapacityForecast> {
   const [staff, engagements] = await Promise.all([loadForecastStaff(), loadForecastEngagements()]);
   return buildCapacityForecast({ asOf, weeksAhead, staff, engagements });
+}
+
+/** Completed kickoff → actual durations for Forecast+ go-live bands. */
+export async function loadHistoricalDurationSamples(): Promise<DurationSample[]> {
+  const rows = await listCompletedForAnalysis();
+  return rows
+    .filter((r) => r.durationDays != null && r.durationDays > 0)
+    .map((r) => ({
+      code: r.code,
+      durationDays: r.durationDays!,
+      complexityTier: r.complexityTier,
+    }));
+}
+
+export async function loadRosterGoLiveContext(): Promise<{
+  exclusions: string[];
+  samples: DurationSample[];
+}> {
+  const [exclusions, samples] = await Promise.all([
+    loadForecastExclusions(),
+    loadHistoricalDurationSamples(),
+  ]);
+  return { exclusions, samples };
 }
 
 export async function saveForecastExclusions(codes: string[]): Promise<string[]> {

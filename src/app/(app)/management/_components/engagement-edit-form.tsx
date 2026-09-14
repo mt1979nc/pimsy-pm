@@ -1,13 +1,20 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { updateEngagement } from "@/actions/management-engagements";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Field, inputClass } from "@/components/ui";
 import { SlipHistoryList } from "@/components/slip-history";
-import { SERVICE_LINE_LABELS } from "@/lib/estimator";
+import { GoLiveScenarioPicker, GoLiveSourceBadge } from "@/components/go-live-scenario-picker";
+import { DEFAULT_SCOPE, SERVICE_LINE_LABELS, type ImplementationScope } from "@/lib/estimator";
+import {
+  kickoffOrToday,
+  recommendGoLive,
+  type DurationSample,
+} from "@/lib/go-live-recommendation";
 import { PRISM_STATUSES, PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
 import { toDateInput } from "@/lib/dates";
+import type { DiscoveryScenario } from "@/db/schema";
 
 type LeadOption = {
   id: string;
@@ -41,8 +48,11 @@ export function EngagementEditForm({
   initialGoLiveDate,
   targetGoLiveDate,
   scope,
+  discoveryScenario,
   leadOptions,
   slips,
+  durationSamples,
+  exclusions,
 }: {
   projectId: string;
   code: string;
@@ -67,12 +77,60 @@ export function EngagementEditForm({
     complexityTier: string;
     estimatedHours: number | null;
   } | null;
+  discoveryScenario: DiscoveryScenario;
   leadOptions: LeadOption[];
   slips: Slip[];
+  durationSamples: DurationSample[];
+  exclusions: string[];
 }) {
   const [state, action] = useActionState(updateEngagement, {});
-  const selectedLines = new Set(scope?.serviceLines ?? []);
   const initialLocked = !!initialGoLiveDate;
+  const [kickoff, setKickoff] = useState(toDateInput(startDate));
+  const [targetGoLive, setTargetGoLive] = useState(toDateInput(targetGoLiveDate));
+  const [scenario, setScenario] = useState<DiscoveryScenario>(discoveryScenario);
+  const [customHpw, setCustomHpw] = useState(
+    customHoursPerWeek != null ? String(customHoursPerWeek) : "",
+  );
+  const [scopeState, setScopeState] = useState<ImplementationScope>({
+    userCount: scope?.userCount ?? DEFAULT_SCOPE.userCount,
+    locationCount: scope?.locationCount ?? DEFAULT_SCOPE.locationCount,
+    formPageCount: scope?.formPageCount ?? DEFAULT_SCOPE.formPageCount,
+    trainingsPerWeek: scope?.trainingsPerWeek ?? DEFAULT_SCOPE.trainingsPerWeek,
+    serviceLines: scope?.serviceLines?.length ? scope.serviceLines : [...DEFAULT_SCOPE.serviceLines],
+    stateCompliance: scope?.stateCompliance ?? DEFAULT_SCOPE.stateCompliance,
+    minimalOrgStructure: scope?.minimalOrgStructure ?? DEFAULT_SCOPE.minimalOrgStructure,
+  });
+
+  const customHoursParsed = customHpw.trim() === "" ? null : Number.parseFloat(customHpw);
+
+  const recommendation = useMemo(() => {
+    const start = kickoffOrToday(kickoff ? new Date(`${kickoff}T12:00:00.000Z`) : null);
+    return recommendGoLive({
+      scope: scopeState,
+      kickoffDate: start,
+      samples: durationSamples,
+      exclusions,
+      customHoursPerWeek: Number.isFinite(customHoursParsed) ? customHoursParsed : null,
+    });
+  }, [scopeState, kickoff, durationSamples, exclusions, customHoursParsed]);
+
+  const chosen =
+    recommendation.scenarios.find((s) => s.scenario === scenario) ?? recommendation.scenarios[1];
+
+  function applyScenario(next: DiscoveryScenario) {
+    setScenario(next);
+    const row = recommendation.scenarios.find((s) => s.scenario === next);
+    if (row) setTargetGoLive(toDateInput(row.goLiveDate));
+  }
+
+  function toggleServiceLine(key: string) {
+    setScopeState((s) => ({
+      ...s,
+      serviceLines: s.serviceLines.includes(key)
+        ? s.serviceLines.filter((l) => l !== key)
+        : [...s.serviceLines, key],
+    }));
+  }
 
   return (
     <form action={action} className="space-y-6 p-5">
@@ -170,7 +228,8 @@ export function EngagementEditForm({
               step="0.1"
               min={0}
               max={80}
-              defaultValue={customHoursPerWeek ?? ""}
+              value={customHpw}
+              onChange={(e) => setCustomHpw(e.target.value)}
               placeholder="e.g. 2"
               className={inputClass}
             />
@@ -192,6 +251,8 @@ export function EngagementEditForm({
         <p className="text-[12px] text-ink-3">
           Kickoff and current go-live drive the schedule — incomplete phase/task dates rescale when
           this window changes. A slip must push go-live (new date or +days), not just add a note.
+          Picking Optimistic / Typical / Pessimistic fills current go-live from past sites (or the
+          Forecast+ model if history is thin).
         </p>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Kickoff" htmlFor="kickoffDate">
@@ -199,7 +260,8 @@ export function EngagementEditForm({
               id="kickoffDate"
               name="kickoffDate"
               type="date"
-              defaultValue={toDateInput(startDate)}
+              value={kickoff}
+              onChange={(e) => setKickoff(e.target.value)}
               className={inputClass}
             />
           </Field>
@@ -229,10 +291,37 @@ export function EngagementEditForm({
               id="targetGoLiveDate"
               name="targetGoLiveDate"
               type="date"
-              defaultValue={toDateInput(targetGoLiveDate)}
+              value={targetGoLive}
+              onChange={(e) => setTargetGoLive(e.target.value)}
               className={inputClass}
             />
           </Field>
+        </div>
+        <div className="rounded-lg border border-border bg-surface-2/60 p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <span className="text-[12px] font-semibold uppercase tracking-wide text-ink-3">
+              Forecast+ recommendation
+            </span>
+            <GoLiveSourceBadge recommendation={recommendation} />
+          </div>
+          <GoLiveScenarioPicker
+            recommendation={recommendation}
+            scenario={scenario}
+            onChange={applyScenario}
+          />
+          {initialLocked ? (
+            <p className="mt-3 text-[12px] text-ink-3">
+              Initial go-live is locked. Applying a scenario fills <em>current</em> go-live; save as a
+              slip if that date moves.
+            </p>
+          ) : null}
+          {chosen ? (
+            <p className="mt-2 text-[12px] tabular-nums text-ink-2">
+              {chosen.estimatedHours.toFixed(1)}h
+              {chosen.weeklyHours > 0 ? ` · ${chosen.weeklyHours.toFixed(1)}h/wk` : ""} if this window
+              is used.
+            </p>
+          ) : null}
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field
@@ -271,7 +360,10 @@ export function EngagementEditForm({
               name="userCount"
               type="number"
               min={1}
-              defaultValue={scope?.userCount ?? 1}
+              value={scopeState.userCount}
+              onChange={(e) =>
+                setScopeState((s) => ({ ...s, userCount: Number(e.target.value) || 1 }))
+              }
               className={inputClass}
             />
           </Field>
@@ -281,7 +373,10 @@ export function EngagementEditForm({
               name="locationCount"
               type="number"
               min={1}
-              defaultValue={scope?.locationCount ?? 1}
+              value={scopeState.locationCount}
+              onChange={(e) =>
+                setScopeState((s) => ({ ...s, locationCount: Number(e.target.value) || 1 }))
+              }
               className={inputClass}
             />
           </Field>
@@ -291,7 +386,10 @@ export function EngagementEditForm({
               name="formPageCount"
               type="number"
               min={0}
-              defaultValue={scope?.formPageCount ?? 25}
+              value={scopeState.formPageCount}
+              onChange={(e) =>
+                setScopeState((s) => ({ ...s, formPageCount: Number(e.target.value) || 0 }))
+              }
               className={inputClass}
             />
           </Field>
@@ -301,7 +399,10 @@ export function EngagementEditForm({
               name="trainingsPerWeek"
               type="number"
               min={0}
-              defaultValue={scope?.trainingsPerWeek ?? 2}
+              value={scopeState.trainingsPerWeek}
+              onChange={(e) =>
+                setScopeState((s) => ({ ...s, trainingsPerWeek: Number(e.target.value) || 0 }))
+              }
               className={inputClass}
             />
           </Field>
@@ -311,7 +412,8 @@ export function EngagementEditForm({
             <input
               type="checkbox"
               name="stateCompliance"
-              defaultChecked={scope?.stateCompliance ?? false}
+              checked={scopeState.stateCompliance}
+              onChange={(e) => setScopeState((s) => ({ ...s, stateCompliance: e.target.checked }))}
               className="size-4 rounded border-border-strong"
             />
             State compliance (+2h)
@@ -320,7 +422,10 @@ export function EngagementEditForm({
             <input
               type="checkbox"
               name="minimalOrgStructure"
-              defaultChecked={scope?.minimalOrgStructure ?? false}
+              checked={scopeState.minimalOrgStructure}
+              onChange={(e) =>
+                setScopeState((s) => ({ ...s, minimalOrgStructure: e.target.checked }))
+              }
               className="size-4 rounded border-border-strong"
             />
             Minimal org structure
@@ -335,19 +440,18 @@ export function EngagementEditForm({
                   type="checkbox"
                   name="serviceLines"
                   value={key}
-                  defaultChecked={selectedLines.has(key)}
+                  checked={scopeState.serviceLines.includes(key)}
+                  onChange={() => toggleServiceLine(key)}
                   className="size-4 rounded border-border-strong"
                 />
                 {label}
               </label>
             ))}
           </div>
-          {scope?.complexityTier ? (
-            <p className="mt-2 text-[12px] text-ink-3">
-              Current complexity: {scope.complexityTier}
-              {scope.estimatedHours != null ? ` · est. ${scope.estimatedHours}h` : ""}
-            </p>
-          ) : null}
+          <p className="mt-2 text-[12px] text-ink-3">
+            Current complexity: {recommendation.complexityTier}
+            {chosen ? ` · est. ${chosen.estimatedHours.toFixed(1)}h` : ""}
+          </p>
         </div>
       </section>
 

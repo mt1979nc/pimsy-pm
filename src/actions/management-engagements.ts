@@ -17,9 +17,16 @@ import { canManagePrismCapacity, ForbiddenError, NotFoundError } from "@/lib/aut
 import { audit } from "@/lib/audit";
 import {
   complexityTier,
-  forecastImplementation,
+  parseDiscoveryScenario,
   type ImplementationScope,
 } from "@/lib/estimator";
+import {
+  chosenScenario,
+  kickoffOrToday,
+  recommendGoLive,
+  resolveCommittedGoLive,
+} from "@/lib/go-live-recommendation";
+import { loadRosterGoLiveContext } from "@/lib/forecast-data";
 import {
   inferPrismStatus,
   isPrismStatus,
@@ -200,48 +207,20 @@ export async function updateEngagement(
   const slipNote = formData.get("slipNote")?.toString();
   const slipDaysRaw = formData.get("slipDays")?.toString();
 
-  const userCount = Math.max(1, Number.parseInt(String(formData.get("userCount") ?? "1"), 10) || 1);
-  const locationCount = Math.max(
-    1,
-    Number.parseInt(String(formData.get("locationCount") ?? "1"), 10) || 1,
-  );
-  const formPageCount = Math.max(
-    0,
-    Number.parseInt(String(formData.get("formPageCount") ?? "25"), 10) || 25,
-  );
-  const trainingsPerWeek = Math.max(
-    0,
-    Number.parseInt(String(formData.get("trainingsPerWeek") ?? "2"), 10) || 2,
-  );
-  const stateCompliance = formData.get("stateCompliance") === "on";
-  const minimalOrgStructure = formData.get("minimalOrgStructure") === "on";
-  const serviceLines = formData.getAll("serviceLines").map(String).filter(Boolean);
-
-  const scopeInput: ImplementationScope = {
-    userCount,
-    locationCount,
-    formPageCount,
-    trainingsPerWeek,
-    serviceLines,
-    stateCompliance,
-    minimalOrgStructure,
-  };
+  const scopeInput = scopeFromForm(formData);
+  const plan = await rosterGoLivePlan(scopeInput, kickoffDate, formData, requestedTargetGoLive);
   const tier = complexityTier(scopeInput);
-  const kickoffForEstimate = kickoffDate ?? before.startDate ?? new Date();
-  const estimate = forecastImplementation(scopeInput, kickoffForEstimate);
-  const estimatedHours = estimate.hours.totalHours;
+  const estimatedHours = plan.estimatedHours;
+  const { userCount, locationCount, formPageCount, trainingsPerWeek, serviceLines, stateCompliance, minimalOrgStructure } =
+    scopeInput;
 
   const mapped = mapPrismStatusToEnums(prismStatus);
 
-  const typicalForecastDays =
-    estimate.scenarios.find((s) => s.scenario === (before.scope?.discoveryScenario ?? "TYPICAL"))
-      ?.calendarDays ??
-    estimate.scenarios[1]?.calendarDays ??
-    null;
+  const nextForecastDays = plan.chosen.calendarDays;
   const previousForecastDays = before.scope
-    ? (
-        forecastImplementation(
-          {
+    ? chosenScenario(
+        recommendGoLive({
+          scope: {
             userCount: before.scope.userCount,
             locationCount: before.scope.locationCount,
             formPageCount: before.scope.formPageCount,
@@ -250,10 +229,12 @@ export async function updateEngagement(
             stateCompliance: before.scope.stateCompliance,
             minimalOrgStructure: before.scope.minimalOrgStructure,
           },
-          before.startDate ?? kickoffForEstimate,
-        ).scenarios.find((s) => s.scenario === (before.scope?.discoveryScenario ?? "TYPICAL"))
-          ?.calendarDays ?? null
-      )
+          kickoffDate: before.startDate ?? kickoffOrToday(kickoffDate),
+          samples: plan.samples,
+          exclusions: plan.exclusions,
+        }),
+        before.scope.discoveryScenario,
+      ).calendarDays
     : null;
 
   // Slip = schedule push (new date and/or +slipDays). Reject note-only slips.
@@ -316,6 +297,7 @@ export async function updateEngagement(
     minimalOrgStructure,
     complexityTier: tier,
     estimatedHours,
+    discoveryScenario: plan.scenario,
     updatedAt: new Date(),
   };
 
@@ -351,7 +333,7 @@ export async function updateEngagement(
     previousForecastCalendarDays: previousForecastDays,
     nextKickoff: kickoffDate ?? (before.startDate ? new Date(before.startDate) : null),
     nextGoLive: targetGoLiveDate,
-    nextForecastCalendarDays: typicalForecastDays,
+    nextForecastCalendarDays: nextForecastDays,
   });
   if (cascadePlan.cascade && cascadePlan.next) {
     await cascadeRescheduleProject({
@@ -392,6 +374,53 @@ export async function listLeadOptions() {
 
 function slugify(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+}
+
+function scopeFromForm(formData: FormData): ImplementationScope {
+  const userCount = Math.max(1, Number.parseInt(String(formData.get("userCount") ?? "1"), 10) || 1);
+  const locationCount = Math.max(
+    1,
+    Number.parseInt(String(formData.get("locationCount") ?? "1"), 10) || 1,
+  );
+  const formPageCount = Math.max(
+    0,
+    Number.parseInt(String(formData.get("formPageCount") ?? "25"), 10) || 25,
+  );
+  const trainingsPerWeek = Math.max(
+    0,
+    Number.parseInt(String(formData.get("trainingsPerWeek") ?? "2"), 10) || 2,
+  );
+  const stateCompliance = formData.get("stateCompliance") === "on";
+  const minimalOrgStructure = formData.get("minimalOrgStructure") === "on";
+  const serviceLines = formData.getAll("serviceLines").map(String).filter(Boolean);
+  return {
+    userCount,
+    locationCount,
+    formPageCount,
+    trainingsPerWeek,
+    serviceLines,
+    stateCompliance,
+    minimalOrgStructure,
+  };
+}
+
+async function rosterGoLivePlan(
+  scopeInput: ImplementationScope,
+  kickoffDate: Date | null,
+  formData: FormData,
+  requestedGoLive: Date | null,
+) {
+  const scenario = parseDiscoveryScenario(formData.get("discoveryScenario"));
+  const { samples, exclusions } = await loadRosterGoLiveContext();
+  const rec = recommendGoLive({
+    scope: scopeInput,
+    kickoffDate: kickoffOrToday(kickoffDate),
+    samples,
+    exclusions,
+  });
+  const chosen = chosenScenario(rec, scenario);
+  const goLive = resolveCommittedGoLive({ rec, scenario, requestedGoLive });
+  return { scenario, rec, chosen, goLive, estimatedHours: chosen.estimatedHours, samples, exclusions };
 }
 
 export async function createEngagement(
@@ -444,29 +473,15 @@ export async function createEngagement(
   const prismStatus = prismStatusRaw as PrismStatus;
   const prismNote = formData.get("prismNote")?.toString().trim() || null;
   const kickoffDate = parseDateInput(formData.get("kickoffDate")?.toString());
-  const targetGoLiveDate = parseDateInput(formData.get("targetGoLiveDate")?.toString());
+  const requestedGoLive = parseDateInput(formData.get("targetGoLiveDate")?.toString());
 
-  const userCount = Math.max(1, Number.parseInt(String(formData.get("userCount") ?? "1"), 10) || 1);
-  const locationCount = Math.max(1, Number.parseInt(String(formData.get("locationCount") ?? "1"), 10) || 1);
-  const formPageCount = Math.max(0, Number.parseInt(String(formData.get("formPageCount") ?? "25"), 10) || 25);
-  const trainingsPerWeek = Math.max(0, Number.parseInt(String(formData.get("trainingsPerWeek") ?? "2"), 10) || 2);
-  const stateCompliance = formData.get("stateCompliance") === "on";
-  const minimalOrgStructure = formData.get("minimalOrgStructure") === "on";
-  const serviceLines = formData.getAll("serviceLines").map(String).filter(Boolean);
-
-  const scopeInput: ImplementationScope = {
-    userCount,
-    locationCount,
-    formPageCount,
-    trainingsPerWeek,
-    serviceLines,
-    stateCompliance,
-    minimalOrgStructure,
-  };
-  const kickoffForEstimate = kickoffDate ?? new Date();
-  const estimate = forecastImplementation(scopeInput, kickoffForEstimate);
+  const scopeInput = scopeFromForm(formData);
+  const plan = await rosterGoLivePlan(scopeInput, kickoffDate, formData, requestedGoLive);
+  const { userCount, locationCount, formPageCount, trainingsPerWeek, serviceLines, stateCompliance, minimalOrgStructure } =
+    scopeInput;
   const tier = complexityTier(scopeInput);
-  const estimatedHours = estimate.hours.totalHours;
+  const estimatedHours = plan.estimatedHours;
+  const targetGoLiveDate = plan.goLive;
   const mapped = mapPrismStatusToEnums(prismStatus);
 
   let slug = slugify(accountName);
@@ -535,6 +550,7 @@ export async function createEngagement(
     minimalOrgStructure,
     complexityTier: tier,
     estimatedHours,
+    discoveryScenario: plan.scenario,
   });
 
   await audit({
@@ -543,7 +559,7 @@ export async function createEngagement(
     entityType: "project",
     entityId: project.id,
     summary: `${acronym}: added to roster (${prismStatus})`,
-    metadata: { prismStatus, leadId, estimatedHours },
+    metadata: { prismStatus, leadId, estimatedHours, discoveryScenario: plan.scenario, goLiveSource: plan.rec.goLiveSource },
   });
 
   revalidatePrismSurfaces(project.id);
