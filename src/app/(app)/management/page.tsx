@@ -4,7 +4,7 @@ import { Card, CardHeader, LinkButton, Stat, Badge } from "@/components/ui";
 import { fmtShort } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Staffing" };
+export const metadata = { title: "Staffing — Prism" };
 
 export default async function ManagementHubPage() {
   const snap = await loadDirectorSnapshot(12);
@@ -12,10 +12,10 @@ export default async function ManagementHubPage() {
   return (
     <div className="space-y-5">
       <p className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] leading-relaxed text-ink-2">
-        <strong className="font-semibold text-ink">Prism lives here.</strong> Capacity, Forecast+,
-        engagement edits, and Analysis all read PM Postgres. Director / Pipeline / morning snapshot
+        <strong className="font-semibold text-ink">Prism lives in PATH.</strong> Capacity, Forecast+,
+        engagement edits, and Analysis all read PATH Postgres. Director / Pipeline / morning snapshot
         routines should call{" "}
-        <code className="text-[12px]">GET /api/prism/snapshot</code> — not Prism Azure SQL.
+        <code className="text-[12px]">GET /api/prism/snapshot</code> — not standalone Prism Azure SQL.
       </p>
 
       {snap.hireNow ? (

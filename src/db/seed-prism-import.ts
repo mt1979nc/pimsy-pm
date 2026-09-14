@@ -13,7 +13,7 @@
  *
  * For a **live cutover** that updates existing rows from Azure SQL / JSON,
  * use `npm run db:import:prism` instead (see v1.11-PRISM-CUTOVER.md). This
- * seed skips acronyms already in PM.
+ * seed skips acronyms already in PATH.
  *
  *   npm run db:seed:prism-import
  *

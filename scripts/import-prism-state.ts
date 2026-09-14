@@ -1,5 +1,5 @@
 /**
- * Apply a Prism JSON dump to PM Postgres. Idempotent by acronym / prism_team_id.
+ * Apply a Prism JSON dump to PATH Postgres. Idempotent by acronym / prism_team_id.
  *
  *   npm run db:import:prism -- ./prism-dump.json
  *   npm run db:import:prism -- --dry-run ./prism-dump.json

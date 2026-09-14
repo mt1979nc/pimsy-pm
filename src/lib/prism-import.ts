@@ -196,7 +196,7 @@ export function planPrismImport(dump: PrismDump, existing: ExistingPmState): Imp
       kind: "team",
       key: m.teamId || email || m.name,
       action: hit ? "update" : "skip",
-      detail: hit ? `mark inactive ${hit.email}` : `former ${m.name} not in PM`,
+      detail: hit ? `mark inactive ${hit.email}` : `former ${m.name} not in PATH`,
     });
   }
 

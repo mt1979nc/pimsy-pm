@@ -281,7 +281,7 @@ describe("Director / morning snapshot", () => {
     expect(snap.analysisExclusions).toEqual(["SENSORI"]);
   });
 
-  it("keeps runtime dual-read off so PM is the only live source", () => {
+  it("keeps runtime dual-read off so PATH is the only live source", () => {
     expect(prismDualReadEnabled()).toBe(false);
     expect(prismRuntimeSource()).toBe("pimsy-pm");
   });

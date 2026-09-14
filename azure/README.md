@@ -1,4 +1,4 @@
-# Running PIMSY Implementations on Azure
+# Running PATH on Azure
 
 This folder plus `.github/workflows/deploy-azure.yml` and the `Dockerfile` at
 the repo root are everything needed to run this app on Azure: a Postgres
@@ -146,7 +146,7 @@ npm run db:migrate
 ```
 
 No Prism Azure SQL connection string is required on the Web App. v1.11 cutover
-reads PM Postgres only. Optional App Setting `PRISM_READ_API_KEY` gates
+reads PATH Postgres only. Optional App Setting `PRISM_READ_API_KEY` gates
 `GET /api/prism/snapshot` for Director / Pipeline routines. Dump Prism SQL from
 a firewall-allowed host (`PRISM_SQL_CONNECTION_STRING`) — see `v1.11-PRISM-CUTOVER.md`.
 

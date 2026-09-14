@@ -151,7 +151,7 @@ export function layout(opts: LayoutOpts) {
       <tr><td align="center" style="padding:32px 16px;">
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px;max-width:560px;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;">
           <tr><td style="padding:22px 32px;border-bottom:1px solid #eef0f3;">
-            <span style="font-weight:700;font-size:15px;letter-spacing:-0.01em;color:${BRAND};">PIMSY Implementations</span>
+            <span style="font-weight:700;font-size:15px;letter-spacing:-0.01em;color:${BRAND};">PATH</span>
           </td></tr>
           <tr><td style="padding:30px 32px;">
             <h1 style="margin:0 0 14px;font-size:20px;line-height:28px;font-weight:600;mso-line-height-rule:exactly;">${escapeHtml(opts.heading)}</h1>

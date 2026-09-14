@@ -123,7 +123,7 @@ export async function requestPasswordReset(
   } else {
     await sendEmail({
       to: user.email,
-      subject: hasExistingPassword ? "Reset your PIMSY Implementations password" : "Set a password for PIMSY Implementations",
+      subject: hasExistingPassword ? "Reset your PATH password" : "Set a password for PATH",
       html: passwordResetEmail(url, hasExistingPassword),
     });
   }

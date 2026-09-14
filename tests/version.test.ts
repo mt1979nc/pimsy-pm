@@ -39,4 +39,11 @@ describe("staff Update History source", () => {
       expect(note.summary.trim().length).toBeGreaterThan(8);
     }
   });
+
+  it("names PATH as the product and Prism as the analytics module in v1.11", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.11.0");
+    expect(note?.summary).toMatch(/PATH/);
+    expect(note?.summary).toMatch(/Prism/);
+    expect(note?.highlights?.some((h) => h.includes("Plan · Assign · Track · Handoff"))).toBe(true);
+  });
 });

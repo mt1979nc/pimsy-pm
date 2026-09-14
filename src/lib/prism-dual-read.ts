@@ -1,7 +1,7 @@
 /**
  * Optional short dual-read bridge — OFF by default after v1.11 cutover.
  *
- * PM Postgres is the source of truth. Do not POST Prism `saveState`.
+ * PATH Postgres is the source of truth. Do not POST Prism `saveState`.
  * Director / Pipeline / morning snapshot routines should call
  * GET /api/prism/snapshot (see v1.11-PRISM-CUTOVER.md).
  *
@@ -20,7 +20,7 @@ export function prismSqlConfigured(): boolean {
   return Boolean(process.env.PRISM_SQL_CONNECTION_STRING?.trim());
 }
 
-/** Runtime snapshot always comes from PM. Dual-read never merges into live pages. */
+/** Runtime snapshot always comes from PATH. Dual-read never merges into live pages. */
 export function prismRuntimeSource(): "pimsy-pm" {
   return "pimsy-pm";
 }

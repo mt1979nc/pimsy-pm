@@ -141,7 +141,7 @@ function adaptiveCard(card: TeamsCard) {
     ? [
         {
           type: "Action.OpenUrl",
-          title: card.linkLabel ?? "Open in PIMSY Implementations",
+          title: card.linkLabel ?? "Open in PATH",
           url: `${env.APP_URL}${card.linkUrl}`,
         },
       ]
@@ -186,7 +186,7 @@ export async function testTeamsWebhook(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(
         adaptiveCard({
-          title: "PIMSY Implementations is connected",
+          title: "PATH is connected",
           text:
             "This channel will now receive customer activity: messages, completed action items, and documents added to a task.",
           tone: "good",

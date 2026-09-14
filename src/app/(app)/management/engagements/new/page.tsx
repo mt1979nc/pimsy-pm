@@ -4,7 +4,7 @@ import { listLeadOptions } from "@/actions/management-engagements";
 import { EngagementCreateForm } from "../../_components/engagement-create-form";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Add engagement — Staffing" };
+export const metadata = { title: "Add engagement — Prism" };
 
 export default async function NewEngagementPage() {
   const leadOptions = await listLeadOptions();
@@ -18,7 +18,7 @@ export default async function NewEngagementPage() {
       <Card>
         <CardHeader
           title="Add to roster"
-          subtitle="Forecast+ scope + Prism status. Saves to PM Postgres and updates weekly load. No playbook until you create a project from a template."
+          subtitle="Forecast+ scope + Prism status. Saves to PATH Postgres and updates weekly load. No playbook until you create a project from a template."
           action={
             <LinkButton href="/projects/new" size="sm" variant="secondary">
               Full project with playbook

@@ -8,7 +8,7 @@ import { FORECAST_WEIGHTS, SERVICE_LINE_HOURS, SERVICE_LINE_LABELS } from "@/lib
 import { TYPICAL_HIRE_HOURS_PER_WEEK } from "@/lib/forecast";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Forecast — Staffing" };
+export const metadata = { title: "Forecast — Prism" };
 
 function pct(n: number) {
   return `${Math.round(n * 100)}%`;
@@ -31,7 +31,7 @@ export default async function ManagementForecastPage() {
         Weekly hours from scoped estimates (or custom hrs/wk), spread across kickoff → current
         go-live. Pipeline is off the load. Capacity-exempt people still show on the grid but are
         excluded from department headroom and hire-now. Saving an engagement (dates, slip, hours)
-        refreshes this table automatically — PM Postgres is the only source.
+        refreshes this table automatically — PATH Postgres is the only source.
       </p>
 
       {forecast.hire.hireNow ? (

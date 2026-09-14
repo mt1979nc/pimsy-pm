@@ -18,7 +18,7 @@ function bearerToken(req: Request): string | null {
  * Director / Pipeline / morning snapshot.
  *
  * Auth: Bearer PRISM_READ_API_KEY, or a signed-in OWNER/ADMIN/MANAGER session.
- * Always reads PM Postgres. Never Prism Azure SQL.
+ * Always reads PATH Postgres. Never Prism Azure SQL.
  */
 export async function GET(req: Request) {
   const token = bearerToken(req);

@@ -8,12 +8,13 @@ import {
 } from "@/lib/queries";
 import { loadForecastExclusions } from "@/lib/forecast-data";
 import { isExcludedFromPrimaryAverages } from "@/lib/forecast";
+import Link from "next/link";
 import { Card, CardHeader, PageHeader, Stat, EmptyState, Badge, LinkButton } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { fmtShort } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Analysis" };
+export const metadata = { title: "Analysis — Prism" };
 
 const TIER_LABEL: Record<string, string> = {
   STANDARD: "Standard",
@@ -38,7 +39,12 @@ export default async function AnalysisPage() {
     <>
       <PageHeader
         title="Analysis"
-        subtitle="Forecast accuracy and delivery patterns across completed implementations"
+        breadcrumb={
+          <Link href="/management" className="hover:text-ink">
+            Prism
+          </Link>
+        }
+        subtitle="Prism · forecast accuracy and delivery patterns across completed implementations"
         actions={
           <>
             <LinkButton href="/management/forecast">Forecast</LinkButton>

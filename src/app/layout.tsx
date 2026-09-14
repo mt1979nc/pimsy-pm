@@ -1,13 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { PRODUCT_EXPANSION, PRODUCT_NAME } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "PIMSY Implementations",
-    template: "%s · PIMSY Implementations",
+    default: PRODUCT_NAME,
+    template: `%s · ${PRODUCT_NAME}`,
   },
   description:
-    "Implementation and project management for PIMSY EHR, with a customer-facing workspace.",
+    `${PRODUCT_NAME} (${PRODUCT_EXPANSION}) — implementation and project management for PIMSY EHR, with a customer-facing workspace.`,
   robots: { index: false, follow: false },
 };
 

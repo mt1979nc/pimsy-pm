@@ -1,8 +1,8 @@
 /**
- * Director / Pipeline / morning snapshot from PM Postgres.
+ * Director / Pipeline / morning snapshot from PATH Postgres.
  *
  * Routines that used to query Prism Azure SQL should GET /api/prism/snapshot
- * instead. This is the book of business as PM knows it after cutover.
+ * instead. This is the book of business as PATH knows it after cutover.
  */
 
 import { addDays, startOfDay } from "date-fns";

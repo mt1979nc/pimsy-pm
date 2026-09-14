@@ -1,6 +1,6 @@
 @echo off
 setlocal
-title PIMSY Implementations - reset local database
+title PATH - reset local database
 
 cd /d "%~dp0"
 

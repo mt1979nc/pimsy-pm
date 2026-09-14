@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { isCustomer } from "@/lib/authz";
 import { Card, Button, Field, inputClass } from "@/components/ui";
 import { APP_VERSION } from "@/lib/version";
+import { PRODUCT_EXPANSION, PRODUCT_NAME } from "@/lib/brand";
 import { PasswordSignInForm } from "./password-form";
 
 export const dynamic = "force-dynamic";
@@ -32,10 +33,11 @@ export default async function SignInPage({
             className="mx-auto mb-3 size-11"
           />
           <h1 className="text-[19px] font-semibold tracking-tight text-ink">
-            PIMSY Implementations
+            {PRODUCT_NAME}
           </h1>
-          <p className="mt-1 text-[13.5px] text-ink-2">
-            Sign in to your implementation workspace.
+          <p className="mt-1 text-[13.5px] text-ink-2">{PRODUCT_EXPANSION}</p>
+          <p className="mt-1 text-[12.5px] text-ink-3">
+            Sign in to your PIMSY implementation workspace.
           </p>
         </div>
 

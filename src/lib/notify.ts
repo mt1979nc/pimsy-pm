@@ -139,7 +139,7 @@ export async function notify({
     quote,
     facts,
     cta: {
-      label: ctaLabel ?? (isCustomer ? "Open your project" : "Open in PIMSY Implementations"),
+      label: ctaLabel ?? (isCustomer ? "Open your project" : "Open in PATH"),
       url: `${env.APP_URL}${routeFor(isCustomer ? "CUSTOMER" : "STAFF") ?? ""}`,
     },
     footer: isCustomer

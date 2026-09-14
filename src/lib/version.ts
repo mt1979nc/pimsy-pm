@@ -27,8 +27,9 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: "1.11.0",
     date: "2026-09-14",
     summary:
-      "Prism retirement cutover: PM is the source of truth for Capacity, Forecast+, Analysis, and engagement edits. One-time Prism SQL/JSON import, Director/Pipeline morning snapshot API, add-to-roster, pipeline filter. No ongoing Prism SQL dual-write.",
+      "PATH is the Dock replacement; Prism (capacity, forecast, analysis) lives inside PATH. Standalone nice-rock is retired as the book of business. One-time Prism SQL/JSON import, Director/Pipeline morning snapshot API, add-to-roster, pipeline filter. No ongoing Prism SQL dual-write.",
     highlights: [
+      "Product name: PATH (Plan · Assign · Track · Handoff). Prism stays the analytics module (Portfolio · Readiness · Insight · Staffing · Metrics) — sidebar section, Forecast, Analysis, Staffing hub.",
       "Staffing hub is the morning snapshot: this-week load, peak/hire-now, go-lives next 14 days, slips, pipeline.",
       "Add to roster (Forecast+ scope + Prism status) without waiting on a playbook; pipeline filter on the engagement list.",
       "Analysis now lists forecast vs actual per completed site (SENSORI / MHC / LECHRIS still excluded from primary averages by default).",

@@ -6,7 +6,7 @@
  *  - Raw table rows (Team / Customers / CompletedImplementations / FormerTeam)
  *  - Prism `getState` document (team + customers + completed)
  *
- * Does not connect to anything. Mapping to PM is `src/lib/prism-import.ts`.
+ * Does not connect to anything. Mapping to PATH is `src/lib/prism-import.ts`.
  */
 
 import { parseDateInput } from "@/lib/dates";

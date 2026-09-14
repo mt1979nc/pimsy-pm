@@ -6,7 +6,7 @@ import { PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
 import { cn } from "@/lib/cn";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Engagements — Staffing" };
+export const metadata = { title: "Engagements — Prism" };
 
 const FILTERS: Array<{ key: "all" | PrismStatus; label: string }> = [
   { key: "all", label: "All" },

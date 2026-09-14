@@ -509,7 +509,7 @@ export async function createEngagement(
       portalEnabled: prismStatus !== "pipeline",
       prismClientId: acronym,
       crmAcronym: acronym,
-      description: "Added to the Prism roster in PM. Playbook can be attached later from New project.",
+      description: "Added to the Prism roster in PATH. Playbook can be attached later from New project.",
     })
     .returning({ id: projects.id });
 

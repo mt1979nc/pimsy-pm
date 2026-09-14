@@ -6,7 +6,7 @@ import { NotFoundError } from "@/lib/authz";
 import { EngagementEditForm } from "../../_components/engagement-edit-form";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Edit engagement — Staffing" };
+export const metadata = { title: "Edit engagement — Prism" };
 
 export default async function ManagementEngagementEditPage({
   params,
@@ -40,7 +40,7 @@ export default async function ManagementEngagementEditPage({
       <Card>
         <CardHeader
           title="Edit engagement"
-          subtitle="Owners, split, scope, dates, Prism status — saved to PM Postgres."
+          subtitle="Owners, split, scope, dates, Prism status — saved to PATH Postgres."
         />
         <EngagementEditForm
           projectId={project.id}

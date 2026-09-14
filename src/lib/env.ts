@@ -31,7 +31,7 @@ export const env = {
     return optional("RESEND_API_KEY");
   },
   get EMAIL_FROM() {
-    return optional("EMAIL_FROM", "PIMSY Implementations <onboarding@resend.dev>");
+    return optional("EMAIL_FROM", "PATH <onboarding@resend.dev>");
   },
   get GOOGLE_ID() {
     return optional("AUTH_GOOGLE_ID");
