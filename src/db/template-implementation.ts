@@ -383,6 +383,19 @@ export const IMPLEMENTATION_MILESTONES = [
   { name: "Tier 2 training complete", offsetDays: 120, visibility: "SHARED" as const, isGoLive: false },
 ];
 
+/** Flatten section groups so seed/tests can walk every Dock task title. */
+export function flattenSeedTasks(phases: SeedPhase[]): { phase: string; title: string }[] {
+  const rows: { phase: string; title: string }[] = [];
+  const walk = (phase: string, t: SeedTask) => {
+    rows.push({ phase, title: t.title });
+    for (const child of t.children ?? []) walk(phase, child);
+  };
+  for (const p of phases) {
+    for (const t of p.tasks) walk(p.name, t);
+  }
+  return rows;
+}
+
 export const IMPLEMENTATION_TEMPLATE = {
   name: "PIMSY Implementation",
   description:

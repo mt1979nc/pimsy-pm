@@ -26,7 +26,13 @@ export default async function TemplatesPage() {
     orderBy: [asc(projectTemplates.name)],
     with: {
       phases: {
-        with: { tasks: true },
+        with: {
+          tasks: {
+            with: {
+              defaultAttachments: { with: { libraryAsset: true } },
+            },
+          },
+        },
         orderBy: (p, { asc: a }) => [a(p.order)],
       },
       milestones: { orderBy: (m, { asc: a }) => [a(m.order)] },
@@ -112,6 +118,15 @@ export default async function TemplatesPage() {
                               <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-2">
                                 {task.title}
                               </span>
+                              {task.defaultAttachments.map((att) => (
+                                <Badge
+                                  key={att.id}
+                                  tone={att.libraryAsset?.kind === "LINK" ? "green" : "neutral"}
+                                >
+                                  {att.libraryAsset?.kind === "LINK" ? "Link" : "File"}:{" "}
+                                  {att.libraryAsset?.name ?? "attachment"}
+                                </Badge>
+                              ))}
                               {task.ownerSide === "CUSTOMER" ? (
                                 <Badge tone="violet">Customer</Badge>
                               ) : null}
@@ -146,7 +161,13 @@ export default async function TemplatesPage() {
 
       <p className="mt-5 max-w-2xl text-[12.5px] leading-relaxed text-ink-3">
         Open a playbook and edit it like Dock: add or remove tasks, drag phases and tasks to
-        reorder. Live projects are not rewritten when the template changes. To reset the four
+        reorder. Paperclip chips are default attachments (Discovery Wizard link, billing sheets)
+        that clone onto new projects. Live projects are not rewritten when the template changes —
+        run{" "}
+        <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
+          npm run db:resync:playbook-from-dock -- --apply
+        </code>{" "}
+        to attach missing defaults on existing WIP without deleting user files. To reset the four
         standard paths from code, run{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
           npm run db:seed -- --templates-only

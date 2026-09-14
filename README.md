@@ -297,12 +297,18 @@ npm run db:cleanup:non-dock -- --apply
 `--keep-prism-analytics` also keeps pipeline-only extras. Runbook:
 `v1.12-DOCK-PARITY.md`.
 
-Playbook nested-task resync (does not wipe DONE state):
+Playbook nested-task **and default attachment** resync (does not wipe DONE state
+or user-uploaded files):
 
 ```bash
 npm run db:resync:playbook-from-dock
 npm run db:resync:playbook-from-dock -- --apply
 ```
+
+That copies missing Discovery Wizard LINKs and billing-sheet defaults onto
+matching live tasks. Drop real Dock binaries in `content/template-attachments/`
+and run `npm run db:upload:template-attachments -- --apply`, or replace them at
+**Templates → File library**.
 
 Prism cutover (Capacity / Forecast / Analysis as source of truth in PATH): see
 `v1.11-PRISM-CUTOVER.md`. Dump standalone Prism SQL (or a JSON file from Cloud Shell), then:

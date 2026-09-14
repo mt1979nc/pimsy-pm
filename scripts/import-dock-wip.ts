@@ -34,6 +34,7 @@ import {
   resolvePlaybookScale,
   scheduleFromOffsets,
 } from "@/lib/project-timeline";
+import { ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
 
 // ---------------------------------------------------------------------------
 // Prism ACTIVE (kickoff / go-live / owner) — mirrored from seed-prism-import
@@ -232,6 +233,12 @@ async function materializePlaybook(opts: {
         })
         .returning({ id: tasks.id });
       templateIdToTaskId.set(tt.id, created.id);
+      await ensureDefaultAttachmentsOnTask(db, {
+        taskId: created.id,
+        projectId: opts.projectId,
+        title: tt.title,
+        uploadedById: opts.createdById,
+      });
     }
   }
 

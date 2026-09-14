@@ -216,8 +216,19 @@ npm run db:resync:playbook-from-dock
 npm run db:resync:playbook-from-dock -- --apply
 ```
 
-Owner/Admin replace Discovery Wizard / billing-sheet placeholders at
-**Templates → File library** (`/library`). Same Blob Storage as task uploads.
+Owner/Admin replace billing-sheet placeholders at
+**Templates → File library** (`/library`), or drop the live Dock files in
+`content/template-attachments/` and run:
+
+```bash
+npm run db:upload:template-attachments          # dry-run
+npm run db:upload:template-attachments -- --apply
+npm run db:resync:playbook-from-dock -- --apply # attach missing defaults; keep user files
+```
+
+Discovery Wizard is a **LINK** (`https://calm-mud-0fe119810.7.azurestaticapps.net/`)
+on the matching tasks — not a URL in the description. Same Blob Storage as task
+uploads.
 
 To change infrastructure
 (bump the App Service Plan tier, for instance), edit `azure/main.parameters.json`

@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.12.0";
+export const APP_VERSION = "1.12.2";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.12.2",
+    date: "2026-09-14",
+    summary:
+      "Dock template task attachments now clone onto matching PATH tasks: Discovery Wizard as a live LINK (not a description URL), billing questionnaire/spreadsheet placeholders, and resync that backfills WIP without deleting user uploads.",
+    highlights: [
+      "Default attachments are first-class file_asset rows on the task (kind LINK or FILE), copied from the file library when a playbook is materialized — including Dock WIP import, which previously copied titles only.",
+      "Discovery Wizard is https://calm-mud-0fe119810.7.azurestaticapps.net/ on Guided Discovery / Workflow Guided Discovery (and Discovery worksheets). It is a clickable attachment, not a URL buried in the task description.",
+      "Billing spreadsheet, billing questionnaire, clinical workflows sheet, organization details form, and RCM intake seed as placeholders. Drop real Dock files once in content/template-attachments/ (`npm run db:upload:template-attachments -- --apply`) or replace at Templates → File library. No invented PHI or fake xlsx bytes.",
+      "`npm run db:resync:playbook-from-dock -- --apply` attaches missing defaults by task title. User-uploaded files stay. Same URL or library clone is not duplicated.",
+      "Templates list/editor show default attachment chips so the playbook is auditable without opening every live site.",
+    ],
+  },
   {
     version: "1.12.0",
     date: "2026-09-14",

@@ -34,6 +34,7 @@ import { addDays } from "@/lib/dates";
 import type { SeedTask } from "./template-implementation";
 import { DEMO_CUSTOMERS } from "@/lib/demo-entities";
 import { seedDockParityCatalogs } from "./seed-dock-parity";
+import { ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
 
 /** Retired names from earlier seeds — delete so we do not leave duplicates. */
 const RETIRED_TEMPLATE_NAMES = ["RCM (Existing Customer)"];
@@ -271,31 +272,42 @@ async function seedDemoData(implTemplateId: string) {
       const ordered = [...tp.tasks].sort((a, b) => a.order - b.order);
       if (ordered.length === 0) continue;
 
-      await db.insert(tasks).values(
-        ordered.map((tt) => {
-          const isDone = taskIndex++ / allTaskCount < cutoff;
-          const tStart = addDays(phaseStart, tt.offsetDays);
-          total++;
-          if (isDone) done++;
-          return {
-            projectId: project.id,
-            phaseId: phase.id,
-            title: tt.title,
-            description: tt.description,
-            status: isDone ? ("DONE" as const) : ("TODO" as const),
-            completedAt: isDone ? addDays(tStart, 1) : null,
-            priority: tt.priority,
-            visibility: tt.visibility,
-            ownerSide: tt.ownerSide,
-            order: tt.order,
-            startDate: tStart,
-            dueDate: addDays(tStart, tt.durationDays),
-            estimateHours: tt.estimateHours,
-            assigneeId: tt.ownerSide === "INTERNAL" ? lead.id : null,
-            createdById: lead.id,
-          };
-        }),
-      );
+      const createdRows = await db
+        .insert(tasks)
+        .values(
+          ordered.map((tt) => {
+            const isDone = taskIndex++ / allTaskCount < cutoff;
+            const tStart = addDays(phaseStart, tt.offsetDays);
+            total++;
+            if (isDone) done++;
+            return {
+              projectId: project.id,
+              phaseId: phase.id,
+              title: tt.title,
+              description: tt.description,
+              status: isDone ? ("DONE" as const) : ("TODO" as const),
+              completedAt: isDone ? addDays(tStart, 1) : null,
+              priority: tt.priority,
+              visibility: tt.visibility,
+              ownerSide: tt.ownerSide,
+              order: tt.order,
+              startDate: tStart,
+              dueDate: addDays(tStart, tt.durationDays),
+              estimateHours: tt.estimateHours,
+              assigneeId: tt.ownerSide === "INTERNAL" ? lead.id : null,
+              createdById: lead.id,
+            };
+          }),
+        )
+        .returning({ id: tasks.id, title: tasks.title });
+      for (const row of createdRows) {
+        await ensureDefaultAttachmentsOnTask(db, {
+          taskId: row.id,
+          projectId: project.id,
+          title: row.title,
+          uploadedById: lead.id,
+        });
+      }
     }
 
     await db.insert(milestones).values(

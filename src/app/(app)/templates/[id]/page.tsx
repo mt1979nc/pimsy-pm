@@ -21,7 +21,13 @@ export default async function TemplateEditorPage({
     where: eq(projectTemplates.id, id),
     with: {
       phases: {
-        with: { tasks: true },
+        with: {
+          tasks: {
+            with: {
+              defaultAttachments: { with: { libraryAsset: true } },
+            },
+          },
+        },
         orderBy: (p, { asc: a }) => [a(p.order)],
       },
     },
@@ -30,7 +36,16 @@ export default async function TemplateEditorPage({
 
   const phases = row.phases.map((p) => ({
     ...p,
-    tasks: [...p.tasks].sort((a, b) => a.order - b.order),
+    tasks: [...p.tasks]
+      .sort((a, b) => a.order - b.order)
+      .map((task) => ({
+        ...task,
+        attachments: task.defaultAttachments.map((att) => ({
+          name: att.libraryAsset?.name ?? "Attachment",
+          kind: att.libraryAsset?.kind ?? "FILE",
+          isPlaceholder: att.libraryAsset?.isPlaceholder ?? false,
+        })),
+      })),
   }));
 
   return (

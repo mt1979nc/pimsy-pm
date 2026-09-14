@@ -287,6 +287,9 @@ describe("training checklists and nested tasks", () => {
     expect(librarySlugsForTaskTitle("Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers")).toContain(
       "billing-spreadsheet",
     );
+    expect(librarySlugsForTaskTitle("Billing Spreadsheet")).toContain("billing-spreadsheet");
+    expect(librarySlugsForTaskTitle("Complete RCM intake questionnaire")).toContain("rcm-intake-questionnaire");
+    expect(librarySlugsForTaskTitle("Kickoff call")).toEqual([]);
     const wizard = DEFAULT_LIBRARY_ASSETS.find((a) => a.slug === "discovery-wizard");
     expect(wizard?.kind).toBe("LINK");
     expect(wizard?.url).toBe(DISCOVERY_WIZARD_URL);

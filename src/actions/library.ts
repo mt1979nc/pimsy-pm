@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { libraryAssets } from "@/db/schema";
 import { requireAdmin } from "@/lib/guard";
 import { checkUpload, putFile } from "@/lib/storage";
+import { propagateLibraryFileToCopies } from "@/lib/template-attachments";
 import type { ActionState } from "./messages";
 
 export async function uploadLibraryFile(
@@ -29,18 +30,31 @@ export async function uploadLibraryFile(
 
   const bytes = Buffer.from(await file.arrayBuffer());
   const key = await putFile(file.name, bytes);
+  const mimeType = file.type || asset.mimeType;
+  const name = asset.name;
 
   await db
     .update(libraryAssets)
     .set({
       storageKey: key,
-      mimeType: file.type || asset.mimeType,
+      mimeType,
       sizeBytes: file.size,
       isPlaceholder: false,
-      name: asset.isPlaceholder ? asset.name : file.name,
+      name,
       updatedAt: new Date(),
     })
     .where(eq(libraryAssets.id, assetId));
+
+  await propagateLibraryFileToCopies(db, {
+    libraryAssetId: asset.id,
+    storageKey: key,
+    mimeType,
+    sizeBytes: file.size,
+    url: asset.url,
+    kind: asset.kind,
+    name,
+    description: asset.description,
+  });
 
   revalidatePath("/learning");
   revalidatePath("/templates");
