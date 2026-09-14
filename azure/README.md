@@ -185,13 +185,16 @@ customers (`IMP-9001`–`IMP-9003`), `@example.com` fixture contacts, and GROK
 E2E / `IMP-0004` / GROKTEST. **Never** deletes alexander@, jeremy@,
 danielle@, morgan@, mindy@, david@, anna@, kori@, playbooks, or imported
 Prism/Dock acronyms (BDMH, BHC, CCCCARE, CEDAR, DYM, EBHKY, FBH, LECHRIS,
-MMHSS, OCE, PWMI, RAC, RBH, SWMCCC, THS, …). If a demo code is somehow
+MMHSS, OCE, PWMI, RAC, TANC, RBH, SWMCCC, THS, …). If a demo code is somehow
 attached to a protected acronym, that project is skipped.
 
 ### Align the active book with current Dock WIP (v1.12)
 
 Allowlist is `content/dock-wip-allowlist.json` (Dock Implementation WIP as of
 2026-09-14). Override with a JSON/CSV path if you need a one-off overlay.
+**RAC + TANC:** Alexander is keeping both until he consolidates. Prune must
+KEEP Transformation ANew / Redemption Alliance under either code. Do not
+delete. Do not auto-rename.
 
 ```bash
 export DATABASE_URL='postgresql://…'   # from App Settings; keep quotes
@@ -216,8 +219,19 @@ npm run db:resync:playbook-from-dock
 npm run db:resync:playbook-from-dock -- --apply
 ```
 
-Owner/Admin replace Discovery Wizard / billing-sheet placeholders at
-**Templates → File library** (`/library`). Same Blob Storage as task uploads.
+Owner/Admin replace billing-sheet placeholders at
+**Templates → File library** (`/library`), or drop the live Dock files in
+`content/template-attachments/` and run:
+
+```bash
+npm run db:upload:template-attachments          # dry-run
+npm run db:upload:template-attachments -- --apply
+npm run db:resync:playbook-from-dock -- --apply # attach missing defaults; keep user files
+```
+
+Discovery Wizard is a **LINK** (`https://calm-mud-0fe119810.7.azurestaticapps.net/`)
+on the matching tasks — not a URL in the description. Same Blob Storage as task
+uploads.
 
 To change infrastructure
 (bump the App Service Plan tier, for instance), edit `azure/main.parameters.json`

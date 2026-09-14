@@ -1,9 +1,10 @@
 {
   "source": "Dock Implementation WIP",
   "asOf": "2026-09-14",
-  "note": "Live Dock inventory (customer-looking acronyms only). PATH prune deletes active/pre-kickoff/pipeline WIP not in this list and keeps post go-live / Live legacy for Forecast and Analysis. Dock test/draft spaces are excluded from the PATH book unless Alexander says otherwise.",
+  "note": "Live Dock inventory (customer-looking acronyms only). PATH prune deletes active/pre-kickoff/pipeline WIP not in this list and keeps post go-live / Live legacy for Forecast and Analysis. Dock test/draft spaces are excluded from the PATH book unless Alexander says otherwise. RAC and TANC both stay on the allowlist until Alexander consolidates — do not delete either.",
   "acronyms": [
     "TANC",
+    "RAC",
     "OCE",
     "FBH",
     "BHC",
@@ -37,6 +38,15 @@
     "GTS",
     "UES",
     "DPS"
+  ],
+  "aliases": [
+    {
+      "from": "RAC",
+      "to": "TANC",
+      "keepBothUntilConsolidated": true,
+      "names": ["Transformation ANew", "Redemption Alliance"],
+      "note": "Alexander 2026-09-14: keep both RAC and TANC. PATH/Prism used RAC; Dock WIP also lists TANC for Transformation ANew / Redemption Alliance. Do not delete either site. Do not auto-rename until he consolidates."
+    }
   ],
   "excludeFromPathBook": {
     "unlessAlexanderSaysOtherwise": true,

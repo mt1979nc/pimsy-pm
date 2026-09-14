@@ -27,7 +27,7 @@ import {
 import { scheduleFromOffsets } from "@/lib/project-timeline";
 import { resolveAssigneeForRole, canonicalStaffingRole } from "@/lib/staffing";
 import { refreshProjectCounters } from "@/lib/rollup";
-import { copyLibraryAssetToTask } from "@/lib/template-attachments";
+import { copyLibraryAssetToTask, ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
 import {
   PLAYBOOK_PATHS,
   PLAYBOOK_PATH_META,
@@ -300,6 +300,14 @@ export async function materializeTemplatesOnProject(opts: {
             uploadedById: opts.actorId,
           });
         }
+        // Catalog fallback: even if template_task_attachment rows are missing,
+        // Discovery Wizard / billing sheets still land on the matching title.
+        await ensureDefaultAttachmentsOnTask(opts.tx, {
+          taskId: created.id,
+          projectId: opts.projectId,
+          title: tt.title,
+          uploadedById: opts.actorId,
+        });
       }
     }
 

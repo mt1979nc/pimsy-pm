@@ -9,7 +9,6 @@ import {
   fileAssets,
   phases,
   projects,
-  projectTemplates,
   taskChecklistItems,
   tasks,
   templateTaskAttachments,
@@ -17,7 +16,8 @@ import {
 } from "@/db/schema";
 import { loadTemplateById, type LoadedTemplate } from "@/lib/playbook";
 import { findByPlaybookTitle, normalizeOverlapTitle } from "@/lib/playbook-meta";
-import { copyLibraryAssetToTask } from "@/lib/template-attachments";
+import { copyLibraryAssetToTask, ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
+import { alreadyHasLibraryCoverage, fileCoversLibraryAsset, libraryDefsForTaskTitle } from "@/db/dock-default-attachments";
 import { scheduleFromOffsets, resolvePlaybookScale } from "@/lib/project-timeline";
 
 export type ResyncOpts = {
@@ -34,6 +34,7 @@ export type ResyncTaskPlan = {
   title: string;
   action: "insert" | "relink-parent" | "add-checklist" | "add-attachment" | "skip";
   detail: string;
+  librarySlug?: string;
 };
 
 export type ResyncPlan = {
@@ -66,6 +67,10 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
     const loaded = await loadTemplateById(t.id);
     if (loaded) byId.set(t.id, loaded);
   }
+
+  const libs = await db.query.libraryAssets.findMany();
+  const libBySlug = new Map(libs.map((l) => [l.slug, l]));
+  const libById = new Map(libs.map((l) => [l.id, l]));
 
   const live = await db.query.projects.findMany({
     columns: {
@@ -175,10 +180,13 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
         if (templateAtt.length > 0) {
           const existingFiles = await db.query.fileAssets.findMany({
             where: eq(fileAssets.taskId, liveTask.id),
-            columns: { libraryAssetId: true },
+            columns: { libraryAssetId: true, kind: true, url: true },
           });
-          const haveLib = new Set(existingFiles.map((f) => f.libraryAssetId).filter(Boolean));
-          const missingAtt = templateAtt.filter((a) => !haveLib.has(a.libraryAssetId));
+          const missingAtt = templateAtt.filter((a) => {
+            const lib = libById.get(a.libraryAssetId);
+            if (!lib) return true;
+            return !fileCoversLibraryAsset(existingFiles, lib);
+          });
           if (missingAtt.length > 0) {
             rows.push({
               projectId: project.id,
@@ -190,6 +198,50 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
             });
             touched.add(project.id);
           }
+        }
+      }
+    }
+
+    // Catalog-driven backfill: match live task titles even when the Dock WIP
+    // import skipped template_task_attachment, or phase names drifted.
+    const projectFiles = await db.query.fileAssets.findMany({
+      where: eq(fileAssets.projectId, project.id),
+      columns: { taskId: true, libraryAssetId: true, kind: true, url: true },
+    });
+    const filesByTask = new Map<string, typeof projectFiles>();
+    for (const f of projectFiles) {
+      if (!f.taskId) continue;
+      const list = filesByTask.get(f.taskId) ?? [];
+      list.push(f);
+      filesByTask.set(f.taskId, list);
+    }
+
+    for (const livePhase of livePhases) {
+      for (const liveTask of livePhase.tasks) {
+        const defs = libraryDefsForTaskTitle(liveTask.title);
+        if (defs.length === 0) continue;
+        const existing = filesByTask.get(liveTask.id) ?? [];
+        for (const def of defs) {
+          const lib = libBySlug.get(def.slug);
+          if (alreadyHasLibraryCoverage(existing, def, lib)) continue;
+          const dup = rows.some(
+            (r) =>
+              r.projectId === project.id &&
+              r.title === liveTask.title &&
+              r.action === "add-attachment" &&
+              r.librarySlug === def.slug,
+          );
+          if (dup) continue;
+          rows.push({
+            projectId: project.id,
+            projectCode: project.code,
+            phaseName: livePhase.name,
+            title: liveTask.title,
+            action: "add-attachment",
+            detail: def.kind === "LINK" ? `${def.name} (link)` : def.name,
+            librarySlug: def.slug,
+          });
+          touched.add(project.id);
         }
       }
     }
@@ -339,7 +391,28 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
                 uploadedById: opts.actorId,
               });
             }
+            await ensureDefaultAttachmentsOnTask(tx, {
+              taskId: liveTask.id,
+              projectId: project.id,
+              title: liveTask.title,
+              uploadedById: opts.actorId,
+            });
           }
+        }
+      }
+
+      const refreshed = await tx.query.phases.findMany({
+        where: eq(phases.projectId, project.id),
+        with: { tasks: true },
+      });
+      for (const phase of refreshed) {
+        for (const task of phase.tasks) {
+          await ensureDefaultAttachmentsOnTask(tx, {
+            taskId: task.id,
+            projectId: project.id,
+            title: task.title,
+            uploadedById: opts.actorId,
+          });
         }
       }
     });

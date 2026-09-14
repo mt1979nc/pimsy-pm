@@ -23,6 +23,7 @@ type Asset = {
   visibility: "INTERNAL" | "SHARED";
   createdAt: Date | string;
   uploadedById: string | null;
+  libraryAssetId?: string | null;
   uploadedBy?: { id: string; name: string | null; image?: string | null } | null;
 };
 
@@ -136,6 +137,7 @@ export function AttachmentList({
                   <p className="mt-0.5 text-[12.5px] leading-snug text-ink-2">{a.description}</p>
                 ) : null}
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">
+                  {a.libraryAssetId ? <span>Playbook default</span> : null}
                   {a.uploadedBy ? <span>{a.uploadedBy.name}</span> : null}
                   <span>{fmtRelative(a.createdAt)}</span>
                   {prettySize(a.sizeBytes) ? <span>{prettySize(a.sizeBytes)}</span> : null}

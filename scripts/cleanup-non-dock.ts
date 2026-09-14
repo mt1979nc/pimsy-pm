@@ -13,6 +13,10 @@
  *   npm run db:cleanup:non-dock -- ./dock-wip-acronyms.csv --apply
  *   npm run db:cleanup:non-dock -- --keep-prism-analytics
  *
+ * RAC / TANC: Alexander (2026-09-14) — keep both on the allowlist until he
+ * consolidates. Do not delete either site. Overlay JSON that omits RAC will
+ * still flag RAC as DELETE; use the shipped fixture.
+ *
  * Azure Cloud Shell: copy DATABASE_URL from App Service Configuration —
  * do not invent the connection string. See azure/README.md and v1.12-DOCK-PARITY.md.
  */
@@ -21,7 +25,12 @@ import { resolve } from "node:path";
 import { inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAccounts, projects, users, verificationTokens } from "@/db/schema";
-import { parseDockAllowlist, defaultDockWipAllowlistPath } from "@/lib/dock-allowlist";
+import {
+  parseDockAllowlistDocument,
+  defaultDockWipAllowlistPath,
+  expandAllowlist,
+  aliasForAcronym,
+} from "@/lib/dock-allowlist";
 import {
   classifyNonDockCustomer,
   classifyNonDockProject,
@@ -29,7 +38,7 @@ import {
   type NonDockClassify,
   type NonDockProjectRef,
 } from "@/lib/non-dock-cleanup";
-import { redactDatabaseUrl } from "@/lib/demo-entities";
+import { projectAcronyms, redactDatabaseUrl } from "@/lib/demo-entities";
 import { env } from "@/lib/env";
 
 function argValue(flag: string): string | undefined {
@@ -80,11 +89,21 @@ their acronym is on the allowlist. Named staff are never deleted. Playbooks are 
   }
 
   const abs = resolve(allowPath);
-  const allowlist = parseDockAllowlist(readFileSync(abs, "utf8"), abs);
+  const raw = readFileSync(abs, "utf8");
+  const allowDoc = parseDockAllowlistDocument(raw, abs);
+  const allowlist = expandAllowlist(allowDoc);
 
   console.log("\nPATH non-Dock cleanup (active book only)");
   console.log(`  ${redactDatabaseUrl(env.DATABASE_URL)}`);
   console.log(`  allowlist: ${abs} (${allowlist.size} acronyms)`);
+  if (allowDoc.aliases.length > 0) {
+    console.log("  related codes (keep both until Alexander consolidates):");
+    for (const alias of allowDoc.aliases) {
+      const names = alias.names.length > 0 ? `  ${alias.names.join(" / ")}` : "";
+      const hold = alias.keepBothUntilConsolidated ? "  keep-both" : "";
+      console.log(`    ${alias.from} / ${alias.to}${hold}${names}`);
+    }
+  }
   console.log(`  keep Prism analytics extras: ${keepPrismAnalytics ? "yes" : "no (default)"}`);
   console.log(`  mode: ${apply ? "APPLY (deletes)" : "DRY-RUN (pass --apply to delete)"}\n`);
 
@@ -228,9 +247,30 @@ their acronym is on the allowlist. Named staff are never deleted. Playbooks are 
   console.log(`Protected staff emails in this database: ${staffKept}`);
   console.log(`Allowlist size: ${allowlist.size}\n`);
 
+  const aliasNotes: string[] = [];
+  for (const p of [...keptAllow, ...keptLegacy, ...toDelete]) {
+    const alias = aliasForAcronym(projectAcronyms(p), allowDoc.aliases);
+    if (!alias) continue;
+    const stillFrom = projectAcronyms(p).includes(alias.from);
+    const label = `${tag(p)}  ${p.customerName ?? p.name ?? ""}`;
+    if (stillFrom) {
+      aliasNotes.push(
+        `${label}  — ${alias.from} and ${alias.to} both stay until Alexander consolidates. Do not delete.`,
+      );
+    }
+  }
+  if (aliasNotes.length > 0) {
+    printBlock("RELATED — RAC + TANC both stay until Alexander consolidates", aliasNotes);
+  }
+
   if (!apply) {
     console.log("Dry-run only. Re-run with --apply to delete the DELETE lists above.");
-    console.log("Post go-live legacy sites are kept unless you are looking at the DELETE list.\n");
+    console.log("Post go-live legacy sites are kept unless you are looking at the DELETE list.");
+    if (allowDoc.aliases.some((a) => a.keepBothUntilConsolidated)) {
+      console.log("RAC and TANC both stay on the shipped allowlist until Alexander consolidates. Do not delete either.\n");
+    } else {
+      console.log("");
+    }
     return;
   }
 
