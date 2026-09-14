@@ -34,6 +34,7 @@ import {
 import { parseDateInput } from "@/lib/dates";
 import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
 import { acronymKey } from "@/lib/prism-dump";
+import { sumSlipDays } from "@/lib/engagement-roster";
 import type { ActionState } from "@/actions/messages";
 
 export async function listEngagements() {
@@ -50,7 +51,7 @@ export async function listEngagements() {
       scope: true,
       lead: { columns: { id: true, name: true, email: true } },
       coLead: { columns: { id: true, name: true, email: true } },
-      slipEvents: { columns: { id: true } },
+      slipEvents: { columns: { days: true } },
     },
     orderBy: [asc(projects.code)],
   });
@@ -83,7 +84,7 @@ export async function listEngagements() {
     complexityTier: r.scope?.complexityTier ?? null,
     scopeEstimatedHours: r.scope?.estimatedHours ?? null,
     serviceLines: r.scope?.serviceLines ?? [],
-    slipCount: r.slipEvents.length,
+    slipDays: sumSlipDays(r.slipEvents),
     acronym: r.crmAcronym || r.prismClientId || r.code,
     effectivePrismStatus: inferPrismStatus({
       prismStatus: r.prismStatus,

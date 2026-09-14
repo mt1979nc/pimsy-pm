@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui";
 import { fmtShort } from "@/lib/dates";
+import { formatRosterSlipDays } from "@/lib/engagement-roster";
 import { PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
-import { SERVICE_LINE_LABELS } from "@/lib/estimator";
 
 export type EngagementRow = {
   id: string;
@@ -15,7 +15,6 @@ export type EngagementRow = {
   userCount: number | null;
   locationCount: number | null;
   trainingsPerWeek: number | null;
-  serviceLines: string[];
   complexityTier: string | null;
   displayHours: number | null | undefined;
   startDate: Date | string | null;
@@ -23,7 +22,7 @@ export type EngagementRow = {
   targetGoLiveDate: Date | string | null;
   effectivePrismStatus: PrismStatus;
   prismNote: string | null;
-  slipCount: number;
+  slipDays: number;
 };
 
 function statusTone(s: PrismStatus): "green" | "amber" | "neutral" | "violet" {
@@ -39,84 +38,86 @@ function ownersLabel(row: EngagementRow) {
   return `${primary} / ${row.coLeadName} (${row.ownerSplitPercent}/${100 - row.ownerSplitPercent})`;
 }
 
-function servicesShort(lines: string[]) {
-  if (!lines.length) return "—";
-  const labels = lines.map((l) => SERVICE_LINE_LABELS[l] ?? l);
-  if (labels.length <= 2) return labels.join(", ");
-  return `${labels.slice(0, 2).join(", ")} +${labels.length - 2}`;
-}
+const th = "px-2 py-2 font-semibold";
+const td = "px-2 py-2";
 
 export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[960px] border-collapse text-[12.5px]">
+    <div className="min-w-0 w-full">
+      <table className="w-full table-fixed border-collapse text-[12.5px]">
         <thead>
-          <tr className="border-b border-border bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-            <th className="px-3 py-2 text-left">Acronym</th>
-            <th className="px-3 py-2 text-left">Customer</th>
-            <th className="px-3 py-2 text-left">Owner(s)</th>
-            <th className="px-3 py-2 text-right">Users</th>
-            <th className="px-3 py-2 text-right">Locs</th>
-            <th className="px-3 py-2 text-left">Services</th>
-            <th className="px-3 py-2 text-left">Complexity</th>
-            <th className="px-3 py-2 text-right">Est. hrs</th>
-            <th className="px-3 py-2 text-left">Kickoff</th>
-            <th className="px-3 py-2 text-left">Initial GL</th>
-            <th className="px-3 py-2 text-left">Current GL</th>
-            <th className="px-3 py-2 text-left">Status</th>
-            <th className="px-3 py-2 text-right">Slip</th>
-            <th className="px-3 py-2 text-right"> </th>
+          <tr className="border-b border-border bg-surface-2 text-[11px] uppercase tracking-wide text-ink-3">
+            <th className={`${th} w-[5.75rem] text-left`}>Acronym</th>
+            <th className={`${th} text-left`}>Customer</th>
+            <th className={`${th} w-[9rem] text-left`}>Owner(s)</th>
+            <th className={`${th} w-12 text-right`}>Users</th>
+            <th className={`${th} w-10 text-right`}>Locs</th>
+            <th className={`${th} w-[5.75rem] text-left`}>Complexity</th>
+            <th className={`${th} w-[4.25rem] text-right`}>Est. hrs</th>
+            <th className={`${th} w-[4.25rem] text-left`}>Kickoff</th>
+            <th className={`${th} w-[4.5rem] text-left`}>Initial GL</th>
+            <th className={`${th} w-[4.5rem] text-left`}>Current GL</th>
+            <th className={`${th} w-[6.25rem] text-left`}>Status</th>
+            <th className={`${th} w-[4.5rem] text-right leading-tight`}>Slip days</th>
+            <th className={`${th} w-11 text-right`}> </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {rows.map((row) => (
-            <tr key={row.id} className="hover:bg-surface-2/60">
-              <td className="px-3 py-2 font-medium tabular-nums text-ink">{row.acronym}</td>
-              <td className="max-w-[180px] truncate px-3 py-2 text-ink-2">
-                {row.customerName ?? row.name}
-              </td>
-              <td className="max-w-[160px] truncate px-3 py-2 text-ink-2">{ownersLabel(row)}</td>
-              <td className="px-3 py-2 text-right tabular-nums text-ink-2">
-                {row.userCount ?? "—"}
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums text-ink-2">
-                {row.locationCount ?? "—"}
-              </td>
-              <td className="max-w-[140px] truncate px-3 py-2 text-ink-3" title={servicesShort(row.serviceLines)}>
-                {servicesShort(row.serviceLines)}
-              </td>
-              <td className="px-3 py-2 text-ink-2">{row.complexityTier ?? "—"}</td>
-              <td className="px-3 py-2 text-right tabular-nums text-ink-2">
-                {row.displayHours != null ? Number(row.displayHours).toFixed(1) : "—"}
-              </td>
-              <td className="px-3 py-2 text-ink-2">{fmtShort(row.startDate)}</td>
-              <td className="px-3 py-2 text-ink-2">{fmtShort(row.initialGoLiveDate)}</td>
-              <td className="px-3 py-2 text-ink-2">{fmtShort(row.targetGoLiveDate)}</td>
-              <td className="px-3 py-2">
-                <div className="flex flex-wrap items-center gap-1">
-                  <Badge tone={statusTone(row.effectivePrismStatus)}>
-                    {PRISM_STATUS_LABELS[row.effectivePrismStatus]}
-                  </Badge>
-                  {row.prismNote ? (
-                    <span title={row.prismNote}>
-                      <Badge tone="amber">note</Badge>
-                    </span>
-                  ) : null}
-                </div>
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums text-ink-2">
-                {row.slipCount || "—"}
-              </td>
-              <td className="px-3 py-2 text-right">
-                <Link
-                  href={`/management/engagements/${row.id}`}
-                  className="font-medium text-brand hover:underline"
-                >
-                  Edit
-                </Link>
-              </td>
-            </tr>
-          ))}
+          {rows.map((row) => {
+            const customer = row.customerName ?? row.name;
+            const owners = ownersLabel(row);
+            return (
+              <tr key={row.id} className="hover:bg-surface-2/60">
+                <td className={`${td} truncate font-medium tabular-nums text-ink`} title={row.acronym}>
+                  {row.acronym}
+                </td>
+                <td className={`${td} truncate text-ink-2`} title={customer}>
+                  {customer}
+                </td>
+                <td className={`${td} truncate text-ink-2`} title={owners}>
+                  {owners}
+                </td>
+                <td className={`${td} text-right tabular-nums text-ink-2`}>
+                  {row.userCount ?? "—"}
+                </td>
+                <td className={`${td} text-right tabular-nums text-ink-2`}>
+                  {row.locationCount ?? "—"}
+                </td>
+                <td className={`${td} truncate text-ink-2`} title={row.complexityTier ?? undefined}>
+                  {row.complexityTier ?? "—"}
+                </td>
+                <td className={`${td} text-right tabular-nums text-ink-2`}>
+                  {row.displayHours != null ? Number(row.displayHours).toFixed(1) : "—"}
+                </td>
+                <td className={`${td} whitespace-nowrap text-ink-2`}>{fmtShort(row.startDate)}</td>
+                <td className={`${td} whitespace-nowrap text-ink-2`}>{fmtShort(row.initialGoLiveDate)}</td>
+                <td className={`${td} whitespace-nowrap text-ink-2`}>{fmtShort(row.targetGoLiveDate)}</td>
+                <td className={td}>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Badge tone={statusTone(row.effectivePrismStatus)}>
+                      {PRISM_STATUS_LABELS[row.effectivePrismStatus]}
+                    </Badge>
+                    {row.prismNote ? (
+                      <span title={row.prismNote}>
+                        <Badge tone="amber">note</Badge>
+                      </span>
+                    ) : null}
+                  </div>
+                </td>
+                <td className={`${td} text-right tabular-nums text-ink-2`}>
+                  {formatRosterSlipDays(row.slipDays)}
+                </td>
+                <td className={`${td} text-right`}>
+                  <Link
+                    href={`/management/engagements/${row.id}`}
+                    className="font-medium text-brand hover:underline"
+                  >
+                    Edit
+                  </Link>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
