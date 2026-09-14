@@ -46,7 +46,7 @@ export default async function ManagementHubPage() {
       <Card>
         <CardHeader
           title="Load vs capacity"
-          subtitle="Weekly billable hours against department cap. Peak week is ringed."
+          subtitle="Weekly billable load as a line against department cap. Peak week is marked."
           action={
             <Link href="/management/forecast" className="text-[12.5px] font-medium text-brand hover:underline">
               Forecast →

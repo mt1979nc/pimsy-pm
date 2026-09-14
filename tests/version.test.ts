@@ -14,6 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
+    expect(APP_VERSION).toMatch(/^1\.12\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
   });
@@ -62,6 +63,15 @@ describe("staff Update History source", () => {
     expect(note?.summary).toMatch(/delete/i);
     expect(note?.highlights?.some((h) => /delete project/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Delete customer/i.test(h))).toBe(true);
+  });
+
+  it("documents the v1.11.3 headroom line-chart hotfix", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.11.3");
+    expect(note?.summary).toMatch(/line chart/i);
+    expect(note?.summary).toMatch(/Headroom/i);
+    expect(note?.highlights?.some((h) => /polyline|line/i.test(h) && /dashed/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Peak week/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /weeks/.test(h) && /capacityHours/.test(h))).toBe(true);
   });
 
   it("documents v1.12 Dock parity, prune-keep-legacy, and Learning Center", () => {

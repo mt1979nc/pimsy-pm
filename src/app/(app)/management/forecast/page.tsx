@@ -91,7 +91,7 @@ export default async function ManagementForecastPage() {
       <Card>
         <CardHeader
           title="Headroom"
-          subtitle="Billable load vs department capacity. Peak week is ringed."
+          subtitle="Billable load as a line vs department capacity. Peak week is marked."
         />
         <HeadroomChart
           weeks={forecast.weeks}

@@ -76,7 +76,7 @@ export default async function CapacityPage() {
       <Card className="mb-5">
         <CardHeader
           title="Load vs capacity"
-          subtitle="Weekly billable hours against department cap. Peak week is ringed."
+          subtitle="Weekly billable load as a line against department cap. Peak week is marked."
         />
         <HeadroomChart
           weeks={forecast.weeks}

@@ -15,7 +15,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **Prism Management (v1.8)** | **Shipped** (v1.8.0–1.8.4) | Team roster flags + billable hrs + engagement roster/edit in PATH. OWNER/ADMIN/MANAGER only. Native Postgres (no Prism Azure SQL dual-write). |
 | **Playbook / staffing (v1.9)** | **Shipped** (v1.9.0–1.9.1) | Editable templates, four site paths, optional areas, per-project N/A, staffing roles + auto-assign + manager overview, staff-only Update History. |
 | **Forecast (v1.10)** | **Shipped** | Weekly hours + peak week + headroom + hire-now; weights listed; Analysis exclusions (SENSORI/MHC/LECHRIS default). Native Postgres. |
-| **Prism cutover (v1.11)** | **Shipped** (v1.11.0–1.11.2) | PATH is SoT. Import + snapshot API + add-to-roster + Analysis table. v1.11.1 restores Portfolio vs Waiting-on; v1.11.2 fixes blank Headroom bars + team load cards and adds typed delete for projects/customers. |
+| **Prism cutover (v1.11)** | **Shipped** (v1.11.0–1.11.3) | PATH is SoT. Import + snapshot API + add-to-roster + Analysis table. v1.11.1 restores Portfolio vs Waiting-on; v1.11.2 fixes blank Headroom + team load cards and typed delete; v1.11.3 replaces Headroom bars with a load-vs-capacity line chart. |
 | **Dock parity (v1.12)** | **Shipping** | Active-book prune (keep post go-live history), nested playbook resync, default Discovery/billing files, training checklists, customer Learning Center. Runbook: `v1.12-DOCK-PARITY.md`. |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
