@@ -2,7 +2,8 @@
  * Adds realistic conversation and task detail to the seeded demo data, so the
  * app can be shown to someone without every screen reading "no items yet".
  *
- * Safe to re-run. Only touches the demo customer accounts.
+ * Safe to re-run. Only touches the local demo customer accounts (IMP-9001).
+ * Do not run against production; live demo rows are removed with db:cleanup:demo.
  *
  *   npx tsx --env-file-if-exists=.env.local demo-content.ts
  */

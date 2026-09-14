@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getManagementForecast } from "@/actions/management-forecast";
 import { ForecastExclusionsForm } from "../_components/forecast-exclusions-form";
-import { Badge, Card, CardHeader, EmptyState, Stat, Avatar } from "@/components/ui";
+import { Badge, Card, CardHeader, EmptyState, Stat } from "@/components/ui";
+import { HeadroomChart, MemberLoadCards } from "@/components/charts";
 import { fmtShort } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { FORECAST_WEIGHTS, SERVICE_LINE_HOURS, SERVICE_LINE_LABELS } from "@/lib/estimator";
@@ -89,9 +90,17 @@ export default async function ManagementForecastPage() {
 
       <Card>
         <CardHeader
-          title="Load by week"
-          subtitle="Billable hours (exempt excluded from totals / headroom). Peak week highlighted."
+          title="Headroom"
+          subtitle="Billable load vs department capacity. Peak week is ringed."
         />
+        <HeadroomChart
+          weeks={forecast.weeks}
+          capacityHours={forecast.deptCapacityHours}
+          peakWeekOf={forecast.peakWeek?.weekOf ?? null}
+        />
+      </Card>
+
+      <Card>
         {forecast.staff.length === 0 ? (
           <EmptyState title="No staff yet" description="Add people under Staffing → Team." />
         ) : (
@@ -175,48 +184,27 @@ export default async function ManagementForecastPage() {
         {forecast.staff.length === 0 ? (
           <EmptyState title="No staff yet" />
         ) : (
-          <div className="divide-y divide-border">
-            {forecast.staff.map((s) => {
-              const thisHrs = forecast.thisWeek?.byPerson.find((p) => p.id === s.id)?.hours ?? 0;
-              const peakHrs = Math.max(
-                ...forecast.weeks.map((w) => w.byPerson.find((p) => p.id === s.id)?.hours ?? 0),
-                0,
-              );
-              const util =
-                s.capacityHoursPerWeek > 0 ? Math.round((thisHrs / s.capacityHoursPerWeek) * 100) : 0;
-              return (
-                <div key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                    <Avatar name={s.name} image={s.image} size={28} />
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="truncate text-[13.5px] font-medium text-ink">
-                          {s.name ?? s.email}
-                        </span>
-                        {s.isDirector ? <Badge tone="violet">Director</Badge> : null}
-                        {s.capacityExempt ? <Badge tone="amber">Exempt</Badge> : null}
-                      </div>
-                      <div className="text-[12px] text-ink-3">{s.capacityHoursPerWeek}h/wk declared</div>
-                    </div>
-                  </div>
-                  <div className="w-[90px] text-right text-[13px] text-ink-2">
-                    <div className="text-[11px] uppercase text-ink-3">This wk</div>
-                    {hoursLabel(thisHrs)}h
-                  </div>
-                  <div className="w-[90px] text-right text-[13px] text-ink-2">
-                    <div className="text-[11px] uppercase text-ink-3">Peak</div>
-                    {hoursLabel(peakHrs)}h
-                  </div>
-                  <div className="w-[80px] text-right">
-                    {s.capacityExempt ? (
-                      <span className="text-[12px] text-ink-3">n/a dept</span>
-                    ) : (
-                      <Badge tone={util > 100 ? "red" : util >= 85 ? "amber" : "green"}>{util}%</Badge>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+          <div className="p-4">
+            <MemberLoadCards
+              members={forecast.staff.map((s) => {
+                const thisHrs = forecast.thisWeek?.byPerson.find((p) => p.id === s.id)?.hours ?? 0;
+                const peakHrs = Math.max(
+                  ...forecast.weeks.map((w) => w.byPerson.find((p) => p.id === s.id)?.hours ?? 0),
+                  0,
+                );
+                return {
+                  id: s.id,
+                  name: s.name,
+                  email: s.email,
+                  image: s.image,
+                  capacityHoursPerWeek: s.capacityHoursPerWeek,
+                  capacityExempt: s.capacityExempt,
+                  isDirector: s.isDirector,
+                  thisWeekHours: thisHrs,
+                  peakHours: peakHrs,
+                };
+              })}
+            />
           </div>
         )}
       </Card>

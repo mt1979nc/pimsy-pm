@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { loadDirectorSnapshot } from "@/lib/prism-snapshot";
 import { Card, CardHeader, LinkButton, Stat, Badge } from "@/components/ui";
+import { HeadroomChart, MemberLoadCards } from "@/components/charts";
 import { fmtShort } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,43 @@ export default async function ManagementHubPage() {
         <Stat label="Active / pre-KO" value={snap.activeCount} />
         <Stat label="Pipeline" value={snap.pipelineCount} href="/management/engagements?status=pipeline" />
       </div>
+
+      <Card>
+        <CardHeader
+          title="Load vs capacity"
+          subtitle="Weekly billable hours against department cap. Peak week is ringed."
+          action={
+            <Link href="/management/forecast" className="text-[12.5px] font-medium text-brand hover:underline">
+              Forecast →
+            </Link>
+          }
+        />
+        <HeadroomChart
+          weeks={snap.forecastWeeks}
+          capacityHours={snap.deptCapacityHours}
+          peakWeekOf={snap.peakWeekOf}
+        />
+      </Card>
+
+      {snap.team.length > 0 ? (
+        <div className="space-y-2">
+          <h2 className="text-[13.5px] font-semibold text-ink">Team headroom</h2>
+          <p className="text-[12.5px] text-ink-3">
+            This-week load vs declared hrs. Exempt people still show; they are left out of department cap.
+          </p>
+          <MemberLoadCards
+            members={snap.team.map((m) => ({
+              id: m.id,
+              name: m.name,
+              email: m.email,
+              capacityHoursPerWeek: m.capacityHoursPerWeek,
+              capacityExempt: m.capacityExempt,
+              isDirector: m.isDirector,
+              thisWeekHours: m.thisWeekHours,
+            }))}
+          />
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

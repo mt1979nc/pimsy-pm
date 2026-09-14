@@ -1,10 +1,14 @@
 /**
- * Upserts three password-ready demo accounts for Nathan walkthroughs:
+ * Upserts three password-ready demo accounts for *local* Nathan walkthroughs:
  *   Management (MANAGER), Specialist, Customer (Riverbend / IMP-9001).
+ *
+ * Do **not** run against production. Live leftover rows are removed with
+ * `npm run db:cleanup:demo -- --apply`.
  *
  * Safe to re-run. Does not touch non-demo customers.
  *
- *   npx tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/seed-demo-logins.ts
+ *   npm run db:seed -- --with-demo
+ *   npm run db:seed:demo-logins
  *
  * Shared demo password (change after the pitch if this env is shared):
  *   Demo-Nathan-2026!
@@ -66,7 +70,7 @@ async function main() {
 
   if (!account) {
     console.log(
-      "  · Riverbend customer missing — run `npm run db:seed` (full, not --templates-only) first, then re-run this.",
+      "  · Riverbend customer missing — run `npm run db:seed -- --with-demo` first, then re-run this.",
     );
   } else {
     const email = "contact@riverbend-counseling.example.com";

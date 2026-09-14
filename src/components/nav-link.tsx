@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
+import { isNavLinkActive } from "@/lib/nav";
 
 export function NavLink({
   href,
@@ -16,7 +17,7 @@ export function NavLink({
   exact?: boolean;
 }) {
   const pathname = usePathname();
-  const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const active = isNavLinkActive(pathname, href, exact);
 
   return (
     <Link

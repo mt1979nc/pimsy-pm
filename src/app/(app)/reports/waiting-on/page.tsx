@@ -11,6 +11,7 @@ import {
   WaitingOnBadge,
   Avatar,
   Stat,
+  LinkButton,
 } from "@/components/ui";
 import { differenceInCalendarDays, startOfDay, fmtRelative } from "@/lib/dates";
 
@@ -29,7 +30,13 @@ export default async function WaitingOnReportPage() {
     <>
       <PageHeader
         title="Waiting on"
-        subtitle="Open shared threads by project — ball-in-court for the portfolio WIP view."
+        breadcrumb={
+          <Link href="/reports" className="hover:text-ink">
+            Portfolio
+          </Link>
+        }
+        subtitle="Open shared threads by project — ball-in-court for the WIP view."
+        actions={<LinkButton href="/reports">Portfolio</LinkButton>}
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
