@@ -2,12 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq, asc, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { tasks, taskComments } from "@/db/schema";
+import { tasks, taskComments, taskChecklistItems } from "@/db/schema";
 import { requireCustomer } from "@/lib/guard";
 import { portalProject } from "@/lib/portal";
 import { listTaskAttachments } from "@/lib/attachments";
 import { Card, CardHeader, Badge, Avatar } from "@/components/ui";
 import { TaskComments } from "@/components/task-comments";
+import { TaskChecklist } from "@/components/task-checklist";
 import { AttachmentList, AddAttachment } from "@/components/attachments";
 import { PortalTaskRow } from "../../../../portal-task-row";
 import { fmtDate, isOverdue } from "@/lib/dates";
@@ -41,7 +42,7 @@ export default async function PortalTaskPage({
   });
   if (!task) notFound();
 
-  const [comments, attachments] = await Promise.all([
+  const [comments, attachments, checklist] = await Promise.all([
     db.query.taskComments.findMany({
       where: and(
         eq(taskComments.taskId, taskId),
@@ -52,6 +53,10 @@ export default async function PortalTaskPage({
       with: { author: { columns: { id: true, name: true, image: true, role: true } } },
     }),
     listTaskAttachments(actor, taskId),
+    db.query.taskChecklistItems.findMany({
+      where: and(eq(taskChecklistItems.taskId, taskId), eq(taskChecklistItems.visibility, "SHARED")),
+      orderBy: [asc(taskChecklistItems.order)],
+    }),
   ]);
 
   const mine = task.assigneeId === actor.id;
@@ -114,6 +119,22 @@ export default async function PortalTaskPage({
               <p className="whitespace-pre-wrap px-5 py-4 text-[13.5px] leading-relaxed text-ink">
                 {task.description}
               </p>
+            </Card>
+          ) : null}
+
+          {checklist.length > 0 ? (
+            <Card>
+              <CardHeader
+                title="Areas to cover"
+                subtitle="What this session includes — your specialist checks these off as you go"
+              />
+              <TaskChecklist
+                taskId={task.id}
+                items={checklist}
+                canEdit={false}
+                canToggle={false}
+                taskIsInternal={false}
+              />
             </Card>
           ) : null}
 

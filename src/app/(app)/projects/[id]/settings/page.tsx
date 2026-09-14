@@ -233,6 +233,9 @@ export default async function ProjectSettingsPage({
                 <DeleteProjectForm
                   projectId={id}
                   confirmToken={project.crmAcronym || project.code}
+                  historicalWarning={
+                    project.status === "COMPLETED" || Boolean(project.actualGoLiveDate) || Boolean(project.archivedAt)
+                  }
                 />
               </div>
             ) : null}

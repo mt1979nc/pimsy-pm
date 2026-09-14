@@ -39,9 +39,14 @@ export default async function TemplatesPage() {
         title="Templates"
         subtitle="The standard playbooks. Every new project can start from one of these."
         actions={
-          <LinkButton href="/projects/new" variant="primary">
-            Use a template
-          </LinkButton>
+          <div className="flex flex-wrap gap-2">
+            <LinkButton href="/library" size="sm">
+              File library
+            </LinkButton>
+            <LinkButton href="/projects/new" variant="primary">
+              Use a template
+            </LinkButton>
+          </div>
         }
       />
 

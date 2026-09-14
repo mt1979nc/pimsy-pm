@@ -35,7 +35,9 @@ action is deliberate, confirmed, and audit-logged.
 
 **Customer portal** — each practice signs in with a magic link and sees their
 timeline, their action items, shared milestones, project updates, shared
-documents, and their conversation with your team. Nothing else.
+documents, a **Learning Center** grouped by topic (Discovery, Training, Billing,
+Go-live — not a flat Dock dump), and their conversation with your team.
+Nothing else.
 
 **Leadership reporting** — portfolio health, at-risk projects, go-live
 schedule, median cycle time, on-time rate, risk register, and per-specialist
@@ -279,6 +281,26 @@ npm run db:cleanup:demo -- --apply
 See `azure/README.md` for Cloud Shell + `DATABASE_URL`. The script never
 touches named staff (alexander@, jeremy@, …), playbooks, or imported WIP
 acronyms (BDMH, BHC, CCCCARE, CEDAR, …).
+
+**Active Dock WIP prune (v1.12):** drop PATH customers/projects that are still
+in the active book but **not** on the current Dock Implementation WIP list.
+Completed / post go-live / archived sites stay for Forecast and Analysis.
+You must pass the allowlist (parent supplies it — not invented here):
+
+```bash
+npm run db:cleanup:non-dock -- ./dock-wip.json
+npm run db:cleanup:non-dock -- ./dock-wip.json --apply
+```
+
+`--keep-prism-analytics` also keeps pipeline-only extras. Runbook:
+`v1.12-DOCK-PARITY.md`.
+
+Playbook nested-task resync (does not wipe DONE state):
+
+```bash
+npm run db:resync:playbook-from-dock
+npm run db:resync:playbook-from-dock -- --apply
+```
 
 Prism cutover (Capacity / Forecast / Analysis as source of truth in PATH): see
 `v1.11-PRISM-CUTOVER.md`. Dump standalone Prism SQL (or a JSON file from Cloud Shell), then:

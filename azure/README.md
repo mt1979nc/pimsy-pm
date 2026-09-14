@@ -188,6 +188,36 @@ Prism/Dock acronyms (BDMH, BHC, CCCCARE, CEDAR, DYM, EBHKY, FBH, LECHRIS,
 MMHSS, OCE, PWMI, RAC, RBH, SWMCCC, THS, …). If a demo code is somehow
 attached to a protected acronym, that project is skipped.
 
+### Align the active book with current Dock WIP (v1.12)
+
+Dock’s live Implementation WIP list is **not** stored in this repo. After the
+parent supplies a JSON/CSV of acronyms (or a Dock snapshot `workspaces[].acronym`):
+
+```bash
+export DATABASE_URL='postgresql://…'   # from App Settings; keep quotes
+npm run db:migrate                     # includes 0012_dock_parity
+npm run db:cleanup:non-dock -- ./dock-wip.json          # dry-run
+npm run db:cleanup:non-dock -- ./dock-wip.json --apply  # delete active non-Dock WIP only
+```
+
+**Keeps** completed / post go-live / archived sites for historical Forecast and
+Analysis even when Dock no longer has an active workspace. **Deletes** active,
+pre-kickoff, and pipeline WIP not on the allowlist. Named staff are never
+removed. Optional `--keep-prism-analytics` keeps pipeline-only extras.
+Full runbook: `v1.12-DOCK-PARITY.md`.
+
+Then refresh playbooks + Learning Center catalogs (does not wipe live task
+completion):
+
+```bash
+npm run db:seed -- --templates-only
+npm run db:resync:playbook-from-dock
+npm run db:resync:playbook-from-dock -- --apply
+```
+
+Owner/Admin replace Discovery Wizard / billing-sheet placeholders at
+**Templates → File library** (`/library`). Same Blob Storage as task uploads.
+
 To change infrastructure
 (bump the App Service Plan tier, for instance), edit `azure/main.parameters.json`
 or `azure/main.bicep` and re-run `./azure/deploy.sh` — it's a diff-and-apply

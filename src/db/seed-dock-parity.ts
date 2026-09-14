@@ -1,0 +1,221 @@
+/**
+ * Seed Dock-parity catalogs: reusable library files, template checklists /
+ * default attachments, and the customer Learning Center IA.
+ */
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import {
+  learningCenterItems,
+  learningCenterSections,
+  libraryAssets,
+  templateTaskAttachments,
+  templateTaskChecklistItems,
+  templateTasks,
+} from "@/db/schema";
+import { DEFAULT_LIBRARY_ASSETS } from "@/db/dock-default-attachments";
+import { checklistForTaskTitle, TRAINING_SESSION_DESCRIPTION } from "@/db/dock-training-checklists";
+import { LEARNING_CENTER_SECTIONS } from "@/db/learning-center-catalog";
+import { normalizeOverlapTitle } from "@/lib/playbook-meta";
+import { putFile } from "@/lib/storage";
+
+function placeholderPath(fileName: string) {
+  return resolve(process.cwd(), "content/default-attachments", fileName);
+}
+
+export async function seedLibraryPlaceholders() {
+  for (const def of DEFAULT_LIBRARY_ASSETS) {
+    const existing = await db.query.libraryAssets.findFirst({
+      where: eq(libraryAssets.slug, def.slug),
+    });
+    if (existing && !existing.isPlaceholder && existing.storageKey) {
+      console.log(`  · library ${def.slug}: keeping uploaded file`);
+      continue;
+    }
+
+    const path = placeholderPath(def.fileName);
+    let storageKey = existing?.storageKey ?? null;
+    let sizeBytes = existing?.sizeBytes ?? null;
+    if (existsSync(path)) {
+      const bytes = readFileSync(path);
+      storageKey = await putFile(def.fileName, bytes);
+      sizeBytes = bytes.length;
+    }
+
+    if (existing) {
+      await db
+        .update(libraryAssets)
+        .set({
+          name: def.name,
+          description: def.description,
+          mimeType: def.mimeType,
+          adminNotes: def.adminNotes,
+          visibility: def.visibility,
+          kind: "FILE",
+          storageKey,
+          sizeBytes,
+          updatedAt: new Date(),
+        })
+        .where(eq(libraryAssets.id, existing.id));
+    } else {
+      await db.insert(libraryAssets).values({
+        slug: def.slug,
+        name: def.name,
+        description: def.description,
+        mimeType: def.mimeType,
+        adminNotes: def.adminNotes,
+        visibility: def.visibility,
+        kind: "FILE",
+        storageKey,
+        sizeBytes,
+        isPlaceholder: true,
+      });
+    }
+    console.log(`  ✓ library ${def.slug}${storageKey ? "" : " (no file on disk)"}`);
+  }
+}
+
+export async function applyTemplateDockExtras() {
+  const allTasks = await db.query.templateTasks.findMany({
+    columns: { id: true, title: true, description: true },
+  });
+  const libs = await db.query.libraryAssets.findMany();
+  const libBySlug = new Map(libs.map((l) => [l.slug, l]));
+
+  let checklists = 0;
+  let attachments = 0;
+  let descriptions = 0;
+
+  for (const task of allTasks) {
+    const items = checklistForTaskTitle(task.title);
+    if (items.length > 0) {
+      await db
+        .delete(templateTaskChecklistItems)
+        .where(eq(templateTaskChecklistItems.templateTaskId, task.id));
+      await db.insert(templateTaskChecklistItems).values(
+        items.map((item, i) => ({
+          templateTaskId: task.id,
+          label: item.label,
+          order: i,
+          visibility: item.visibility,
+        })),
+      );
+      checklists += items.length;
+      if (!task.description) {
+        await db
+          .update(templateTasks)
+          .set({ description: TRAINING_SESSION_DESCRIPTION })
+          .where(eq(templateTasks.id, task.id));
+        descriptions += 1;
+      }
+    }
+
+    await db
+      .delete(templateTaskAttachments)
+      .where(eq(templateTaskAttachments.templateTaskId, task.id));
+    const key = normalizeOverlapTitle(task.title);
+    for (const def of DEFAULT_LIBRARY_ASSETS) {
+      if (!def.attachToTitles.some((t) => normalizeOverlapTitle(t) === key)) continue;
+      const lib = libBySlug.get(def.slug);
+      if (!lib) continue;
+      await db.insert(templateTaskAttachments).values({
+        templateTaskId: task.id,
+        libraryAssetId: lib.id,
+      });
+      attachments += 1;
+    }
+  }
+
+  console.log(
+    `  ✓ template extras: ${checklists} checklist items, ${attachments} default attachments, ${descriptions} training descriptions`,
+  );
+}
+
+export async function seedLearningCenter() {
+  const libs = await db.query.libraryAssets.findMany();
+  const libBySlug = new Map(libs.map((l) => [l.slug, l]));
+
+  for (const section of LEARNING_CENTER_SECTIONS) {
+    const existing = await db.query.learningCenterSections.findFirst({
+      where: eq(learningCenterSections.slug, section.slug),
+    });
+    const sectionId = existing
+      ? existing.id
+      : (
+          await db
+            .insert(learningCenterSections)
+            .values({
+              slug: section.slug,
+              title: section.title,
+              description: section.description,
+              topic: section.topic,
+              audienceRole: section.audienceRole,
+              order: section.order,
+              published: true,
+            })
+            .returning({ id: learningCenterSections.id })
+        )[0]!.id;
+
+    if (existing) {
+      await db
+        .update(learningCenterSections)
+        .set({
+          title: section.title,
+          description: section.description,
+          topic: section.topic,
+          audienceRole: section.audienceRole,
+          order: section.order,
+          updatedAt: new Date(),
+        })
+        .where(eq(learningCenterSections.id, sectionId));
+    }
+
+    const currentItems = await db.query.learningCenterItems.findMany({
+      where: eq(learningCenterItems.sectionId, sectionId),
+    });
+
+    for (const item of section.items) {
+      const lib = item.librarySlug ? libBySlug.get(item.librarySlug) : undefined;
+      const match =
+        currentItems.find((r) => r.title === item.title) ??
+        currentItems.find((r) => r.title.toLowerCase() === item.title.toLowerCase());
+
+      if (match && !match.isPlaceholder) {
+        continue;
+      }
+
+      const values = {
+        sectionId,
+        title: item.title,
+        summary: item.summary,
+        body: item.body,
+        kind: item.kind,
+        audienceRole: item.audienceRole,
+        order: item.order,
+        published: true,
+        visibility: "SHARED" as const,
+        isPlaceholder: true,
+        libraryAssetId: lib?.id ?? null,
+        storageKey: lib?.storageKey ?? null,
+        mimeType: lib?.mimeType ?? null,
+        sizeBytes: lib?.sizeBytes ?? null,
+        updatedAt: new Date(),
+      };
+
+      if (match) {
+        await db.update(learningCenterItems).set(values).where(eq(learningCenterItems.id, match.id));
+      } else {
+        await db.insert(learningCenterItems).values(values);
+      }
+    }
+  }
+  console.log(`  ✓ Learning Center: ${LEARNING_CENTER_SECTIONS.length} sections`);
+}
+
+export async function seedDockParityCatalogs() {
+  console.log("\nSeeding Dock parity catalogs…");
+  await seedLibraryPlaceholders();
+  await applyTemplateDockExtras();
+  await seedLearningCenter();
+}

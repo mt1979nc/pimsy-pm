@@ -29,7 +29,9 @@ export async function resetDb() {
   await db.execute(sql`
     TRUNCATE TABLE
       "mention", "thread_participant", "message", "message_thread",
-      "task_comment", "task_dependency", "time_entry", "file_asset",
+      "task_comment", "task_checklist_item", "task_dependency", "time_entry", "file_asset",
+      "template_task_attachment", "template_task_checklist_item", "library_asset",
+      "learning_center_item", "learning_center_section",
       "notification", "audit_log", "status_update", "risk",
       "task", "phase", "milestone", "project_member", "project",
       "template_task", "template_phase", "template_milestone", "project_template",

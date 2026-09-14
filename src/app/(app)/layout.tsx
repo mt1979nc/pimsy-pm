@@ -68,6 +68,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Setup
           </div>
           {canManageTemplates(actor) ? <NavLink href="/templates">Templates</NavLink> : null}
+          <NavLink href="/learning">Learning Center</NavLink>
           <NavLink href="/updates">What&apos;s new</NavLink>
           <NavLink href="/settings">Settings</NavLink>
         </nav>

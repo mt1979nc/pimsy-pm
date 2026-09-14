@@ -63,4 +63,17 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /delete project/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Delete customer/i.test(h))).toBe(true);
   });
+
+  it("documents v1.12 Dock parity, prune-keep-legacy, and Learning Center", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.12.0");
+    expect(note?.summary).toMatch(/Dock/i);
+    expect(note?.summary).toMatch(/Learning Center/i);
+    expect(note?.highlights?.some((h) => h.includes("db:cleanup:non-dock"))).toBe(true);
+    expect(note?.highlights?.some((h) => /post go-live/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /db:resync:playbook-from-dock/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Discovery Wizard/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /area-to-cover|checklist/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /\/portal\/learn/.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/PHI/.test(h) || /No PHI/.test(h))).toBe(true);
+  });
 });

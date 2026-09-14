@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.11.2";
+export const APP_VERSION = "1.12.0";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,21 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.12.0",
+    date: "2026-09-14",
+    summary:
+      "Dock Implementation parity: prune only active non-Dock WIP (keep post go-live history), nested playbook resync, default Discovery/billing files, training area checklists, and a customer Learning Center grouped by topic.",
+    highlights: [
+      "Active-book prune: `npm run db:cleanup:non-dock -- <allowlist.json|csv>` (dry-run; `--apply` to delete). Deletes active / pre-kickoff / pipeline WIP whose acronyms are not on the Dock WIP allowlist you pass in. Always keeps completed / post go-live / archived sites for Forecast and Analysis. Named staff never deleted. `--keep-prism-analytics` keeps pipeline-only extras. Do not invent the live Dock list — parent supplies it after scrape.",
+      "Azure Cloud Shell: copy DATABASE_URL from App Service Configuration (never invent it). Runbook: v1.12-DOCK-PARITY.md and azure/README.md.",
+      "In-app delete warns on post go-live / LIVE sites so historical Prism/PATH rows are not wiped by mistake. Prefer archive or the non-Dock script for active WIP.",
+      "Playbook nested tasks match the Dock Implementation template (phases → section tasks → subtasks). `npm run db:resync:playbook-from-dock` (dry-run / `--apply`) adds missing children by title without clearing DONE/IN_PROGRESS.",
+      "Default attachments (Discovery Wizard, billing spreadsheet, billing questionnaire, clinical workflows, org details) seed as placeholders in the file library and auto-attach on new workspaces. Alexander replaces binaries at Templates → File library (Azure Blob / app storage). No Dock credentials in repo.",
+      "Training tasks have first-class area-to-cover checkboxes (editable, per-item done). Staff toggle; customers see SHARED items on the portal task (Dock-style visibility). Seed from Dock training session titles; paste a scraped `- [ ]` description later via parseChecklistFromDescription.",
+      "Customer Learning Center in the portal (`/portal/learn`): grouped by Getting started, Discovery, Training, Billing, Go-live, After go-live; searchable; role chips. Staff preview/curate at `/learning`. Placeholders until recordings/files are uploaded. No PHI.",
+    ],
+  },
   {
     version: "1.11.2",
     date: "2026-09-14",

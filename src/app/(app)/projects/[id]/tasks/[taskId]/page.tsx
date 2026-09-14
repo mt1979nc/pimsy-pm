@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq, ne, asc, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { tasks, taskComments, users, projects } from "@/db/schema";
+import { tasks, taskComments, taskChecklistItems, users } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, NotFoundError, ForbiddenError } from "@/lib/authz";
 import { listTaskAttachments } from "@/lib/attachments";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui";
 import { TaskComments } from "@/components/task-comments";
 import { AttachmentList, AddAttachment } from "@/components/attachments";
+import { TaskChecklist } from "@/components/task-checklist";
 import { AssigneePicker } from "@/components/assignee-picker";
 import { TaskDetailControls } from "./task-controls";
 import { fmtDate, dueLabel, isOverdue, fmtRelative } from "@/lib/dates";
@@ -52,7 +53,7 @@ export default async function TaskDetailPage({
   });
   if (!task) notFound();
 
-  const [comments, attachments, staff, contacts] = await Promise.all([
+  const [comments, attachments, staff, contacts, checklist, subtasks] = await Promise.all([
     db.query.taskComments.findMany({
       where: and(eq(taskComments.taskId, taskId), isNull(taskComments.deletedAt)),
       orderBy: [asc(taskComments.createdAt)],
@@ -75,6 +76,15 @@ export default async function TaskDetailPage({
           orderBy: [asc(users.name)],
         })
       : Promise.resolve([]),
+    db.query.taskChecklistItems.findMany({
+      where: eq(taskChecklistItems.taskId, taskId),
+      orderBy: [asc(taskChecklistItems.order)],
+    }),
+    db.query.tasks.findMany({
+      where: eq(tasks.parentTaskId, taskId),
+      orderBy: [asc(tasks.order)],
+      columns: { id: true, title: true, status: true, visibility: true },
+    }),
   ]);
 
   // A stale completedAt from an earlier "done" must not read as complete once
@@ -130,6 +140,44 @@ export default async function TaskDetailPage({
               }}
             />
           </Card>
+
+          <Card>
+            <CardHeader
+              title="Areas to cover"
+              subtitle="Training checklist — Dock-style checkboxes, first-class in PATH"
+            />
+            <TaskChecklist
+              taskId={task.id}
+              items={checklist}
+              canEdit
+              canToggle
+              taskIsInternal={task.visibility === "INTERNAL"}
+            />
+          </Card>
+
+          {subtasks.length > 0 ? (
+            <Card>
+              <CardHeader
+                title="Subtasks"
+                subtitle={`${subtasks.filter((s) => s.status === "DONE").length}/${subtasks.length} done`}
+              />
+              <ul className="divide-y divide-border">
+                {subtasks.map((s) => (
+                  <li key={s.id} className="flex items-center justify-between gap-3 px-5 py-2.5">
+                    <Link
+                      href={`/projects/${id}/tasks/${s.id}`}
+                      className="text-[13.5px] text-ink hover:text-brand hover:underline"
+                    >
+                      {s.title}
+                    </Link>
+                    <span className="text-[12px] text-ink-3">
+                      {s.status.replace("_", " ").toLowerCase()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
 
           <Card>
             <CardHeader

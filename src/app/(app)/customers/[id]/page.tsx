@@ -209,8 +209,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   confirmHint="Customer name or slug."
                   submitLabel="Delete customer permanently"
                   warning={
-                    customer.projects.length > 0
-                      ? `This deletes the customer account and portal contacts. ${customer.projects.length} project${customer.projects.length === 1 ? "" : "s"} will also be removed if you check the box. Staff logins are never deleted.`
+                    customer.status === "LIVE" ||
+                    customer.projects.some((p) => p.status === "COMPLETED" || p.actualGoLiveDate)
+                      ? "This account looks like a live or post go-live site. PATH keeps those for historical Forecast/Analysis. Prefer archive, or prune only active non-Dock WIP with db:cleanup:non-dock. Staff logins are never deleted."
+                      : customer.projects.length > 0
+                        ? `This deletes the customer account and portal contacts. ${customer.projects.length} project${customer.projects.length === 1 ? "" : "s"} will also be removed if you check the box. Staff logins are never deleted.`
                       : "This deletes the customer account and portal contacts. Staff logins are never deleted."
                   }
                   cascade={
