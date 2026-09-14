@@ -49,7 +49,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 Leadership
               </div>
               <NavLink href="/admin">Management</NavLink>
-              <NavLink href="/reports">Portfolio</NavLink>
+              <NavLink href="/reports" exact>
+                Portfolio
+              </NavLink>
               <NavLink href="/reports/waiting-on">Waiting on</NavLink>
 
               <div className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">

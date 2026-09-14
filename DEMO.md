@@ -1,4 +1,4 @@
-# Nathan demo — PATH (Dock replacement)
+# Nathan demo — PATH (local fixtures only)
 
 **Live:** https://pimsy-app.azurewebsites.net  
 **Repo:** https://github.com/mt1979nc/pimsy-pm  
@@ -6,11 +6,21 @@
 
 This app holds **no PHI** (logistics only). Footer on sign-in says so.
 
+**Live PATH must not contain these demo accounts.** Alexander’s production book
+is real imported WIP. Strip leftovers with:
+
+```bash
+npm run db:cleanup:demo              # dry-run
+npm run db:cleanup:demo -- --apply
+```
+
+See `azure/README.md` (Cloud Shell + App Setting `DATABASE_URL`).
+
 ---
 
-## Demo logins (password)
+## Demo logins (local / pitch only)
 
-Shared temporary password:
+Shared temporary password (local seed only — never re-seed on production):
 
 ```
 Demo-Nathan-2026!
@@ -18,21 +28,26 @@ Demo-Nathan-2026!
 
 | Role | Email | Notes |
 |---|---|---|
-| **Owner / Director** | `alexander@pimsyehr.com` | OWNER + canLead + isDirector. **Must change password** on first login → `/change-password`. |
-| **Specialist** | `morgan@pimsyehr.com` | SPECIALIST, capacityExempt, canLead=false. **Must change password** on first login. |
-| **Management (demo)** | `demo.manager@pimsyehr.com` | Full portfolio (legacy Nathan demo). |
-| **Specialist (demo)** | `demo.specialist@pimsyehr.com` | Assigned projects only. |
-| **Customer (demo)** | `contact@riverbend-counseling.example.com` | `/portal` — Riverbend / IMP-9001 |
+| **Owner / Director** | `alexander@pimsyehr.com` | OWNER + canLead + isDirector. **Must change password** on first login → `/change-password`. Keep on live. |
+| **Specialist** | `morgan@pimsyehr.com` | SPECIALIST, capacityExempt, canLead=false. **Must change password** on first login. Keep on live. |
+| **Management (demo)** | `demo.manager@pimsyehr.com` | Local fixture only. Cleanup deletes this. |
+| **Specialist (demo)** | `demo.specialist@pimsyehr.com` | Local fixture only. Cleanup deletes this. |
+| **Customer (demo)** | `contact@riverbend-counseling.example.com` | Local Riverbend / IMP-9001. Cleanup deletes this. |
 
 Use **email + password** on the sign-in page (magic link needs Resend configured).
 
 Seed staff + Dock WIP (Azure / any env with `DATABASE_URL`):
 
 ```bash
-npm run db:seed -- --templates-only   # if templates missing
+npm run db:seed -- --templates-only   # default; playbooks only
 npm run db:seed:staff-logins          # Alexander + Morgan (+ roster)
-npm run db:import:dock-wip            # 15 live Dock WIP sites, no contact emails
-# optional Nathan demos:
+npm run db:import:dock-wip            # live Dock WIP sites, no contact emails
+```
+
+Local Nathan fixtures (do **not** run on production):
+
+```bash
+npm run db:seed -- --with-demo
 npm run db:seed:demo-logins
 npm run demo:content
 ```
@@ -43,9 +58,9 @@ See `/workspace/pimsy-pm-ops/v1.8.3-WIP-IMPORT.md` for Azure `DATABASE_URL` step
 
 ## Before you present (5 minutes)
 
-1. Confirm sign-in shows **v1.8.3**.
-2. Sign in as Management, Specialist, and Customer (private window) using the table above.
-3. Open project **IMP-9001**. If screens look empty, re-run seed + `demo:content` + `db:seed:demo-logins` against that database.
+1. Confirm sign-in shows **v1.11.1** (or current).
+2. On a **local** database, sign in as Management, Specialist, and Customer (private window) using the table above.
+3. Open project **IMP-9001** only on a `--with-demo` database. Live PATH should not have IMP-9001.
 4. Optional: Management → Alerts → show Teams webhook is available.
 
 ---
@@ -57,25 +72,26 @@ See `/workspace/pimsy-pm-ops/v1.8.3-WIP-IMPORT.md` for Azure `DATABASE_URL` step
 - We need portals + tasks + threads **and** first-class data access under our control.
 
 ### 2. Management view (1.5 min)
-Sign in as `demo.manager@pimsyehr.com`:
+Sign in as `alexander@pimsyehr.com` (live) or `demo.manager@pimsyehr.com` (local only):
 - `/dashboard` — portfolio health
 - `/projects` — all WIP
-- `/reports` or `/admin` — leadership numbers
+- `/reports` — delivery Portfolio (not Waiting-on)
+- `/reports/waiting-on` — SHARED-thread WIP rollup
+- `/management` — Prism hub (headroom chart + member cards)
 
 ### 3. Specialist view (1.5 min)
-Sign out → `demo.specialist@pimsyehr.com`:
-- Only assigned projects (IMP-9001)
-- Open IMP-9001 → tasks, SHARED thread vs INTERNAL back-channel (Dock can’t hide internal the same way)
+Sign out → `morgan@pimsyehr.com` (live) or `demo.specialist@pimsyehr.com` (local):
+- Only assigned projects
+- Open a project → tasks, SHARED thread vs INTERNAL back-channel (Dock can’t hide internal the same way)
 
 ### 4. Customer portal (2 min)
-Private window → `contact@riverbend-counseling.example.com`:
+Private window → invited contact (live) or `contact@riverbend-counseling.example.com` (local):
 - `/portal` — SHARED timeline, action items, messages only
 - Emphasize: wrong project → **404**, not 403
 
 ### 5. Close (30 sec)
 - Azure + our Postgres ≪ Dock Enterprise for API
-- Gaps: no visual template editor yet; no live Dock migration; no realtime; no `.ics` yet
-- Ask: pilot 1–2 WIP sites alongside Dock, then cutover
+- Ask: PATH is the book of business; Prism in the sidebar is Capacity / Forecast / Analysis
 
 ---
 
@@ -90,11 +106,10 @@ Private window → `contact@riverbend-counseling.example.com`:
 | PHI | Logistics only (same rule) |
 
 ---
----
 
 ## If something breaks live
 
 - Wrong version on sign-in → wrong deploy
-- Magic link not arriving → use password demos; Resend optional
-- Empty demo project → `db:seed` + `demo:content` + `db:seed:demo-logins`
+- Magic link not arriving → use password; Resend optional
+- Demo users still on live → `npm run db:cleanup:demo -- --apply` after a dry-run (azure/README.md)
 - Attachments missing on Azure → `AZURE_STORAGE_CONNECTION_STRING` (see `azure/README.md`)

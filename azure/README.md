@@ -158,7 +158,37 @@ emails):
 
 ```
 npm run db:seed -- --templates-only
-``` To change infrastructure
+```
+
+### Remove demo / test clients from production (v1.11.1)
+
+Alexander's live book should not contain Nathan demo logins or GROK fixtures.
+The cleanup script is **dry-run by default** and never prints the password
+from `DATABASE_URL`.
+
+1. Azure Portal → App Service (`pimsy-app` or your Web App) → **Settings →
+   Environment variables / Configuration** → copy `DATABASE_URL`. Do not invent
+   the connection string.
+2. Azure Cloud Shell (or any host that can reach Flexible Server), with this
+   repo checked out at a v1.11.1+ commit:
+
+```bash
+export DATABASE_URL='postgresql://…'   # paste from App Settings; keep quotes
+npm ci                                 # if this shell has no node_modules
+npm run db:cleanup:demo                # review the lists
+npm run db:cleanup:demo -- --apply     # deletes the listed demo/test rows only
+npm run db:cleanup:demo                # confirm empty
+```
+
+Removes `demo.manager@` / `demo.specialist@`, Riverbend and other seed
+customers (`IMP-9001`–`IMP-9003`), `@example.com` fixture contacts, and GROK
+E2E / `IMP-0004` / GROKTEST. **Never** deletes alexander@, jeremy@,
+danielle@, morgan@, mindy@, david@, anna@, kori@, playbooks, or imported
+Prism/Dock acronyms (BDMH, BHC, CCCCARE, CEDAR, DYM, EBHKY, FBH, LECHRIS,
+MMHSS, OCE, PWMI, RAC, RBH, SWMCCC, THS, …). If a demo code is somehow
+attached to a protected acronym, that project is skipped.
+
+To change infrastructure
 (bump the App Service Plan tier, for instance), edit `azure/main.parameters.json`
 or `azure/main.bicep` and re-run `./azure/deploy.sh` — it's a diff-and-apply
 deployment, not a from-scratch one, so existing data is untouched.

@@ -6,8 +6,9 @@
  * died partway through gets repaired rather than skipped. It never touches
  * real customer records.
  *
- *   npm run db:seed
- *   npm run db:seed -- --templates-only     # production: no demo data
+ *   npm run db:seed                       # templates only (safe for production)
+ *   npm run db:seed -- --templates-only   # same as default
+ *   npm run db:seed -- --with-demo        # local Nathan fixtures (never on live)
  */
 
 import { eq } from "drizzle-orm";
@@ -31,6 +32,7 @@ import {
 import { ALL_PLAYBOOKS, type PlaybookSeed } from "./template-playbooks";
 import { addDays } from "@/lib/dates";
 import type { SeedTask } from "./template-implementation";
+import { DEMO_CUSTOMERS } from "@/lib/demo-entities";
 
 /** Retired names from earlier seeds — delete so we do not leave duplicates. */
 const RETIRED_TEMPLATE_NAMES = ["RCM (Existing Customer)"];
@@ -138,39 +140,6 @@ async function seedTemplate(seed: PlaybookSeed) {
 }
 
 const DEMO_SPECIALIST_EMAIL = "demo.specialist@pimsyehr.com";
-
-const DEMO_CUSTOMERS = [
-  {
-    name: "Riverbend Counseling Group",
-    slug: "riverbend-counseling",
-    practiceType: "Outpatient Behavioral Health",
-    seatCount: 28,
-    priorSystem: "TherapyNotes",
-    city: "Asheville",
-    state: "NC",
-    status: "ONBOARDING" as const,
-  },
-  {
-    name: "Northgate Recovery Services",
-    slug: "northgate-recovery",
-    practiceType: "SUD Treatment / MAT",
-    seatCount: 64,
-    priorSystem: "Kipu",
-    city: "Columbus",
-    state: "OH",
-    status: "ONBOARDING" as const,
-  },
-  {
-    name: "Cedar Hollow Family Health",
-    slug: "cedar-hollow",
-    practiceType: "Integrated Primary + Behavioral",
-    seatCount: 15,
-    priorSystem: "Spreadsheets / paper",
-    city: "Bangor",
-    state: "ME",
-    status: "LIVE" as const,
-  },
-];
 
 async function seedDemoData(implTemplateId: string) {
   const owner = await db.query.users.findFirst({
@@ -402,7 +371,7 @@ function demoContactName(i: number) {
 }
 
 async function main() {
-  const templatesOnly = process.argv.includes("--templates-only");
+  const templatesOnly = process.argv.includes("--templates-only") || !process.argv.includes("--with-demo");
 
   console.log("\nSeeding templates…");
   for (const name of RETIRED_TEMPLATE_NAMES) {
@@ -423,7 +392,7 @@ async function main() {
   if (!implId) implId = await seedTemplate(ALL_PLAYBOOKS[0]);
 
   if (templatesOnly) {
-    console.log("\nTemplates only — skipping demo data.\n");
+    console.log("\nTemplates only — skipping demo customers/users (pass --with-demo for local fixtures).\n");
     return;
   }
 

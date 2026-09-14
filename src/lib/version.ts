@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.11.0";
+export const APP_VERSION = "1.11.1";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.11.1",
+    date: "2026-09-14",
+    summary:
+      "Hotfix: Portfolio and Waiting-on are separate working views again; demo/test clients and users can be removed from the live book; Prism Capacity/Forecast/Analysis charts and member cards for daily use.",
+    highlights: [
+      "Leadership → Portfolio is the delivery health report again (`/reports`). Waiting on is `/reports/waiting-on` (open SHARED threads). Prefix-matching no longer treats every /reports/* page as Portfolio.",
+      "Idempotent cleanup: `npm run db:cleanup:demo` (dry-run) / `--apply`. Removes Riverbend/IMP-9001, other seed customers, demo.manager / demo.specialist, @example.com fixtures, GROK E2E / IMP-0004. Never touches named staff, playbooks, or imported WIP (BDMH, BHC, CCCCARE, CEDAR, …).",
+      "Prism hub, Forecast, Team, Capacity, and Analysis now show headroom graphics, member load cards, and on-time rate bars — same forecast math, closer to standalone Prism.",
+      "Seed default is templates-only. Local Nathan fixtures need `npm run db:seed -- --with-demo`. Live PATH should not re-seed demo logins.",
+    ],
+  },
   {
     version: "1.11.0",
     date: "2026-09-14",

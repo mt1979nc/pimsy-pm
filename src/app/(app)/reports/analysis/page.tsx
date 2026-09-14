@@ -10,6 +10,7 @@ import { loadForecastExclusions } from "@/lib/forecast-data";
 import { isExcludedFromPrimaryAverages } from "@/lib/forecast";
 import Link from "next/link";
 import { Card, CardHeader, PageHeader, Stat, EmptyState, Badge, LinkButton } from "@/components/ui";
+import { RateBar } from "@/components/charts";
 import { cn } from "@/lib/cn";
 import { fmtShort } from "@/lib/dates";
 
@@ -111,31 +112,44 @@ export default async function AnalysisPage() {
             {owners.length === 0 ? (
               <EmptyState title="No owner data yet" />
             ) : (
-              <div className="divide-y divide-border">
-                <div className="flex items-center gap-4 border-b border-border bg-surface-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-                  <div className="flex-1">Owner</div>
-                  <div className="w-[90px] text-right">Completed</div>
-                  <div className="w-[100px] text-right">On-time</div>
-                  <div className="w-[110px] text-right">Avg. variance</div>
-                  <div className="w-[140px] text-right">Avg. days late (misses)</div>
+              <div className="space-y-4 p-4">
+                <div className="space-y-2.5">
+                  {owners.map((o) => (
+                    <RateBar
+                      key={o.leadId}
+                      label={o.name}
+                      value={o.onTimeRate}
+                      hint={`${o.onTimeRate}% · ${o.completed}`}
+                      tone={o.onTimeRate >= 80 ? "green" : o.onTimeRate >= 50 ? "amber" : "red"}
+                    />
+                  ))}
                 </div>
-                {owners.map((o) => (
-                  <div key={o.leadId} className="flex items-center gap-4 px-4 py-3">
-                    <div className="flex-1 truncate text-[13.5px] font-medium text-ink">{o.name}</div>
-                    <div className="w-[90px] text-right text-[13px] text-ink-2">{o.completed}</div>
-                    <div className="w-[100px] text-right">
-                      <Badge tone={o.onTimeRate >= 80 ? "green" : o.onTimeRate >= 50 ? "amber" : "red"}>
-                        {o.onTimeRate}%
-                      </Badge>
-                    </div>
-                    <div className="w-[110px] text-right text-[13px] text-ink-2">
-                      {o.avgVariance !== null ? `${o.avgVariance > 0 ? "+" : ""}${o.avgVariance}d` : "—"}
-                    </div>
-                    <div className="w-[140px] text-right text-[13px] text-ink-2">
-                      {o.misses > 0 ? `+${o.avgDaysLateOnMisses}d (${o.misses})` : "no misses"}
-                    </div>
+                <div className="divide-y divide-border rounded-lg border border-border">
+                  <div className="flex items-center gap-4 border-b border-border bg-surface-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+                    <div className="flex-1">Owner</div>
+                    <div className="w-[90px] text-right">Completed</div>
+                    <div className="w-[100px] text-right">On-time</div>
+                    <div className="w-[110px] text-right">Avg. variance</div>
+                    <div className="w-[140px] text-right">Avg. days late (misses)</div>
                   </div>
-                ))}
+                  {owners.map((o) => (
+                    <div key={`${o.leadId}-row`} className="flex items-center gap-4 px-4 py-3">
+                      <div className="flex-1 truncate text-[13.5px] font-medium text-ink">{o.name}</div>
+                      <div className="w-[90px] text-right text-[13px] text-ink-2">{o.completed}</div>
+                      <div className="w-[100px] text-right">
+                        <Badge tone={o.onTimeRate >= 80 ? "green" : o.onTimeRate >= 50 ? "amber" : "red"}>
+                          {o.onTimeRate}%
+                        </Badge>
+                      </div>
+                      <div className="w-[110px] text-right text-[13px] text-ink-2">
+                        {o.avgVariance !== null ? `${o.avgVariance > 0 ? "+" : ""}${o.avgVariance}d` : "—"}
+                      </div>
+                      <div className="w-[140px] text-right text-[13px] text-ink-2">
+                        {o.misses > 0 ? `+${o.avgDaysLateOnMisses}d (${o.misses})` : "no misses"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </Card>
@@ -148,14 +162,22 @@ export default async function AnalysisPage() {
               ) : (
                 <div className="divide-y divide-border">
                   {tiers.map((t) => (
-                    <div key={t.tier} className="flex items-center gap-4 px-4 py-3">
-                      <div className="flex-1 text-[13.5px] font-medium text-ink">
-                        {TIER_LABEL[t.tier]} <span className="text-ink-3">({t.n})</span>
+                    <div key={t.tier} className="space-y-2 px-4 py-3">
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 text-[13.5px] font-medium text-ink">
+                          {TIER_LABEL[t.tier]} <span className="text-ink-3">({t.n})</span>
+                        </div>
+                        <div className="text-right text-[12.5px] text-ink-2">
+                          avg duration {t.avgDuration ?? "—"}d · avg variance{" "}
+                          {t.avgVariance !== null ? `${t.avgVariance > 0 ? "+" : ""}${t.avgVariance}d` : "—"}
+                        </div>
                       </div>
-                      <div className="text-right text-[12.5px] text-ink-2">
-                        avg duration {t.avgDuration ?? "—"}d · avg variance{" "}
-                        {t.avgVariance !== null ? `${t.avgVariance > 0 ? "+" : ""}${t.avgVariance}d` : "—"}
-                      </div>
+                      <RateBar
+                        label="On-time"
+                        value={t.onTimeRate}
+                        hint={`${t.onTimeRate}%`}
+                        tone={t.onTimeRate >= 80 ? "green" : t.onTimeRate >= 50 ? "amber" : "red"}
+                      />
                     </div>
                   ))}
                 </div>

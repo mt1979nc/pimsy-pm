@@ -15,10 +15,10 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **Prism Management (v1.8)** | **Shipped** (v1.8.0–1.8.4) | Team roster flags + billable hrs + engagement roster/edit in PATH. OWNER/ADMIN/MANAGER only. Native Postgres (no Prism Azure SQL dual-write). |
 | **Playbook / staffing (v1.9)** | **Shipped** (v1.9.0–1.9.1) | Editable templates, four site paths, optional areas, per-project N/A, staffing roles + auto-assign + manager overview, staff-only Update History. |
 | **Forecast (v1.10)** | **Shipped** | Weekly hours + peak week + headroom + hire-now; weights listed; Analysis exclusions (SENSORI/MHC/LECHRIS default). Native Postgres. |
-| **Prism cutover (v1.11)** | **Shipping** (this branch → v1.11.0) | PATH is SoT. Import + snapshot API + add-to-roster + Analysis table. No Prism SQL dual-write. |
+| **Prism cutover (v1.11)** | **Shipped** (v1.11.0–1.11.1) | PATH is SoT. Import + snapshot API + add-to-roster + Analysis table. v1.11.1 restores Portfolio vs Waiting-on, demo cleanup, Prism charts. |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
-| Portfolio WIP view | Planned | Callouts powered by waiting-on rollup + customer-side tasks. |
+| **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |
 
 ## Milestone: Retire standalone Prism
 

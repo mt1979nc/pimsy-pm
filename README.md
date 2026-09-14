@@ -260,7 +260,25 @@ have a Password card to change it later.
 npm run db:seed -- --templates-only
 ```
 
-Loads the templates and skips the demo customers.
+Loads the templates and skips demo customers/users (this is also the default
+for `npm run db:seed` as of v1.11.1). Local Nathan fixtures:
+
+```bash
+npm run db:seed -- --with-demo
+npm run db:seed:demo-logins
+```
+
+Do **not** run `--with-demo` or `db:seed:demo-logins` against production.
+To strip leftover demo/test rows from a live database (dry-run first):
+
+```bash
+npm run db:cleanup:demo
+npm run db:cleanup:demo -- --apply
+```
+
+See `azure/README.md` for Cloud Shell + `DATABASE_URL`. The script never
+touches named staff (alexander@, jeremy@, …), playbooks, or imported WIP
+acronyms (BDMH, BHC, CCCCARE, CEDAR, …).
 
 Prism cutover (Capacity / Forecast / Analysis as source of truth in PATH): see
 `v1.11-PRISM-CUTOVER.md`. Dump standalone Prism SQL (or a JSON file from Cloud Shell), then:

@@ -3,6 +3,7 @@ import { requirePortfolioAccess } from "@/lib/guard";
 import { teamCapacity } from "@/lib/queries";
 import { loadCapacityForecast } from "@/lib/forecast-data";
 import { PageHeader, Card, CardHeader, EmptyState, Badge, Avatar, LinkButton, Stat } from "@/components/ui";
+import { HeadroomChart, MemberLoadCards } from "@/components/charts";
 import { fmtShort } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 
@@ -71,6 +72,42 @@ export default async function CapacityPage() {
           href="/management/forecast"
         />
       </div>
+      <Card className="mb-5">
+        <CardHeader
+          title="Load vs capacity"
+          subtitle="Weekly billable hours against department cap. Peak week is ringed."
+        />
+        <HeadroomChart
+          weeks={forecast.weeks}
+          capacityHours={forecast.deptCapacityHours}
+          peakWeekOf={forecast.peakWeek?.weekOf ?? null}
+        />
+      </Card>
+      {forecast.staff.length > 0 ? (
+        <div className="mb-5 space-y-2">
+          <h2 className="text-[13.5px] font-semibold text-ink">Team headroom</h2>
+          <MemberLoadCards
+            members={forecast.staff.map((s) => {
+              const thisHrs = forecast.thisWeek?.byPerson.find((p) => p.id === s.id)?.hours ?? 0;
+              const peakHrs = Math.max(
+                ...forecast.weeks.map((w) => w.byPerson.find((p) => p.id === s.id)?.hours ?? 0),
+                0,
+              );
+              return {
+                id: s.id,
+                name: s.name,
+                email: s.email,
+                image: s.image,
+                capacityHoursPerWeek: s.capacityHoursPerWeek,
+                capacityExempt: s.capacityExempt,
+                isDirector: s.isDirector,
+                thisWeekHours: thisHrs,
+                peakHours: peakHrs,
+              };
+            })}
+          />
+        </div>
+      ) : null}
       <Card className="mb-5">
         <CardHeader
           title="Weekly capacity forecast"

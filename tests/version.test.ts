@@ -46,4 +46,11 @@ describe("staff Update History source", () => {
     expect(note?.summary).toMatch(/Prism/);
     expect(note?.highlights?.some((h) => h.includes("Plan · Assign · Track · Handoff"))).toBe(true);
   });
+
+  it("documents the v1.11.1 Portfolio / demo-cleanup hotfix", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.11.1");
+    expect(note?.summary).toMatch(/Portfolio/);
+    expect(note?.summary).toMatch(/Waiting-on/);
+    expect(note?.highlights?.some((h) => h.includes("db:cleanup:demo"))).toBe(true);
+  });
 });
