@@ -22,6 +22,8 @@ export type TaskRowData = {
   project?: { id: string; name: string; code: string } | null;
   notApplicable?: boolean;
   workTrack?: "EHR" | "RCM" | "SHARED";
+  parentTaskId?: string | null;
+  depth?: number;
 };
 
 export function TaskRow({
@@ -74,6 +76,7 @@ export function TaskRow({
         pending && "opacity-60",
         na && "opacity-70",
       )}
+      style={task.depth ? { paddingLeft: 16 + task.depth * 18 } : undefined}
     >
       <button
         type="button"

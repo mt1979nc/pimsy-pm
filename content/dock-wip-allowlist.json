@@ -1,0 +1,52 @@
+{
+  "source": "Dock Implementation WIP",
+  "asOf": "2026-09-14",
+  "note": "Live Dock inventory (customer-looking acronyms only). PATH prune deletes active/pre-kickoff/pipeline WIP not in this list and keeps post go-live / Live legacy for Forecast and Analysis. Dock test/draft spaces are excluded from the PATH book unless Alexander says otherwise.",
+  "acronyms": [
+    "TANC",
+    "OCE",
+    "FBH",
+    "BHC",
+    "MMHSS",
+    "EBHKY",
+    "LECHRIS",
+    "BDMH",
+    "DYM",
+    "PWMI",
+    "THS",
+    "CEDAR",
+    "CCCCARE",
+    "SWMCCC",
+    "RBH",
+    "SENSORI",
+    "MHC",
+    "FFCS",
+    "RENWICK",
+    "CAPSTONE",
+    "LIFECONN",
+    "EHW",
+    "GHW",
+    "ROH",
+    "APS",
+    "PHR",
+    "RPI",
+    "ABQW",
+    "SMSS",
+    "NEOES",
+    "MPA",
+    "GTS",
+    "UES",
+    "DPS"
+  ],
+  "excludeFromPathBook": {
+    "unlessAlexanderSaysOtherwise": true,
+    "note": "Dock test/draft and process-improvement spaces — not customer Implementation WIP.",
+    "examples": [
+      "DRAFT Impl. Billing/RCM tab",
+      "MT Test",
+      "Test Dock",
+      "MT Test 5",
+      "MT Testing 4"
+    ]
+  }
+}

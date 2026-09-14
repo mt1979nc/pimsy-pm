@@ -1,0 +1,4 @@
+{
+  "note": "Example pointer only. Production allowlist is content/dock-wip-allowlist.json (Dock Implementation WIP as of 2026-09-14). npm run db:cleanup:non-dock defaults to that fixture.",
+  "see": "content/dock-wip-allowlist.json"
+}

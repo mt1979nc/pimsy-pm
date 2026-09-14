@@ -438,6 +438,21 @@ export const templateTasks = pgTable(
   (t) => [index("template_task_order_idx").on(t.phaseId, t.order)],
 );
 
+/** Dock-style “areas to cover” checklists on a template task (training, etc.). */
+export const templateTaskChecklistItems = pgTable(
+  "template_task_checklist_item",
+  {
+    id: text("id").primaryKey().$defaultFn(createId),
+    templateTaskId: text("template_task_id")
+      .notNull()
+      .references(() => templateTasks.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    order: integer("order").notNull().default(0),
+    visibility: visibilityEnum("visibility").notNull().default("SHARED"),
+  },
+  (t) => [index("template_task_checklist_idx").on(t.templateTaskId, t.order)],
+);
+
 export const templateMilestones = pgTable(
   "template_milestone",
   {
@@ -745,6 +760,25 @@ export const taskComments = pgTable(
   (t) => [index("task_comment_task_idx").on(t.taskId, t.createdAt)],
 );
 
+/** Per-item done state on a live task. Copied from the template on create/resync. */
+export const taskChecklistItems = pgTable(
+  "task_checklist_item",
+  {
+    id: text("id").primaryKey().$defaultFn(createId),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    done: boolean("done").notNull().default(false),
+    order: integer("order").notNull().default(0),
+    visibility: visibilityEnum("visibility").notNull().default("SHARED"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("task_checklist_task_idx").on(t.taskId, t.order)],
+);
+
 export const milestones = pgTable(
   "milestone",
   {
@@ -934,6 +968,49 @@ export const mentions = pgTable(
 // FILES
 // ===========================================================================
 
+/**
+ * Reusable playbook / Learning Center files (Discovery Wizard, billing sheets).
+ * Stored with the same Azure Blob / local disk pattern as task uploads.
+ * Placeholders ship in-repo; Alexander replaces them via the admin library.
+ */
+export const libraryAssets = pgTable(
+  "library_asset",
+  {
+    id: text("id").primaryKey().$defaultFn(createId),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    kind: assetKindEnum("kind").notNull().default("FILE"),
+    url: text("url"),
+    storageKey: text("storage_key"),
+    mimeType: text("mime_type"),
+    sizeBytes: integer("size_bytes"),
+    visibility: visibilityEnum("visibility").notNull().default("SHARED"),
+    isPlaceholder: boolean("is_placeholder").notNull().default(true),
+    /** What Alexander should drop in when the real Dock file is available. */
+    adminNotes: text("admin_notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("library_asset_slug_idx").on(t.slug)],
+);
+
+export const templateTaskAttachments = pgTable(
+  "template_task_attachment",
+  {
+    id: text("id").primaryKey().$defaultFn(createId),
+    templateTaskId: text("template_task_id")
+      .notNull()
+      .references(() => templateTasks.id, { onDelete: "cascade" }),
+    libraryAssetId: text("library_asset_id")
+      .notNull()
+      .references(() => libraryAssets.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    uniqueIndex("template_task_attachment_unique_idx").on(t.templateTaskId, t.libraryAssetId),
+  ],
+);
+
 export const fileAssets = pgTable(
   "file_asset",
   {
@@ -948,6 +1025,10 @@ export const fileAssets = pgTable(
     mimeType: text("mime_type"),
     sizeBytes: integer("size_bytes"),
     visibility: visibilityEnum("visibility").notNull().default("INTERNAL"),
+    /** When this row was copied from a reusable library file. */
+    libraryAssetId: text("library_asset_id").references(() => libraryAssets.id, {
+      onDelete: "set null",
+    }),
     /**
      * A recording is a LINK asset the portal's Recordings tab surfaces
      * separately from ordinary shared documents. Not attached to a task —
@@ -1049,6 +1130,59 @@ export const orgSettings = pgTable("org_settings", {
   forecastAnalysisExclusions: jsonb("forecast_analysis_exclusions").$type<string[]>(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Customer Learning Center — curated, grouped materials (not a flat Dock dump).
+ * Published SHARED items are visible in the portal. Unpublished = staff draft.
+ */
+export const learningCenterSections = pgTable(
+  "learning_center_section",
+  {
+    id: text("id").primaryKey().$defaultFn(createId),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    /** getting_started | discovery | training | billing | go_live | after_go_live | reference */
+    topic: text("topic").notNull(),
+    /** all | clinical | billing | admin */
+    audienceRole: text("audience_role").notNull().default("all"),
+    order: integer("order").notNull().default(0),
+    published: boolean("published").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("learning_center_section_slug_idx").on(t.slug)],
+);
+
+export const learningCenterItems = pgTable(
+  "learning_center_item",
+  {
+    id: text("id").primaryKey().$defaultFn(createId),
+    sectionId: text("section_id")
+      .notNull()
+      .references(() => learningCenterSections.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    summary: text("summary"),
+    body: text("body"),
+    /** ARTICLE | LINK | FILE */
+    kind: text("kind").notNull().default("ARTICLE"),
+    url: text("url"),
+    storageKey: text("storage_key"),
+    mimeType: text("mime_type"),
+    sizeBytes: integer("size_bytes"),
+    libraryAssetId: text("library_asset_id").references(() => libraryAssets.id, {
+      onDelete: "set null",
+    }),
+    audienceRole: text("audience_role").notNull().default("all"),
+    order: integer("order").notNull().default(0),
+    published: boolean("published").notNull().default(true),
+    visibility: visibilityEnum("visibility").notNull().default("SHARED"),
+    isPlaceholder: boolean("is_placeholder").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("learning_center_item_section_idx").on(t.sectionId, t.order)],
+);
 
 export const auditLogs = pgTable(
   "audit_log",
@@ -1161,6 +1295,12 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   }),
   subtasks: many(tasks, { relationName: "Subtasks" }),
   comments: many(taskComments),
+  checklistItems: many(taskChecklistItems),
+  attachments: many(fileAssets),
+}));
+
+export const taskChecklistItemsRelations = relations(taskChecklistItems, ({ one }) => ({
+  task: one(tasks, { fields: [taskChecklistItems.taskId], references: [tasks.id] }),
 }));
 
 export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
@@ -1228,6 +1368,10 @@ export const fileAssetsRelations = relations(fileAssets, ({ one }) => ({
   task: one(tasks, { fields: [fileAssets.taskId], references: [tasks.id] }),
   message: one(messages, { fields: [fileAssets.messageId], references: [messages.id] }),
   uploadedBy: one(users, { fields: [fileAssets.uploadedById], references: [users.id] }),
+  libraryAsset: one(libraryAssets, {
+    fields: [fileAssets.libraryAssetId],
+    references: [libraryAssets.id],
+  }),
 }));
 
 export const projectTemplatesRelations = relations(projectTemplates, ({ many }) => ({
@@ -1255,6 +1399,47 @@ export const templateTasksRelations = relations(templateTasks, ({ one, many }) =
     relationName: "TemplateSubtasks",
   }),
   subtasks: many(templateTasks, { relationName: "TemplateSubtasks" }),
+  checklistItems: many(templateTaskChecklistItems),
+  defaultAttachments: many(templateTaskAttachments),
+}));
+
+export const templateTaskChecklistItemsRelations = relations(templateTaskChecklistItems, ({ one }) => ({
+  templateTask: one(templateTasks, {
+    fields: [templateTaskChecklistItems.templateTaskId],
+    references: [templateTasks.id],
+  }),
+}));
+
+export const templateTaskAttachmentsRelations = relations(templateTaskAttachments, ({ one }) => ({
+  templateTask: one(templateTasks, {
+    fields: [templateTaskAttachments.templateTaskId],
+    references: [templateTasks.id],
+  }),
+  libraryAsset: one(libraryAssets, {
+    fields: [templateTaskAttachments.libraryAssetId],
+    references: [libraryAssets.id],
+  }),
+}));
+
+export const libraryAssetsRelations = relations(libraryAssets, ({ many }) => ({
+  templateAttachments: many(templateTaskAttachments),
+  copies: many(fileAssets),
+  learningItems: many(learningCenterItems),
+}));
+
+export const learningCenterSectionsRelations = relations(learningCenterSections, ({ many }) => ({
+  items: many(learningCenterItems),
+}));
+
+export const learningCenterItemsRelations = relations(learningCenterItems, ({ one }) => ({
+  section: one(learningCenterSections, {
+    fields: [learningCenterItems.sectionId],
+    references: [learningCenterSections.id],
+  }),
+  libraryAsset: one(libraryAssets, {
+    fields: [learningCenterItems.libraryAssetId],
+    references: [libraryAssets.id],
+  }),
 }));
 
 export const templateMilestonesRelations = relations(templateMilestones, ({ one }) => ({
@@ -1300,6 +1485,10 @@ export type StatusUpdate = typeof statusUpdates.$inferSelect;
 export type MessageThread = typeof messageThreads.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type FileAsset = typeof fileAssets.$inferSelect;
+export type LibraryAsset = typeof libraryAssets.$inferSelect;
+export type TaskChecklistItem = typeof taskChecklistItems.$inferSelect;
+export type LearningCenterSection = typeof learningCenterSections.$inferSelect;
+export type LearningCenterItem = typeof learningCenterItems.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type ProjectTemplate = typeof projectTemplates.$inferSelect;
 

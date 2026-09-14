@@ -46,6 +46,12 @@ export default async function PortalLayout({ children }: { children: React.React
           ) : null}
 
           <Link
+            href="/portal/learn"
+            className="text-[12.5px] font-medium text-ink-2 hover:text-brand"
+          >
+            Learning
+          </Link>
+          <Link
             href="/portal/settings"
             className="text-[12.5px] font-medium text-ink-2 hover:text-brand"
           >

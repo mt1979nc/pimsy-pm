@@ -24,12 +24,17 @@ export type SeedTask = {
   title: string;
   ownerSide: "INTERNAL" | "CUSTOMER";
   visibility?: "INTERNAL" | "SHARED";
+  description?: string;
   offsetDays?: number;
   durationDays?: number;
   estimateHours?: number;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   /** Nested Dock checklist items under a section/header task. */
   children?: SeedTask[];
+  /** Training “areas to cover” (also seeded by title from dock-training-checklists). */
+  checklist?: string[];
+  /** Library slugs auto-attached on new workspaces. */
+  attachmentSlugs?: string[];
   isOptional?: boolean;
   areaKey?: string;
   defaultRole?:

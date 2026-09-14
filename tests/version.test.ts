@@ -14,6 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
+    expect(APP_VERSION).toMatch(/^1\.12\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
   });
@@ -71,5 +72,18 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /polyline|line/i.test(h) && /dashed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Peak week/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /weeks/.test(h) && /capacityHours/.test(h))).toBe(true);
+  });
+
+  it("documents v1.12 Dock parity, prune-keep-legacy, and Learning Center", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.12.0");
+    expect(note?.summary).toMatch(/Dock/i);
+    expect(note?.summary).toMatch(/Learning Center/i);
+    expect(note?.highlights?.some((h) => h.includes("db:cleanup:non-dock"))).toBe(true);
+    expect(note?.highlights?.some((h) => /post go-live/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /db:resync:playbook-from-dock/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Discovery Wizard/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /area-to-cover|checklist/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /\/portal\/learn/.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/PHI/.test(h) || /No PHI/.test(h))).toBe(true);
   });
 });

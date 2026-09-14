@@ -8,6 +8,7 @@ import { TaskRow } from "@/components/task-row";
 import { AddTaskInline, AddPhaseForm } from "./task-forms";
 import { PhaseNaButton } from "./phase-na-button";
 import { fmtShort } from "@/lib/dates";
+import { orderTasksForNesting } from "@/lib/task-tree";
 
 export const dynamic = "force-dynamic";
 
@@ -109,8 +110,8 @@ export default async function ProjectTasksPage({
               <p className="px-5 py-4 text-[13px] text-ink-3">Nothing in this phase yet.</p>
             ) : (
               <div className="divide-y divide-border">
-                {phaseTasks.map((t) => (
-                  <TaskRow key={t.id} task={{ ...t, projectId: id }} />
+                {orderTasksForNesting(phaseTasks).map((t) => (
+                  <TaskRow key={t.id} task={{ ...t, projectId: id, depth: t.depth }} />
                 ))}
               </div>
             )}
@@ -133,8 +134,8 @@ export default async function ProjectTasksPage({
             <p className="px-5 py-4 text-[13px] text-ink-3">Everything is assigned to a phase.</p>
           ) : (
             <div className="divide-y divide-border">
-              {unphased.map((t) => (
-                <TaskRow key={t.id} task={{ ...t, projectId: id }} />
+              {orderTasksForNesting(unphased).map((t) => (
+                <TaskRow key={t.id} task={{ ...t, projectId: id, depth: t.depth }} />
               ))}
             </div>
           )}

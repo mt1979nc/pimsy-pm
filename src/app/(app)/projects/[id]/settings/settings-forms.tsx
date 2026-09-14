@@ -441,9 +441,11 @@ export function ArchiveProjectButton({ projectId }: { projectId: string }) {
 export function DeleteProjectForm({
   projectId,
   confirmToken,
+  historicalWarning,
 }: {
   projectId: string;
   confirmToken: string;
+  historicalWarning?: boolean;
 }) {
   return (
     <ConfirmDeleteForm
@@ -452,7 +454,11 @@ export function DeleteProjectForm({
       confirmLabel={`Type ${confirmToken} to confirm`}
       confirmHint="Acronym, project code, or the full project name."
       submitLabel="Delete project permanently"
-      warning="This permanently deletes the project, tasks, threads, slips, memberships, and files. Staff logins are not deleted. This cannot be undone."
+      warning={
+        historicalWarning
+          ? "This looks like a post go-live or completed site. PATH keeps these for Forecast/Analysis history unless you really mean to delete. Prefer archive. Permanent delete removes tasks, threads, slips, memberships, and files. Staff logins are not deleted."
+          : "This permanently deletes the project, tasks, threads, slips, memberships, and files. Staff logins are not deleted. This cannot be undone. Prefer the non-Dock cleanup script for active WIP that is not on Dock — do not wipe completed history."
+      }
     />
   );
 }

@@ -6,6 +6,7 @@ import { Card, CardHeader, EmptyState, ProgressBar, Badge } from "@/components/u
 import { pctComplete } from "@/lib/rollup";
 import { fmtShort, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { orderTasksForNesting } from "@/lib/task-tree";
 
 export const dynamic = "force-dynamic";
 
@@ -49,8 +50,12 @@ export default async function PortalPhasePage({
         />
       ) : (
         <div className="mt-3 divide-y divide-border">
-          {phase.tasks.map((t) => (
-            <div key={t.id} className="flex items-start gap-3 px-5 py-2.5">
+          {orderTasksForNesting(phase.tasks).map((t) => (
+            <div
+              key={t.id}
+              className="flex items-start gap-3 px-5 py-2.5"
+              style={t.depth ? { paddingLeft: 20 + t.depth * 16 } : undefined}
+            >
               <span
                 className={cn(
                   "mt-1.5 size-1.5 shrink-0 rounded-full",

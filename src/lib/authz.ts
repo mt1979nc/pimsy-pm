@@ -57,6 +57,8 @@ export const canSeeInternal = (a: Pick<Actor, "role">) => isStaff(a);
 
 export const canManageUsers = (a: Pick<Actor, "role">) => isAdmin(a);
 export const canManageTemplates = (a: Pick<Actor, "role">) => isAdmin(a);
+/** Learning Center curation uses the same OWNER/ADMIN bar as playbooks. */
+export const canManageLearningCenter = (a: Pick<Actor, "role">) => isAdmin(a);
 /** Leadership creates portfolio structure; specialists execute on assigned projects. */
 export const canCreateProjects = (a: Pick<Actor, "role">) =>
   ["OWNER", "ADMIN", "MANAGER"].includes(a.role);

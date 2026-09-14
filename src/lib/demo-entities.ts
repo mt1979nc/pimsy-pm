@@ -7,6 +7,7 @@
  * Cedar Hollow (slug `cedar-hollow`, code IMP-9003) is a Nathan demo customer.
  * CEDAR (CEDAR Health) is a real imported WIP site — different entity.
  */
+import dockWipAllowlist from "../../content/dock-wip-allowlist.json";
 
 export const DEMO_USER_EMAILS = [
   "demo.manager@pimsyehr.com",
@@ -67,35 +68,24 @@ export const PROTECTED_STAFF_LOCAL_PARTS = [
 ] as const;
 
 /**
+ * Historical Prism/PATH acronyms not on the 2026-09-14 Dock WIP scrape.
+ * Demo cleanup still protects them so Forecast/Analysis history is not wiped.
+ */
+export const LEGACY_PROTECTED_WIP_ACRONYMS = ["RAC", "LBH"] as const;
+
+/**
  * Live imported Prism / Dock WIP (and Analysis history) that cleanup must not
  * touch — even if a demo slug or IMP-900x code is somehow attached.
+ * Starts from `content/dock-wip-allowlist.json` plus legacy extras.
  */
-export const PROTECTED_WIP_ACRONYMS = [
-  "BDMH",
-  "BHC",
-  "CCCCARE",
-  "CEDAR",
-  "DYM",
-  "EBHKY",
-  "FBH",
-  "LECHRIS",
-  "MMHSS",
-  "OCE",
-  "PWMI",
-  "RAC",
-  "RBH",
-  "SWMCCC",
-  "THS",
-  "FFCS",
-  "MHC",
-  "SENSORI",
-  "LIFECONN",
-  "CAPSTONE",
-  "RENWICK",
-  "GHW",
-  "LBH",
-  "ROH",
-] as const;
+export const PROTECTED_WIP_ACRONYMS: readonly string[] = [
+  ...new Set(
+    [
+      ...(dockWipAllowlist.acronyms as readonly string[]),
+      ...LEGACY_PROTECTED_WIP_ACRONYMS,
+    ].map((s) => s.trim().toUpperCase()),
+  ),
+].sort();
 
 export type DemoProjectRef = {
   id: string;

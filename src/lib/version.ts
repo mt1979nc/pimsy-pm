@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.11.3";
+export const APP_VERSION = "1.12.0";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,21 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.12.0",
+    date: "2026-09-14",
+    summary:
+      "Dock Implementation parity: prune only active non-Dock WIP (keep post go-live history), nested playbook resync, default Discovery/billing files, training area checklists, and a customer Learning Center grouped by topic.",
+    highlights: [
+      "Active-book prune: `npm run db:cleanup:non-dock` (dry-run; `--apply` to delete). Defaults to `content/dock-wip-allowlist.json` — Dock Implementation WIP as of 2026-09-14 (TANC, THS, CEDAR, …). Deletes active / pre-kickoff / pipeline WIP whose acronyms are not on that list. Always keeps completed / post go-live / archived sites for Forecast and Analysis. Dock test/draft spaces (MT Test, Test Dock, DRAFT Impl, …) are excluded unless Alexander allowlists them. Named staff never deleted. `--keep-prism-analytics` keeps pipeline-only extras.",
+      "Azure Cloud Shell: copy DATABASE_URL from App Service Configuration (never invent it). Runbook: v1.12-DOCK-PARITY.md and azure/README.md.",
+      "In-app delete warns on post go-live / LIVE sites so historical Prism/PATH rows are not wiped by mistake. Prefer archive or the non-Dock script for active WIP.",
+      "Playbook nested tasks match the Dock Implementation template (phases → section tasks → subtasks). `npm run db:resync:playbook-from-dock` (dry-run / `--apply`) adds missing children by title without clearing DONE/IN_PROGRESS. Training 1 aliases the Dock combined title used on THS.",
+      "Default attachments: Discovery Wizard is the live link https://calm-mud-0fe119810.7.azurestaticapps.net/ on Guided Discovery / Workflow Guided Discovery. Billing questionnaire is submit + upload files; Site Configuration reviews the Billing Questionnaire Data Sheet. Alexander replaces remaining binaries at Templates → File library (Azure Blob / app storage). No Dock credentials in repo.",
+      "Training 1 checklists (THS sample, areas to cover): User Profile / Signature Capture, Provider Dashboard, Appointment Widget, Client Management (active, inactive, groups, favorites), Client Create / Term. Storylane walkthroughs attach as a LINK on the task — no guessed Storylane URL. Staff toggle; customers see SHARED items on the portal task.",
+      "Customer Learning Center in the portal (`/portal/learn`): topic cards for Intro, Getting Started, Overview, Password Reset, Training Guide, Scheduling, Notes, Providers — searchable, titled, no blank embeds. Staff preview/curate at `/learning`. No PHI.",
+    ],
+  },
   {
     version: "1.11.3",
     date: "2026-09-14",

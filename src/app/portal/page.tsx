@@ -55,6 +55,15 @@ export default async function PortalHome() {
         </p>
       </div>
 
+      <Card className="mb-5">
+        <Link href="/portal/learn" className="block px-5 py-4 hover:bg-surface-2">
+          <div className="text-[15px] font-semibold text-ink">Learning Center</div>
+          <p className="mt-0.5 text-[13px] text-ink-2">
+            Guides and worksheets grouped by Discovery, Training, Billing, and Go-live — not a flat file list.
+          </p>
+        </Link>
+      </Card>
+
       {/* Project timeline / status cards first */}
       <div className="mb-5 space-y-4">
         {projects.length === 0 ? (

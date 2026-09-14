@@ -17,6 +17,9 @@ import {
   projectTemplates,
   tasks,
   milestones,
+  taskChecklistItems,
+  templateTaskChecklistItems,
+  templateTaskAttachments,
   type PlaybookPath,
   type ProjectMemberRole,
   type WorkTrack,
@@ -24,6 +27,7 @@ import {
 import { scheduleFromOffsets } from "@/lib/project-timeline";
 import { resolveAssigneeForRole, canonicalStaffingRole } from "@/lib/staffing";
 import { refreshProjectCounters } from "@/lib/rollup";
+import { copyLibraryAssetToTask } from "@/lib/template-attachments";
 import {
   PLAYBOOK_PATHS,
   PLAYBOOK_PATH_META,
@@ -269,6 +273,33 @@ export async function materializeTemplatesOnProject(opts: {
           .returning({ id: tasks.id });
         templateIdToTaskId.set(tt.id, created.id);
         taskCount += 1;
+
+        const checklist = await opts.tx.query.templateTaskChecklistItems.findMany({
+          where: eq(templateTaskChecklistItems.templateTaskId, tt.id),
+          orderBy: (c, { asc }) => [asc(c.order)],
+        });
+        if (checklist.length > 0) {
+          await opts.tx.insert(taskChecklistItems).values(
+            checklist.map((c) => ({
+              taskId: created.id,
+              label: c.label,
+              order: c.order,
+              visibility: c.visibility,
+              done: false,
+            })),
+          );
+        }
+        const defaults = await opts.tx.query.templateTaskAttachments.findMany({
+          where: eq(templateTaskAttachments.templateTaskId, tt.id),
+        });
+        for (const att of defaults) {
+          await copyLibraryAssetToTask(opts.tx, {
+            taskId: created.id,
+            projectId: opts.projectId,
+            libraryAssetId: att.libraryAssetId,
+            uploadedById: opts.actorId,
+          });
+        }
       }
     }
 

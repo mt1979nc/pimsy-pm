@@ -76,6 +76,51 @@ export function normalizeOverlapTitle(title: string): string {
     .trim();
 }
 
+/**
+ * Dock live titles that mean the same playbook row as a PATH template title.
+ * Resync matches either side so THS-style combined Training 1 does not duplicate.
+ */
+const PLAYBOOK_TITLE_ALIAS_PAIRS: Array<[string, string]> = [
+  [
+    "Training 1: Intro to PIMSY",
+    "Training 1: Intro to PIMSY, Client Charts, Appointments/Calendar",
+  ],
+];
+
+const PLAYBOOK_TITLE_ALIAS_MAP: Map<string, string[]> = (() => {
+  const map = new Map<string, string[]>();
+  const add = (from: string, to: string) => {
+    const key = normalizeOverlapTitle(from);
+    const list = map.get(key) ?? [];
+    list.push(to);
+    map.set(key, list);
+  };
+  for (const [a, b] of PLAYBOOK_TITLE_ALIAS_PAIRS) {
+    add(a, b);
+    add(b, a);
+  }
+  return map;
+})();
+
+/** Alternate titles (raw) that should match `title` on a live or template task. */
+export function playbookTitleAliases(title: string): string[] {
+  return PLAYBOOK_TITLE_ALIAS_MAP.get(normalizeOverlapTitle(title)) ?? [];
+}
+
+/** Live-task lookup: exact normalized title, then Dock/PATH aliases. */
+export function findByPlaybookTitle<T extends { title: string }>(
+  byNormalizedTitle: Map<string, T>,
+  title: string,
+): T | undefined {
+  const direct = byNormalizedTitle.get(normalizeOverlapTitle(title));
+  if (direct) return direct;
+  for (const alias of playbookTitleAliases(title)) {
+    const hit = byNormalizedTitle.get(normalizeOverlapTitle(alias));
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
 export function isActiveWork(row: { status: string; notApplicable?: boolean | null }): boolean {
   if (row.notApplicable) return false;
   return row.status !== "DONE" && row.status !== "CANCELLED" && row.status !== "SKIPPED";

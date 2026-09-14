@@ -33,6 +33,7 @@ import { ALL_PLAYBOOKS, type PlaybookSeed } from "./template-playbooks";
 import { addDays } from "@/lib/dates";
 import type { SeedTask } from "./template-implementation";
 import { DEMO_CUSTOMERS } from "@/lib/demo-entities";
+import { seedDockParityCatalogs } from "./seed-dock-parity";
 
 /** Retired names from earlier seeds — delete so we do not leave duplicates. */
 const RETIRED_TEMPLATE_NAMES = ["RCM (Existing Customer)"];
@@ -74,6 +75,7 @@ async function seedTemplate(seed: PlaybookSeed) {
       phaseId,
       parentTaskId: parentTaskId ?? null,
       title: t.title,
+      description: t.description ?? null,
       order,
       priority: t.priority ?? ("MEDIUM" as const),
       visibility: t.ownerSide === "CUSTOMER" ? ("SHARED" as const) : (t.visibility ?? "INTERNAL"),
@@ -390,6 +392,8 @@ async function main() {
     if (playbook.code === "ehr") implId = id;
   }
   if (!implId) implId = await seedTemplate(ALL_PLAYBOOKS[0]);
+
+  await seedDockParityCatalogs();
 
   if (templatesOnly) {
     console.log("\nTemplates only — skipping demo customers/users (pass --with-demo for local fixtures).\n");
