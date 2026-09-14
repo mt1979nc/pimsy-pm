@@ -15,7 +15,7 @@ export default async function PortalLearnPage() {
     <>
       <PageHeader
         title="Learning Center"
-        subtitle="Guides and worksheets for your implementation — grouped by topic, not a flat file dump. Nothing here should include patient information."
+        subtitle="Searchable topic cards for your implementation — Intro, Training Guide, Discovery, and reference how-tos. No unlabeled PDFs or blank embeds. Nothing here should include patient information."
       />
       <LearningCatalog
         sections={sections}

@@ -15,7 +15,7 @@ import {
   templateTasks,
 } from "@/db/schema";
 import { DEFAULT_LIBRARY_ASSETS } from "@/db/dock-default-attachments";
-import { checklistForTaskTitle, TRAINING_SESSION_DESCRIPTION } from "@/db/dock-training-checklists";
+import { checklistForTaskTitle, trainingDescriptionForTitle } from "@/db/dock-training-checklists";
 import { LEARNING_CENTER_SECTIONS } from "@/db/learning-center-catalog";
 import { normalizeOverlapTitle } from "@/lib/playbook-meta";
 import { putFile } from "@/lib/storage";
@@ -29,50 +29,54 @@ export async function seedLibraryPlaceholders() {
     const existing = await db.query.libraryAssets.findFirst({
       where: eq(libraryAssets.slug, def.slug),
     });
-    if (existing && !existing.isPlaceholder && existing.storageKey) {
+    const kind = def.kind ?? "FILE";
+    const isLink = kind === "LINK";
+
+    if (existing && !existing.isPlaceholder && existing.storageKey && !isLink) {
       console.log(`  · library ${def.slug}: keeping uploaded file`);
       continue;
     }
 
-    const path = placeholderPath(def.fileName);
     let storageKey = existing?.storageKey ?? null;
     let sizeBytes = existing?.sizeBytes ?? null;
-    if (existsSync(path)) {
-      const bytes = readFileSync(path);
-      storageKey = await putFile(def.fileName, bytes);
-      sizeBytes = bytes.length;
+    let mimeType = def.mimeType ?? existing?.mimeType ?? null;
+
+    if (!isLink && def.fileName) {
+      const path = placeholderPath(def.fileName);
+      if (existsSync(path)) {
+        const bytes = readFileSync(path);
+        storageKey = await putFile(def.fileName, bytes);
+        sizeBytes = bytes.length;
+        mimeType = def.mimeType ?? mimeType;
+      }
     }
 
+    const isPlaceholder = def.isPlaceholder ?? !isLink;
+    const values = {
+      name: def.name,
+      description: def.description,
+      mimeType,
+      adminNotes: def.adminNotes,
+      visibility: def.visibility,
+      kind,
+      url: def.url ?? null,
+      storageKey: isLink ? existing?.storageKey ?? null : storageKey,
+      sizeBytes: isLink ? existing?.sizeBytes ?? null : sizeBytes,
+      isPlaceholder,
+      updatedAt: new Date(),
+    };
+
     if (existing) {
-      await db
-        .update(libraryAssets)
-        .set({
-          name: def.name,
-          description: def.description,
-          mimeType: def.mimeType,
-          adminNotes: def.adminNotes,
-          visibility: def.visibility,
-          kind: "FILE",
-          storageKey,
-          sizeBytes,
-          updatedAt: new Date(),
-        })
-        .where(eq(libraryAssets.id, existing.id));
+      await db.update(libraryAssets).set(values).where(eq(libraryAssets.id, existing.id));
     } else {
       await db.insert(libraryAssets).values({
         slug: def.slug,
-        name: def.name,
-        description: def.description,
-        mimeType: def.mimeType,
-        adminNotes: def.adminNotes,
-        visibility: def.visibility,
-        kind: "FILE",
-        storageKey,
-        sizeBytes,
-        isPlaceholder: true,
+        ...values,
       });
     }
-    console.log(`  ✓ library ${def.slug}${storageKey ? "" : " (no file on disk)"}`);
+    console.log(
+      `  ✓ library ${def.slug}${isLink ? " (link)" : storageKey ? "" : " (no file on disk)"}`,
+    );
   }
 }
 
@@ -102,10 +106,11 @@ export async function applyTemplateDockExtras() {
         })),
       );
       checklists += items.length;
-      if (!task.description) {
+      const nextDescription = trainingDescriptionForTitle(task.title);
+      if (nextDescription && (!task.description || task.description.length < 40)) {
         await db
           .update(templateTasks)
-          .set({ description: TRAINING_SESSION_DESCRIPTION })
+          .set({ description: nextDescription })
           .where(eq(templateTasks.id, task.id));
         descriptions += 1;
       }
@@ -175,39 +180,65 @@ export async function seedLearningCenter() {
       where: eq(learningCenterItems.sectionId, sectionId),
     });
 
+    const keepTitles = new Set(section.items.map((i) => i.title.toLowerCase()));
+    const upsertedIds = new Set<string>();
+
     for (const item of section.items) {
       const lib = item.librarySlug ? libBySlug.get(item.librarySlug) : undefined;
+      const aliases = new Set(
+        [item.title, ...(item.replaceTitles ?? [])].map((t) => t.toLowerCase()),
+      );
       const match =
-        currentItems.find((r) => r.title === item.title) ??
+        currentItems.find((r) => aliases.has(r.title.toLowerCase())) ??
         currentItems.find((r) => r.title.toLowerCase() === item.title.toLowerCase());
 
-      if (match && !match.isPlaceholder) {
+      if (match && !match.isPlaceholder && match.kind === "FILE" && match.storageKey) {
+        upsertedIds.add(match.id);
         continue;
       }
+
+      const url = item.url ?? lib?.url ?? null;
+      const kind = item.kind;
+      const isPlaceholder =
+        item.isPlaceholder ??
+        (kind === "FILE" && !(lib && !lib.isPlaceholder && lib.storageKey));
 
       const values = {
         sectionId,
         title: item.title,
         summary: item.summary,
         body: item.body,
-        kind: item.kind,
+        kind,
+        url,
         audienceRole: item.audienceRole,
         order: item.order,
         published: true,
         visibility: "SHARED" as const,
-        isPlaceholder: true,
+        isPlaceholder,
         libraryAssetId: lib?.id ?? null,
-        storageKey: lib?.storageKey ?? null,
-        mimeType: lib?.mimeType ?? null,
-        sizeBytes: lib?.sizeBytes ?? null,
+        storageKey: kind === "FILE" ? (lib?.storageKey ?? null) : null,
+        mimeType: kind === "FILE" ? (lib?.mimeType ?? null) : null,
+        sizeBytes: kind === "FILE" ? (lib?.sizeBytes ?? null) : null,
         updatedAt: new Date(),
       };
 
       if (match) {
         await db.update(learningCenterItems).set(values).where(eq(learningCenterItems.id, match.id));
+        upsertedIds.add(match.id);
       } else {
-        await db.insert(learningCenterItems).values(values);
+        const inserted = await db
+          .insert(learningCenterItems)
+          .values(values)
+          .returning({ id: learningCenterItems.id });
+        upsertedIds.add(inserted[0]!.id);
       }
+    }
+
+    for (const row of currentItems) {
+      if (upsertedIds.has(row.id)) continue;
+      if (!row.isPlaceholder) continue;
+      if (keepTitles.has(row.title.toLowerCase())) continue;
+      await db.delete(learningCenterItems).where(eq(learningCenterItems.id, row.id));
     }
   }
   console.log(`  ✓ Learning Center: ${LEARNING_CENTER_SECTIONS.length} sections`);

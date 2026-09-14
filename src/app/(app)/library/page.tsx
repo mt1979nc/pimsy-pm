@@ -19,7 +19,7 @@ export default async function LibraryPage() {
     <>
       <PageHeader
         title="File library"
-        subtitle="Reusable Dock defaults (Discovery Wizard, billing sheets). Placeholders ship in-repo; drop the live files here. New workspaces copy them onto matching tasks. Same Azure Blob / local disk storage as task uploads — do not put secrets in this page."
+        subtitle="Reusable Dock defaults. Discovery Wizard is the live Azure Static Web App link. Billing sheets ship as placeholders until you drop the live files. New workspaces copy them onto matching tasks. Same Azure Blob / local disk storage as task uploads — do not put secrets in this page."
       />
       <div className="space-y-4">
         {assets.map((asset) => (
@@ -29,12 +29,17 @@ export default async function LibraryPage() {
                 <span className="flex flex-wrap items-center gap-2">
                   {asset.name}
                   <Badge>{asset.slug}</Badge>
-                  {asset.isPlaceholder ? <Badge tone="amber">Placeholder</Badge> : <Badge tone="green">Uploaded</Badge>}
+                  <Badge>{asset.kind === "LINK" ? "Link" : "File"}</Badge>
+                  {asset.isPlaceholder ? <Badge tone="amber">Placeholder</Badge> : <Badge tone="green">Live</Badge>}
                 </span>
               }
               subtitle={asset.description ?? undefined}
               action={
-                asset.storageKey ? (
+                asset.kind === "LINK" && asset.url ? (
+                  <LinkButton href={asset.url} size="sm" target="_blank" rel="noopener noreferrer">
+                    Open link
+                  </LinkButton>
+                ) : asset.storageKey ? (
                   <LinkButton href={`/api/library/${asset.id}`} size="sm">
                     Download
                   </LinkButton>
@@ -45,11 +50,14 @@ export default async function LibraryPage() {
               {asset.adminNotes ? (
                 <p className="text-[13px] leading-relaxed text-ink-2">{asset.adminNotes}</p>
               ) : null}
+              {asset.kind === "LINK" && asset.url ? (
+                <p className="break-all text-[12.5px] text-ink-3">{asset.url}</p>
+              ) : null}
               <p className="text-[12.5px] text-ink-3">
                 Auto-attached on {asset.templateAttachments.length} template task
                 {asset.templateAttachments.length === 1 ? "" : "s"}.
               </p>
-              <LibraryUploadForm assetId={asset.id} />
+              {asset.kind === "LINK" ? null : <LibraryUploadForm assetId={asset.id} />}
             </div>
           </Card>
         ))}

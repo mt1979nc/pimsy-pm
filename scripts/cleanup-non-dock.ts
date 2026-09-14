@@ -5,21 +5,23 @@
  * Default keeps post go-live / completed / archived sites for historical
  * Forecast and Analysis review. Named staff are never deleted.
  *
- * Dry-run by default.
+ * Dry-run by default. Allowlist defaults to content/dock-wip-allowlist.json
+ * (Dock Implementation WIP as of 2026-09-14).
  *
- *   npm run db:cleanup:non-dock -- ./dock-wip-acronyms.json
+ *   npm run db:cleanup:non-dock
+ *   npm run db:cleanup:non-dock -- --apply
  *   npm run db:cleanup:non-dock -- ./dock-wip-acronyms.csv --apply
- *   npm run db:cleanup:non-dock -- ./dock-wip.json --keep-prism-analytics
+ *   npm run db:cleanup:non-dock -- --keep-prism-analytics
  *
  * Azure Cloud Shell: copy DATABASE_URL from App Service Configuration —
  * do not invent the connection string. See azure/README.md and v1.12-DOCK-PARITY.md.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAccounts, projects, users, verificationTokens } from "@/db/schema";
-import { parseDockAllowlist } from "@/lib/dock-allowlist";
+import { parseDockAllowlist, defaultDockWipAllowlistPath } from "@/lib/dock-allowlist";
 import {
   classifyNonDockCustomer,
   classifyNonDockProject,
@@ -46,28 +48,23 @@ function positionalAllowlist(): string | undefined {
 const apply = process.argv.includes("--apply");
 const keepPrismAnalytics = process.argv.includes("--keep-prism-analytics");
 
-function uniq<T extends { id: string }>(rows: T[]): T[] {
-  const seen = new Set<string>();
-  const out: T[] = [];
-  for (const r of rows) {
-    if (seen.has(r.id)) continue;
-    seen.add(r.id);
-    out.push(r);
-  }
-  return out;
-}
-
 async function main() {
+  const shipped = defaultDockWipAllowlistPath();
   const allowPath =
-    positionalAllowlist() || argValue("--allowlist") || process.env.DOCK_WIP_ALLOWLIST;
+    positionalAllowlist() ||
+    argValue("--allowlist") ||
+    process.env.DOCK_WIP_ALLOWLIST ||
+    (existsSync(shipped) ? shipped : undefined);
   if (!allowPath) {
     console.error(`
 PATH non-Dock cleanup — missing allowlist.
 
-Pass a JSON or CSV of current Dock WIP acronyms (parent supplies the live list):
+Expected content/dock-wip-allowlist.json (Dock Implementation WIP, 2026-09-14)
+or pass a JSON/CSV overlay:
 
-  npm run db:cleanup:non-dock -- ./dock-wip-acronyms.json
-  npm run db:cleanup:non-dock -- ./dock-wip.json --apply
+  npm run db:cleanup:non-dock
+  npm run db:cleanup:non-dock -- --apply
+  npm run db:cleanup:non-dock -- ./dock-wip-overlay.json --apply
 
 Options:
   --apply                 actually delete (default is dry-run)
@@ -76,7 +73,8 @@ Options:
 
 Default KEEP: completed / post go-live / archived / LIVE historical sites.
 Default DELETE: active, pre-kickoff, pipeline, and other WIP not on the allowlist.
-Named staff are never deleted. Playbooks are never deleted.
+Dock test/draft names (MT Test, Test Dock, DRAFT Impl, …) are deleted unless
+their acronym is on the allowlist. Named staff are never deleted. Playbooks are never deleted.
 `);
     process.exit(1);
   }
@@ -200,7 +198,7 @@ Named staff are never deleted. Playbooks are never deleted.
     [p.code, p.crmAcronym, p.prismClientId, p.status, p.prismStatus].filter(Boolean).join(" / ");
 
   printBlock(
-    "Projects to DELETE (active/pre-kickoff/pipeline WIP not on Dock allowlist)",
+    "Projects to DELETE (active/pre-kickoff/pipeline WIP not on Dock allowlist, plus Dock test/draft spaces)",
     toDelete.map((p) => `${tag(p)}  ${p.name ?? ""}`),
   );
   printBlock(

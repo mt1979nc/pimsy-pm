@@ -1,13 +1,14 @@
 /**
  * Customer Learning Center information architecture.
  *
- * Dock’s Learning Center is a flat dump of files. PATH groups by topic
- * (Getting started, Discovery, Training, Billing, Go-live, After go-live)
- * and by role (clinical / billing / admin) so a practice can find the
- * right material without scrolling a warehouse.
+ * Dock’s Learning Center is a long flat page (Intro, Training Guide, Getting
+ * Started, Overview, Password Reset, Scheduling, Notes, Providers) with
+ * unlabeled “View PDF” buttons and blank embeds. PATH groups those same
+ * topics as titled cards, searchable, with real article bodies — no empty
+ * embeds. Customers reach it from the portal (`/portal/learn`).
  *
- * Seed items are articles + placeholders — no PHI, no invented recordings.
- * Staff replace placeholders from the Learning Center admin page.
+ * Seed items are articles + the live Discovery Wizard link. File placeholders
+ * stay labeled until Alexander uploads binaries. No PHI.
  */
 
 export type LearningTopic =
@@ -27,7 +28,7 @@ export const LEARNING_TOPIC_META: Record<
 > = {
   getting_started: {
     label: "Getting started",
-    blurb: "How this workspace works, who to talk to, and what the first weeks look like.",
+    blurb: "Intro, overview, password reset, and how this workspace works.",
   },
   discovery: {
     label: "Discovery",
@@ -35,7 +36,7 @@ export const LEARNING_TOPIC_META: Record<
   },
   training: {
     label: "Training",
-    blurb: "Train-the-trainer modules, what each session covers, and where recordings land.",
+    blurb: "Training Guide, session checklists, and where recordings land.",
   },
   billing: {
     label: "Billing",
@@ -51,7 +52,7 @@ export const LEARNING_TOPIC_META: Record<
   },
   reference: {
     label: "Reference",
-    blurb: "Short how-tos that don’t belong to a single week of the project.",
+    blurb: "Scheduling, notes, and providers — short how-tos with real titles.",
   },
 };
 
@@ -61,6 +62,13 @@ export const LEARNING_AUDIENCE_LABEL: Record<LearningAudience, string> = {
   billing: "Billing",
   admin: "Admin / leadership",
 };
+
+export function learningKindLabel(kind: string): string {
+  const k = kind.toUpperCase();
+  if (k === "LINK") return "Link";
+  if (k === "FILE") return "File";
+  return "Article";
+}
 
 export type LearningSectionSeed = {
   slug: string;
@@ -78,43 +86,86 @@ export type LearningSectionSeed = {
     audienceRole: LearningAudience;
     order: number;
     librarySlug?: string;
+    url?: string;
+    isPlaceholder?: boolean;
+    /** Prior seed titles to update in place instead of duplicating. */
+    replaceTitles?: string[];
   }>;
 };
+
+export const DISCOVERY_WIZARD_LEARNING_URL =
+  "https://calm-mud-0fe119810.7.azurestaticapps.net/";
 
 export const LEARNING_CENTER_SECTIONS: LearningSectionSeed[] = [
   {
     slug: "getting-started",
     title: "Getting started",
-    description: "Orientation for everyone at the practice who will use this workspace.",
+    description:
+      "Dock’s Intro / Getting Started / Overview / Password Reset — as titled cards, not a unlabeled PDF strip.",
     topic: "getting_started",
     audienceRole: "all",
     order: 0,
     items: [
       {
-        slugKey: "welcome-to-path",
-        title: "Welcome to your implementation workspace",
-        summary: "What this portal is for, and what it is not (no patient information).",
-        body: `This workspace tracks your PIMSY implementation: timelines, configuration checklists, training, and messages with your specialist.
+        slugKey: "intro",
+        title: "Intro to PIMSY",
+        summary: "What PIMSY is for, and what this implementation workspace is not.",
+        body: `PIMSY is your electronic health record. This PATH workspace tracks your implementation: timelines, configuration checklists, training, and messages with your specialist.
 
-Please do not post patient names, charts, or clinical detail here. If you need to send that kind of information, ask your specialist for the secure channel.
+This portal is not a second copy of the EHR. Please do not post patient names, charts, or clinical detail here. If you need to send that kind of information, ask your specialist for the secure channel.
 
-Use **Your action items** on the home screen for work that is waiting on your team. Use **Messages** for questions. Use this Learning Center for how-tos and worksheets — grouped by topic so you are not hunting through a flat file list.`,
+Use **Your action items** on the home screen for work waiting on your team. Use **Messages** for questions. Use this Learning Center for how-tos — each topic is a card with a real title, not an unlabeled “View PDF”.`,
         kind: "ARTICLE",
         audienceRole: "all",
         order: 0,
+        isPlaceholder: false,
+        replaceTitles: ["Welcome to your implementation workspace"],
       },
       {
-        slugKey: "path-overview",
-        title: "Finding your way around",
-        summary: "Areas, messages, recordings, and where files live on a task.",
-        body: `Each project has **Areas** (phases such as Kickoff, Discovery, Training). Open an area to see the shared tasks. A violet **Yours** badge means your team owns that step.
+        slugKey: "getting-started",
+        title: "Getting started",
+        summary: "First weeks: sign in, trainers, and where files live.",
+        body: `In the first weeks you will:
 
-Shared files on a task appear under **Links & files**. Training recordings, when your specialist adds them, show under **Recordings**.
+1. Confirm your PATH portal login (invite email from your specialist).
+2. Name trainers for Core (Train the Trainer) sessions.
+3. Complete Discovery worksheets (Organization Details, Clinical Workflows, Billing Questionnaire).
+4. Open the Discovery Wizard from the Discovery card (live link — not a blank embed).
 
-The Learning Center (this page) is the same for every project — it is your practice library, not a dump of every file from every site.`,
+Nothing in this workspace should include client/patient lists. Training uses demo/test clients inside PIMSY, not here.`,
         kind: "ARTICLE",
         audienceRole: "all",
         order: 1,
+        isPlaceholder: false,
+      },
+      {
+        slugKey: "overview",
+        title: "Overview",
+        summary: "Areas, messages, recordings, and where files live on a task.",
+        body: `Each project has **Areas** (phases such as Kickoff, Discovery, Training). Open an area to see the shared tasks. A violet **Yours** badge means your team owns that step.
+
+Shared files and links on a task appear under **Links & files**. Training recordings, when your specialist adds them, show under **Recordings**.
+
+The Learning Center (this page) is the same for every project — it is your practice library. Search the cards above; we do not dump unlabeled PDFs or empty viewers on one long page.`,
+        kind: "ARTICLE",
+        audienceRole: "all",
+        order: 2,
+        isPlaceholder: false,
+        replaceTitles: ["Finding your way around"],
+      },
+      {
+        slugKey: "password-reset",
+        title: "Password reset",
+        summary: "How to reset a PIMSY or PATH login without waiting on a blank how-to embed.",
+        body: `**PATH (this workspace):** use Forgot password on the PATH sign-in page, or ask your specialist to resend an invite. Named staff never reset customer passwords by guessing.
+
+**PIMSY (the EHR):** use Forgot password on the PIMSY sign-in page. If your practice uses SSO, follow your IT process instead.
+
+Your specialist can confirm which login you need for training day. Do not send passwords or patient data in Messages.`,
+        kind: "ARTICLE",
+        audienceRole: "all",
+        order: 3,
+        isPlaceholder: false,
       },
     ],
   },
@@ -129,14 +180,16 @@ The Learning Center (this page) is the same for every project — it is your pra
       {
         slugKey: "discovery-wizard",
         title: "Discovery Wizard",
-        summary: "The guided discovery workbook. Placeholder until the live file is uploaded.",
-        body: `Your specialist will walk this during Guided Discovery. Complete the practice sections and attach the finished file on the **Organization Details Form** / **Clinical Workflows** tasks — not in email.
+        summary: "Open the live guided discovery workbook (same link Dock attaches).",
+        body: `Your specialist walks this during Guided Discovery / Workflow Guided Discovery. Complete the practice sections in the wizard, then keep working copies on the **Organization Details Form** and **Clinical Workflows** tasks.
 
-If this card still says placeholder, the live Dock file has not been dropped into PATH yet. Use the copy attached to those tasks, or ask your specialist.`,
-        kind: "FILE",
+This card is a real link — not a blank PDF embed. If the wizard does not load, tell your specialist; do not upload patient lists here.`,
+        kind: "LINK",
         audienceRole: "admin",
         order: 0,
         librarySlug: "discovery-wizard",
+        url: DISCOVERY_WIZARD_LEARNING_URL,
+        isPlaceholder: false,
       },
       {
         slugKey: "org-details",
@@ -148,6 +201,7 @@ Nothing here should include client/patient lists.`,
         kind: "ARTICLE",
         audienceRole: "admin",
         order: 1,
+        isPlaceholder: false,
         librarySlug: "organization-details-form",
       },
       {
@@ -158,6 +212,7 @@ Nothing here should include client/patient lists.`,
         kind: "ARTICLE",
         audienceRole: "clinical",
         order: 2,
+        isPlaceholder: false,
         librarySlug: "clinical-workflows-sheet",
       },
     ],
@@ -165,34 +220,61 @@ Nothing here should include client/patient lists.`,
   {
     slug: "training",
     title: "Training modules",
-    description: "Train-the-trainer sessions. Each module lists areas to cover; recordings are attached on the project task after the session.",
+    description:
+      "Training Guide plus session cards. Each project task lists areas to cover; recordings attach on that task after the session.",
     topic: "training",
     audienceRole: "clinical",
     order: 20,
     items: [
       {
-        slugKey: "training-how-it-works",
-        title: "How training works",
-        summary: "Five core sessions, optional group notes, then billing/payroll tracks.",
-        body: `Core (Train the Trainer) is five sessions. Your trainers attend; they train the rest of the practice.
+        slugKey: "training-guide",
+        title: "Training Guide",
+        summary: "How Train-the-Trainer works, what to prepare, and where checklists live.",
+        body: `Core (Train the Trainer) is a short series of sessions. Your trainers attend; they train the rest of the practice.
 
 On each training task your specialist checks off **areas to cover** as they go — you can see those checkboxes on the shared task. After the session, the recording link is attached to that same task (and may also appear under Recordings).
+
+Interactive Storylane walkthroughs, when used, are attached as a **link on the training task** (not as a blank embed here). Your specialist pastes the cohort URL — there is no guessed Storylane address in this library.
 
 Optional: Training 4 (group notes), ePrescribe, Inpatient/MAT — only if those are in scope for your site.`,
         kind: "ARTICLE",
         audienceRole: "all",
         order: 0,
+        isPlaceholder: false,
       },
       {
-        slugKey: "training-1",
-        title: "Training 1 — Intro to PIMSY",
-        summary: "Login, navigation, profile, and where to get help.",
-        body: `Typical areas to cover: logging in and the home dashboard; navigation; user profile; where to get help.
+        slugKey: "training-how-it-works",
+        title: "How training works",
+        summary: "Five core sessions, optional group notes, then billing/payroll tracks.",
+        body: `Schedule each session from the matching **Schedule Training** action item. Confirm users have logged in before Training 1.
 
-Schedule this from the **Schedule Training 1** action item. Confirm users have logged in before the session.`,
+Checklists on the task are the source of truth for that cohort. This Learning Center explains the topics; it does not duplicate your site’s completion state.`,
         kind: "ARTICLE",
         audienceRole: "all",
         order: 1,
+        isPlaceholder: false,
+      },
+      {
+        slugKey: "training-1",
+        title: "Training 1: Intro to PIMSY, Client Charts, Appointments/Calendar",
+        summary:
+          "User profile, provider dashboard, appointment widget, client management, create/term.",
+        body: `Areas to cover (same checkboxes as on the Training 1 task):
+
+- User Profile / Signature Capture
+- Provider Dashboard
+- Appointment Widget
+- Client Management (active, inactive, groups, favorites)
+- Client Create / Term
+
+Storylane: when your specialist shares a walkthrough, it is a LINK on that task — not an unlabeled PDF on this page.
+
+Use test/demo clients only in training — never real patient records in this workspace.`,
+        kind: "ARTICLE",
+        audienceRole: "all",
+        order: 2,
+        isPlaceholder: false,
+        replaceTitles: ["Training 1 — Intro to PIMSY"],
       },
       {
         slugKey: "training-2",
@@ -203,7 +285,8 @@ Schedule this from the **Schedule Training 1** action item. Confirm users have l
 Use test/demo clients only in training — never real patient records in this workspace.`,
         kind: "ARTICLE",
         audienceRole: "clinical",
-        order: 2,
+        order: 3,
+        isPlaceholder: false,
       },
       {
         slugKey: "training-3",
@@ -212,7 +295,8 @@ Use test/demo clients only in training — never real patient records in this wo
         body: `Typical areas to cover: scheduling; progress notes and templates; payments at checkout; Paisly Ambient Scribe when in scope.`,
         kind: "ARTICLE",
         audienceRole: "clinical",
-        order: 3,
+        order: 4,
+        isPlaceholder: false,
       },
       {
         slugKey: "training-5",
@@ -221,7 +305,8 @@ Use test/demo clients only in training — never real patient records in this wo
         body: `Typical areas to cover: Intake Assistant / public forms; new-client workflow; consents and required intake documents.`,
         kind: "ARTICLE",
         audienceRole: "clinical",
-        order: 4,
+        order: 5,
+        isPlaceholder: false,
       },
     ],
   },
@@ -236,22 +321,26 @@ Use test/demo clients only in training — never real patient records in this wo
       {
         slugKey: "billing-questionnaire",
         title: "Billing questionnaire",
-        summary: "How you bill today — complete on the Discovery task.",
-        body: `Fill out the billing questionnaire on your Discovery task. Attach the completed file there so your specialist and billing support both see it.`,
+        summary: "Submit the questionnaire, then upload completed files on the Discovery task.",
+        body: `Submit the billing questionnaire, then upload the completed files on **Billing Questionnaire** (Discovery). Your specialist reviews the data sheet on **Review Billing Questionnaire Data Sheet** in Site Configuration.
+
+Do not put claim-level or patient detail in this workspace.`,
         kind: "ARTICLE",
         audienceRole: "billing",
         order: 0,
+        isPlaceholder: false,
         librarySlug: "billing-questionnaire",
       },
       {
         slugKey: "billing-spreadsheet",
         title: "Accepted payers & modifiers",
         summary: "The spreadsheet Dock ships with the Implementation template.",
-        body: `Complete the accepted payers / modifiers spreadsheet and upload it on **Complete & Upload Billing Spreadsheet**. Placeholder until the live xlsx is in the file library.`,
+        body: `Complete the accepted payers / modifiers spreadsheet and upload it on **Complete & Upload Billing Spreadsheet**. If this card still says placeholder, the live xlsx has not been dropped into the file library yet — use the copy on the task, or ask your specialist.`,
         kind: "FILE",
         audienceRole: "billing",
         order: 1,
         librarySlug: "billing-spreadsheet",
+        isPlaceholder: true,
       },
       {
         slugKey: "claimmd",
@@ -261,6 +350,7 @@ Use test/demo clients only in training — never real patient records in this wo
         kind: "ARTICLE",
         audienceRole: "billing",
         order: 2,
+        isPlaceholder: false,
       },
     ],
   },
@@ -293,6 +383,7 @@ Check those items off on the project tasks — this article is the map, not a se
         kind: "ARTICLE",
         audienceRole: "admin",
         order: 0,
+        isPlaceholder: false,
       },
     ],
   },
@@ -312,6 +403,7 @@ Check those items off on the project tasks — this article is the map, not a se
         kind: "ARTICLE",
         audienceRole: "billing",
         order: 0,
+        isPlaceholder: false,
       },
       {
         slugKey: "survey-and-support",
@@ -321,6 +413,54 @@ Check those items off on the project tasks — this article is the map, not a se
         kind: "ARTICLE",
         audienceRole: "admin",
         order: 1,
+        isPlaceholder: false,
+      },
+    ],
+  },
+  {
+    slug: "reference",
+    title: "Reference",
+    description:
+      "Scheduling, Notes, and Providers — Dock buried these as unlabeled PDFs; PATH gives each a titled card.",
+    topic: "reference",
+    audienceRole: "all",
+    order: 60,
+    items: [
+      {
+        slugKey: "scheduling",
+        title: "Scheduling",
+        summary: "Calendar, appointment widget, and who books what.",
+        body: `Scheduling training covers the calendar, the appointment widget, and how schedulers vs. providers book. The live checklist lives on your Training 1 / Appointments tasks.
+
+This card is an article, not a blank PDF viewer. Site-specific recordings attach on the project task after the session.`,
+        kind: "ARTICLE",
+        audienceRole: "clinical",
+        order: 0,
+        isPlaceholder: false,
+      },
+      {
+        slugKey: "notes",
+        title: "Notes",
+        summary: "Progress notes, templates, and where group notes fit.",
+        body: `Progress notes and templates are covered in Training 3 (and group notes in Training 4 when in scope). Use demo clients only.
+
+Ask your specialist before changing note templates in production. Do not paste clinical note text into this workspace.`,
+        kind: "ARTICLE",
+        audienceRole: "clinical",
+        order: 1,
+        isPlaceholder: false,
+      },
+      {
+        slugKey: "providers",
+        title: "Providers",
+        summary: "Provider dashboard, signatures, and who is active.",
+        body: `Provider setup includes the provider dashboard, signature capture, and keeping the active provider list current. Training 1 checkboxes cover User Profile / Signature Capture and the Provider Dashboard.
+
+Staffing questions (who is a trainer vs. who is a provider) belong on Kickoff / staffing tasks, not as PHI in Messages.`,
+        kind: "ARTICLE",
+        audienceRole: "admin",
+        order: 2,
+        isPlaceholder: false,
       },
     ],
   },

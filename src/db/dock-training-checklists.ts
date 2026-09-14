@@ -4,9 +4,9 @@
  * Dock stores these as description checklists on the training session tasks.
  * PATH promotes them to first-class checklist items (editable, per-item done).
  *
- * Labels are logistics/curriculum topics only — no PHI, no live Dock scrape.
- * Parent will supply a sample Dock training description after scrape; until
- * then these titles match the Implementation Template training sessions.
+ * Training 1 labels are the THS sample from the 2026-09-14 Dock inventory.
+ * The combined Dock title and PATH’s split “Training 1: Intro to PIMSY”
+ * share that list. Labels are logistics/curriculum topics only — no PHI.
  */
 import { normalizeOverlapTitle } from "@/lib/playbook-meta";
 
@@ -15,14 +15,55 @@ export type DockChecklistSeed = {
   visibility: "INTERNAL" | "SHARED";
 };
 
+/** Dock live Training 1 title (THS, 2026-09-14). */
+export const DOCK_TRAINING_1_TITLE =
+  "Training 1: Intro to PIMSY, Client Charts, Appointments/Calendar";
+
+export const PATH_TRAINING_1_TITLE = "Training 1: Intro to PIMSY";
+
+/** THS areas-to-cover checkboxes (Dock Training 1). */
+export const THS_TRAINING_1_AREAS: DockChecklistSeed[] = [
+  { label: "User Profile / Signature Capture", visibility: "SHARED" },
+  { label: "Provider Dashboard", visibility: "SHARED" },
+  { label: "Appointment Widget", visibility: "SHARED" },
+  { label: "Client Management (active, inactive, groups, favorites)", visibility: "SHARED" },
+  { label: "Client Create / Term", visibility: "SHARED" },
+];
+
+/**
+ * Storylane walkthroughs live as LINK attachments on the task (same pattern as
+ * other training Storylane links). Do not invent a cohort URL in this repo.
+ */
+export const TRAINING_STORYLANE_DESCRIPTION =
+  "Storylane walkthrough: attach this session’s Storylane link as a LINK on the task (Links & files). Use the URL your specialist shares for this cohort — do not guess or paste a placeholder Storylane address.";
+
+export const TRAINING_SESSION_DESCRIPTION =
+  "Areas to cover in this session. Check each item off as you train it. Visible to the practice on this shared task.";
+
+export function trainingDescriptionForTitle(title: string): string | null {
+  const items = checklistForTaskTitle(title);
+  if (items.length === 0) return null;
+  const key = normalizeOverlapTitle(title);
+  const isTraining1 =
+    key === normalizeOverlapTitle(PATH_TRAINING_1_TITLE) ||
+    key === normalizeOverlapTitle(DOCK_TRAINING_1_TITLE);
+  if (isTraining1) {
+    return `${TRAINING_SESSION_DESCRIPTION}\n\n${TRAINING_STORYLANE_DESCRIPTION}`;
+  }
+  return TRAINING_SESSION_DESCRIPTION;
+}
+
+function withTitles(titles: string[], items: DockChecklistSeed[]): Record<string, DockChecklistSeed[]> {
+  const out: Record<string, DockChecklistSeed[]> = {};
+  for (const title of titles) {
+    out[normalizeOverlapTitle(title)] = items;
+  }
+  return out;
+}
+
 /** Keys are normalized titles (see normalizeOverlapTitle). */
 export const TRAINING_CHECKLISTS_BY_TITLE: Record<string, DockChecklistSeed[]> = {
-  [normalizeOverlapTitle("Training 1: Intro to PIMSY")]: [
-    { label: "Logging in and the home dashboard", visibility: "SHARED" },
-    { label: "Navigation, menus, and finding your way around", visibility: "SHARED" },
-    { label: "User profile and preferences", visibility: "SHARED" },
-    { label: "Where to get help (Zendesk / specialist)", visibility: "SHARED" },
-  ],
+  ...withTitles([PATH_TRAINING_1_TITLE, DOCK_TRAINING_1_TITLE], THS_TRAINING_1_AREAS),
   [normalizeOverlapTitle("Training 2: Client Charts")]: [
     { label: "Creating a client", visibility: "SHARED" },
     { label: "Demographics and contacts", visibility: "SHARED" },
@@ -83,9 +124,6 @@ export const TRAINING_CHECKLISTS_BY_TITLE: Record<string, DockChecklistSeed[]> =
     { label: "Credit card / portal payments (if in scope)", visibility: "SHARED" },
   ],
 };
-
-export const TRAINING_SESSION_DESCRIPTION =
-  "Areas to cover in this session. Check each item off as you train it. Visible to the practice on this shared task.";
 
 export function checklistForTaskTitle(title: string): DockChecklistSeed[] {
   return TRAINING_CHECKLISTS_BY_TITLE[normalizeOverlapTitle(title)] ?? [];

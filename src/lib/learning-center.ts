@@ -78,7 +78,7 @@ export async function loadLearningCatalog(actor: Actor, opts?: { includeDrafts?:
         hasFile: Boolean(item.storageKey || lib?.storageKey),
         libraryAssetId: item.libraryAssetId,
         audienceRole: item.audienceRole,
-        isPlaceholder: item.isPlaceholder || Boolean(lib?.isPlaceholder),
+        isPlaceholder: item.isPlaceholder || (item.kind === "FILE" && Boolean(lib?.isPlaceholder)),
         published: item.published,
         visibility: item.visibility,
         sectionId: section.id,

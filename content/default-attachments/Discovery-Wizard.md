@@ -1,7 +1,11 @@
 # Discovery Wizard
 
-This is a **placeholder**. PATH attaches it to Discovery tasks so new workspaces match Dock’s default files.
+Live PATH/Dock Discovery Wizard (not a placeholder file):
 
-**Alexander:** replace this with the live Discovery Wizard from Dock (xlsx / pdf / docx) at **Templates → File library**. Do not put patient information in that file.
+**https://calm-mud-0fe119810.7.azurestaticapps.net/**
 
-Practice teams: complete the wizard with your specialist during Guided Discovery, then upload the finished copy on the matching Discovery task.
+PATH attaches this as a **LINK** on Guided Discovery / Workflow Guided Discovery tasks and as a Learning Center card. Do not replace it with an unlabeled PDF embed.
+
+Practice teams: complete the wizard with your specialist during Guided Discovery. Billing questionnaire files still upload on the Billing Questionnaire task.
+
+Do not put patient information in the wizard or in this workspace.

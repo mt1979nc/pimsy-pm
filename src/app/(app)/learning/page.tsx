@@ -24,7 +24,7 @@ export default async function StaffLearningPage() {
     <>
       <PageHeader
         title="Learning Center"
-        subtitle="What customers see in the portal, grouped by topic. Owners and admins can curate articles and replace placeholder files."
+        subtitle="What customers see in the portal: titled topic cards (Intro, Training Guide, Password Reset, Scheduling, Notes, Providers, …). Owners and admins can curate. Do not add unlabeled PDFs or empty embeds."
         actions={
           canEdit ? (
             <LinkButton href="/library" size="sm">

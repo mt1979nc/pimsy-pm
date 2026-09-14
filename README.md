@@ -35,8 +35,9 @@ action is deliberate, confirmed, and audit-logged.
 
 **Customer portal** — each practice signs in with a magic link and sees their
 timeline, their action items, shared milestones, project updates, shared
-documents, a **Learning Center** grouped by topic (Discovery, Training, Billing,
-Go-live — not a flat Dock dump), and their conversation with your team.
+documents, a **Learning Center** of searchable topic cards (Intro, Training
+Guide, Password Reset, Scheduling, Notes, Providers, Discovery, Billing — not
+Dock’s unlabeled PDF dump), and their conversation with your team.
 Nothing else.
 
 **Leadership reporting** — portfolio health, at-risk projects, go-live
@@ -285,11 +286,12 @@ acronyms (BDMH, BHC, CCCCARE, CEDAR, …).
 **Active Dock WIP prune (v1.12):** drop PATH customers/projects that are still
 in the active book but **not** on the current Dock Implementation WIP list.
 Completed / post go-live / archived sites stay for Forecast and Analysis.
-You must pass the allowlist (parent supplies it — not invented here):
+Allowlist: `content/dock-wip-allowlist.json` (live Dock scrape 2026-09-14).
+Dock test/draft spaces (MT Test, Test Dock, DRAFT Impl, …) are excluded.
 
 ```bash
-npm run db:cleanup:non-dock -- ./dock-wip.json
-npm run db:cleanup:non-dock -- ./dock-wip.json --apply
+npm run db:cleanup:non-dock
+npm run db:cleanup:non-dock -- --apply
 ```
 
 `--keep-prism-analytics` also keeps pipeline-only extras. Runbook:

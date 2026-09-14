@@ -56,6 +56,28 @@ export function isOnDockAllowlist(p: DemoProjectRef, allowlist: ReadonlySet<stri
 }
 
 /**
+ * Dock test/draft / process-improvement spaces — exclude from the PATH book
+ * unless Alexander puts a real customer acronym on the WIP allowlist.
+ * Examples from the 2026-09-14 inventory: DRAFT Impl. Billing/RCM tab,
+ * MT Test, Test Dock, MT Test 5, MT Testing 4.
+ */
+const DOCK_TEST_DRAFT_NAME_RE = [
+  /\bdraft\s+impl\b/i,
+  /\bmt\s+tests?\b/i,
+  /\bmt\s+testing\b/i,
+  /\btest\s+dock\b/i,
+  /\bprocess[- ]improvement\b/i,
+];
+
+export function isDockTestOrDraftWorkspace(p: {
+  name?: string | null;
+  code?: string | null;
+}): boolean {
+  const hay = `${p.name ?? ""} ${p.code ?? ""}`;
+  return DOCK_TEST_DRAFT_NAME_RE.some((re) => re.test(hay));
+}
+
+/**
  * Historical / post go-live — keep for Forecast/Analysis even if Dock
  * dropped the active workspace.
  */
@@ -111,6 +133,9 @@ export function isPrismAnalyticsOnly(p: NonDockProjectRef): boolean {
 
 export function classifyNonDockProject(p: NonDockProjectRef, opts: NonDockOptions): NonDockClassify {
   const now = opts.now ?? new Date();
+  if (isDockTestOrDraftWorkspace(p) && !isOnDockAllowlist(p, opts.allowlist)) {
+    return "delete";
+  }
   if (isOnDockAllowlist(p, opts.allowlist)) return "keep-allowlist";
   const isInternal =
     (p.type ?? "").toUpperCase() === "INTERNAL" ||

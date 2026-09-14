@@ -1,14 +1,28 @@
 /**
  * Parse a Dock WIP allowlist of customer/project acronyms.
  *
- * The parent supplies the live Dock list (JSON or CSV). This module does not
- * invent that list. Accepts:
+ * Canonical fixture: `content/dock-wip-allowlist.json` (Dock Implementation WIP
+ * as of 2026-09-14). Also accepts CLI JSON/CSV overlays:
  *   - JSON array of strings
  *   - JSON `{ "acronyms": [...] }`
  *   - JSON Dock snapshot `{ "workspaces": [{ "acronym": "BHC" }] }`
  *   - CSV with an `acronym` header, or one acronym per line
  */
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { normalizeKey } from "@/lib/demo-entities";
+
+/** Shipped Dock Implementation WIP inventory (2026-09-14). */
+export const DEFAULT_DOCK_WIP_ALLOWLIST_REL = "content/dock-wip-allowlist.json";
+
+export function defaultDockWipAllowlistPath(cwd = process.cwd()): string {
+  return resolve(cwd, DEFAULT_DOCK_WIP_ALLOWLIST_REL);
+}
+
+export function loadRepoDockWipAllowlist(cwd = process.cwd()): Set<string> {
+  const abs = defaultDockWipAllowlistPath(cwd);
+  return parseDockAllowlist(readFileSync(abs, "utf8"), abs);
+}
 
 export function parseDockAllowlist(raw: string, fileHint = "allowlist"): Set<string> {
   const text = raw.replace(/^\uFEFF/, "").trim();

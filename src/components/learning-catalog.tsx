@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { LearningItemView } from "@/lib/learning-center";
-import { LEARNING_AUDIENCE_LABEL, type LearningAudience } from "@/db/learning-center-catalog";
+import { LEARNING_AUDIENCE_LABEL, learningKindLabel, type LearningAudience } from "@/db/learning-center-catalog";
 
 type Section = {
   id: string;
@@ -110,13 +110,15 @@ export function LearningCatalog({
                   className="block rounded-xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,20,30,0.04)] hover:border-brand"
                 >
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge>{item.kind.toLowerCase()}</Badge>
+                    <Badge>{learningKindLabel(item.kind)}</Badge>
                     {item.audienceRole !== "all" ? (
                       <Badge>
                         {LEARNING_AUDIENCE_LABEL[item.audienceRole as LearningAudience] ?? item.audienceRole}
                       </Badge>
                     ) : null}
-                    {item.isPlaceholder ? <Badge tone="amber">Placeholder</Badge> : null}
+                    {item.isPlaceholder && item.kind === "FILE" ? (
+                      <Badge tone="amber">File pending</Badge>
+                    ) : null}
                   </div>
                   <h3 className="mt-2 text-[14.5px] font-semibold leading-snug text-ink">{item.title}</h3>
                   {item.summary ? (

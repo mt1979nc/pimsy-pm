@@ -16,7 +16,7 @@ import {
   templateTaskChecklistItems,
 } from "@/db/schema";
 import { loadTemplateById, type LoadedTemplate } from "@/lib/playbook";
-import { normalizeOverlapTitle } from "@/lib/playbook-meta";
+import { findByPlaybookTitle, normalizeOverlapTitle } from "@/lib/playbook-meta";
 import { copyLibraryAssetToTask } from "@/lib/template-attachments";
 import { scheduleFromOffsets, resolvePlaybookScale } from "@/lib/project-timeline";
 
@@ -113,11 +113,13 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
       const children = ordered.filter((t) => t.parentTaskId);
 
       for (const tt of [...parents, ...children]) {
-        const liveTask = liveByTitle.get(titleKey(tt.title));
+        const liveTask = findByPlaybookTitle(liveByTitle, tt.title);
         const parentTemplate = tt.parentTaskId
           ? ordered.find((x) => x.id === tt.parentTaskId)
           : null;
-        const liveParent = parentTemplate ? liveByTitle.get(titleKey(parentTemplate.title)) : null;
+        const liveParent = parentTemplate
+          ? findByPlaybookTitle(liveByTitle, parentTemplate.title)
+          : null;
 
         if (!liveTask) {
           rows.push({
@@ -252,11 +254,13 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
           const actions = projectRows.filter((r) => r.phaseName === tp.name && r.title === tt.title);
           if (actions.length === 0) continue;
 
-          let liveTask = liveByTitle.get(titleKey(tt.title)) ?? null;
+          let liveTask = findByPlaybookTitle(liveByTitle, tt.title) ?? null;
           const parentTemplate = tt.parentTaskId
             ? ordered.find((x) => x.id === tt.parentTaskId)
             : null;
-          const liveParent = parentTemplate ? liveByTitle.get(titleKey(parentTemplate.title)) : null;
+          const liveParent = parentTemplate
+            ? findByPlaybookTitle(liveByTitle, parentTemplate.title) ?? null
+            : null;
 
           if (actions.some((a) => a.action === "insert") && !liveTask) {
             const { startDate: taskStart, dueDate: taskDue } = scheduleFromOffsets({
