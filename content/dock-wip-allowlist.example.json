@@ -1,4 +1,11 @@
 {
-  "note": "Example pointer only. Production allowlist is content/dock-wip-allowlist.json (Dock Implementation WIP as of 2026-09-14). npm run db:cleanup:non-dock defaults to that fixture.",
-  "see": "content/dock-wip-allowlist.json"
+  "note": "Example pointer only. Production allowlist is content/dock-wip-allowlist.json (Dock Implementation WIP as of 2026-09-14). npm run db:cleanup:non-dock defaults to that fixture. Alias from keys (RAC → TANC) stay on the keep list so prune does not delete a site whose PATH code still lags Dock.",
+  "see": "content/dock-wip-allowlist.json",
+  "aliases": [
+    {
+      "from": "RAC",
+      "to": "TANC",
+      "names": ["Transformation ANew", "Redemption Alliance"]
+    }
+  ]
 }

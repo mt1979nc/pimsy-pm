@@ -1,7 +1,7 @@
 {
   "source": "Dock Implementation WIP",
   "asOf": "2026-09-14",
-  "note": "Live Dock inventory (customer-looking acronyms only). PATH prune deletes active/pre-kickoff/pipeline WIP not in this list and keeps post go-live / Live legacy for Forecast and Analysis. Dock test/draft spaces are excluded from the PATH book unless Alexander says otherwise.",
+  "note": "Live Dock inventory (customer-looking acronyms only). PATH prune deletes active/pre-kickoff/pipeline WIP not in this list and keeps post go-live / Live legacy for Forecast and Analysis. Dock test/draft spaces are excluded from the PATH book unless Alexander says otherwise. Alias `from` keys (RAC) are also keep-allowlist so prune does not delete a site whose PATH/Prism code still lags Dock. Rename those fields — do not delete.",
   "acronyms": [
     "TANC",
     "OCE",
@@ -37,6 +37,14 @@
     "GTS",
     "UES",
     "DPS"
+  ],
+  "aliases": [
+    {
+      "from": "RAC",
+      "to": "TANC",
+      "names": ["Transformation ANew", "Redemption Alliance"],
+      "note": "PATH/Prism stored Transformation ANew / Redemption Alliance as RAC. Dock Implementation WIP acronym is TANC. Rename project code / crmAcronym / prismClientId RAC → TANC — do not delete. npm run db:rename:dock-acronym"
+    }
   ],
   "excludeFromPathBook": {
     "unlessAlexanderSaysOtherwise": true,

@@ -13,6 +13,12 @@
  *   npm run db:cleanup:non-dock -- ./dock-wip-acronyms.csv --apply
  *   npm run db:cleanup:non-dock -- --keep-prism-analytics
  *
+ * RAC / TANC: Dock WIP acronym for Transformation ANew / Redemption Alliance
+ * is TANC. PATH may still store RAC. Rename first:
+ *   npm run db:rename:dock-acronym
+ * The shipped allowlist keeps RAC as an alias so this prune does not delete
+ * that site. Overlay JSON without aliases will still flag RAC as DELETE.
+ *
  * Azure Cloud Shell: copy DATABASE_URL from App Service Configuration —
  * do not invent the connection string. See azure/README.md and v1.12-DOCK-PARITY.md.
  */
@@ -21,7 +27,12 @@ import { resolve } from "node:path";
 import { inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAccounts, projects, users, verificationTokens } from "@/db/schema";
-import { parseDockAllowlist, defaultDockWipAllowlistPath } from "@/lib/dock-allowlist";
+import {
+  parseDockAllowlistDocument,
+  defaultDockWipAllowlistPath,
+  expandAllowlist,
+  aliasForAcronym,
+} from "@/lib/dock-allowlist";
 import {
   classifyNonDockCustomer,
   classifyNonDockProject,
@@ -29,7 +40,7 @@ import {
   type NonDockClassify,
   type NonDockProjectRef,
 } from "@/lib/non-dock-cleanup";
-import { redactDatabaseUrl } from "@/lib/demo-entities";
+import { projectAcronyms, redactDatabaseUrl } from "@/lib/demo-entities";
 import { env } from "@/lib/env";
 
 function argValue(flag: string): string | undefined {
@@ -80,11 +91,20 @@ their acronym is on the allowlist. Named staff are never deleted. Playbooks are 
   }
 
   const abs = resolve(allowPath);
-  const allowlist = parseDockAllowlist(readFileSync(abs, "utf8"), abs);
+  const raw = readFileSync(abs, "utf8");
+  const allowDoc = parseDockAllowlistDocument(raw, abs);
+  const allowlist = expandAllowlist(allowDoc);
 
   console.log("\nPATH non-Dock cleanup (active book only)");
   console.log(`  ${redactDatabaseUrl(env.DATABASE_URL)}`);
   console.log(`  allowlist: ${abs} (${allowlist.size} acronyms)`);
+  if (allowDoc.aliases.length > 0) {
+    console.log("  aliases (PATH/Prism lag — rename, do not delete):");
+    for (const alias of allowDoc.aliases) {
+      const names = alias.names.length > 0 ? `  ${alias.names.join(" / ")}` : "";
+      console.log(`    ${alias.from} → ${alias.to}${names}`);
+    }
+  }
   console.log(`  keep Prism analytics extras: ${keepPrismAnalytics ? "yes" : "no (default)"}`);
   console.log(`  mode: ${apply ? "APPLY (deletes)" : "DRY-RUN (pass --apply to delete)"}\n`);
 
@@ -228,9 +248,31 @@ their acronym is on the allowlist. Named staff are never deleted. Playbooks are 
   console.log(`Protected staff emails in this database: ${staffKept}`);
   console.log(`Allowlist size: ${allowlist.size}\n`);
 
+  const aliasNotes: string[] = [];
+  for (const p of [...keptAllow, ...keptLegacy, ...toDelete]) {
+    const alias = aliasForAcronym(projectAcronyms(p), allowDoc.aliases);
+    if (!alias) continue;
+    const stillFrom = projectAcronyms(p).includes(alias.from);
+    const label = `${tag(p)}  ${p.customerName ?? p.name ?? ""}`;
+    if (stillFrom) {
+      aliasNotes.push(
+        `${label}  — Dock acronym is ${alias.to}. Rename with npm run db:rename:dock-acronym (never delete).`,
+      );
+    }
+  }
+  if (aliasNotes.length > 0) {
+    printBlock("ALIAS — PATH/Prism code lags Dock (rename, do not delete)", aliasNotes);
+  }
+
   if (!apply) {
     console.log("Dry-run only. Re-run with --apply to delete the DELETE lists above.");
-    console.log("Post go-live legacy sites are kept unless you are looking at the DELETE list.\n");
+    console.log("Post go-live legacy sites are kept unless you are looking at the DELETE list.");
+    if (allowDoc.aliases.length > 0) {
+      console.log("If RAC still appears, rename first: npm run db:rename:dock-acronym then prune again.");
+      console.log("Transformation ANew / Redemption Alliance is TANC on Dock — keep that site.\n");
+    } else {
+      console.log("");
+    }
     return;
   }
 

@@ -4,9 +4,12 @@
  * Canonical fixture: `content/dock-wip-allowlist.json` (Dock Implementation WIP
  * as of 2026-09-14). Also accepts CLI JSON/CSV overlays:
  *   - JSON array of strings
- *   - JSON `{ "acronyms": [...] }`
+ *   - JSON `{ "acronyms": [...], "aliases": [{ "from": "RAC", "to": "TANC" }] }`
  *   - JSON Dock snapshot `{ "workspaces": [{ "acronym": "BHC" }] }`
  *   - CSV with an `acronym` header, or one acronym per line
+ *
+ * Alias `from` keys are treated as keep-allowlist so prune does not delete a
+ * site whose PATH/Prism code still lags Dock (RAC → TANC). Rename; do not delete.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -15,16 +18,47 @@ import { normalizeKey } from "@/lib/demo-entities";
 /** Shipped Dock Implementation WIP inventory (2026-09-14). */
 export const DEFAULT_DOCK_WIP_ALLOWLIST_REL = "content/dock-wip-allowlist.json";
 
+export type DockAcronymAlias = {
+  from: string;
+  to: string;
+  names: string[];
+  note: string;
+};
+
+export type DockAllowlistDocument = {
+  acronyms: Set<string>;
+  /** PATH/Prism codes that mean the same Dock workspace. */
+  aliases: DockAcronymAlias[];
+};
+
 export function defaultDockWipAllowlistPath(cwd = process.cwd()): string {
   return resolve(cwd, DEFAULT_DOCK_WIP_ALLOWLIST_REL);
 }
 
-export function loadRepoDockWipAllowlist(cwd = process.cwd()): Set<string> {
+export function loadRepoDockAllowlistDocument(cwd = process.cwd()): DockAllowlistDocument {
   const abs = defaultDockWipAllowlistPath(cwd);
-  return parseDockAllowlist(readFileSync(abs, "utf8"), abs);
+  return parseDockAllowlistDocument(readFileSync(abs, "utf8"), abs);
+}
+
+/** Canonical Dock acronyms plus alias `from` keys (safe for prune keep). */
+export function loadRepoDockWipAllowlist(cwd = process.cwd()): Set<string> {
+  return expandAllowlist(loadRepoDockAllowlistDocument(cwd));
+}
+
+export function expandAllowlist(doc: DockAllowlistDocument): Set<string> {
+  const out = new Set(doc.acronyms);
+  for (const alias of doc.aliases) {
+    if (alias.from) out.add(alias.from);
+    if (alias.to) out.add(alias.to);
+  }
+  return out;
 }
 
 export function parseDockAllowlist(raw: string, fileHint = "allowlist"): Set<string> {
+  return expandAllowlist(parseDockAllowlistDocument(raw, fileHint));
+}
+
+export function parseDockAllowlistDocument(raw: string, fileHint = "allowlist"): DockAllowlistDocument {
   const text = raw.replace(/^\uFEFF/, "").trim();
   if (!text) {
     throw new Error(`${fileHint} is empty — pass a JSON or CSV of Dock WIP acronyms.`);
@@ -37,13 +71,13 @@ export function parseDockAllowlist(raw: string, fileHint = "allowlist"): Set<str
     } catch (err) {
       throw new Error(`${fileHint} is not valid JSON: ${(err as Error).message}`);
     }
-    const found = acronymsFromJson(data);
-    if (found.size === 0) {
+    const doc = documentFromJson(data);
+    if (doc.acronyms.size === 0 && doc.aliases.length === 0) {
       throw new Error(
         `${fileHint} JSON had no acronyms. Use ["BHC","CEDAR"], { "acronyms": [...] }, or { "workspaces": [{ "acronym": "BHC" }] }.`,
       );
     }
-    return found;
+    return doc;
   }
 
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
@@ -53,7 +87,7 @@ export function parseDockAllowlist(raw: string, fileHint = "allowlist"): Set<str
 
   const header = lines[0]!.toLowerCase();
   const looksCsv = header.includes(",");
-  const out = new Set<string>();
+  const acronyms = new Set<string>();
 
   if (looksCsv) {
     const cols = splitCsvLine(lines[0]!);
@@ -65,48 +99,100 @@ export function parseDockAllowlist(raw: string, fileHint = "allowlist"): Set<str
     for (const line of lines.slice(1)) {
       const cells = splitCsvLine(line);
       const key = normalizeKey(cells[col]);
-      if (key) out.add(key);
+      if (key) acronyms.add(key);
     }
   } else {
     for (const line of lines) {
       const key = normalizeKey(line.split(/[,;\t]/)[0]);
-      if (key && key !== "ACRONYM") out.add(key);
+      if (key && key !== "ACRONYM") acronyms.add(key);
     }
   }
 
-  if (out.size === 0) {
+  if (acronyms.size === 0) {
     throw new Error(`${fileHint} had no usable acronyms.`);
   }
-  return out;
+  return { acronyms, aliases: [] };
 }
 
-function acronymsFromJson(data: unknown): Set<string> {
-  const out = new Set<string>();
+function documentFromJson(data: unknown): DockAllowlistDocument {
+  const acronyms = new Set<string>();
+  const aliases: DockAcronymAlias[] = [];
   const push = (v: unknown) => {
     if (typeof v === "string") {
       const k = normalizeKey(v);
-      if (k) out.add(k);
+      if (k) acronyms.add(k);
     }
   };
 
-  if (Array.isArray(data)) {
-    for (const row of data) {
+  const collectRows = (rows: unknown[]) => {
+    for (const row of rows) {
       if (typeof row === "string") push(row);
       else if (row && typeof row === "object") {
         const o = row as Record<string, unknown>;
         push(o.acronym ?? o.crmAcronym ?? o.code ?? o.prismClientId);
       }
     }
-    return out;
+  };
+
+  if (Array.isArray(data)) {
+    collectRows(data);
+    return { acronyms, aliases };
   }
 
   if (data && typeof data === "object") {
     const o = data as Record<string, unknown>;
-    if (Array.isArray(o.acronyms)) return acronymsFromJson(o.acronyms);
-    if (Array.isArray(o.workspaces)) return acronymsFromJson(o.workspaces);
-    if (Array.isArray(o.sites)) return acronymsFromJson(o.sites);
+    if (Array.isArray(o.acronyms)) collectRows(o.acronyms);
+    if (Array.isArray(o.workspaces)) collectRows(o.workspaces);
+    if (Array.isArray(o.sites)) collectRows(o.sites);
+    if (Array.isArray(o.aliases)) {
+      for (const row of o.aliases) {
+        const alias = aliasFromUnknown(row);
+        if (alias) aliases.push(alias);
+      }
+    } else if (o.aliases && typeof o.aliases === "object" && !Array.isArray(o.aliases)) {
+      for (const [from, value] of Object.entries(o.aliases as Record<string, unknown>)) {
+        const alias = aliasFromUnknown(
+          value && typeof value === "object"
+            ? { from, ...(value as Record<string, unknown>) }
+            : { from, to: value },
+        );
+        if (alias) aliases.push(alias);
+      }
+    }
   }
-  return out;
+  return { acronyms, aliases };
+}
+
+function aliasFromUnknown(row: unknown): DockAcronymAlias | null {
+  if (!row || typeof row !== "object") return null;
+  const o = row as Record<string, unknown>;
+  const from = normalizeKey(typeof o.from === "string" ? o.from : undefined);
+  const to = normalizeKey(
+    typeof o.to === "string"
+      ? o.to
+      : typeof o.canonical === "string"
+        ? o.canonical
+        : undefined,
+  );
+  if (!from || !to || from === to) return null;
+  const names = Array.isArray(o.names)
+    ? o.names.filter((n): n is string => typeof n === "string" && n.trim().length > 0)
+    : Array.isArray(o.alsoKnownAs)
+      ? o.alsoKnownAs.filter((n): n is string => typeof n === "string" && n.trim().length > 0)
+      : [];
+  const note = typeof o.note === "string" ? o.note : "";
+  return { from, to, names, note };
+}
+
+export function aliasForAcronym(
+  keys: string[],
+  aliases: readonly DockAcronymAlias[],
+): DockAcronymAlias | null {
+  const set = new Set(keys.map(normalizeKey).filter(Boolean));
+  for (const alias of aliases) {
+    if (set.has(alias.from)) return alias;
+  }
+  return null;
 }
 
 function splitCsvLine(line: string): string[] {

@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { loadRepoDockWipAllowlist, parseDockAllowlist } from "@/lib/dock-allowlist";
+import {
+  loadRepoDockAllowlistDocument,
+  loadRepoDockWipAllowlist,
+  parseDockAllowlist,
+} from "@/lib/dock-allowlist";
 import {
   classifyNonDockCustomer,
   classifyNonDockProject,
@@ -44,12 +48,34 @@ describe("Dock WIP allowlist parsing", () => {
     expect(() => parseDockAllowlist("   ")).toThrow(/empty/);
   });
 
-  it("ships the 2026-09-14 Dock Implementation WIP acronyms", () => {
+  it("expands alias from/to keys so prune keeps a lagging PATH code", () => {
+    expect(
+      [...parseDockAllowlist('{"acronyms":["TANC"],"aliases":[{"from":"RAC","to":"TANC"}]}')].sort(),
+    ).toEqual(["RAC", "TANC"]);
+    expect(
+      [...parseDockAllowlist('{"acronyms":["TANC"],"aliases":{"RAC":{"to":"TANC"}}}')].sort(),
+    ).toEqual(["RAC", "TANC"]);
+    expect([...parseDockAllowlist('{"acronyms":["BHC"]}')]).toEqual(["BHC"]);
+  });
+
+  it("ships the 2026-09-14 Dock Implementation WIP acronyms plus RAC→TANC alias", () => {
     const raw = readFileSync(resolve(process.cwd(), "content/dock-wip-allowlist.json"), "utf8");
-    const data = JSON.parse(raw) as { asOf: string; acronyms: string[] };
+    const data = JSON.parse(raw) as {
+      asOf: string;
+      acronyms: string[];
+      aliases: Array<{ from: string; to: string }>;
+    };
     expect(data.asOf).toBe("2026-09-14");
+    expect(data.acronyms).toContain("TANC");
+    expect(data.acronyms).not.toContain("RAC");
+    const alias = data.aliases.find((a) => a.from === "RAC");
+    expect(alias?.to).toBe("TANC");
+    const doc = loadRepoDockAllowlistDocument();
+    expect(doc.aliases.some((a) => a.from === "RAC" && a.to === "TANC")).toBe(true);
     const set = loadRepoDockWipAllowlist();
-    expect(set.size).toBe(data.acronyms.length);
+    expect(set.has("TANC")).toBe(true);
+    expect(set.has("RAC")).toBe(true);
+    expect(set.size).toBeGreaterThan(data.acronyms.length);
     for (const code of [
       "TANC",
       "THS",
@@ -211,6 +237,30 @@ describe("non-Dock prune classifiers", () => {
       ).toBe("delete");
     }
     expect(isDockTestOrDraftWorkspace({ name: "CEDAR Health", code: "CEDAR" })).toBe(false);
+  });
+
+  it("keeps RAC active WIP on the shipped allowlist (TANC alias) and deletes it on a BHC-only overlay", () => {
+    const rac = {
+      id: "rac",
+      code: "RAC",
+      name: "Transformation ANew",
+      crmAcronym: "RAC",
+      prismClientId: "RAC",
+      customerName: "Redemption Alliance",
+      status: "IN_PROGRESS" as const,
+      prismStatus: "active",
+    };
+    expect(classifyNonDockProject(rac, { allowlist: loadRepoDockWipAllowlist(), now })).toBe(
+      "keep-allowlist",
+    );
+    expect(classifyNonDockProject(rac, { allowlist: new Set(["TANC"]), now })).toBe("delete");
+    expect(classifyNonDockProject(rac, { allowlist: allow, now })).toBe("delete");
+    expect(
+      classifyNonDockProject(
+        { ...rac, id: "tanc", code: "TANC", crmAcronym: "TANC", prismClientId: "TANC" },
+        { allowlist: loadRepoDockWipAllowlist(), now },
+      ),
+    ).toBe("keep-allowlist");
   });
 
   it("does not delete a customer that still has a legacy keep project", () => {

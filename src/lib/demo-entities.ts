@@ -68,20 +68,29 @@ export const PROTECTED_STAFF_LOCAL_PARTS = [
 ] as const;
 
 /**
- * Historical Prism/PATH acronyms not on the 2026-09-14 Dock WIP scrape.
- * Demo cleanup still protects them so Forecast/Analysis history is not wiped.
+ * Historical Prism/PATH acronyms not on the 2026-09-14 Dock WIP scrape as
+ * canonical codes. Demo cleanup still protects them so Forecast/Analysis
+ * history (and leftover RAC rows before the TANC rename) are not wiped.
  */
 export const LEGACY_PROTECTED_WIP_ACRONYMS = ["RAC", "LBH"] as const;
+
+const allowlistAliasKeys = (
+  "aliases" in dockWipAllowlist && Array.isArray(dockWipAllowlist.aliases)
+    ? dockWipAllowlist.aliases.flatMap((a: { from?: string; to?: string }) => [a.from, a.to])
+    : []
+).filter((s): s is string => typeof s === "string" && s.trim().length > 0);
 
 /**
  * Live imported Prism / Dock WIP (and Analysis history) that cleanup must not
  * touch — even if a demo slug or IMP-900x code is somehow attached.
- * Starts from `content/dock-wip-allowlist.json` plus legacy extras.
+ * Starts from `content/dock-wip-allowlist.json` plus alias from/to keys and
+ * legacy extras.
  */
 export const PROTECTED_WIP_ACRONYMS: readonly string[] = [
   ...new Set(
     [
       ...(dockWipAllowlist.acronyms as readonly string[]),
+      ...allowlistAliasKeys,
       ...LEGACY_PROTECTED_WIP_ACRONYMS,
     ].map((s) => s.trim().toUpperCase()),
   ),

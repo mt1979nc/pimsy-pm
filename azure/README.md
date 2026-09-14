@@ -185,17 +185,23 @@ customers (`IMP-9001`–`IMP-9003`), `@example.com` fixture contacts, and GROK
 E2E / `IMP-0004` / GROKTEST. **Never** deletes alexander@, jeremy@,
 danielle@, morgan@, mindy@, david@, anna@, kori@, playbooks, or imported
 Prism/Dock acronyms (BDMH, BHC, CCCCARE, CEDAR, DYM, EBHKY, FBH, LECHRIS,
-MMHSS, OCE, PWMI, RAC, RBH, SWMCCC, THS, …). If a demo code is somehow
+MMHSS, OCE, PWMI, RAC (alias of TANC), RBH, SWMCCC, THS, …). If a demo code is somehow
 attached to a protected acronym, that project is skipped.
 
 ### Align the active book with current Dock WIP (v1.12)
 
 Allowlist is `content/dock-wip-allowlist.json` (Dock Implementation WIP as of
 2026-09-14). Override with a JSON/CSV path if you need a one-off overlay.
+**RAC / TANC:** Dock WIP acronym for Transformation ANew / Redemption Alliance
+is TANC. PATH/Prism may still show RAC. Rename `code` / `crmAcronym` /
+`prismClientId` with `npm run db:rename:dock-acronym` (never delete). The
+shipped allowlist keeps RAC as an alias so prune does not flag that site.
 
 ```bash
 export DATABASE_URL='postgresql://…'   # from App Settings; keep quotes
 npm run db:migrate                     # includes 0012_dock_parity
+npm run db:rename:dock-acronym         # dry-run RAC → TANC
+npm run db:rename:dock-acronym -- --apply
 npm run db:cleanup:non-dock            # dry-run against the shipped fixture
 npm run db:cleanup:non-dock -- --apply # delete active non-Dock WIP only
 ```
