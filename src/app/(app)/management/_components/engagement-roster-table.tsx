@@ -47,19 +47,19 @@ export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
       <table className="w-full table-fixed border-collapse text-[12.5px]">
         <thead>
           <tr className="border-b border-border bg-surface-2 text-[11px] uppercase tracking-wide text-ink-3">
-            <th className={`${th} w-[5.75rem] text-left`}>Acronym</th>
+            <th className={`${th} w-[5.25rem] text-left`}>Acronym</th>
             <th className={`${th} text-left`}>Customer</th>
-            <th className={`${th} w-[9rem] text-left`}>Owner(s)</th>
-            <th className={`${th} w-12 text-right`}>Users</th>
-            <th className={`${th} w-10 text-right`}>Locs</th>
-            <th className={`${th} w-[5.75rem] text-left`}>Complexity</th>
-            <th className={`${th} w-[4.25rem] text-right`}>Est. hrs</th>
-            <th className={`${th} w-[4.25rem] text-left`}>Kickoff</th>
-            <th className={`${th} w-[4.5rem] text-left`}>Initial GL</th>
-            <th className={`${th} w-[4.5rem] text-left`}>Current GL</th>
-            <th className={`${th} w-[6.25rem] text-left`}>Status</th>
-            <th className={`${th} w-[4.5rem] text-right leading-tight`}>Slip days</th>
-            <th className={`${th} w-11 text-right`}> </th>
+            <th className={`${th} w-[8rem] text-left`}>Owner(s)</th>
+            <th className={`${th} w-11 text-right`}>Users</th>
+            <th className={`${th} w-9 text-right`}>Locs</th>
+            <th className={`${th} w-[5.25rem] text-left`}>Complexity</th>
+            <th className={`${th} w-[3.75rem] text-right`}>Est. hrs</th>
+            <th className={`${th} w-16 text-left`}>Kickoff</th>
+            <th className={`${th} w-16 text-left`}>Initial GL</th>
+            <th className={`${th} w-16 text-left`}>Current GL</th>
+            <th className={`${th} w-[5.75rem] text-left`}>Status</th>
+            <th className={`${th} w-16 text-right leading-tight`}>Slip days</th>
+            <th className={`${th} w-10 text-right`}> </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">

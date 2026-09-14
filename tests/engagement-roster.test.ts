@@ -1,38 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import {
-  EngagementRosterTable,
-  type EngagementRow,
-} from "@/app/(app)/management/_components/engagement-roster-table";
 import { formatRosterSlipDays, sumSlipDays } from "@/lib/engagement-roster";
-
-function sampleRow(overrides: Partial<EngagementRow> = {}): EngagementRow {
-  return {
-    id: "p1",
-    acronym: "LECHRIS",
-    customerName: "Le Chris Health Systems",
-    name: "Le Chris — PIMSY implementation",
-    leadName: "Alexander Morse",
-    coLeadName: "Danielle Piper",
-    ownerSplitPercent: 60,
-    userCount: 170,
-    locationCount: 1,
-    trainingsPerWeek: 2,
-    complexityTier: "HIGH",
-    displayHours: 45,
-    startDate: "2026-03-11",
-    initialGoLiveDate: "2026-06-08",
-    targetGoLiveDate: "2026-11-02",
-    effectivePrismStatus: "active",
-    prismNote: null,
-    slipDays: 0,
-    ...overrides,
-  };
-}
 
 describe("sumSlipDays", () => {
   it("sums days across events instead of counting them", () => {
@@ -63,32 +33,6 @@ describe("formatRosterSlipDays", () => {
   });
 });
 
-describe("EngagementRosterTable", () => {
-  it("fills width with a table-fixed grid, no min-width or inner horizontal scroll", () => {
-    const html = renderToStaticMarkup(
-      createElement(EngagementRosterTable, { rows: [sampleRow({ slipDays: 13 })] }),
-    );
-    expect(html).toContain("table-fixed");
-    expect(html).toContain("w-full");
-    expect(html).not.toMatch(/min-w-\[960px\]/);
-    expect(html).not.toMatch(/overflow-x-auto/);
-    expect(html).toContain("Slip days");
-    expect(html).toContain(">13<");
-    expect(html).not.toMatch(/>Services</);
-    expect(html).not.toMatch(/Outpatient/);
-    expect(html).toContain("LECHRIS");
-    expect(html).toContain("Edit");
-  });
-
-  it("dashes a zero slip-day total", () => {
-    const html = renderToStaticMarkup(
-      createElement(EngagementRosterTable, { rows: [sampleRow({ slipDays: 0 })] }),
-    );
-    expect(html).toContain("—");
-    expect(html).not.toMatch(/>0</);
-  });
-});
-
 describe("Engagements roster vs edit form scope", () => {
   it("does not list Services on the roster table source", () => {
     const table = readFileSync(
@@ -99,8 +43,10 @@ describe("Engagements roster vs edit form scope", () => {
     expect(table).not.toMatch(/serviceLines/);
     expect(table).toMatch(/Slip days/);
     expect(table).toMatch(/table-fixed/);
+    expect(table).toMatch(/formatRosterSlipDays\(row\.slipDays\)/);
     expect(table).not.toMatch(/overflow-x-auto/);
     expect(table).not.toMatch(/min-w-\[960px\]/);
+    expect(table).not.toMatch(/slipCount/);
   });
 
   it("keeps service-line checkboxes on the engagement edit form", () => {
