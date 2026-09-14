@@ -88,6 +88,16 @@ describe("staff Update History source", () => {
     );
   });
 
+  it("documents the v1.12.1 Engagements roster hotfix", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.12.1");
+    expect(note?.summary).toMatch(/Engagements roster/i);
+    expect(note?.summary).toMatch(/Slip days/i);
+    expect(note?.highlights?.some((h) => /table-fixed|horizontal scroll/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
   it("documents v1.12 Dock parity, prune-keep-legacy, and Learning Center", () => {
     const note = RELEASE_NOTES.find((n) => n.version === "1.12.0");
     expect(note?.summary).toMatch(/Dock/i);

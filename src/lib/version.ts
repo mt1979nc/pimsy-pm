@@ -38,6 +38,17 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     ],
   },
   {
+    version: "1.12.1",
+    date: "2026-09-14",
+    summary:
+      "Hotfix: Prism Engagements roster fills the content width without a horizontal scrollbar; Slip days is the sum of slip event days; Services is edit-form only.",
+    highlights: [
+      "Engagements list uses the full main column (no 1180px cap, no empty grey gutter) and a table-fixed grid so acronym, customer, and owners truncate instead of forcing a horizontal scroll at ~1280px+.",
+      "Slip days is the total of slip_event.days for that site, not the count of slip events. Zero still shows a dash.",
+      "Services is removed from the roster grid. Service-line checkboxes stay on Add to roster and Edit engagement (`/management/engagements/[id]`).",
+    ],
+  },
+  {
     version: "1.12.0",
     date: "2026-09-14",
     summary:

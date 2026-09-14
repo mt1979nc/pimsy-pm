@@ -33,7 +33,7 @@ export default async function ManagementEngagementsPage({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-page-width="full">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-surface-2 p-1">
           {FILTERS.map((f) => (
@@ -54,7 +54,7 @@ export default async function ManagementEngagementsPage({
           Add to roster
         </LinkButton>
       </div>
-      <Card>
+      <Card className="min-w-0">
         <CardHeader
           title={filter === "all" ? "Engagements" : PRISM_STATUS_LABELS[filter]}
           subtitle={
