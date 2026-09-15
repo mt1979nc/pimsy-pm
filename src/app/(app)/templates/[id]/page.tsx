@@ -61,6 +61,7 @@ export default async function TemplateEditorPage({
           kind: att.libraryAsset?.kind ?? "FILE",
           isPlaceholder: att.libraryAsset?.isPlaceholder ?? false,
           libraryAssetId: att.libraryAssetId,
+          url: att.libraryAsset?.url ?? null,
         })),
       })),
   }));

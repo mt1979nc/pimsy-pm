@@ -17,6 +17,7 @@ import {
 } from "@/components/ui";
 import { TaskComments } from "@/components/task-comments";
 import { AttachmentList, AddAttachment } from "@/components/attachments";
+import { hasPlaybookFileResource } from "@/lib/playbook-resources";
 import { TaskChecklist } from "@/components/task-checklist";
 import { AssigneePicker } from "@/components/assignee-picker";
 import { TaskDetailControls } from "./task-controls";
@@ -91,6 +92,7 @@ export default async function TaskDetailPage({
   // the task is reopened — the status is the source of truth.
   const completedAt = task.status === "DONE" ? task.completedAt : null;
   const overdue = isOverdue(task.dueDate, completedAt);
+  const uploadRequest = task.ownerSide === "CUSTOMER" && hasPlaybookFileResource(attachments);
 
   return (
     <div className="mx-auto max-w-[900px]">
@@ -183,21 +185,25 @@ export default async function TaskDetailPage({
             <CardHeader
               title="Links & files"
               subtitle={
-                attachments.length > 0
-                  ? `${attachments.length} attached`
-                  : "Anything the work depends on"
+                uploadRequest
+                  ? "Download the file, complete it, and upload it here — same pattern as Dock"
+                  : attachments.length > 0
+                    ? `${attachments.length} attached`
+                    : "Anything the work depends on"
               }
             />
             <AttachmentList
               assets={attachments}
               currentUserId={actor.id}
               canManageVisibility
+              uploadRequest={uploadRequest}
             />
             <AddAttachment
               taskId={task.id}
               canChooseVisibility
               defaultVisibility={task.visibility === "INTERNAL" ? "INTERNAL" : "SHARED"}
               taskIsInternal={task.visibility === "INTERNAL"}
+              uploadRequest={uploadRequest}
             />
           </Card>
 

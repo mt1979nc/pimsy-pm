@@ -320,13 +320,34 @@ describe("training checklists and nested tasks", () => {
   it("puts Discovery Wizard / billing copy in the description without URLs", () => {
     const wizard = dockPlaybookDescriptionForTitle("Guided Discovery Meeting");
     expect(wizard).toMatch(/Discovery Wizard/i);
+    expect(wizard).toMatch(/button on this task/i);
     expect(wizard).not.toMatch(/https?:\/\//i);
-    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/billing questionnaire/i);
+    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/Download the billing questionnaire/i);
+    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/Upload the completed file/i);
+    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).not.toMatch(/https?:\/\//i);
     expect(
       dockPlaybookDescriptionForTitle(
         "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
       ),
-    ).toMatch(/billing spreadsheet/i);
+    ).toMatch(/Download the billing spreadsheet/i);
+    expect(
+      dockPlaybookDescriptionForTitle(
+        "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
+      ),
+    ).toMatch(/Upload the completed file/i);
+    expect(dockPlaybookDescriptionForTitle("Organization Details Form")).toMatch(
+      /Open the Discovery Wizard with the button/i,
+    );
+    expect(dockPlaybookDescriptionForTitle("Review Billing Questionnaire Data Sheet")).toMatch(
+      /review what the practice submitted/i,
+    );
+    expect(dockPlaybookDescriptionForTitle("Review Billing Questionnaire Data Sheet")).not.toMatch(
+      /Upload the completed file/i,
+    );
+    expect(shouldReplacePlaybookDescription(
+      "Complete the attached billing questionnaire and upload the finished files on this task.",
+      dockPlaybookDescriptionForTitle("Billing Questionnaire"),
+    )).toBe(true);
     expect(dockPlaybookDescriptionForTitle("Unrelated task")).toBeNull();
   });
 

@@ -19,7 +19,7 @@ import {
 } from "@/actions/templates";
 import { DuplicateTemplateButton } from "../duplicate-template-button";
 import { SubmitButton, FormError } from "@/components/submit-button";
-import { Badge, Button, Card, CardHeader, Field, VisibilityBadge, inputClass } from "@/components/ui";
+import { Badge, Button, Card, CardHeader, Field, LinkButton, VisibilityBadge, inputClass } from "@/components/ui";
 import { STAFFING_ROLES, STAFFING_ROLE_LABELS, staffingRoleLabel } from "@/lib/staffing";
 import {
   OPTIONAL_AREA_CATALOG,
@@ -28,6 +28,7 @@ import {
   optionalAreaLabel,
 } from "@/lib/playbook-meta";
 import type { PlaybookPath, WorkTrack } from "@/db/schema";
+import { playbookResourceButtonLabel } from "@/lib/playbook-resources";
 
 type LibraryOption = {
   id: string;
@@ -60,6 +61,7 @@ type EditorTask = {
     kind: string;
     isPlaceholder: boolean;
     libraryAssetId: string;
+    url: string | null;
   }>;
 };
 
@@ -764,13 +766,26 @@ function TaskEditor({
             ) : (
               <ul className="divide-y divide-border">
                 {task.attachments.map((att) => (
-                  <li key={att.id} className="flex items-center gap-2 px-3 py-1.5">
+                  <li key={att.id} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
                     <span className="min-w-0 flex-1 text-[13px] text-ink">
                       {att.name}
                       <span className="ml-2 text-[11.5px] text-ink-3">
                         {att.kind === "LINK" ? "Link" : att.isPlaceholder ? "Placeholder" : "File"}
                       </span>
                     </span>
+                    {att.kind === "LINK" && att.url ? (
+                      <LinkButton href={att.url} size="sm" target="_blank" rel="noopener noreferrer">
+                        {playbookResourceButtonLabel({
+                          kind: "LINK",
+                          name: att.name,
+                          url: att.url,
+                        })}
+                      </LinkButton>
+                    ) : (
+                      <LinkButton href={`/api/library/${att.libraryAssetId}`} size="sm">
+                        {playbookResourceButtonLabel({ kind: att.kind, name: att.name })}
+                      </LinkButton>
+                    )}
                     <button
                       type="button"
                       className="text-[12px] text-ink-3 hover:text-red"

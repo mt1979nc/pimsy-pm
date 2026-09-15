@@ -27,12 +27,14 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: "1.13.0",
     date: "2026-09-15",
     summary:
-      "PATH playbook tasks now mirror Dock Implementation: training descriptions (areas-to-cover checklists in the body), default attachments, and a hang-free Azure resync that backfills existing WIP without overwriting staff notes.",
+      "PATH playbook tasks now mirror Dock Implementation: clickable discovery-resource buttons on the task, download → complete → upload copy for customer upload requests, training descriptions, default attachments, and a hang-free Azure resync that backfills existing WIP.",
     highlights: [
+      "Discovery Wizard, billing sheets, and other Dock resources show as clickable Open / Download buttons on the live task (staff and portal) — same pattern as Dock, not buried only in description text.",
+      "Customer upload-request tasks (billing questionnaire/spreadsheet, org/clinical forms, RCM intake) tell the practice to download the file, complete it, and upload the finished file back on this task. Specialist review tasks stay review-only.",
       "Template extras upsert Dock playbook copy onto matching titles: training descriptions include `- [ ]` areas to cover (plus first-class checklist items), Discovery Wizard as a LINK attachment, billing/clinical/org/RCM sheets. Editor extras and staff-authored descriptions are not wiped.",
       "`npm run db:resync:playbook-from-dock` dry-run then `--apply` backfills existing PATH playbooks (`set-description`, missing checklists, missing default files). Batch-loads extras, logs progress, 180s timeout (`--timeout-sec 0` to disable, `--limit` / `--only` to slice). Azure Cloud Shell: export DATABASE_URL from App Service. Does not call the Dock API or edit live Dock Spaces.",
-      "New workspaces inherit those descriptions and attachments from the playbook automatically. Blank or stale training blurbs are filled; custom specialist notes are left alone. User uploads are never deleted.",
-      "Playbook editor still supports Dock-style descriptions, nested tasks, add/remove training areas, and attach/detach library files. Duplicate / optional-areas / hub nav stay available.",
+      "New workspaces inherit those descriptions and attachments from the playbook automatically. Blank or stale training/attachment blurbs are filled; custom specialist notes are left alone. User uploads are never deleted.",
+      "Playbook editor still supports Dock-style descriptions, nested tasks, add/remove training areas, and attach/detach library files with Open / Download. Duplicate / optional-areas / hub nav stay available.",
       "PATH + Prism naming unchanged. Live projects are not rewritten when a template changes — run the resync to bring existing WIP into parity.",
     ],
   },

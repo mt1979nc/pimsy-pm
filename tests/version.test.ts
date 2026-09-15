@@ -106,7 +106,8 @@ describe("staff Update History source", () => {
     expect(note?.summary).toMatch(/resync/i);
     expect(note?.highlights?.some((h) => /description/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /checklist|areas to cover/i.test(h))).toBe(true);
-    expect(note?.highlights?.some((h) => /Discovery Wizard|billing/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /clickable|button/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /download/i.test(h) && /upload/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Duplicate/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /db:resync:playbook-from-dock/.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /set-description|backfill/i.test(h))).toBe(true);
