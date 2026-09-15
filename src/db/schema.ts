@@ -604,6 +604,11 @@ export const projectScopes = pgTable("project_scope", {
   estimatedHours: real("estimated_hours"),
   /** Which scenario's date was chosen as the initial go-live commitment. */
   discoveryScenario: discoveryScenarioEnum("discovery_scenario").notNull().default("TYPICAL"),
+  /**
+   * When true (default), Forecast+ / Add-to-roster go-live walks the Prism
+   * calendar with observed US federal holidays skipped.
+   */
+  skipUsFederalHolidays: boolean("skip_us_federal_holidays").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

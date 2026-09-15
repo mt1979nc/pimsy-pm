@@ -6,7 +6,7 @@ import { SubmitButton, FormError } from "@/components/submit-button";
 import { Field, inputClass } from "@/components/ui";
 import { SlipHistoryList } from "@/components/slip-history";
 import { GoLiveScenarioPicker, GoLiveSourceBadge } from "@/components/go-live-scenario-picker";
-import { DEFAULT_SCOPE, SERVICE_LINE_LABELS, type ImplementationScope } from "@/lib/estimator";
+import { DEFAULT_SCOPE, DEFAULT_SKIP_US_FEDERAL_HOLIDAYS, SERVICE_LINE_LABELS, type ImplementationScope } from "@/lib/estimator";
 import {
   kickoffOrToday,
   recommendGoLive,
@@ -49,6 +49,7 @@ export function EngagementEditForm({
   targetGoLiveDate,
   scope,
   discoveryScenario,
+  skipUsFederalHolidays: skipUsFederalHolidaysSaved,
   leadOptions,
   slips,
   durationSamples,
@@ -78,6 +79,7 @@ export function EngagementEditForm({
     estimatedHours: number | null;
   } | null;
   discoveryScenario: DiscoveryScenario;
+  skipUsFederalHolidays?: boolean;
   leadOptions: LeadOption[];
   slips: Slip[];
   durationSamples: DurationSample[];
@@ -88,6 +90,9 @@ export function EngagementEditForm({
   const [kickoff, setKickoff] = useState(toDateInput(startDate));
   const [targetGoLive, setTargetGoLive] = useState(toDateInput(targetGoLiveDate));
   const [scenario, setScenario] = useState<DiscoveryScenario>(discoveryScenario);
+  const [skipUsFederalHolidays, setSkipUsFederalHolidays] = useState(
+    skipUsFederalHolidaysSaved ?? DEFAULT_SKIP_US_FEDERAL_HOLIDAYS,
+  );
   const [customHpw, setCustomHpw] = useState(
     customHoursPerWeek != null ? String(customHoursPerWeek) : "",
   );
@@ -111,8 +116,9 @@ export function EngagementEditForm({
       samples: durationSamples,
       exclusions,
       customHoursPerWeek: Number.isFinite(customHoursParsed) ? customHoursParsed : null,
+      skipUsFederalHolidays,
     });
-  }, [scopeState, kickoff, durationSamples, exclusions, customHoursParsed]);
+  }, [scopeState, kickoff, durationSamples, exclusions, customHoursParsed, skipUsFederalHolidays]);
 
   const chosen =
     recommendation.scenarios.find((s) => s.scenario === scenario) ?? recommendation.scenarios[1];
@@ -252,8 +258,8 @@ export function EngagementEditForm({
           Kickoff and current go-live drive the schedule — incomplete phase/task dates rescale when
           this window changes. A slip must push go-live (new date or +days), not just add a note.
           Picking Optimistic / Typical / Pessimistic fills current go-live from the Forecast+
-          discovery formula (same as Prism: discovery + 21d config + training). Past-site
-          averages are shown as reference only.
+          discovery formula (same as Prism: discovery + 21d config + training), with US federal
+          holidays skipped when that toggle is on. Past-site averages are shown as reference only.
         </p>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Kickoff" htmlFor="kickoffDate">
@@ -309,6 +315,8 @@ export function EngagementEditForm({
             recommendation={recommendation}
             scenario={scenario}
             onChange={applyScenario}
+            skipUsFederalHolidays={skipUsFederalHolidays}
+            onSkipUsFederalHolidaysChange={setSkipUsFederalHolidays}
           />
           {initialLocked ? (
             <p className="mt-3 text-[12px] text-ink-3">

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui";
 import { fmtDate } from "@/lib/dates";
 import type { GoLiveRecommendation, RecommendedScenario } from "@/lib/go-live-recommendation";
 import { historicalCaption } from "@/lib/go-live-recommendation";
+import { UsFederalHolidayToggle } from "@/components/us-federal-holiday-toggle";
 import { cn } from "@/lib/cn";
 
 export function GoLiveScenarioPicker({
@@ -13,19 +14,34 @@ export function GoLiveScenarioPicker({
   onChange,
   name = "discoveryScenario",
   disabled = false,
+  skipUsFederalHolidays,
+  onSkipUsFederalHolidaysChange,
 }: {
   recommendation: GoLiveRecommendation;
   scenario: DiscoveryScenario;
   onChange: (scenario: DiscoveryScenario) => void;
   name?: string;
   disabled?: boolean;
+  skipUsFederalHolidays?: boolean;
+  onSkipUsFederalHolidaysChange?: (value: boolean) => void;
 }) {
+  const chosen =
+    recommendation.scenarios.find((s) => s.scenario === scenario) ?? recommendation.scenarios[1];
   return (
     <div>
       <div className="text-[12px] font-semibold uppercase tracking-wide text-ink-3">
         Projected go-live
       </div>
       <p className="mt-1 text-[12.5px] text-ink-3">{historicalCaption(recommendation.historical)}</p>
+      {skipUsFederalHolidays != null && onSkipUsFederalHolidaysChange ? (
+        <div className="mt-3 rounded-lg border border-border bg-surface-2/50 px-3 py-2.5">
+          <UsFederalHolidayToggle
+            checked={skipUsFederalHolidays}
+            onChange={onSkipUsFederalHolidaysChange}
+            holidayDays={chosen?.holidayDays ?? 0}
+          />
+        </div>
+      ) : null}
       <input type="hidden" name={name} value={scenario} />
       <div className="mt-3 space-y-2">
         {recommendation.scenarios.map((s) => (
@@ -82,6 +98,7 @@ function ScenarioRow({
         <span className="block text-[11.5px] tabular-nums text-ink-3">
           {row.calendarDays}d · {row.estimatedHours.toFixed(1)}h
           {row.weeklyHours > 0 ? ` · ${row.weeklyHours.toFixed(1)}h/wk` : ""}
+          {row.holidayDays > 0 ? ` · +${row.holidayDays} holiday${row.holidayDays === 1 ? "" : "s"}` : ""}
         </span>
       </span>
     </label>

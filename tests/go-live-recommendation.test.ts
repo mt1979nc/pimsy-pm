@@ -121,8 +121,9 @@ describe("recommendGoLive", () => {
       samples: STANDARD_HISTORY,
     });
     const model = forecastImplementation(DEFAULT_SCOPE, kickoff);
-    expect(rec.scenarios[1]!.modelCalendarDays).toBe(model.scenarios[1]!.calendarDays);
-    expect(rec.scenarios[1]!.calendarDays).toBe(rec.scenarios[1]!.modelCalendarDays);
+    expect(rec.scenarios[1]!.modelCalendarDays).toBe(model.scenarios[1]!.modelCalendarDays);
+    expect(rec.scenarios[1]!.calendarDays).toBe(model.scenarios[1]!.calendarDays);
+    expect(rec.scenarios[1]!.calendarDays).toBeGreaterThanOrEqual(rec.scenarios[1]!.modelCalendarDays);
   });
 
   it("lengthens typical weekly hours when custom hrs/wk is set", () => {

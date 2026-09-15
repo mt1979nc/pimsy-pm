@@ -99,6 +99,13 @@
       "when": 1789067000000,
       "tag": "0013_onboarded",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789068000000,
+      "tag": "0014_skip_us_federal_holidays",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,7 @@ import { audit } from "@/lib/audit";
 import {
   complexityTier,
   parseDiscoveryScenario,
+  parseSkipUsFederalHolidays,
   type ImplementationScope,
 } from "@/lib/estimator";
 import {
@@ -232,6 +233,7 @@ export async function updateEngagement(
           kickoffDate: before.startDate ?? kickoffOrToday(kickoffDate),
           samples: plan.samples,
           exclusions: plan.exclusions,
+          skipUsFederalHolidays: before.scope.skipUsFederalHolidays,
         }),
         before.scope.discoveryScenario,
       ).calendarDays
@@ -298,6 +300,7 @@ export async function updateEngagement(
     complexityTier: tier,
     estimatedHours,
     discoveryScenario: plan.scenario,
+    skipUsFederalHolidays: plan.skipUsFederalHolidays,
     updatedAt: new Date(),
   };
 
@@ -411,16 +414,27 @@ async function rosterGoLivePlan(
   requestedGoLive: Date | null,
 ) {
   const scenario = parseDiscoveryScenario(formData.get("discoveryScenario"));
+  const skipUsFederalHolidays = parseSkipUsFederalHolidays(formData.get("skipUsFederalHolidays"));
   const { samples, exclusions } = await loadRosterGoLiveContext();
   const rec = recommendGoLive({
     scope: scopeInput,
     kickoffDate: kickoffOrToday(kickoffDate),
     samples,
     exclusions,
+    skipUsFederalHolidays,
   });
   const chosen = chosenScenario(rec, scenario);
   const goLive = resolveCommittedGoLive({ rec, scenario, requestedGoLive });
-  return { scenario, rec, chosen, goLive, estimatedHours: chosen.estimatedHours, samples, exclusions };
+  return {
+    scenario,
+    rec,
+    chosen,
+    goLive,
+    estimatedHours: chosen.estimatedHours,
+    samples,
+    exclusions,
+    skipUsFederalHolidays,
+  };
 }
 
 export async function createEngagement(
@@ -551,6 +565,7 @@ export async function createEngagement(
     complexityTier: tier,
     estimatedHours,
     discoveryScenario: plan.scenario,
+    skipUsFederalHolidays: plan.skipUsFederalHolidays,
   });
 
   await audit({

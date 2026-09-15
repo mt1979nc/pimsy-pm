@@ -74,6 +74,7 @@ export default async function ManagementEngagementEditPage({
               : null
           }
           discoveryScenario={parseDiscoveryScenario(project.scope?.discoveryScenario)}
+          skipUsFederalHolidays={project.scope?.skipUsFederalHolidays ?? true}
           leadOptions={leadOptions}
           slips={project.slipEvents}
           durationSamples={goLive.samples}
