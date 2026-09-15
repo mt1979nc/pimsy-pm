@@ -2,8 +2,13 @@
  * One-time (idempotent) playbook resync: add missing Dock nested tasks /
  * checklists / default attachments onto existing WIP projects without
  * wiping completion state. Match by normalized title within a phase.
+ *
+ * Dry-run used to hang because each template task issued several sequential
+ * queries. This path batch-loads catalogs and live rows, logs progress, and
+ * stops at a deadline instead of spinning until Cloud Shell times out.
+ * It never calls the Dock API.
  */
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   fileAssets,
@@ -19,12 +24,25 @@ import { findByPlaybookTitle, normalizeOverlapTitle } from "@/lib/playbook-meta"
 import { copyLibraryAssetToTask, ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
 import { alreadyHasLibraryCoverage, fileCoversLibraryAsset, libraryDefsForTaskTitle } from "@/db/dock-default-attachments";
 import { scheduleFromOffsets, resolvePlaybookScale } from "@/lib/project-timeline";
+import {
+  DEFAULT_RESYNC_DEADLINE_MS,
+  formatResyncSeconds,
+  resyncElapsedMs,
+  resyncTimedOut,
+} from "@/lib/resync-deadline";
 
 export type ResyncOpts = {
   apply: boolean;
   /** Limit to these project ids or acronyms/codes. Empty = all playbook projects. */
   only?: string[];
+  /** Scan at most this many eligible WIP projects (after --only). */
+  limit?: number;
   actorId: string | null;
+  /** Abort after this many ms. 0 / undefined with useDefaultDeadline=false = no cap. */
+  deadlineMs?: number;
+  /** When true (CLI default), apply DEFAULT_RESYNC_DEADLINE_MS if deadlineMs omitted. */
+  useDefaultDeadline?: boolean;
+  onProgress?: (message: string) => void;
 };
 
 export type ResyncTaskPlan = {
@@ -41,6 +59,8 @@ export type ResyncPlan = {
   projectsScanned: number;
   projectsTouched: number;
   rows: ResyncTaskPlan[];
+  timedOut: boolean;
+  elapsedMs: number;
 };
 
 function titleKey(s: string) {
@@ -58,7 +78,34 @@ function wanted(only: string[] | undefined, p: { id: string; code: string; crmAc
   );
 }
 
+function deadlineOf(opts: ResyncOpts): number | undefined {
+  if (opts.deadlineMs != null) return opts.deadlineMs;
+  if (opts.useDefaultDeadline === false) return undefined;
+  return DEFAULT_RESYNC_DEADLINE_MS;
+}
+
+async function loadAllInChunks<T>(
+  ids: string[],
+  load: (chunk: string[]) => Promise<T[]>,
+  chunkSize = 400,
+): Promise<T[]> {
+  if (ids.length === 0) return [];
+  const out: T[] = [];
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    out.push(...(await load(ids.slice(i, i + chunkSize))));
+  }
+  return out;
+}
+
+type ChecklistSeed = { templateTaskId: string; label: string; order: number; visibility: "INTERNAL" | "SHARED" };
+type AttachmentSeed = { templateTaskId: string; libraryAssetId: string };
+
 export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> {
+  const startedAt = Date.now();
+  const deadlineMs = deadlineOf(opts);
+  const log = opts.onProgress ?? (() => undefined);
+
+  log("Loading playbooks…");
   const templates = await db.query.projectTemplates.findMany({
     columns: { id: true, code: true, name: true },
   });
@@ -68,7 +115,35 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
     if (loaded) byId.set(t.id, loaded);
   }
 
-  const libs = await db.query.libraryAssets.findMany();
+  const templateTaskIds = [...byId.values()].flatMap((tpl) => tpl.phases.flatMap((p) => p.tasks.map((tk) => tk.id)));
+
+  log(`Loading ${templateTaskIds.length} template extras (checklists + attachments)…`);
+  const [allTemplateChecks, allTemplateAtt, libs] = await Promise.all([
+    loadAllInChunks(templateTaskIds, (chunk) =>
+      db.query.templateTaskChecklistItems.findMany({
+        where: inArray(templateTaskChecklistItems.templateTaskId, chunk),
+      }),
+    ),
+    loadAllInChunks(templateTaskIds, (chunk) =>
+      db.query.templateTaskAttachments.findMany({
+        where: inArray(templateTaskAttachments.templateTaskId, chunk),
+      }),
+    ),
+    db.query.libraryAssets.findMany(),
+  ]);
+
+  const checksByTemplateTask = new Map<string, ChecklistSeed[]>();
+  for (const row of allTemplateChecks) {
+    const list = checksByTemplateTask.get(row.templateTaskId) ?? [];
+    list.push(row);
+    checksByTemplateTask.set(row.templateTaskId, list);
+  }
+  const attByTemplateTask = new Map<string, AttachmentSeed[]>();
+  for (const row of allTemplateAtt) {
+    const list = attByTemplateTask.get(row.templateTaskId) ?? [];
+    list.push(row);
+    attByTemplateTask.set(row.templateTaskId, list);
+  }
   const libBySlug = new Map(libs.map((l) => [l.slug, l]));
   const libById = new Map(libs.map((l) => [l.id, l]));
 
@@ -87,26 +162,92 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
     },
   });
 
+  const eligible = live.filter((project) => {
+    if (!wanted(opts.only, project)) return false;
+    if (project.status === "COMPLETED" || project.status === "CANCELLED") return false;
+    const template =
+      (project.templateId ? byId.get(project.templateId) : null) ??
+      [...byId.values()].find((t) => t.code === "ehr") ??
+      null;
+    return Boolean(template);
+  });
+  const capped = typeof opts.limit === "number" && opts.limit > 0 ? eligible.slice(0, opts.limit) : eligible;
+
+  log(`Scanning ${capped.length} WIP project(s)${eligible.length !== capped.length ? ` (of ${eligible.length})` : ""}…`);
+
+  const projectIds = capped.map((p) => p.id);
+  const livePhases = await loadAllInChunks(projectIds, (chunk) =>
+    db.query.phases.findMany({
+      where: inArray(phases.projectId, chunk),
+      with: { tasks: true },
+    }),
+  );
+  const phasesByProject = new Map<string, typeof livePhases>();
+  for (const phase of livePhases) {
+    const list = phasesByProject.get(phase.projectId) ?? [];
+    list.push(phase);
+    phasesByProject.set(phase.projectId, list);
+  }
+
+  const liveTaskIds = livePhases.flatMap((p) => p.tasks.map((t) => t.id));
+  log(`Loaded ${livePhases.length} phases / ${liveTaskIds.length} live tasks. Batching extras…`);
+
+  const [allLiveChecks, allLiveFiles] = await Promise.all([
+    loadAllInChunks(liveTaskIds, (chunk) =>
+      db.query.taskChecklistItems.findMany({
+        where: inArray(taskChecklistItems.taskId, chunk),
+        columns: { taskId: true, label: true },
+      }),
+    ),
+    loadAllInChunks(projectIds, (chunk) =>
+      db.query.fileAssets.findMany({
+        where: inArray(fileAssets.projectId, chunk),
+        columns: { taskId: true, libraryAssetId: true, kind: true, url: true },
+      }),
+    ),
+  ]);
+
+  const liveCheckLabels = new Map<string, Set<string>>();
+  for (const row of allLiveChecks) {
+    const set = liveCheckLabels.get(row.taskId) ?? new Set();
+    set.add(titleKey(row.label));
+    liveCheckLabels.set(row.taskId, set);
+  }
+  const filesByTask = new Map<string, typeof allLiveFiles>();
+  for (const f of allLiveFiles) {
+    if (!f.taskId) continue;
+    const list = filesByTask.get(f.taskId) ?? [];
+    list.push(f);
+    filesByTask.set(f.taskId, list);
+  }
+
   const rows: ResyncTaskPlan[] = [];
   let scanned = 0;
   const touched = new Set<string>();
+  let timedOut = false;
 
-  for (const project of live) {
-    if (!wanted(opts.only, project)) continue;
+  for (let i = 0; i < capped.length; i++) {
+    if (resyncTimedOut(startedAt, deadlineMs)) {
+      timedOut = true;
+      log(
+        `Stopped at ${formatResyncSeconds(resyncElapsedMs(startedAt))} — pass --only CODE or --limit N, or --timeout-sec 0 to disable.`,
+      );
+      break;
+    }
+
+    const project = capped[i]!;
     const template =
       (project.templateId ? byId.get(project.templateId) : null) ??
       [...byId.values()].find((t) => t.code === "ehr") ??
       null;
     if (!template) continue;
-    // Skip completed history — don't reshape post go-live sites.
-    if (project.status === "COMPLETED" || project.status === "CANCELLED") continue;
     scanned += 1;
+    if (i === 0 || (i + 1) % 5 === 0 || i + 1 === capped.length) {
+      log(`Project ${i + 1}/${capped.length}: ${project.code}`);
+    }
 
-    const livePhases = await db.query.phases.findMany({
-      where: eq(phases.projectId, project.id),
-      with: { tasks: true },
-    });
-    const phaseByName = new Map(livePhases.map((p) => [titleKey(p.name), p]));
+    const projectPhases = phasesByProject.get(project.id) ?? [];
+    const phaseByName = new Map(projectPhases.map((p) => [titleKey(p.name), p]));
 
     for (const tp of template.phases) {
       const livePhase = phaseByName.get(titleKey(tp.name));
@@ -126,6 +267,9 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
           ? findByPlaybookTitle(liveByTitle, parentTemplate.title)
           : null;
 
+        const templateChecks = checksByTemplateTask.get(tt.id) ?? [];
+        const templateAtt = attByTemplateTask.get(tt.id) ?? [];
+
         if (!liveTask) {
           rows.push({
             projectId: project.id,
@@ -135,6 +279,26 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
             action: "insert",
             detail: parentTemplate ? `nested under “${parentTemplate.title}”` : "top-level",
           });
+          if (templateChecks.length > 0) {
+            rows.push({
+              projectId: project.id,
+              projectCode: project.code,
+              phaseName: tp.name,
+              title: tt.title,
+              action: "add-checklist",
+              detail: `${templateChecks.length} area(s) to cover`,
+            });
+          }
+          if (templateAtt.length > 0) {
+            rows.push({
+              projectId: project.id,
+              projectCode: project.code,
+              phaseName: tp.name,
+              title: tt.title,
+              action: "add-attachment",
+              detail: `${templateAtt.length} default file(s)`,
+            });
+          }
           touched.add(project.id);
           continue;
         }
@@ -151,15 +315,8 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
           touched.add(project.id);
         }
 
-        const templateChecks = await db.query.templateTaskChecklistItems.findMany({
-          where: eq(templateTaskChecklistItems.templateTaskId, tt.id),
-        });
         if (templateChecks.length > 0) {
-          const existing = await db.query.taskChecklistItems.findMany({
-            where: eq(taskChecklistItems.taskId, liveTask.id),
-            columns: { label: true },
-          });
-          const have = new Set(existing.map((c) => titleKey(c.label)));
+          const have = liveCheckLabels.get(liveTask.id) ?? new Set();
           const missing = templateChecks.filter((c) => !have.has(titleKey(c.label)));
           if (missing.length > 0) {
             rows.push({
@@ -174,14 +331,8 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
           }
         }
 
-        const templateAtt = await db.query.templateTaskAttachments.findMany({
-          where: eq(templateTaskAttachments.templateTaskId, tt.id),
-        });
         if (templateAtt.length > 0) {
-          const existingFiles = await db.query.fileAssets.findMany({
-            where: eq(fileAssets.taskId, liveTask.id),
-            columns: { libraryAssetId: true, kind: true, url: true },
-          });
+          const existingFiles = filesByTask.get(liveTask.id) ?? [];
           const missingAtt = templateAtt.filter((a) => {
             const lib = libById.get(a.libraryAssetId);
             if (!lib) return true;
@@ -202,21 +353,7 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
       }
     }
 
-    // Catalog-driven backfill: match live task titles even when the Dock WIP
-    // import skipped template_task_attachment, or phase names drifted.
-    const projectFiles = await db.query.fileAssets.findMany({
-      where: eq(fileAssets.projectId, project.id),
-      columns: { taskId: true, libraryAssetId: true, kind: true, url: true },
-    });
-    const filesByTask = new Map<string, typeof projectFiles>();
-    for (const f of projectFiles) {
-      if (!f.taskId) continue;
-      const list = filesByTask.get(f.taskId) ?? [];
-      list.push(f);
-      filesByTask.set(f.taskId, list);
-    }
-
-    for (const livePhase of livePhases) {
+    for (const livePhase of projectPhases) {
       for (const liveTask of livePhase.tasks) {
         const defs = libraryDefsForTaskTitle(liveTask.title);
         if (defs.length === 0) continue;
@@ -247,22 +384,59 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
     }
   }
 
+  const elapsedMs = resyncElapsedMs(startedAt);
+  log(`Plan ready in ${formatResyncSeconds(elapsedMs)} (${rows.length} action(s)).`);
   return {
     projectsScanned: scanned,
     projectsTouched: touched.size,
     rows,
+    timedOut,
+    elapsedMs,
   };
 }
 
 export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> {
+  const startedAt = Date.now();
+  const deadlineMs = deadlineOf(opts);
+  const log = opts.onProgress ?? (() => undefined);
   const plan = await planPlaybookResync(opts);
   if (!opts.apply) return plan;
+  if (plan.timedOut) {
+    log("Dry-run/plan timed out — not applying a partial plan. Re-run with --only or a higher --timeout-sec.");
+    return plan;
+  }
 
   const templates = await db.query.projectTemplates.findMany({ columns: { id: true } });
   const byId = new Map<string, LoadedTemplate>();
   for (const t of templates) {
     const loaded = await loadTemplateById(t.id);
     if (loaded) byId.set(t.id, loaded);
+  }
+
+  const templateTaskIds = [...byId.values()].flatMap((tpl) => tpl.phases.flatMap((p) => p.tasks.map((tk) => tk.id)));
+  const [allTemplateChecks, allTemplateAtt] = await Promise.all([
+    loadAllInChunks(templateTaskIds, (chunk) =>
+      db.query.templateTaskChecklistItems.findMany({
+        where: inArray(templateTaskChecklistItems.templateTaskId, chunk),
+      }),
+    ),
+    loadAllInChunks(templateTaskIds, (chunk) =>
+      db.query.templateTaskAttachments.findMany({
+        where: inArray(templateTaskAttachments.templateTaskId, chunk),
+      }),
+    ),
+  ]);
+  const checksByTemplateTask = new Map<string, typeof allTemplateChecks>();
+  for (const row of allTemplateChecks) {
+    const list = checksByTemplateTask.get(row.templateTaskId) ?? [];
+    list.push(row);
+    checksByTemplateTask.set(row.templateTaskId, list);
+  }
+  const attByTemplateTask = new Map<string, typeof allTemplateAtt>();
+  for (const row of allTemplateAtt) {
+    const list = attByTemplateTask.get(row.templateTaskId) ?? [];
+    list.push(row);
+    attByTemplateTask.set(row.templateTaskId, list);
   }
 
   const grouped = new Map<string, ResyncTaskPlan[]>();
@@ -272,7 +446,15 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
     grouped.set(row.projectId, list);
   }
 
+  let index = 0;
   for (const [projectId, projectRows] of grouped) {
+    if (resyncTimedOut(startedAt, deadlineMs)) {
+      log(
+        `Apply stopped after ${formatResyncSeconds(resyncElapsedMs(startedAt))} at project ${index}/${grouped.size}. Re-run --apply --only for remaining sites.`,
+      );
+      return { ...plan, timedOut: true, elapsedMs: resyncElapsedMs(startedAt) };
+    }
+    index += 1;
     const project = await db.query.projects.findFirst({
       where: eq(projects.id, projectId),
     });
@@ -282,6 +464,7 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
       [...byId.values()].find((t) => t.code === "ehr") ??
       null;
     if (!template) continue;
+    log(`Applying ${project.code} (${index}/${grouped.size}, ${projectRows.length} action(s))…`);
 
     const livePhases = await db.query.phases.findMany({
       where: eq(phases.projectId, project.id),
@@ -358,9 +541,7 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
           }
 
           if (actions.some((a) => a.action === "add-checklist")) {
-            const templateChecks = await tx.query.templateTaskChecklistItems.findMany({
-              where: eq(templateTaskChecklistItems.templateTaskId, tt.id),
-            });
+            const templateChecks = checksByTemplateTask.get(tt.id) ?? [];
             const existing = await tx.query.taskChecklistItems.findMany({
               where: eq(taskChecklistItems.taskId, liveTask.id),
             });
@@ -380,9 +561,7 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
           }
 
           if (actions.some((a) => a.action === "add-attachment")) {
-            const templateAtt = await tx.query.templateTaskAttachments.findMany({
-              where: eq(templateTaskAttachments.templateTaskId, tt.id),
-            });
+            const templateAtt = attByTemplateTask.get(tt.id) ?? [];
             for (const a of templateAtt) {
               await copyLibraryAssetToTask(tx, {
                 taskId: liveTask.id,
@@ -401,22 +580,31 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
         }
       }
 
-      const refreshed = await tx.query.phases.findMany({
-        where: eq(phases.projectId, project.id),
-        with: { tasks: true },
-      });
-      for (const phase of refreshed) {
-        for (const task of phase.tasks) {
-          await ensureDefaultAttachmentsOnTask(tx, {
-            taskId: task.id,
-            projectId: project.id,
-            title: task.title,
-            uploadedById: opts.actorId,
-          });
+      const titlesNeedingCatalog = new Set(
+        projectRows.filter((r) => r.action === "add-attachment" && r.librarySlug).map((r) => r.title),
+      );
+      if (titlesNeedingCatalog.size > 0) {
+        const refreshed = await tx.query.phases.findMany({
+          where: eq(phases.projectId, project.id),
+          with: { tasks: true },
+        });
+        for (const phase of refreshed) {
+          for (const task of phase.tasks) {
+            if (!titlesNeedingCatalog.has(task.title) && !libraryDefsForTaskTitle(task.title).length) continue;
+            if (!titlesNeedingCatalog.has(task.title) && !projectRows.some((r) => r.title === task.title && r.action === "add-attachment")) {
+              continue;
+            }
+            await ensureDefaultAttachmentsOnTask(tx, {
+              taskId: task.id,
+              projectId: project.id,
+              title: task.title,
+              uploadedById: opts.actorId,
+            });
+          }
         }
       }
     });
   }
 
-  return plan;
+  return { ...plan, elapsedMs: resyncElapsedMs(startedAt), timedOut: false };
 }

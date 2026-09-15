@@ -64,10 +64,12 @@ delivered; only email is configurable.
 **Outlook and Teams** — see [Notifications](#notifications) below.
 
 **Templates** — Dock Implementation Template plus three RCM paths, fully
-editable (add/remove + drag-reorder phases and tasks). Creating a project
-materializes the chosen playbook with dates from kickoff → go-live. Optional
-areas can be excluded on create; a live project can mark a task or section
-N/A without changing the template.
+editable (add/remove + drag-reorder phases and nested tasks, descriptions,
+training checklists, default library files). Duplicate makes a custom copy.
+Optional areas can be excluded on create or bulk-marked on the template; a live
+project can mark a task or section N/A without changing the template. File
+library is `/library`. Resync: `npm run db:resync:playbook-from-dock` (progress
++ timeout; Azure Cloud Shell; no Dock API).
 
 **Update History** — staff sidebar **What’s new** (`/updates`) lists product
 changes from `RELEASE_NOTES` in `src/lib/version.ts`. Customer portal users

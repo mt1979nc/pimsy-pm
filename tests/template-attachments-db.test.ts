@@ -214,7 +214,9 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
       uploadedById: actorId,
     });
 
-    const plan = await planPlaybookResync({ apply: false, actorId });
+    const plan = await planPlaybookResync({ apply: false, actorId, useDefaultDeadline: false });
+    expect(plan.timedOut).toBe(false);
+    expect(plan.elapsedMs).toBeGreaterThanOrEqual(0);
     expect(
       plan.rows.some(
         (r) =>
@@ -224,7 +226,7 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
       ),
     ).toBe(true);
 
-    await applyPlaybookResync({ apply: true, actorId, only: ["WIPATT"] });
+    await applyPlaybookResync({ apply: true, actorId, only: ["WIPATT"], useDefaultDeadline: false });
 
     const after = await db.query.fileAssets.findMany({
       where: eq(fileAssets.taskId, billingTask.id),

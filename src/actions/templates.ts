@@ -1,19 +1,25 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
 import {
+  libraryAssets,
   projectTemplates,
   templatePhases,
+  templateTaskAttachments,
+  templateTaskChecklistItems,
   templateTasks,
 } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { canManageTemplates, ForbiddenError, NotFoundError } from "@/lib/authz";
 import { audit } from "@/lib/audit";
 import { ASSIGNABLE_PROJECT_ROLES } from "@/lib/staffing";
+import { normalizeAreaKey } from "@/lib/playbook-meta";
+import { cloneProjectTemplate } from "@/lib/template-clone";
 import type { ActionState } from "./messages";
 
 async function requireTemplateAdmin() {
@@ -23,6 +29,19 @@ async function requireTemplateAdmin() {
 }
 
 const pathSchema = z.enum(["EHR", "EHR_RCM", "RCM_LEGACY", "RCM_PRISM"]);
+
+function parseAreaKey(formData: FormData): string | null {
+  const custom = formData.get("areaKeyCustom")?.toString() ?? "";
+  const selected = formData.get("areaKey")?.toString() ?? "";
+  const raw = custom.trim() || selected.trim();
+  if (!raw) return null;
+  return normalizeAreaKey(raw) || null;
+}
+
+function revalidateTemplate(id: string) {
+  revalidatePath("/templates");
+  revalidatePath(`/templates/${id}`);
+}
 
 export async function updateTemplateMeta(
   _prev: ActionState,
@@ -91,7 +110,7 @@ export async function createTemplatePhase(
     offsetDays: Number(formData.get("offsetDays") ?? 0) || 0,
     durationDays: Number(formData.get("durationDays") ?? 7) || 7,
     isOptional: formData.get("isOptional") === "on",
-    areaKey: formData.get("areaKey")?.toString().trim() || null,
+    areaKey: parseAreaKey(formData),
     workTrack: formData.get("workTrack") === "RCM" ? "RCM" : "EHR",
   });
 
@@ -123,7 +142,7 @@ export async function updateTemplatePhase(
       offsetDays: Number(formData.get("offsetDays") ?? 0) || 0,
       durationDays: Number(formData.get("durationDays") ?? 7) || 7,
       isOptional: formData.get("isOptional") === "on",
-      areaKey: formData.get("areaKey")?.toString().trim() || null,
+      areaKey: parseAreaKey(formData),
       workTrack: formData.get("workTrack") === "RCM" ? "RCM" : formData.get("workTrack") === "SHARED" ? "SHARED" : "EHR",
     })
     .where(eq(templatePhases.id, phaseId));
@@ -205,7 +224,7 @@ export async function createTemplateTask(
     offsetDays: Number(formData.get("offsetDays") ?? 0) || 0,
     durationDays: Number(formData.get("durationDays") ?? 1) || 1,
     isOptional: formData.get("isOptional") === "on",
-    areaKey: formData.get("areaKey")?.toString().trim() || null,
+    areaKey: parseAreaKey(formData),
     defaultRole,
     workTrack: formData.get("workTrack") === "RCM" ? "RCM" : "EHR",
     overlapKey: formData.get("overlapKey")?.toString().trim() || null,
@@ -233,19 +252,30 @@ export async function updateTemplateTask(
   const ownerSide = formData.get("ownerSide") === "CUSTOMER" ? "CUSTOMER" : "INTERNAL";
   const roleRaw = formData.get("defaultRole")?.toString() || "";
   const defaultRole = roleSchema.safeParse(roleRaw).success ? (roleRaw as never) : null;
+  const parentRaw = formData.get("parentTaskId")?.toString() || "";
+  let parentTaskId: string | null = parentRaw || null;
+  if (parentTaskId === taskId) parentTaskId = null;
+  if (parentTaskId) {
+    const parent = await db.query.templateTasks.findFirst({
+      where: and(eq(templateTasks.id, parentTaskId), eq(templateTasks.phaseId, task.phaseId)),
+      columns: { id: true },
+    });
+    if (!parent) parentTaskId = null;
+  }
 
   await db
     .update(templateTasks)
     .set({
       title,
       description: formData.get("description")?.toString().trim() || null,
+      parentTaskId,
       priority: (formData.get("priority")?.toString() as never) || task.priority,
       visibility: ownerSide === "CUSTOMER" ? "SHARED" : formData.get("visibility") === "SHARED" ? "SHARED" : "INTERNAL",
       ownerSide,
       offsetDays: Number(formData.get("offsetDays") ?? 0) || 0,
       durationDays: Number(formData.get("durationDays") ?? 1) || 1,
       isOptional: formData.get("isOptional") === "on",
-      areaKey: formData.get("areaKey")?.toString().trim() || null,
+      areaKey: parseAreaKey(formData),
       defaultRole,
       workTrack: formData.get("workTrack") === "RCM" ? "RCM" : formData.get("workTrack") === "SHARED" ? "SHARED" : "EHR",
       overlapKey: formData.get("overlapKey")?.toString().trim() || null,
@@ -327,4 +357,151 @@ export async function moveTemplateTask(taskId: string, toPhaseId: string, before
   });
   revalidatePath(`/templates/${dest.templateId}`);
 }
+
+export async function duplicateTemplate(formData: FormData): Promise<void> {
+  const actor = await requireTemplateAdmin();
+  const sourceId = String(formData.get("templateId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!sourceId) throw new NotFoundError("Template not found.");
+
+  const copy = await cloneProjectTemplate({ sourceId, name: name || undefined });
+  await audit({
+    actor,
+    action: "template.duplicated",
+    entityType: "template",
+    entityId: copy.id,
+    summary: copy.name,
+    metadata: { sourceId, code: copy.code },
+  });
+  revalidateTemplate(sourceId);
+  revalidateTemplate(copy.id);
+  redirect(`/templates/${copy.id}`);
+}
+
+export async function addTemplateTaskChecklistItem(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireTemplateAdmin();
+  const taskId = String(formData.get("taskId") ?? "");
+  const label = String(formData.get("label") ?? "").trim();
+  if (!taskId || !label) return { error: "Checklist item needs a label." };
+  if (label.length > 300) return { error: "Keep the label under 300 characters." };
+
+  const task = await db.query.templateTasks.findFirst({
+    where: eq(templateTasks.id, taskId),
+    with: { phase: { columns: { templateId: true } } },
+  });
+  if (!task) return { error: "Task not found." };
+
+  const existing = await db.query.templateTaskChecklistItems.findMany({
+    where: eq(templateTaskChecklistItems.templateTaskId, taskId),
+    columns: { order: true },
+  });
+  const order = existing.reduce((m, r) => Math.max(m, r.order), -1) + 1;
+  const visibility = formData.get("visibility") === "INTERNAL" ? "INTERNAL" : "SHARED";
+
+  await db.insert(templateTaskChecklistItems).values({
+    templateTaskId: taskId,
+    label,
+    order,
+    visibility,
+  });
+  revalidateTemplate(task.phase.templateId);
+  return { ok: true };
+}
+
+export async function removeTemplateTaskChecklistItem(itemId: string) {
+  await requireTemplateAdmin();
+  const item = await db.query.templateTaskChecklistItems.findFirst({
+    where: eq(templateTaskChecklistItems.id, itemId),
+    with: { templateTask: { with: { phase: { columns: { templateId: true } } } } },
+  });
+  if (!item) throw new NotFoundError("Checklist item not found.");
+  await db.delete(templateTaskChecklistItems).where(eq(templateTaskChecklistItems.id, itemId));
+  revalidateTemplate(item.templateTask.phase.templateId);
+}
+
+export async function attachLibraryToTemplateTask(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireTemplateAdmin();
+  const taskId = String(formData.get("taskId") ?? "");
+  const libraryAssetId = String(formData.get("libraryAssetId") ?? "");
+  if (!taskId || !libraryAssetId) return { error: "Pick a library file." };
+
+  const task = await db.query.templateTasks.findFirst({
+    where: eq(templateTasks.id, taskId),
+    with: { phase: { columns: { templateId: true } } },
+  });
+  if (!task) return { error: "Task not found." };
+  const lib = await db.query.libraryAssets.findFirst({
+    where: eq(libraryAssets.id, libraryAssetId),
+    columns: { id: true },
+  });
+  if (!lib) return { error: "Library file not found." };
+
+  const already = await db.query.templateTaskAttachments.findFirst({
+    where: and(
+      eq(templateTaskAttachments.templateTaskId, taskId),
+      eq(templateTaskAttachments.libraryAssetId, libraryAssetId),
+    ),
+    columns: { id: true },
+  });
+  if (already) return { error: "That file is already on this task." };
+
+  await db.insert(templateTaskAttachments).values({ templateTaskId: taskId, libraryAssetId });
+  revalidateTemplate(task.phase.templateId);
+  return { ok: true };
+}
+
+export async function detachLibraryFromTemplateTask(attachmentId: string) {
+  await requireTemplateAdmin();
+  const row = await db.query.templateTaskAttachments.findFirst({
+    where: eq(templateTaskAttachments.id, attachmentId),
+    with: { templateTask: { with: { phase: { columns: { templateId: true } } } } },
+  });
+  if (!row) throw new NotFoundError("Attachment not found.");
+  await db.delete(templateTaskAttachments).where(eq(templateTaskAttachments.id, attachmentId));
+  revalidateTemplate(row.templateTask.phase.templateId);
+}
+
+export async function bulkSetTemplateArea(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireTemplateAdmin();
+  const templateId = String(formData.get("templateId") ?? "");
+  const areaKey = normalizeAreaKey(String(formData.get("areaKey") ?? ""));
+  const mode = String(formData.get("mode") ?? "");
+  if (!templateId || !areaKey) return { error: "Pick an area." };
+  if (mode !== "mark-optional" && mode !== "clear-optional") {
+    return { error: "Unknown area action." };
+  }
+
+  const phases = await db.query.templatePhases.findMany({
+    where: eq(templatePhases.templateId, templateId),
+    columns: { id: true, areaKey: true },
+    with: { tasks: { columns: { id: true, areaKey: true } } },
+  });
+  if (phases.length === 0) return { error: "Template not found." };
+
+  const isOptional = mode === "mark-optional";
+  const phaseIds = phases.filter((p) => p.areaKey === areaKey).map((p) => p.id);
+  const taskIds = phases.flatMap((p) => p.tasks.filter((t) => t.areaKey === areaKey).map((t) => t.id));
+
+  await db.transaction(async (tx) => {
+    for (const id of phaseIds) {
+      await tx.update(templatePhases).set({ isOptional }).where(eq(templatePhases.id, id));
+    }
+    for (const id of taskIds) {
+      await tx.update(templateTasks).set({ isOptional }).where(eq(templateTasks.id, id));
+    }
+  });
+
+  revalidateTemplate(templateId);
+  return { ok: true };
+}
+
 

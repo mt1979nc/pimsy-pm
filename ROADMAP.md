@@ -16,7 +16,8 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **Playbook / staffing (v1.9)** | **Shipped** (v1.9.0–1.9.1) | Editable templates, four site paths, optional areas, per-project N/A, staffing roles + auto-assign + manager overview, staff-only Update History. |
 | **Forecast (v1.10)** | **Shipped** | Weekly hours + peak week + headroom + hire-now; weights listed; Analysis exclusions (SENSORI/MHC/LECHRIS default). Native Postgres. |
 | **Prism cutover (v1.11)** | **Shipped** (v1.11.0–1.11.3) | PATH is SoT. Import + snapshot API + add-to-roster + Analysis table. v1.11.1 restores Portfolio vs Waiting-on; v1.11.2 fixes blank Headroom + team load cards and typed delete; v1.11.3 replaces Headroom bars with a load-vs-capacity line chart. |
-| **Dock parity (v1.12)** | **Shipped** (v1.12.0–1.12.2) | Active-book prune, nested playbook resync, **task attachments** (Discovery Wizard LINK + billing sheets) that clone onto matching PATH tasks and backfill via resync, training checklists, customer Learning Center. RAC and TANC both stay on the allowlist until Alexander consolidates. Runbook: `v1.12-DOCK-PARITY.md`. |
+| **Dock parity (v1.12)** | **Shipped** (v1.12.0–1.12.4) | Active-book prune, nested playbook resync, **task attachments**, training checklists, Learning Center, Forecast+ go-live scenarios. RAC and TANC both stay on the allowlist until Alexander consolidates. Runbook: `v1.12-DOCK-PARITY.md`. |
+| **Template area (v1.13)** | **Shipped** (this branch) | Dock-fidelity playbook editor (descriptions, nested tasks, checklists, default files), duplicate/rename, bulk optional areas, hub nav, resync that batch-loads + times out instead of hanging. Runbook: `v1.13-TEMPLATES.md`. |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |
@@ -42,7 +43,7 @@ Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shi
 |------|--------|
 | Status updates feed | Planned |
 | Zoom recordings sync | Planned |
-| Template reseed | Planned |
+| Template reseed | Planned — `--templates-only` still the ops path; v1.13 duplicate is an in-app copy, not a live Dock pull |
 | Mentions / notify | Partial (exists; polish remaining) |
 | File library by area | **Shipped** (v1.12) | Reusable library + Learning Center topic groups; placeholders until Dock binaries are uploaded. |
 

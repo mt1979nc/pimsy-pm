@@ -11,6 +11,9 @@ import {
   VisibilityBadge,
   LinkButton,
 } from "@/components/ui";
+import { TemplateHubNav } from "@/components/template-hub-nav";
+import { DuplicateTemplateButton } from "./duplicate-template-button";
+import { PLAYBOOK_PATH_META, collectTemplateAreaRows, optionalAreaLabel } from "@/lib/playbook-meta";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Templates" };
@@ -19,7 +22,7 @@ export default async function TemplatesPage() {
   // Templates are the standard playbooks every project starts from — an
   // org-configuration concern, not a day-to-day delivery one. Same
   // OWNER/ADMIN-only bar as canManageTemplates(), so it's consistent with
-  // whatever template-editing UI comes next.
+  // the editor, file library, and duplicate flow.
   await requireAdmin();
 
   const templates = await db.query.projectTemplates.findMany({
@@ -30,6 +33,7 @@ export default async function TemplatesPage() {
           tasks: {
             with: {
               defaultAttachments: { with: { libraryAsset: true } },
+              checklistItems: true,
             },
           },
         },
@@ -43,7 +47,7 @@ export default async function TemplatesPage() {
     <>
       <PageHeader
         title="Templates"
-        subtitle="The standard playbooks. Every new project can start from one of these."
+        subtitle="Dock-style playbooks: phases, nested tasks, descriptions, default files, and training checklists. New projects clone the chosen path."
         actions={
           <div className="flex flex-wrap gap-2">
             <LinkButton href="/library" size="sm">
@@ -55,6 +59,7 @@ export default async function TemplatesPage() {
           </div>
         }
       />
+      <TemplateHubNav current="/templates" />
 
       {templates.length === 0 ? (
         <Card>
@@ -68,13 +73,19 @@ export default async function TemplatesPage() {
           {templates.map((t) => {
             const allTasks = t.phases.flatMap((p) => p.tasks);
             const customerTasks = allTasks.filter((x) => x.ownerSide === "CUSTOMER");
+            const nested = allTasks.filter((x) => x.parentTaskId).length;
+            const checklists = allTasks.reduce((n, x) => n + x.checklistItems.length, 0);
+            const attachments = allTasks.reduce((n, x) => n + x.defaultAttachments.length, 0);
+            const areas = collectTemplateAreaRows(t.phases);
+            const pathLabel = t.playbookPath ? PLAYBOOK_PATH_META[t.playbookPath].title : "Custom playbook";
             return (
               <Card key={t.id}>
                 <CardHeader
                   title={
-                    <span className="flex items-center gap-2">
+                    <span className="flex flex-wrap items-center gap-2">
                       {t.name}
                       {!t.isActive ? <Badge>Inactive</Badge> : null}
+                      <Badge tone={t.playbookPath ? "violet" : "neutral"}>{pathLabel}</Badge>
                     </span>
                   }
                   subtitle={t.description}
@@ -82,14 +93,31 @@ export default async function TemplatesPage() {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Badge>{t.phases.length} phases</Badge>
                       <Badge>{allTasks.length} tasks</Badge>
+                      {nested > 0 ? <Badge>{nested} nested</Badge> : null}
+                      {checklists > 0 ? <Badge>{checklists} checklist</Badge> : null}
+                      {attachments > 0 ? <Badge>{attachments} files</Badge> : null}
                       <Badge tone="violet">{customerTasks.length} customer</Badge>
                       <Badge>{t.durationDays} days</Badge>
+                      <DuplicateTemplateButton templateId={t.id} name={t.name} />
                       <LinkButton href={`/templates/${t.id}`} size="sm" variant="primary">
                         Edit
                       </LinkButton>
                     </div>
                   }
                 />
+                {areas.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 border-b border-border px-5 py-2.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+                      Optional areas
+                    </span>
+                    {areas.map((area) => (
+                      <Badge key={area.key} tone={area.optionalCount > 0 ? "amber" : "neutral"}>
+                        {optionalAreaLabel(area.key)} · {area.taskCount}
+                        {area.optionalCount > 0 ? ` (${area.optionalCount} optional)` : ""}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="divide-y divide-border">
                   {t.phases.map((p) => {
                     const custom = p.tasks.filter((x) => x.ownerSide === "CUSTOMER").length;
@@ -115,9 +143,15 @@ export default async function TemplatesPage() {
                               key={task.id}
                               className="flex items-center gap-3 py-1.5 pl-14 pr-5"
                             >
+                              {task.parentTaskId ? (
+                                <span className="text-[11px] text-ink-3">↳</span>
+                              ) : null}
                               <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-2">
                                 {task.title}
                               </span>
+                              {task.checklistItems.length > 0 ? (
+                                <Badge>{task.checklistItems.length} areas</Badge>
+                              ) : null}
                               {task.defaultAttachments.map((att) => (
                                 <Badge
                                   key={att.id}
@@ -160,15 +194,17 @@ export default async function TemplatesPage() {
       )}
 
       <p className="mt-5 max-w-2xl text-[12.5px] leading-relaxed text-ink-3">
-        Open a playbook and edit it like Dock: add or remove tasks, drag phases and tasks to
-        reorder. Paperclip chips are default attachments (Discovery Wizard link, billing sheets)
-        that clone onto new projects. Live projects are not rewritten when the template changes —
-        run{" "}
+        Open a playbook and edit it like Dock: add or remove phases, nested tasks, descriptions,
+        training checklists, and default attachments. Duplicate makes a custom copy so the four
+        site-creation paths stay put. Paperclip chips clone onto new projects. Live projects are not
+        rewritten when the template changes — run{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
           npm run db:resync:playbook-from-dock -- --apply
         </code>{" "}
-        to attach missing defaults on existing WIP without deleting user files. To reset the four
-        standard paths from code, run{" "}
+        in Azure Cloud Shell to attach missing defaults on existing WIP without deleting user files
+        (dry-run logs progress and stops at 180s unless you pass{" "}
+        <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">--timeout-sec 0</code>
+        ). To reset the four standard paths from code, run{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
           npm run db:seed -- --templates-only
         </code>

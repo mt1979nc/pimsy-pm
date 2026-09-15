@@ -1,4 +1,5 @@
 import { requireStaff } from "@/lib/guard";
+import { canManageTemplates } from "@/lib/authz";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
@@ -62,6 +63,38 @@ export default async function SettingsPage() {
             audienceNote="Only for the projects and conversations you're part of."
           />
         </Card>
+
+        {canManageTemplates(actor) ? (
+          <Card>
+            <CardHeader
+              title="Playbooks"
+              subtitle="Templates area — Dock Implementation playbooks, optional areas, and reusable files."
+              action={
+                <LinkButton href="/templates" size="sm" variant="primary">
+                  Open templates
+                </LinkButton>
+              }
+            />
+            <div className="space-y-2 px-5 py-4 text-[13px] leading-relaxed text-ink-2">
+              <p>
+                Edit phases, nested tasks, descriptions, training checklists, and default
+                attachments. Duplicate a path if you need a custom playbook without touching the
+                four site-creation options.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <LinkButton href="/templates" size="sm">
+                  Playbooks
+                </LinkButton>
+                <LinkButton href="/library" size="sm">
+                  File library
+                </LinkButton>
+                <LinkButton href="/learning" size="sm">
+                  Learning Center
+                </LinkButton>
+              </div>
+            </div>
+          </Card>
+        ) : null}
 
         <Card>
           <CardHeader

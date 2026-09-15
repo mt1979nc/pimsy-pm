@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { libraryAssets } from "@/db/schema";
 import { requireAdmin } from "@/lib/guard";
 import { PageHeader, Card, CardHeader, Badge, LinkButton } from "@/components/ui";
+import { TemplateHubNav } from "@/components/template-hub-nav";
 import { LibraryUploadForm } from "./library-form";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +20,9 @@ export default async function LibraryPage() {
     <>
       <PageHeader
         title="File library"
-        subtitle="Reusable Dock defaults. Discovery Wizard is a live LINK on Guided Discovery tasks (not a description URL). Billing sheets ship as placeholders until you drop the live files here or in content/template-attachments/. New workspaces copy them onto matching tasks. Resync backfills WIP without deleting user uploads."
+        subtitle="Reusable Dock defaults. Discovery Wizard is a live LINK on Guided Discovery tasks (not a description URL). Billing sheets ship as placeholders until you drop the live files here or in content/template-attachments/. Attach a file to a playbook task from Templates → Edit task. New workspaces copy them onto matching tasks. Resync backfills WIP without deleting user uploads."
       />
+      <TemplateHubNav current="/library" />
       <div className="space-y-4">
         {assets.map((asset) => (
           <Card key={asset.id}>

@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { projectTemplates } from "@/db/schema";
+import { libraryAssets, projectTemplates } from "@/db/schema";
 import { requireAdmin } from "@/lib/guard";
 import { PageHeader, LinkButton } from "@/components/ui";
+import { TemplateHubNav } from "@/components/template-hub-nav";
 import { TemplateEditor } from "./template-editor";
 
 export const dynamic = "force-dynamic";
@@ -17,21 +18,34 @@ export default async function TemplateEditorPage({
   await requireAdmin();
   const { id } = await params;
 
-  const row = await db.query.projectTemplates.findFirst({
-    where: eq(projectTemplates.id, id),
-    with: {
-      phases: {
-        with: {
-          tasks: {
-            with: {
-              defaultAttachments: { with: { libraryAsset: true } },
+  const [row, library] = await Promise.all([
+    db.query.projectTemplates.findFirst({
+      where: eq(projectTemplates.id, id),
+      with: {
+        phases: {
+          with: {
+            tasks: {
+              with: {
+                defaultAttachments: { with: { libraryAsset: true } },
+                checklistItems: true,
+              },
             },
           },
+          orderBy: (p, { asc: a }) => [a(p.order)],
         },
-        orderBy: (p, { asc: a }) => [a(p.order)],
       },
-    },
-  });
+    }),
+    db.query.libraryAssets.findMany({
+      orderBy: [asc(libraryAssets.name)],
+      columns: {
+        id: true,
+        name: true,
+        slug: true,
+        kind: true,
+        isPlaceholder: true,
+      },
+    }),
+  ]);
   if (!row) notFound();
 
   const phases = row.phases.map((p) => ({
@@ -40,10 +54,13 @@ export default async function TemplateEditorPage({
       .sort((a, b) => a.order - b.order)
       .map((task) => ({
         ...task,
+        checklistItems: [...task.checklistItems].sort((a, b) => a.order - b.order),
         attachments: task.defaultAttachments.map((att) => ({
+          id: att.id,
           name: att.libraryAsset?.name ?? "Attachment",
           kind: att.libraryAsset?.kind ?? "FILE",
           isPlaceholder: att.libraryAsset?.isPlaceholder ?? false,
+          libraryAssetId: att.libraryAssetId,
         })),
       })),
   }));
@@ -52,13 +69,14 @@ export default async function TemplateEditorPage({
     <>
       <PageHeader
         title={row.name}
-        subtitle="Fully editable playbook — add, remove, and drag to reorder phases and tasks."
+        subtitle="Dock-style editor: descriptions, nested tasks, training checklists, default files, and optional areas. Live projects are not rewritten."
         breadcrumb={
           <LinkButton href="/templates" variant="ghost" size="sm" className="-ml-2.5">
             ← Templates
           </LinkButton>
         }
       />
+      <TemplateHubNav current={`/templates/${row.id}`} />
       <TemplateEditor
         template={{
           id: row.id,
@@ -69,6 +87,7 @@ export default async function TemplateEditorPage({
           playbookPath: row.playbookPath,
           phases,
         }}
+        library={library}
       />
     </>
   );

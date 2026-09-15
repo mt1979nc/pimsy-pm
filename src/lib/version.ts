@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.12.4";
+export const APP_VERSION = "1.13.0";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.0",
+    date: "2026-09-15",
+    summary:
+      "Template area: Dock-style playbook editor (descriptions, nested tasks, training checklists, default files), duplicate/rename, bulk optional areas, and a resync that no longer hangs in dry-run.",
+    highlights: [
+      "Settings → Playbooks and Setup → Templates / File library. Hub nav on playbooks, library, and the editor so Alexander can move between the four paths, reusable files, and Learning Center without hunting.",
+      "Edit a playbook task like Dock: description, nest under a section, add/remove training “areas to cover”, attach or detach library files (Discovery Wizard LINK, billing placeholders). Chips on the list stay auditable.",
+      "Optional-areas panel: see counts, filter the editor, bulk Mark optional / Include always. Custom area keys are allowed; New project include/exclude still uses those keys.",
+      "Duplicate copies phases, nested tasks, checklists, default files, and milestones into an inactive custom playbook (unique code, no playbookPath) so the four site-creation paths stay unique. Rename on the playbook card.",
+      "`npm run db:resync:playbook-from-dock` batch-loads extras, logs per-project progress, defaults to a 180s timeout (`--timeout-sec 0` to disable, `--limit N` / `--only CODE` to slice). Does not call the Dock API or edit live Dock Spaces. Azure Cloud Shell: export DATABASE_URL from App Service, dry-run, then `--apply`.",
+      "PATH + Prism naming unchanged. Live projects are not rewritten when a template changes.",
+    ],
+  },
   {
     version: "1.12.4",
     date: "2026-09-14",

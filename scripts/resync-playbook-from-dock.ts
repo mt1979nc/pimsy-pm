@@ -4,22 +4,33 @@
  * attachments** onto existing WIP projects. Does not wipe completion state
  * or user-uploaded files. Match by title (catalog + template join).
  *
- * Dry-run by default.
+ * Dry-run by default. Does **not** call the Dock API or edit live Dock Spaces.
  *
  *   npm run db:resync:playbook-from-dock
  *   npm run db:resync:playbook-from-dock -- --apply
  *   npm run db:resync:playbook-from-dock -- --apply --only CEDAR,BHC
+ *   npm run db:resync:playbook-from-dock -- --limit 5 --timeout-sec 120
  *
- * Does not invent Dock credentials. Run `db:seed -- --templates-only` first
- * (or pass --seed) so template rows exist.
+ * Azure Cloud Shell (no Dock credentials required):
+ *   1. App Service → Settings → Environment variables → copy DATABASE_URL
+ *   2. export DATABASE_URL='postgresql://…'
+ *   3. npm ci && npm run db:seed -- --templates-only   # optional catalog refresh
+ *   4. npm run db:resync:playbook-from-dock            # dry-run, prints progress
+ *   5. npm run db:resync:playbook-from-dock -- --apply
+ *
+ * If a previous dry-run appeared to hang: this CLI now logs per-project
+ * progress, batch-loads extras, and stops at --timeout-sec (default 180)
+ * instead of sitting silent. Use --only or --limit to slice a large book.
+ * Pass --timeout-sec 0 to disable the cap.
  */
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { projects, users } from "@/db/schema";
+import { users } from "@/db/schema";
 import { seedDockParityCatalogs } from "@/db/seed-dock-parity";
 import { applyPlaybookResync, planPlaybookResync } from "@/lib/playbook-resync";
 import { redactDatabaseUrl } from "@/lib/demo-entities";
 import { env } from "@/lib/env";
+import { DEFAULT_RESYNC_DEADLINE_MS, formatResyncSeconds } from "@/lib/resync-deadline";
 
 const apply = process.argv.includes("--apply");
 const alsoSeed = process.argv.includes("--seed") || process.argv.includes("--templates");
@@ -36,16 +47,41 @@ const only = onlyRaw
       .filter(Boolean)
   : [];
 
+const limitRaw =
+  process.argv.find((a) => a.startsWith("--limit="))?.slice("--limit=".length) ??
+  (() => {
+    const i = process.argv.indexOf("--limit");
+    return i >= 0 ? process.argv[i + 1] : undefined;
+  })();
+const limit = limitRaw && Number.isFinite(Number(limitRaw)) ? Math.max(0, Math.round(Number(limitRaw))) : undefined;
+
+const timeoutRaw =
+  process.argv.find((a) => a.startsWith("--timeout-sec="))?.slice("--timeout-sec=".length) ??
+  (() => {
+    const i = process.argv.indexOf("--timeout-sec");
+    return i >= 0 ? process.argv[i + 1] : undefined;
+  })();
+const timeoutSec = timeoutRaw != null ? Number(timeoutRaw) : DEFAULT_RESYNC_DEADLINE_MS / 1000;
+const deadlineMs = Number.isFinite(timeoutSec) && timeoutSec > 0 ? Math.round(timeoutSec * 1000) : 0;
+
+const startedAt = Date.now();
+function progress(message: string) {
+  console.log(`  [${formatResyncSeconds(Date.now() - startedAt)}] ${message}`);
+}
+
 async function main() {
-  console.log("\nPATH playbook resync from Dock Implementation template");
+  console.log("\nPATH playbook resync from Dock Implementation template (in-repo seed, not live Dock)");
   console.log(`  ${redactDatabaseUrl(env.DATABASE_URL)}`);
   console.log(`  mode: ${apply ? "APPLY" : "DRY-RUN (pass --apply to write)"}`);
   if (only.length) console.log(`  only: ${only.join(", ")}`);
+  if (limit) console.log(`  limit: ${limit} project(s)`);
+  console.log(`  timeout: ${deadlineMs > 0 ? `${deadlineMs / 1000}s` : "off"}`);
   console.log("");
 
   if (alsoSeed || apply) {
-    // Catalogs are safe to re-run: they don't delete live project tasks.
+    progress("Refreshing Dock-parity catalogs (templates/checklists/library placeholders)…");
     await seedDockParityCatalogs();
+    progress("Catalogs ready.");
   }
 
   const actor =
@@ -58,13 +94,29 @@ async function main() {
       columns: { id: true },
     }));
 
-  const plan = apply
-    ? await applyPlaybookResync({ apply: true, only, actorId: actor?.id ?? null })
-    : await planPlaybookResync({ apply: false, only, actorId: actor?.id ?? null });
+  const opts = {
+    only,
+    actorId: actor?.id ?? null,
+    limit: limit || undefined,
+    deadlineMs,
+    useDefaultDeadline: false,
+    onProgress: progress,
+  };
 
+  const plan = apply
+    ? await applyPlaybookResync({ ...opts, apply: true })
+    : await planPlaybookResync({ ...opts, apply: false });
+
+  console.log("");
   console.log(`Projects scanned: ${plan.projectsScanned}`);
   console.log(`Projects that would change: ${plan.projectsTouched}`);
-  console.log(`Actions: ${plan.rows.length}\n`);
+  console.log(`Actions: ${plan.rows.length}`);
+  console.log(`Elapsed: ${formatResyncSeconds(plan.elapsedMs)}`);
+  if (plan.timedOut) {
+    console.log("TIMED OUT — partial plan only. Re-run with --only CODE, --limit N, or --timeout-sec 0.\n");
+  } else {
+    console.log("");
+  }
 
   const byAction = new Map<string, number>();
   for (const row of plan.rows) {
@@ -81,12 +133,19 @@ async function main() {
   if (plan.rows.length > 40) console.log(`  · … ${plan.rows.length - 40} more`);
 
   if (!apply) {
-    console.log("\nDry-run only. Typical live sequence:");
+    console.log("\nDry-run only. Typical Azure Cloud Shell sequence:");
     console.log("  1. npm run db:seed -- --templates-only");
-    console.log("  2. npm run db:resync:playbook-from-dock          # review");
+    console.log("  2. npm run db:resync:playbook-from-dock          # review (progress + timeout)");
     console.log("  3. npm run db:resync:playbook-from-dock -- --apply");
     console.log("Missing Discovery Wizard LINKs and billing-sheet defaults are attached.");
-    console.log("User-uploaded files are never deleted. Completed / cancelled sites are skipped.\n");
+    console.log("User-uploaded files are never deleted. Completed / cancelled sites are skipped.");
+    console.log("This script never talks to Dock. Do not edit live Dock Spaces from PATH.\n");
+    return;
+  }
+
+  if (plan.timedOut) {
+    console.log("\nApply did not finish. Remaining sites are unchanged. Slice with --only and retry.\n");
+    process.exitCode = 2;
     return;
   }
 
@@ -94,7 +153,7 @@ async function main() {
 }
 
 main()
-  .then(() => process.exit(0))
+  .then(() => process.exit(process.exitCode ?? 0))
   .catch((err) => {
     console.error("\nPlaybook resync failed:", err);
     process.exit(1);

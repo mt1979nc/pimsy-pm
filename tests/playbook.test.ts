@@ -33,7 +33,12 @@ import {
 } from "@/db/schema";
 import { resetDb } from "./fixtures";
 import { portalPlan, portalActionItems, type CustomerActor } from "@/lib/portal";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+
+const dbOk = await db
+  .execute(sql`select 1`)
+  .then(() => true)
+  .catch(() => false);
 
 describe("staffing helpers", () => {
   it("treats v1.8.1 aliases as the new roles", () => {
@@ -92,7 +97,7 @@ describe("optional areas and N/A helpers", () => {
   });
 });
 
-describe("materialize + N/A + RCM attach (postgres)", () => {
+describe.skipIf(!dbOk)("materialize + N/A + RCM attach (postgres)", () => {
   let specialistId: string;
   let billingId: string;
   let rcmId: string;

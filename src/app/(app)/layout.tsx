@@ -67,7 +67,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
             Setup
           </div>
-          {canManageTemplates(actor) ? <NavLink href="/templates">Templates</NavLink> : null}
+          {canManageTemplates(actor) ? (
+            <>
+              <NavLink href="/templates">Templates</NavLink>
+              <NavLink href="/library">File library</NavLink>
+            </>
+          ) : null}
           <NavLink href="/learning">Learning Center</NavLink>
           <NavLink href="/updates">What&apos;s new</NavLink>
           <NavLink href="/settings">Settings</NavLink>
