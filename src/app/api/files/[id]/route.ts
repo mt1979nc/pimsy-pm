@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getActor } from "@/auth";
 import { assertAttachmentAccess } from "@/lib/attachments";
-import { readFileStream } from "@/lib/storage";
+import { readFileStream, contentDisposition } from "@/lib/storage";
 import { NotFoundError, ForbiddenError } from "@/lib/authz";
 
 export const runtime = "nodejs";
@@ -40,8 +40,9 @@ export async function GET(
   const file = await readFileStream(asset.storageKey);
   if (!file) return new NextResponse("Not found", { status: 404 });
 
-  const isInlineSafe =
-    asset.mimeType?.startsWith("image/") && asset.mimeType !== "image/svg+xml";
+  const isInlineSafe = Boolean(
+    asset.mimeType?.startsWith("image/") && asset.mimeType !== "image/svg+xml",
+  );
 
   return new NextResponse(file.stream as unknown as ReadableStream, {
     headers: {
@@ -49,7 +50,7 @@ export async function GET(
       "Content-Length": String(file.size),
       // SVG and everything non-image download rather than render, so an
       // uploaded file can never execute script on our origin.
-      "Content-Disposition": `${isInlineSafe ? "inline" : "attachment"}; filename="${encodeURIComponent(asset.name)}"`,
+      "Content-Disposition": contentDisposition(asset.name, isInlineSafe),
       "Cache-Control": "private, max-age=0, must-revalidate",
       "X-Content-Type-Options": "nosniff",
       "Content-Security-Policy": "default-src 'none'; sandbox",

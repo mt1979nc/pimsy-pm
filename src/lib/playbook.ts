@@ -24,6 +24,7 @@ import {
   type ProjectMemberRole,
   type WorkTrack,
 } from "@/db/schema";
+import { dockPlaybookDescriptionForTitle } from "@/db/dock-playbook-copy";
 import { scheduleFromOffsets } from "@/lib/project-timeline";
 import { resolveAssigneeForRole, canonicalStaffingRole } from "@/lib/staffing";
 import { refreshProjectCounters } from "@/lib/rollup";
@@ -260,7 +261,7 @@ export async function materializeTemplatesOnProject(opts: {
             phaseId: phase.id,
             parentTaskId: parentLiveId,
             title: tt.title,
-            description: tt.description,
+            description: tt.description?.trim() || dockPlaybookDescriptionForTitle(tt.title),
             priority: tt.priority,
             visibility: tt.ownerSide === "CUSTOMER" ? ("SHARED" as const) : tt.visibility,
             ownerSide: tt.ownerSide,

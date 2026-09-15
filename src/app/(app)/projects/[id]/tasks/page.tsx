@@ -1,16 +1,21 @@
-import { and, eq, ne, asc } from "drizzle-orm";
+import { and, eq, ne, asc, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { phases, tasks, users } from "@/db/schema";
+import { phases, tasks, users, fileAssets, taskChecklistItems } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess } from "@/lib/authz";
-import { Card, CardHeader, EmptyState, Badge, VisibilityBadge } from "@/components/ui";
-import { TaskRow } from "@/components/task-row";
-import { AddTaskInline, AddPhaseForm } from "./task-forms";
-import { PhaseNaButton } from "./phase-na-button";
-import { fmtShort } from "@/lib/dates";
+import { ProjectTaskBoard, type ProjectTaskListItem } from "@/components/project-task-list";
 import { orderTasksForNesting } from "@/lib/task-tree";
+import { resolveTaskDescription } from "@/lib/task-description";
+import type { TaskActionAsset } from "@/lib/playbook-resources";
+import type { ChecklistItemView } from "@/components/task-checklist";
 
 export const dynamic = "force-dynamic";
+
+function iso(value: Date | string | null | undefined): string | null {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
 
 export default async function ProjectTasksPage({
   params,
@@ -38,6 +43,55 @@ export default async function ProjectTasksPage({
     }),
   ]);
 
+  const taskIds = allTasks.map((t) => t.id);
+  const [attachmentRows, checklistRows] = await Promise.all([
+    taskIds.length
+      ? db.query.fileAssets.findMany({
+          where: eq(fileAssets.projectId, id),
+          columns: {
+            id: true,
+            taskId: true,
+            kind: true,
+            name: true,
+            url: true,
+            libraryAssetId: true,
+          },
+        })
+      : Promise.resolve([]),
+    taskIds.length
+      ? db.query.taskChecklistItems.findMany({
+          where: inArray(taskChecklistItems.taskId, taskIds),
+          orderBy: [asc(taskChecklistItems.order)],
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const assetsByTaskId: Record<string, TaskActionAsset[]> = {};
+  for (const a of attachmentRows) {
+    if (!a.taskId) continue;
+    const list = assetsByTaskId[a.taskId] ?? [];
+    list.push({
+      id: a.id,
+      kind: a.kind,
+      name: a.name,
+      url: a.url,
+      libraryAssetId: a.libraryAssetId,
+    });
+    assetsByTaskId[a.taskId] = list;
+  }
+
+  const checklistByTaskId: Record<string, ChecklistItemView[]> = {};
+  for (const c of checklistRows) {
+    const list = checklistByTaskId[c.taskId] ?? [];
+    list.push({
+      id: c.id,
+      label: c.label,
+      done: c.done,
+      visibility: c.visibility,
+    });
+    checklistByTaskId[c.taskId] = list;
+  }
+
   const byPhase = new Map<string | null, typeof allTasks>();
   for (const t of allTasks) {
     const key = t.phaseId ?? null;
@@ -45,124 +99,54 @@ export default async function ProjectTasksPage({
     byPhase.get(key)!.push(t);
   }
 
-  const unphased = byPhase.get(null) ?? [];
-  const openCount = allTasks.filter(
-    (t) => !t.notApplicable && t.status !== "DONE" && t.status !== "CANCELLED",
-  ).length;
-  const customerCount = allTasks.filter(
-    (t) =>
-      t.ownerSide === "CUSTOMER" &&
-      !t.notApplicable &&
-      t.status !== "DONE" &&
-      t.status !== "CANCELLED",
-  ).length;
+  function toItems(rows: typeof allTasks): ProjectTaskListItem[] {
+    return orderTasksForNesting(rows).map((t) => {
+      const checks = checklistByTaskId[t.id] ?? [];
+      return {
+        id: t.id,
+        projectId: id,
+        title: t.title,
+        description: resolveTaskDescription(t.title, t.description, {
+          stripChecklist: checks.length > 0,
+        }),
+        status: t.status,
+        priority: t.priority,
+        visibility: t.visibility,
+        ownerSide: t.ownerSide,
+        dueDate: iso(t.dueDate),
+        completedAt: iso(t.completedAt),
+        assignee: t.assignee,
+        assigneeId: t.assigneeId,
+        notApplicable: t.notApplicable,
+        workTrack: t.workTrack,
+        parentTaskId: t.parentTaskId,
+        depth: t.depth,
+        phaseId: t.phaseId,
+        order: t.order,
+      };
+    });
+  }
+
+  const phaseBlocks = projectPhases.map((phase) => ({
+    id: phase.id,
+    name: phase.name,
+    visibility: phase.visibility,
+    notApplicable: phase.notApplicable,
+    workTrack: phase.workTrack,
+    dueDate: iso(phase.dueDate),
+    tasks: toItems(byPhase.get(phase.id) ?? []),
+  }));
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-2">
-          <Badge>{openCount} open</Badge>
-          <Badge tone="green">{allTasks.filter((t) => t.status === "DONE").length} done</Badge>
-          {customerCount > 0 ? (
-            <Badge tone="violet">{customerCount} waiting on customer</Badge>
-          ) : null}
-        </div>
-        <AddPhaseForm projectId={id} />
-      </div>
-
-      {projectPhases.length === 0 && allTasks.length === 0 ? (
-        <Card>
-          <EmptyState
-            title="No tasks yet"
-            description="Add a phase to structure the work, or start adding tasks directly."
-          />
-          <div className="border-t border-border">
-            <AddTaskInline projectId={id} staff={staff} defaultAssigneeId={actor.id} />
-          </div>
-        </Card>
-      ) : null}
-
-      {projectPhases.map((phase) => {
-        const phaseTasks = byPhase.get(phase.id) ?? [];
-        const done = phaseTasks.filter((t) => t.status === "DONE").length;
-        return (
-          <Card key={phase.id}>
-            <CardHeader
-              title={
-                <span className="flex items-center gap-2">
-                  {phase.name}
-                  {phase.visibility === "INTERNAL" ? (
-                    <VisibilityBadge visibility="INTERNAL" />
-                  ) : null}
-                  {phase.notApplicable ? <Badge tone="amber">N/A</Badge> : null}
-                  {phase.workTrack === "RCM" ? <Badge tone="violet">RCM</Badge> : null}
-                </span>
-              }
-              subtitle={
-                <>
-                  {done}/{phaseTasks.filter((t) => !t.notApplicable).length} complete
-                  {phase.dueDate ? ` · due ${fmtShort(phase.dueDate)}` : ""}
-                </>
-              }
-              action={<PhaseNaButton phaseId={phase.id} notApplicable={phase.notApplicable} />}
-            />
-            {phaseTasks.length === 0 ? (
-              <p className="px-5 py-4 text-[13px] text-ink-3">Nothing in this phase yet.</p>
-            ) : (
-              <div className="divide-y divide-border">
-                {orderTasksForNesting(phaseTasks).map((t) => (
-                  <TaskRow
-                    key={t.id}
-                    task={{ ...t, projectId: id, depth: t.depth, phaseId: t.phaseId }}
-                    allowStructureEdit
-                    staff={staff}
-                    defaultAssigneeId={actor.id}
-                  />
-                ))}
-              </div>
-            )}
-            <div className="border-t border-border">
-              <AddTaskInline
-                projectId={id}
-                phaseId={phase.id}
-                staff={staff}
-                defaultAssigneeId={actor.id}
-              />
-            </div>
-          </Card>
-        );
-      })}
-
-      {unphased.length > 0 || projectPhases.length > 0 ? (
-        <Card>
-          <CardHeader title="Unphased tasks" subtitle={`${unphased.length} item(s)`} />
-          {unphased.length === 0 ? (
-            <p className="px-5 py-4 text-[13px] text-ink-3">Everything is assigned to a phase.</p>
-          ) : (
-            <div className="divide-y divide-border">
-              {orderTasksForNesting(unphased).map((t) => (
-                <TaskRow
-                  key={t.id}
-                  task={{ ...t, projectId: id, depth: t.depth, phaseId: t.phaseId }}
-                  allowStructureEdit
-                  staff={staff}
-                  defaultAssigneeId={actor.id}
-                />
-              ))}
-            </div>
-          )}
-          <div className="border-t border-border">
-            <AddTaskInline projectId={id} staff={staff} defaultAssigneeId={actor.id} />
-          </div>
-        </Card>
-      ) : null}
-
-      <p className="text-[12.5px] leading-relaxed text-ink-3">
-        Add or remove tasks on this live project — that does not change the playbook. Nested
-        specialist sub-tasks stay on this staff list (yellow / internal). The customer portal and
-        Customer view show parent status only (for example User Setup done or not), plus any
-        customer-owned action items. Playbook authoring is Templates (owner/admin).
-      </p>
-    </div>
+    <ProjectTaskBoard
+      projectId={id}
+      currentUserId={actor.id}
+      defaultAssigneeId={actor.id}
+      staff={staff}
+      phases={phaseBlocks}
+      unphased={toItems(byPhase.get(null) ?? [])}
+      assetsByTaskId={assetsByTaskId}
+      checklistByTaskId={checklistByTaskId}
+    />
   );
 }

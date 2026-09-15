@@ -19,12 +19,15 @@ export function TaskActionButtons({
   taskHref,
   compact = false,
   className,
+  onUpload,
 }: {
   title: string;
   assets?: TaskActionAsset[];
   taskHref?: string | null;
   compact?: boolean;
   className?: string;
+  /** List: open an inline upload instead of navigating to the task page. */
+  onUpload?: () => void;
 }) {
   const buttons = resolveTaskActionButtons({ title, assets, taskHref });
   const [popup, setPopup] = useState<ResolvedTaskActionButton | null>(null);
@@ -46,6 +49,7 @@ export function TaskActionButtons({
             button={b}
             compact={compact}
             onPopup={() => setPopup(b)}
+            onUpload={onUpload}
           />
         ))}
         {!compact
@@ -75,10 +79,12 @@ function TaskActionButton({
   button,
   compact,
   onPopup,
+  onUpload,
 }: {
   button: ResolvedTaskActionButton;
   compact: boolean;
   onPopup: () => void;
+  onUpload?: () => void;
 }) {
   const className = cn(
     "inline-flex items-center justify-center rounded-lg bg-[#113c64] px-3 text-center font-semibold !text-white shadow-sm hover:bg-[#0d2f4f] hover:!text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#113c64]",
@@ -88,6 +94,25 @@ function TaskActionButton({
   );
   const label = button.label || DOCK_TASK_ACTION_LABEL;
   const aria = `${label}: ${button.resourceName}`;
+  const fileHref = button.href.startsWith("/api/files/");
+
+  if (button.kind === "upload" && onUpload) {
+    return (
+      <button
+        type="button"
+        className={className}
+        aria-label={aria}
+        title={button.resourceName}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onUpload();
+        }}
+      >
+        {label}
+      </button>
+    );
+  }
 
   if (button.popup && isExternalHref(button.href)) {
     return (
@@ -115,6 +140,7 @@ function TaskActionButton({
       title={button.resourceName}
       target={isExternalHref(button.href) ? "_blank" : undefined}
       rel={isExternalHref(button.href) ? "noopener noreferrer" : undefined}
+      download={fileHref && (button.kind === "download" || button.kind === "form") ? true : undefined}
       onClick={(e) => e.stopPropagation()}
     >
       {label}

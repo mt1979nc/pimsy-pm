@@ -134,6 +134,8 @@ export function checklistForTaskTitle(title: string): DockChecklistSeed[] {
  * Parse Dock-style markdown checklists from a scraped task description.
  * Accepts `- [ ]`, `- [x]`, `* [ ]`, and numbered `[ ]` lines.
  */
+const CHECKLIST_LINE = /^(?:[-*]|\d+[.)])\s*\[(x|X| )\]\s+/;
+
 export function parseChecklistFromDescription(description: string | null | undefined): {
   label: string;
   done: boolean;
@@ -149,4 +151,18 @@ export function parseChecklistFromDescription(description: string | null | undef
     items.push({ label, done: m[1] !== " " });
   }
   return items;
+}
+
+/** Drop markdown checkbox lines so description is not a second copy of the checklist. */
+export function stripChecklistMarkdown(text: string): string {
+  const withoutBoxes = text
+    .split(/\r?\n/)
+    .filter((line) => !CHECKLIST_LINE.test(line.trim()))
+    .join("\n");
+  return withoutBoxes
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter((block) => block && block !== TRAINING_SESSION_DESCRIPTION)
+    .join("\n\n")
+    .trim();
 }

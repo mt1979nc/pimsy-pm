@@ -8,6 +8,7 @@ import { PortalMessageBox } from "./portal-message-box";
 import { pctComplete } from "@/lib/rollup";
 import { fmtDate, daysUntil, isOverdue, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { resolveTaskDescription } from "@/lib/task-description";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your workspace" };
@@ -165,7 +166,7 @@ export default async function PortalHome() {
                           task={{
                             id: t.id,
                             title: t.title,
-                            description: t.description,
+                            description: resolveTaskDescription(t.title, t.description),
                             status: t.status,
                             dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
                             projectName: projects.length > 1 ? t.project.name : null,
@@ -207,7 +208,7 @@ export default async function PortalHome() {
                           task={{
                             id: t.id,
                             title: t.title,
-                            description: t.description,
+                            description: resolveTaskDescription(t.title, t.description),
                             status: t.status,
                             dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
                             projectName: projects.length > 1 ? t.project.name : null,

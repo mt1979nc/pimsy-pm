@@ -19,12 +19,14 @@ export function TaskChecklist({
   canEdit,
   canToggle,
   taskIsInternal,
+  compact = false,
 }: {
   taskId: string;
   items: ChecklistItemView[];
   canEdit: boolean;
   canToggle: boolean;
   taskIsInternal: boolean;
+  compact?: boolean;
 }) {
   const [pending, start] = useTransition();
   const [state, action] = useActionState(addChecklistItem, {});
@@ -32,23 +34,27 @@ export function TaskChecklist({
 
   return (
     <div>
-      <div className="flex items-baseline justify-between gap-3 px-5 pt-4">
-        <p className="text-[12.5px] text-ink-3">
-          {items.length === 0
-            ? "No areas listed yet."
-            : `${doneCount}/${items.length} covered`}
-        </p>
-      </div>
+      {compact ? null : (
+        <div className="flex items-baseline justify-between gap-3 px-5 pt-4">
+          <p className="text-[12.5px] text-ink-3">
+            {items.length === 0
+              ? "No checklist items yet."
+              : `${doneCount}/${items.length} done`}
+          </p>
+        </div>
+      )}
       {items.length === 0 ? (
+        compact ? null : (
         <p className="px-5 py-3 text-[13px] text-ink-3">
           {canEdit
-            ? "Add the topics this session should cover. Staff check them off during training."
-            : "No areas listed on this task."}
+            ? "Add checklist items. Staff check them off as they go."
+            : "No checklist on this task."}
         </p>
+        )
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className={compact ? "space-y-1" : "divide-y divide-border"}>
           {items.map((item) => (
-            <li key={item.id} className={cn("flex items-start gap-3 px-5 py-2.5", pending && "opacity-70")}>
+            <li key={item.id} className={cn("flex items-start gap-3", compact ? "py-0.5" : "px-5 py-2.5", pending && "opacity-70")}>
               <button
                 type="button"
                 disabled={!canToggle || pending}
@@ -104,7 +110,7 @@ export function TaskChecklist({
           )}
           <input
             name="label"
-            placeholder="Add an area to cover"
+            placeholder="Add a checklist item"
             className={cn(inputClass, "min-w-[200px] flex-1")}
             maxLength={300}
             required

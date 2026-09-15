@@ -13,10 +13,11 @@ import { AttachmentList, AddAttachment } from "@/components/attachments";
 import { TaskActionButtons } from "@/components/task-action-buttons";
 import { hasPlaybookFileResource, isCustomerUploadRequestTitle } from "@/lib/playbook-resources";
 import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
-import { PortalTaskRow } from "../../../../portal-task-row";
 import { fmtDate, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { isSpecialistSubtask } from "@/lib/task-visibility";
+import { resolveTaskDescription } from "@/lib/task-description";
+import { TaskCompleteControl } from "@/components/task-complete-control";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,13 @@ export default async function PortalTaskPage({
   const overdue = isOverdue(task.dueDate, completedAt);
   const uploadRequest =
     yours && (hasPlaybookFileResource(attachments) || isCustomerUploadRequestTitle(task.title));
+  const displayDescription = resolveTaskDescription(task.title, task.description, {
+    stripChecklist: checklist.length > 0,
+  });
+  const hasFileAction =
+    attachments.some((a) => a.kind !== "LINK") ||
+    isDockFileRequestTitle(task.title) ||
+    uploadRequest;
 
   return (
     <>
@@ -93,12 +101,21 @@ export default async function PortalTaskPage({
         <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">
           {task.title}
         </h1>
-        <TaskActionButtons
-          title={task.title}
-          assets={attachments}
-          taskHref={`/portal/projects/${id}/tasks/${taskId}`}
-          className="mt-3"
-        />
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          {yours ? (
+            <TaskCompleteControl
+              taskId={task.id}
+              title={task.title}
+              status={task.status}
+              canEdit
+            />
+          ) : null}
+          <TaskActionButtons
+            title={task.title}
+            assets={attachments}
+            taskHref={`/portal/projects/${id}/tasks/${taskId}`}
+          />
+        </div>
         {task.dueDate ? (
           <p className={cn("mt-1.5 text-[13.5px]", overdue && task.status !== "DONE" ? "font-medium text-red" : "text-ink-2")}>
             Due {fmtDate(task.dueDate)}
@@ -108,30 +125,43 @@ export default async function PortalTaskPage({
 
       <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-5">
-          {yours ? (
+          {hasFileAction ? (
             <Card>
               <CardHeader
-                title="Mark it done"
-                subtitle="Checking this off updates your project progress straight away"
+                title="Links & files"
+                subtitle={
+                  isDockFileRequestTitle(task.title)
+                    ? "Upload files on this task"
+                    : uploadRequest
+                      ? "Download, complete the file, then upload it here"
+                      : attachments.length > 0
+                        ? `${attachments.length} attached`
+                        : "Anything you need for this step, and anywhere to send us documents"
+                }
               />
-              <PortalTaskRow
-                showActions={false}
-                task={{
-                  id: task.id,
-                  title: task.title,
-                  description: null,
-                  status: task.status,
-                  dueDate: task.dueDate ? new Date(task.dueDate).toISOString() : null,
-                }}
-              />
+              <div id="files">
+                <AttachmentList
+                  assets={attachments}
+                  currentUserId={actor.id}
+                  canManageVisibility={false}
+                  uploadRequest={uploadRequest}
+                />
+                <AddAttachment
+                  taskId={task.id}
+                  canChooseVisibility={false}
+                  defaultVisibility="SHARED"
+                  taskIsInternal={false}
+                  uploadRequest={uploadRequest}
+                />
+              </div>
             </Card>
           ) : null}
 
-          {task.description ? (
+          {displayDescription ? (
             <Card>
               <CardHeader title="What this involves" />
               <p className="whitespace-pre-wrap px-5 py-4 text-[13.5px] leading-relaxed text-ink">
-                {task.description}
+                {displayDescription}
               </p>
             </Card>
           ) : null}
@@ -139,7 +169,7 @@ export default async function PortalTaskPage({
           {checklist.length > 0 ? (
             <Card>
               <CardHeader
-                title="Areas to cover"
+                title="Checklist"
                 subtitle="What this session includes — your specialist checks these off as you go"
               />
               <TaskChecklist
@@ -152,35 +182,33 @@ export default async function PortalTaskPage({
             </Card>
           ) : null}
 
-          <Card>
-            <CardHeader
-              title="Links & files"
-              subtitle={
-                isDockFileRequestTitle(task.title)
-                  ? "Upload files on this task"
-                  : uploadRequest
-                  ? "Download, complete the file, then upload it here"
-                  : attachments.length > 0
+          {hasFileAction ? null : (
+            <Card>
+              <CardHeader
+                title="Links & files"
+                subtitle={
+                  attachments.length > 0
                     ? `${attachments.length} attached`
                     : "Anything you need for this step, and anywhere to send us documents"
-              }
-            />
-            <div id="files">
-              <AttachmentList
-                assets={attachments}
-                currentUserId={actor.id}
-                canManageVisibility={false}
-                uploadRequest={uploadRequest}
+                }
               />
-              <AddAttachment
-                taskId={task.id}
-                canChooseVisibility={false}
-                defaultVisibility="SHARED"
-                taskIsInternal={false}
-                uploadRequest={uploadRequest}
-              />
-            </div>
-          </Card>
+              <div id="files">
+                <AttachmentList
+                  assets={attachments}
+                  currentUserId={actor.id}
+                  canManageVisibility={false}
+                  uploadRequest={uploadRequest}
+                />
+                <AddAttachment
+                  taskId={task.id}
+                  canChooseVisibility={false}
+                  defaultVisibility="SHARED"
+                  taskIsInternal={false}
+                  uploadRequest={uploadRequest}
+                />
+              </div>
+            </Card>
+          )}
 
           <Card>
             <CardHeader

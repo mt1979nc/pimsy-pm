@@ -596,7 +596,7 @@ function TaskEditor({
             {task.isOptional ? <Badge tone="amber">Optional</Badge> : null}
             {task.defaultRole ? <Badge>{staffingRoleLabel(task.defaultRole)}</Badge> : null}
             {task.checklistItems.length > 0 ? (
-              <Badge>{task.checklistItems.length} areas to cover</Badge>
+              <Badge>{task.checklistItems.length} checklist items</Badge>
             ) : null}
             {task.attachments.map((att) => (
               <Badge key={att.id} tone={att.kind === "LINK" ? "green" : "neutral"}>
@@ -711,7 +711,7 @@ function TaskEditor({
 
           <div className="rounded-lg border border-border bg-surface">
             <div className="border-b border-border px-3 py-2 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
-              Training checklist (areas to cover)
+              Training checklist
             </div>
             {task.checklistItems.length === 0 ? (
               <p className="px-3 py-2 text-[12.5px] text-ink-3">
