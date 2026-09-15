@@ -17,7 +17,8 @@ import {
 } from "@/components/ui";
 import { TaskComments } from "@/components/task-comments";
 import { AttachmentList, AddAttachment } from "@/components/attachments";
-import { hasPlaybookFileResource } from "@/lib/playbook-resources";
+import { TaskActionButtons } from "@/components/task-action-buttons";
+import { hasPlaybookFileResource, isCustomerUploadRequestTitle } from "@/lib/playbook-resources";
 import { TaskChecklist } from "@/components/task-checklist";
 import { AssigneePicker } from "@/components/assignee-picker";
 import { TaskDetailControls } from "./task-controls";
@@ -92,7 +93,9 @@ export default async function TaskDetailPage({
   // the task is reopened — the status is the source of truth.
   const completedAt = task.status === "DONE" ? task.completedAt : null;
   const overdue = isOverdue(task.dueDate, completedAt);
-  const uploadRequest = task.ownerSide === "CUSTOMER" && hasPlaybookFileResource(attachments);
+  const uploadRequest =
+    task.ownerSide === "CUSTOMER" &&
+    (hasPlaybookFileResource(attachments) || isCustomerUploadRequestTitle(task.title));
 
   return (
     <div className="mx-auto max-w-[900px]">
@@ -114,6 +117,12 @@ export default async function TaskDetailPage({
         <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">
           {task.title}
         </h1>
+        <TaskActionButtons
+          title={task.title}
+          assets={attachments}
+          taskHref={`/projects/${id}/tasks/${taskId}`}
+          className="mt-3"
+        />
         {task.dueDate ? (
           <p className={cn("mt-1.5 text-[13.5px]", overdue ? "font-medium text-red" : "text-ink-2")}>
             {dueLabel(task.dueDate, completedAt)} · {fmtDate(task.dueDate)}
@@ -186,25 +195,27 @@ export default async function TaskDetailPage({
               title="Links & files"
               subtitle={
                 uploadRequest
-                  ? "Download the file, complete it, and upload it here — same pattern as Dock"
+                  ? "Click here to download, complete the file, and upload it here — same pattern as Dock"
                   : attachments.length > 0
                     ? `${attachments.length} attached`
                     : "Anything the work depends on"
               }
             />
-            <AttachmentList
-              assets={attachments}
-              currentUserId={actor.id}
-              canManageVisibility
-              uploadRequest={uploadRequest}
-            />
-            <AddAttachment
-              taskId={task.id}
-              canChooseVisibility
-              defaultVisibility={task.visibility === "INTERNAL" ? "INTERNAL" : "SHARED"}
-              taskIsInternal={task.visibility === "INTERNAL"}
-              uploadRequest={uploadRequest}
-            />
+            <div id="files">
+              <AttachmentList
+                assets={attachments}
+                currentUserId={actor.id}
+                canManageVisibility
+                uploadRequest={uploadRequest}
+              />
+              <AddAttachment
+                taskId={task.id}
+                canChooseVisibility
+                defaultVisibility={task.visibility === "INTERNAL" ? "INTERNAL" : "SHARED"}
+                taskIsInternal={task.visibility === "INTERNAL"}
+                uploadRequest={uploadRequest}
+              />
+            </div>
           </Card>
 
           <Card>

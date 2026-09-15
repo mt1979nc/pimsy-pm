@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.13.0");
+    expect(APP_VERSION).toBe("1.13.1");
     expect(APP_VERSION).toMatch(/^1\.13\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,20 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.13.1 Dock Click here task action buttons", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.13.1");
+    expect(note?.summary).toMatch(/Click here/i);
+    expect(note?.summary).toMatch(/task action|button/i);
+    expect(note?.highlights?.some((h) => /Discovery Wizard/i.test(h) && /calm-mud|azurestaticapps/i.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /Click here/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /staff|portal/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /resync/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Dock API/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/storylane\.com/i.test(h))).toBe(true);
   });
 
   it("documents v1.13.0 Dock description/attachment parity and hang-free resync", () => {

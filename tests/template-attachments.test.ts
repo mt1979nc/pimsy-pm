@@ -57,6 +57,9 @@ describe("default template attachments catalog", () => {
     expect(librarySlugsForTaskTitle("Organization Details Form")).toEqual(
       expect.arrayContaining(["discovery-wizard", "organization-details-form"]),
     );
+    expect(librarySlugsForTaskTitle("Discovery org details")).toEqual(
+      expect.arrayContaining(["discovery-wizard", "organization-details-form"]),
+    );
   });
 
   it("does not attach catalog files to unrelated playbook rows", () => {
@@ -134,20 +137,20 @@ describe("playbook title inventory", () => {
 });
 
 describe("playbook resource buttons", () => {
-  it("labels Discovery Wizard as Open and billing sheets as Download", () => {
+  it("labels Discovery Wizard and billing sheets as Click here", () => {
     expect(
       playbookResourceButtonLabel({
         kind: "LINK",
         name: "Discovery Wizard",
         url: DISCOVERY_WIZARD_URL,
       }),
-    ).toBe("Open Discovery Wizard");
+    ).toBe("Click here");
     expect(
       playbookResourceButtonLabel({
         kind: "FILE",
         name: "Billing questionnaire",
       }),
-    ).toBe("Download Billing questionnaire");
+    ).toBe("Click here");
   });
 
   it("treats library clones and the live Wizard URL as playbook resources", () => {

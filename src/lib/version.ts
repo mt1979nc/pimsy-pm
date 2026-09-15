@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.0";
+export const APP_VERSION = "1.13.1";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.1",
+    date: "2026-09-15",
+    summary:
+      "PATH now matches Dock task action buttons: a blue Click here CTA on Discovery org-details (and the rest of the Implementation template’s wizard / download / file-request tasks) that opens the right resource, on staff and portal task lists and task detail — not only Open/Download chips in Links & files.",
+    highlights: [
+      "Dock Task Actions (button dependencies) are first-class: blue Click here on the checklist row and on the task. Discovery org details / Organization Details Form / Guided Discovery / Clinical Workflows open the Discovery Wizard (https://calm-mud-0fe119810.7.azurestaticapps.net/) in a popup, with Open in new tab. No invented Storylane or booking URLs.",
+      "Billing questionnaire/spreadsheet and RCM intake Click here downloads the playbook file. Logos, letterhead, submit documents / import files, and similar Dock File Request tasks Click here to upload on the task.",
+      "Buttons resolve from the task title (Dock aliases like “Discovery org details” included), so existing WIP shows Click here even before attachments are cloned. Resync still backfills missing wizard LINKs, sheets, and Click here descriptions without deleting user uploads or staff notes. Does not call the Dock API.",
+      "Staff and customer portal task lists, phase lists, and task detail all show the CTA. New workspaces inherit the same buttons from the playbook.",
+      "PATH + Prism naming unchanged. Azure Cloud Shell: npm run db:seed -- --templates-only then npm run db:resync:playbook-from-dock -- --apply.",
+    ],
+  },
   {
     version: "1.13.0",
     date: "2026-09-15",

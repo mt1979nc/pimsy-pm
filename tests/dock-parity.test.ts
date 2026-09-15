@@ -320,23 +320,26 @@ describe("training checklists and nested tasks", () => {
   it("puts Discovery Wizard / billing copy in the description without URLs", () => {
     const wizard = dockPlaybookDescriptionForTitle("Guided Discovery Meeting");
     expect(wizard).toMatch(/Discovery Wizard/i);
-    expect(wizard).toMatch(/button on this task/i);
+    expect(wizard).toMatch(/Click here/i);
     expect(wizard).not.toMatch(/https?:\/\//i);
-    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/Download the billing questionnaire/i);
+    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/Click here to download the billing questionnaire/i);
     expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/Upload the completed file/i);
     expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).not.toMatch(/https?:\/\//i);
     expect(
       dockPlaybookDescriptionForTitle(
         "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
       ),
-    ).toMatch(/Download the billing spreadsheet/i);
+    ).toMatch(/Click here to download the billing spreadsheet/i);
     expect(
       dockPlaybookDescriptionForTitle(
         "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
       ),
     ).toMatch(/Upload the completed file/i);
     expect(dockPlaybookDescriptionForTitle("Organization Details Form")).toMatch(
-      /Open the Discovery Wizard with the button/i,
+      /Click here on this task to open the Discovery Wizard/i,
+    );
+    expect(dockPlaybookDescriptionForTitle("Discovery org details")).toMatch(
+      /Click here on this task to open the Discovery Wizard/i,
     );
     expect(dockPlaybookDescriptionForTitle("Review Billing Questionnaire Data Sheet")).toMatch(
       /review what the practice submitted/i,

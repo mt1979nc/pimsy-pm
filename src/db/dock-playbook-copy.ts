@@ -12,6 +12,7 @@
  * Do not invent PHI or guessed Storylane URLs.
  */
 import { libraryDefsForTaskTitle } from "@/db/dock-default-attachments";
+import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import {
   TRAINING_SESSION_DESCRIPTION,
   TRAINING_STORYLANE_DESCRIPTION,
@@ -30,7 +31,7 @@ const STALE_TRAINING_BLURBS = new Set(
   ].map((s) => s.trim()),
 );
 
-/** Short v1.13 blurbs replaced by download → complete → upload / Open-button copy. */
+/** Short v1.13 blurbs replaced by download → complete → upload / Click here copy. */
 const STALE_ATTACHMENT_BLURBS = new Set(
   [
     "Complete and upload the attached billing spreadsheet (accepted payers and modifiers).",
@@ -39,6 +40,18 @@ const STALE_ATTACHMENT_BLURBS = new Set(
     "Complete the attached organization details form. The Discovery Wizard link is also on this task when it applies.",
     "Complete the attached RCM intake questionnaire.",
     "Complete the attached Discovery Wizard (live link under Links & files). Do not paste the URL into this description.",
+    "Open the Discovery Wizard with the button on this task (not a URL in this description).",
+    "Open the Discovery Wizard with the button on this task (not a URL in this description). Complete it there.",
+    "1. Download the billing spreadsheet with the button on this task.\n2. Fill in accepted payers and modifiers.\n3. Upload the completed file back on this task.",
+    "1. Download the billing questionnaire with the button on this task.\n2. Complete it.\n3. Upload the completed file back on this task.",
+    "1. Download the clinical workflows data sheet with the button on this task.\n2. Complete it.\n3. Upload the completed file back on this task.\n\nOpen the Discovery Wizard with the button on this task (not a URL in this description).",
+    "1. Download the organization details form with the button on this task.\n2. Complete it.\n3. Upload the completed file back on this task.\n\nOpen the Discovery Wizard with the button on this task (not a URL in this description).",
+    "1. Download the RCM intake questionnaire with the button on this task.\n2. Complete it.\n3. Upload the completed file back on this task.",
+    "Download the billing spreadsheet with the button on this task to review what the practice submitted.",
+    "Download the billing questionnaire with the button on this task to review what the practice submitted.",
+    "Download the clinical workflows data sheet with the button on this task to review what the practice submitted.",
+    "Download the organization details form with the button on this task to review what the practice submitted.",
+    "Download the RCM intake questionnaire with the button on this task to review what the practice submitted.",
   ].map((s) => s.trim()),
 );
 
@@ -57,52 +70,67 @@ export function shouldReplacePlaybookDescription(
   if (STALE_TRAINING_BLURBS.has(cur)) return true;
   if (STALE_ATTACHMENT_BLURBS.has(cur)) return true;
   if (cur.startsWith("Use the attached file(s):")) return true;
+  if (cur.startsWith("Open the Discovery Wizard with the button")) return true;
+  if (cur.includes("with the button on this task")) return true;
   return false;
 }
 
 const WIZARD_BUTTON_NOTE =
-  "Open the Discovery Wizard with the button on this task (not a URL in this description).";
+  "Click here on this task to open the Discovery Wizard (not a URL in this description).";
 
 function uploadRequestCopy(fileLabel: string, stepTwo: string, withWizard: boolean): string {
   const body = [
-    `1. Download the ${fileLabel} with the button on this task.`,
+    `1. Click here to download the ${fileLabel}.`,
     `2. ${stepTwo}`,
     "3. Upload the completed file back on this task.",
   ].join("\n");
   return withWizard ? `${body}\n\n${WIZARD_BUTTON_NOTE}` : body;
 }
 
+function fileRequestDescription(title: string): string | null {
+  if (!isDockFileRequestTitle(title)) return null;
+  return "Click here to upload the requested file(s) on this task.";
+}
+
 function attachmentTaskDescription(title: string): string | null {
   const defs = libraryDefsForTaskTitle(title);
-  if (defs.length === 0) return null;
+  if (defs.length === 0) return fileRequestDescription(title);
   const slugs = new Set(defs.map((d) => d.slug));
   const upload = isCustomerUploadRequestTitle(title);
   const withWizard = slugs.has("discovery-wizard");
 
+  // Discovery org-details / clinical worksheets: Dock’s CTA opens the wizard.
+  if (
+    withWizard &&
+    (slugs.has("organization-details-form") || slugs.has("clinical-workflows-sheet"))
+  ) {
+    return `${WIZARD_BUTTON_NOTE} Complete the practice sections there, then upload any working copy back on this task.`;
+  }
+
   if (slugs.has("billing-spreadsheet")) {
     return upload
       ? uploadRequestCopy("billing spreadsheet", "Fill in accepted payers and modifiers.", withWizard)
-      : "Download the billing spreadsheet with the button on this task to review what the practice submitted.";
+      : "Click here to download the billing spreadsheet and review what the practice submitted.";
   }
   if (slugs.has("billing-questionnaire")) {
     return upload
       ? uploadRequestCopy("billing questionnaire", "Complete it.", withWizard)
-      : "Download the billing questionnaire with the button on this task to review what the practice submitted.";
+      : "Click here to download the billing questionnaire and review what the practice submitted.";
   }
   if (slugs.has("clinical-workflows-sheet")) {
     return upload
       ? uploadRequestCopy("clinical workflows data sheet", "Complete it.", withWizard)
-      : "Download the clinical workflows data sheet with the button on this task to review what the practice submitted.";
+      : "Click here to download the clinical workflows data sheet and review what the practice submitted.";
   }
   if (slugs.has("organization-details-form")) {
     return upload
       ? uploadRequestCopy("organization details form", "Complete it.", withWizard)
-      : "Download the organization details form with the button on this task to review what the practice submitted.";
+      : "Click here to download the organization details form and review what the practice submitted.";
   }
   if (slugs.has("rcm-intake-questionnaire")) {
     return upload
       ? uploadRequestCopy("RCM intake questionnaire", "Complete it.", withWizard)
-      : "Download the RCM intake questionnaire with the button on this task to review what the practice submitted.";
+      : "Click here to download the RCM intake questionnaire and review what the practice submitted.";
   }
   if (slugs.has("discovery-wizard")) {
     return `${WIZARD_BUTTON_NOTE} Complete it there.`;
