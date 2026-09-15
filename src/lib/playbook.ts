@@ -44,6 +44,11 @@ export {
   optionalAreaLabel,
   shouldIncludeByArea,
   normalizeOverlapTitle,
+  normalizeAreaKey,
+  collectTemplateAreaRows,
+  uniqueTemplateCode,
+  suggestedCopyName,
+  orderTemplateTasksForClone,
   isActiveWork,
 } from "@/lib/playbook-meta";
 

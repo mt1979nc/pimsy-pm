@@ -60,6 +60,115 @@ export function optionalAreaLabel(key: string): string {
   return OPTIONAL_AREA_CATALOG[key]?.label ?? key.replaceAll("_", " ");
 }
 
+/** Stable area key for optional playbook slices (create-site include/exclude). */
+export function normalizeAreaKey(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+export type TemplateAreaRow = {
+  key: string;
+  label: string;
+  hint: string;
+  phaseCount: number;
+  taskCount: number;
+  optionalCount: number;
+};
+
+/**
+ * Roll up optional-area usage on a playbook so the template editor can bulk
+ * mark / clear areas without opening every task.
+ */
+export function collectTemplateAreaRows(
+  phases: Array<{
+    isOptional?: boolean | null;
+    areaKey?: string | null;
+    tasks: Array<{ isOptional?: boolean | null; areaKey?: string | null }>;
+  }>,
+): TemplateAreaRow[] {
+  const rows = new Map<
+    string,
+    { phaseIds: number; taskCount: number; optionalCount: number }
+  >();
+  const bump = (key: string) => {
+    const cur = rows.get(key) ?? { phaseIds: 0, taskCount: 0, optionalCount: 0 };
+    rows.set(key, cur);
+    return cur;
+  };
+  for (const phase of phases) {
+    if (phase.areaKey) bump(phase.areaKey).phaseIds += 1;
+    for (const task of phase.tasks) {
+      const key = task.areaKey ?? phase.areaKey;
+      if (!key) continue;
+      const row = bump(key);
+      row.taskCount += 1;
+      if (task.isOptional || (phase.isOptional && (task.areaKey == null || task.areaKey === phase.areaKey))) {
+        row.optionalCount += 1;
+      }
+    }
+  }
+  return [...rows.entries()]
+    .map(([key, stats]) => ({
+      key,
+      label: optionalAreaLabel(key),
+      hint: OPTIONAL_AREA_CATALOG[key]?.hint ?? "",
+      phaseCount: stats.phaseIds,
+      taskCount: stats.taskCount,
+      optionalCount: stats.optionalCount,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** Unique `project_template.code` for a duplicated playbook. */
+export function uniqueTemplateCode(base: string | null | undefined, taken: Iterable<string>): string {
+  const existing = new Set(
+    [...taken].map((c) => c.trim().toLowerCase()).filter(Boolean),
+  );
+  const slug =
+    (base ?? "playbook")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "playbook";
+  const stem = slug.endsWith("-copy") ? slug : `${slug}-copy`;
+  if (!existing.has(stem)) return stem;
+  let n = 2;
+  while (existing.has(`${stem}-${n}`)) n += 1;
+  return `${stem}-${n}`;
+}
+
+export function suggestedCopyName(name: string): string {
+  const trimmed = name.trim() || "Playbook";
+  if (/\(copy(?: \d+)?\)$/i.test(trimmed)) {
+    const bumped = trimmed.replace(/\(copy\)$/i, "(copy 2)");
+    if (bumped !== trimmed) return bumped;
+    return trimmed.replace(/\(copy (\d+)\)$/i, (_, n) => `(copy ${Number(n) + 1})`);
+  }
+  return `${trimmed} (copy)`;
+}
+
+/** Parents before children so nested Dock sections clone with remapped ids. */
+export function orderTemplateTasksForClone<T extends { id: string; parentTaskId: string | null; order: number }>(
+  tasks: T[],
+): T[] {
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  const seen = new Set<string>();
+  const out: T[] = [];
+  function visit(task: T) {
+    if (seen.has(task.id)) return;
+    if (task.parentTaskId && byId.has(task.parentTaskId)) {
+      visit(byId.get(task.parentTaskId)!);
+    }
+    seen.add(task.id);
+    out.push(task);
+  }
+  for (const task of [...tasks].sort((a, b) => a.order - b.order)) visit(task);
+  return out;
+}
+
 export function shouldIncludeByArea(
   row: { isOptional?: boolean | null; areaKey?: string | null },
   excludedAreaKeys: readonly string[],

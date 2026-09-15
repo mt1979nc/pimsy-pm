@@ -19,7 +19,12 @@ import {
   trainingDescriptionForTitle,
   DOCK_TRAINING_1_TITLE,
   THS_TRAINING_1_AREAS,
+  TRAINING_SESSION_DESCRIPTION,
 } from "@/db/dock-training-checklists";
+import {
+  dockPlaybookDescriptionForTitle,
+  shouldReplacePlaybookDescription,
+} from "@/db/dock-playbook-copy";
 import { orderTasksForNesting } from "@/lib/task-tree";
 import {
   DISCOVERY_WIZARD_URL,
@@ -289,12 +294,61 @@ describe("training checklists and nested tasks", () => {
     expect(checklistForTaskTitle("Training 1: Intro to PIMSY").map((i) => i.label)).toEqual(labels);
     expect(labels).toContain("User Profile / Signature Capture");
     expect(labels).toContain("Client Create / Term");
-    expect(trainingDescriptionForTitle(DOCK_TRAINING_1_TITLE)).toMatch(/Storylane/);
-    expect(trainingDescriptionForTitle(DOCK_TRAINING_1_TITLE)).not.toMatch(/https:\/\/.*storylane/i);
+    const training1 = trainingDescriptionForTitle(DOCK_TRAINING_1_TITLE);
+    expect(training1).toMatch(/Storylane/);
+    expect(training1).not.toMatch(/https:\/\/.*storylane/i);
+    expect(training1).toContain("- [ ] User Profile / Signature Capture");
+    expect(training1).toContain("- [ ] Client Create / Term");
+    expect(dockPlaybookDescriptionForTitle(DOCK_TRAINING_1_TITLE)).toBe(training1);
     expect(checklistForTaskTitle("Training 2: Client Charts").some((i) => /Diagnoses/i.test(i.label))).toBe(
       true,
     );
     expect(checklistForTaskTitle("Unrelated task")).toEqual([]);
+  });
+
+  it("fills blank or stale training blurbs and never overwrites staff notes", () => {
+    const next = dockPlaybookDescriptionForTitle("Training 2: Client Charts");
+    expect(next).toContain("- [ ] Diagnoses");
+    expect(shouldReplacePlaybookDescription(null, next)).toBe(true);
+    expect(shouldReplacePlaybookDescription("   ", next)).toBe(true);
+    expect(shouldReplacePlaybookDescription(TRAINING_SESSION_DESCRIPTION, next)).toBe(true);
+    expect(shouldReplacePlaybookDescription(next, next)).toBe(false);
+    expect(shouldReplacePlaybookDescription("Specialist notes for Cedar kickoff.", next)).toBe(false);
+    expect(shouldReplacePlaybookDescription("hello", null)).toBe(false);
+  });
+
+  it("puts Discovery Wizard / billing copy in the description without URLs", () => {
+    const wizard = dockPlaybookDescriptionForTitle("Guided Discovery Meeting");
+    expect(wizard).toMatch(/Discovery Wizard/i);
+    expect(wizard).toMatch(/button on this task/i);
+    expect(wizard).not.toMatch(/https?:\/\//i);
+    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/Download the billing questionnaire/i);
+    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/Upload the completed file/i);
+    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).not.toMatch(/https?:\/\//i);
+    expect(
+      dockPlaybookDescriptionForTitle(
+        "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
+      ),
+    ).toMatch(/Download the billing spreadsheet/i);
+    expect(
+      dockPlaybookDescriptionForTitle(
+        "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
+      ),
+    ).toMatch(/Upload the completed file/i);
+    expect(dockPlaybookDescriptionForTitle("Organization Details Form")).toMatch(
+      /Open the Discovery Wizard with the button/i,
+    );
+    expect(dockPlaybookDescriptionForTitle("Review Billing Questionnaire Data Sheet")).toMatch(
+      /review what the practice submitted/i,
+    );
+    expect(dockPlaybookDescriptionForTitle("Review Billing Questionnaire Data Sheet")).not.toMatch(
+      /Upload the completed file/i,
+    );
+    expect(shouldReplacePlaybookDescription(
+      "Complete the attached billing questionnaire and upload the finished files on this task.",
+      dockPlaybookDescriptionForTitle("Billing Questionnaire"),
+    )).toBe(true);
+    expect(dockPlaybookDescriptionForTitle("Unrelated task")).toBeNull();
   });
 
   it("parses Dock-style markdown checklists from a scraped description", () => {

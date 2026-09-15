@@ -9,6 +9,11 @@ import {
 } from "@/db/dock-default-attachments";
 import { flattenSeedTasks, IMPLEMENTATION_PHASES, RCM_TEMPLATE } from "@/db/template-implementation";
 import { normalizeOverlapTitle } from "@/lib/playbook-meta";
+import {
+  isCustomerUploadRequestTitle,
+  isPlaybookResourceAsset,
+  playbookResourceButtonLabel,
+} from "@/lib/playbook-resources";
 
 describe("default template attachments catalog", () => {
   it("every catalog file targets at least one Implementation or RCM playbook title", () => {
@@ -125,5 +130,56 @@ describe("playbook title inventory", () => {
       ),
     ).toBe(true);
     expect(titles.has(normalizeOverlapTitle("Billing Questionnaire"))).toBe(true);
+  });
+});
+
+describe("playbook resource buttons", () => {
+  it("labels Discovery Wizard as Open and billing sheets as Download", () => {
+    expect(
+      playbookResourceButtonLabel({
+        kind: "LINK",
+        name: "Discovery Wizard",
+        url: DISCOVERY_WIZARD_URL,
+      }),
+    ).toBe("Open Discovery Wizard");
+    expect(
+      playbookResourceButtonLabel({
+        kind: "FILE",
+        name: "Billing questionnaire",
+      }),
+    ).toBe("Download Billing questionnaire");
+  });
+
+  it("treats library clones and the live Wizard URL as playbook resources", () => {
+    expect(isPlaybookResourceAsset({ libraryAssetId: "lib-1", kind: "FILE" })).toBe(true);
+    expect(
+      isPlaybookResourceAsset({
+        libraryAssetId: null,
+        kind: "LINK",
+        name: "Discovery Wizard",
+        url: DISCOVERY_WIZARD_URL,
+      }),
+    ).toBe(true);
+    expect(
+      isPlaybookResourceAsset({
+        libraryAssetId: null,
+        kind: "FILE",
+        name: "Completed billing questionnaire.xlsx",
+      }),
+    ).toBe(false);
+  });
+
+  it("marks customer upload-request titles and not specialist review / Guided Discovery", () => {
+    expect(isCustomerUploadRequestTitle("Billing Questionnaire")).toBe(true);
+    expect(
+      isCustomerUploadRequestTitle(
+        "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
+      ),
+    ).toBe(true);
+    expect(isCustomerUploadRequestTitle("Organization Details Form")).toBe(true);
+    expect(isCustomerUploadRequestTitle("Complete RCM intake questionnaire")).toBe(true);
+    expect(isCustomerUploadRequestTitle("Review Billing Questionnaire Data Sheet")).toBe(false);
+    expect(isCustomerUploadRequestTitle("Guided Discovery Meeting")).toBe(false);
+    expect(isCustomerUploadRequestTitle("Zendesk Company Setup")).toBe(false);
   });
 });

@@ -4,6 +4,7 @@ import { canManageLearningCenter } from "@/lib/authz";
 import { loadLearningCatalog } from "@/lib/learning-center";
 import { LearningCatalog } from "@/components/learning-catalog";
 import { PageHeader, Card, CardHeader, Badge, LinkButton } from "@/components/ui";
+import { TemplateHubNav } from "@/components/template-hub-nav";
 import { AddLearningItemForm, EditLearningItemForm } from "./learning-forms";
 import { db } from "@/db";
 import { libraryAssets } from "@/db/schema";
@@ -33,6 +34,7 @@ export default async function StaffLearningPage() {
           ) : null
         }
       />
+      {canEdit ? <TemplateHubNav current="/learning" /> : null}
 
       <LearningCatalog
         sections={sections}

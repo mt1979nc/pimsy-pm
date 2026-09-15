@@ -10,6 +10,7 @@ import { Card, CardHeader, Badge, Avatar } from "@/components/ui";
 import { TaskComments } from "@/components/task-comments";
 import { TaskChecklist } from "@/components/task-checklist";
 import { AttachmentList, AddAttachment } from "@/components/attachments";
+import { hasPlaybookFileResource } from "@/lib/playbook-resources";
 import { PortalTaskRow } from "../../../../portal-task-row";
 import { fmtDate, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -63,6 +64,7 @@ export default async function PortalTaskPage({
   const yours = task.ownerSide === "CUSTOMER";
   const completedAt = task.status === "DONE" ? task.completedAt : null;
   const overdue = isOverdue(task.dueDate, completedAt);
+  const uploadRequest = yours && hasPlaybookFileResource(attachments);
 
   return (
     <>
@@ -142,21 +144,25 @@ export default async function PortalTaskPage({
             <CardHeader
               title="Links & files"
               subtitle={
-                attachments.length > 0
-                  ? `${attachments.length} attached`
-                  : "Anything you need for this step, and anywhere to send us documents"
+                uploadRequest
+                  ? "Download the file, complete it, then upload the finished file here"
+                  : attachments.length > 0
+                    ? `${attachments.length} attached`
+                    : "Anything you need for this step, and anywhere to send us documents"
               }
             />
             <AttachmentList
               assets={attachments}
               currentUserId={actor.id}
               canManageVisibility={false}
+              uploadRequest={uploadRequest}
             />
             <AddAttachment
               taskId={task.id}
               canChooseVisibility={false}
               defaultVisibility="SHARED"
               taskIsInternal={false}
+              uploadRequest={uploadRequest}
             />
           </Card>
 

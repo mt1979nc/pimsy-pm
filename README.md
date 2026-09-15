@@ -63,11 +63,13 @@ delivered; only email is configurable.
 
 **Outlook and Teams** — see [Notifications](#notifications) below.
 
-**Templates** — Dock Implementation Template plus three RCM paths, fully
-editable (add/remove + drag-reorder phases and tasks). Creating a project
-materializes the chosen playbook with dates from kickoff → go-live. Optional
-areas can be excluded on create; a live project can mark a task or section
-N/A without changing the template.
+**Templates** — Dock Implementation Template plus three RCM paths. Playbook
+tasks mirror Dock: descriptions (training areas-to-cover checklists in the
+body) and default attachments (Discovery Wizard LINK, billing sheets).
+Editable in PATH. Duplicate makes a custom copy. File library is `/library`.
+Existing WIP: `npm run db:resync:playbook-from-dock` then `--apply` (progress
++ timeout; Azure Cloud Shell; no Dock API). New workspaces inherit copy +
+files automatically.
 
 **Update History** — staff sidebar **What’s new** (`/updates`) lists product
 changes from `RELEASE_NOTES` in `src/lib/version.ts`. Customer portal users
@@ -299,18 +301,21 @@ npm run db:cleanup:non-dock -- --apply
 `--keep-prism-analytics` also keeps pipeline-only extras. Runbook:
 `v1.12-DOCK-PARITY.md`.
 
-Playbook nested-task **and default attachment** resync (does not wipe DONE state
-or user-uploaded files):
+Playbook resync from the Dock Implementation template (descriptions,
+checklists, default attachments; does not wipe DONE state, staff notes, or
+user-uploaded files):
 
 ```bash
-npm run db:resync:playbook-from-dock
+npm run db:seed -- --templates-only          # refresh playbook rows only
+npm run db:resync:playbook-from-dock         # dry-run
 npm run db:resync:playbook-from-dock -- --apply
 ```
 
-That copies missing Discovery Wizard LINKs and billing-sheet defaults onto
-matching live tasks. Drop real Dock binaries in `content/template-attachments/`
-and run `npm run db:upload:template-attachments -- --apply`, or replace them at
-**Templates → File library**.
+That backfills blank/stale Dock playbook copy, missing area-to-cover
+checklists, Discovery Wizard LINKs, and billing-sheet defaults onto matching
+live tasks. Drop real Dock binaries in `content/template-attachments/` and
+run `npm run db:upload:template-attachments -- --apply`, or replace them at
+**Templates → File library**. Runbook: `v1.13-TEMPLATES.md`.
 
 Prism cutover (Capacity / Forecast / Analysis as source of truth in PATH): see
 `v1.11-PRISM-CUTOVER.md`. Dump standalone Prism SQL (or a JSON file from Cloud Shell), then:

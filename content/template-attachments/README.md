@@ -57,7 +57,7 @@ Then copy them down and run `db:upload:template-attachments -- --apply`, or repl
 
 ```bash
 npm run db:resync:playbook-from-dock              # dry-run
-npm run db:resync:playbook-from-dock -- --apply   # attach missing defaults; never deletes user files
+npm run db:resync:playbook-from-dock -- --apply   # descriptions + checklists + default files; never deletes staff notes or user files
 ```
 
 New projects copy the current library row onto matching tasks automatically.

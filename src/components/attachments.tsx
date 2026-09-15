@@ -8,9 +8,14 @@ import {
   setAttachmentVisibility,
 } from "@/actions/attachments";
 import { SubmitButton, FormError } from "@/components/submit-button";
-import { Button, inputClass, VisibilityBadge } from "@/components/ui";
+import { Button, LinkButton, inputClass, VisibilityBadge } from "@/components/ui";
 import { fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import {
+  DOWNLOAD_COMPLETE_UPLOAD_HINT,
+  isPlaybookResourceAsset,
+  playbookResourceButtonLabel,
+} from "@/lib/playbook-resources";
 
 type Asset = {
   id: string;
@@ -68,11 +73,14 @@ export function AttachmentList({
   currentUserId,
   canManageVisibility,
   canDelete = true,
+  uploadRequest = false,
 }: {
   assets: Asset[];
   currentUserId: string;
   canManageVisibility: boolean;
   canDelete?: boolean;
+  /** Customer upload-request: download → complete → upload back on this task. */
+  uploadRequest?: boolean;
 }) {
   if (assets.length === 0) {
     return (
@@ -84,9 +92,34 @@ export function AttachmentList({
 
   const images = assets.filter((a) => a.kind === "IMAGE");
   const rest = assets.filter((a) => a.kind !== "IMAGE");
+  const resources = rest.filter((a) => isPlaybookResourceAsset(a));
+  const hasFileResource = resources.some((a) => a.kind !== "LINK");
 
   return (
     <div>
+      {uploadRequest && hasFileResource ? (
+        <p className="border-b border-border px-4 py-3 text-[13.5px] leading-relaxed text-ink-2">
+          {DOWNLOAD_COMPLETE_UPLOAD_HINT}
+        </p>
+      ) : null}
+
+      {resources.length > 0 ? (
+        <div className="flex flex-wrap gap-2 border-b border-border px-4 py-3">
+          {resources.map((a) => (
+            <LinkButton
+              key={a.id}
+              href={href(a)}
+              variant="primary"
+              size="sm"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {playbookResourceButtonLabel({ kind: a.kind, name: a.name, url: a.url })}
+            </LinkButton>
+          ))}
+        </div>
+      ) : null}
+
       {images.length > 0 ? (
         <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3">
           {images.map((a) => (
@@ -247,11 +280,13 @@ export function AddAttachment({
   canChooseVisibility,
   defaultVisibility,
   taskIsInternal,
+  uploadRequest = false,
 }: {
   taskId: string;
   canChooseVisibility: boolean;
   defaultVisibility: "INTERNAL" | "SHARED";
   taskIsInternal: boolean;
+  uploadRequest?: boolean;
 }) {
   const [mode, setMode] = useState<"none" | "link" | "file">("none");
   const [visibility, setVisibility] = useState<"INTERNAL" | "SHARED">(defaultVisibility);
@@ -282,8 +317,8 @@ export function AddAttachment({
         <Button size="sm" onClick={() => setMode("link")}>
           Add link
         </Button>
-        <Button size="sm" onClick={() => setMode("file")}>
-          Upload file
+        <Button size="sm" variant={uploadRequest ? "primary" : "secondary"} onClick={() => setMode("file")}>
+          {uploadRequest ? "Upload completed file" : "Upload file"}
         </Button>
       </div>
     );
@@ -358,9 +393,9 @@ export function AddAttachment({
           <Button size="sm" type="button" onClick={() => setMode("none")}>
             Cancel
           </Button>
-          <SubmitButton size="sm" pendingLabel="Uploading…">
-            Upload
-          </SubmitButton>
+            <SubmitButton size="sm" pendingLabel="Uploading…">
+              {uploadRequest ? "Upload completed file" : "Upload"}
+            </SubmitButton>
         </div>
       </div>
     </form>

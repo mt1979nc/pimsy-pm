@@ -8,12 +8,15 @@ import {
   libraryAssets,
   projects,
   projectTemplates,
+  taskChecklistItems,
   templatePhases,
+  templateTaskChecklistItems,
   templateTasks,
   tasks,
   users,
 } from "@/db/schema";
 import { DISCOVERY_WIZARD_URL } from "@/db/dock-default-attachments";
+import { TRAINING_SESSION_DESCRIPTION } from "@/db/dock-training-checklists";
 import { applyTemplateDockExtras, seedLibraryPlaceholders } from "@/db/seed-dock-parity";
 import { loadTemplateById, materializeTemplatesOnProject } from "@/lib/playbook";
 import { applyPlaybookResync, planPlaybookResync } from "@/lib/playbook-resync";
@@ -83,6 +86,13 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
         title: "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
         order: 2,
         ownerSide: "CUSTOMER",
+        visibility: "SHARED",
+      },
+      {
+        phaseId: phase.id,
+        title: "Training 1: Intro to PIMSY",
+        order: 3,
+        ownerSide: "INTERNAL",
         visibility: "SHARED",
       },
     ]);
@@ -162,6 +172,15 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
     expect(billingFiles.some((f) => f.name.toLowerCase().includes("billing questionnaire"))).toBe(
       true,
     );
+    expect(billing?.description).toMatch(/Download the billing questionnaire/i);
+    expect(billing?.description).toMatch(/Upload the completed file/i);
+
+    const training = live.find((t) => t.title === "Training 1: Intro to PIMSY");
+    expect(training?.description).toContain("- [ ] User Profile / Signature Capture");
+    const trainingChecks = await db.query.taskChecklistItems.findMany({
+      where: eq(taskChecklistItems.taskId, training!.id),
+    });
+    expect(trainingChecks.some((c) => c.label === "User Profile / Signature Capture")).toBe(true);
   });
 
   it("resync attaches missing defaults and keeps a user-uploaded file", async () => {
@@ -214,7 +233,9 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
       uploadedById: actorId,
     });
 
-    const plan = await planPlaybookResync({ apply: false, actorId });
+    const plan = await planPlaybookResync({ apply: false, actorId, useDefaultDeadline: false });
+    expect(plan.timedOut).toBe(false);
+    expect(plan.elapsedMs).toBeGreaterThanOrEqual(0);
     expect(
       plan.rows.some(
         (r) =>
@@ -224,7 +245,7 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
       ),
     ).toBe(true);
 
-    await applyPlaybookResync({ apply: true, actorId, only: ["WIPATT"] });
+    await applyPlaybookResync({ apply: true, actorId, only: ["WIPATT"], useDefaultDeadline: false });
 
     const after = await db.query.fileAssets.findMany({
       where: eq(fileAssets.taskId, billingTask.id),
@@ -233,5 +254,164 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
     expect(after.some((f) => f.libraryAssetId != null)).toBe(true);
     expect(after.length).toBeGreaterThanOrEqual(2);
     expect(billing).toBeTruthy();
+  });
+
+  it("fills template descriptions and keeps editor checklist extras", async () => {
+    const loaded = await loadTemplateById(templateId);
+    const training = loaded?.phases[0]?.tasks.find((t) => t.title === "Training 1: Intro to PIMSY");
+    expect(training?.description).toContain("- [ ] User Profile / Signature Capture");
+    const checks = await db.query.templateTaskChecklistItems.findMany({
+      where: eq(templateTaskChecklistItems.templateTaskId, training!.id),
+    });
+    expect(checks.some((c) => c.label === "Provider Dashboard")).toBe(true);
+
+    await db.insert(templateTaskChecklistItems).values({
+      templateTaskId: training!.id,
+      label: "Custom specialist area",
+      order: 99,
+      visibility: "SHARED",
+    });
+    await applyTemplateDockExtras();
+    const after = await db.query.templateTaskChecklistItems.findMany({
+      where: eq(templateTaskChecklistItems.templateTaskId, training!.id),
+    });
+    expect(after.some((c) => c.label === "Custom specialist area")).toBe(true);
+    expect(after.some((c) => c.label === "User Profile / Signature Capture")).toBe(true);
+  });
+
+  it("resync backfills blank descriptions and preserves staff-authored notes", async () => {
+    const [project] = await db
+      .insert(projects)
+      .values({
+        name: "WIP copy",
+        code: "WIPDESC",
+        customerAccountId: customerId,
+        leadId: actorId,
+        playbookPath: "EHR",
+        templateId,
+        status: "IN_PROGRESS",
+      })
+      .returning({ id: projects.id });
+
+    const loaded = await loadTemplateById(templateId);
+    if (!loaded) throw new Error("template missing");
+    await db.transaction(async (tx) => {
+      await materializeTemplatesOnProject({
+        tx,
+        projectId: project.id,
+        templates: [loaded],
+        actorId,
+        start: new Date("2026-09-01T12:00:00.000Z"),
+        scaleFactor: 1,
+        excludedAreaKeys: [],
+        roleAssignments: {},
+        defaultInternalAssigneeId: actorId,
+      });
+    });
+
+    const live = await db.query.tasks.findMany({ where: eq(tasks.projectId, project.id) });
+    const billing = live.find((t) => t.title === "Billing Questionnaire");
+    const training = live.find((t) => t.title === "Training 1: Intro to PIMSY");
+    if (!billing || !training) throw new Error("expected playbook tasks");
+
+    await db.update(tasks).set({ description: null }).where(eq(tasks.id, billing.id));
+    await db
+      .update(tasks)
+      .set({ description: TRAINING_SESSION_DESCRIPTION })
+      .where(eq(tasks.id, training.id));
+    await db.delete(taskChecklistItems).where(eq(taskChecklistItems.taskId, training.id));
+
+    const [notesProject] = await db
+      .insert(projects)
+      .values({
+        name: "WIP notes",
+        code: "WIPNOTE",
+        customerAccountId: customerId,
+        leadId: actorId,
+        playbookPath: "EHR",
+        templateId,
+        status: "IN_PROGRESS",
+      })
+      .returning({ id: projects.id });
+    await db.transaction(async (tx) => {
+      await materializeTemplatesOnProject({
+        tx,
+        projectId: notesProject.id,
+        templates: [loaded],
+        actorId,
+        start: new Date("2026-09-01T12:00:00.000Z"),
+        scaleFactor: 1,
+        excludedAreaKeys: [],
+        roleAssignments: {},
+        defaultInternalAssigneeId: actorId,
+      });
+    });
+    const notesBilling = (
+      await db.query.tasks.findMany({ where: eq(tasks.projectId, notesProject.id) })
+    ).find((t) => t.title === "Billing Questionnaire");
+    if (!notesBilling) throw new Error("notes billing missing");
+    await db
+      .update(tasks)
+      .set({ description: "Specialist notes for Cedar kickoff." })
+      .where(eq(tasks.id, notesBilling.id));
+
+    const plan = await planPlaybookResync({
+      apply: false,
+      actorId,
+      only: ["WIPDESC", "WIPNOTE"],
+      useDefaultDeadline: false,
+    });
+    expect(plan.timedOut).toBe(false);
+    expect(
+      plan.rows.some(
+        (r) =>
+          r.projectCode === "WIPDESC" &&
+          r.title === "Billing Questionnaire" &&
+          r.action === "set-description",
+      ),
+    ).toBe(true);
+    expect(
+      plan.rows.some(
+        (r) =>
+          r.projectCode === "WIPDESC" &&
+          r.title === "Training 1: Intro to PIMSY" &&
+          r.action === "set-description",
+      ),
+    ).toBe(true);
+    expect(
+      plan.rows.some(
+        (r) =>
+          r.projectCode === "WIPDESC" &&
+          r.title === "Training 1: Intro to PIMSY" &&
+          r.action === "add-checklist",
+      ),
+    ).toBe(true);
+    expect(
+      plan.rows.some(
+        (r) =>
+          r.projectCode === "WIPNOTE" &&
+          r.title === "Billing Questionnaire" &&
+          r.action === "set-description",
+      ),
+    ).toBe(false);
+
+    await applyPlaybookResync({
+      apply: true,
+      actorId,
+      only: ["WIPDESC", "WIPNOTE"],
+      useDefaultDeadline: false,
+    });
+
+    const billingAfter = await db.query.tasks.findFirst({ where: eq(tasks.id, billing.id) });
+    const trainingAfter = await db.query.tasks.findFirst({ where: eq(tasks.id, training.id) });
+    const notesAfter = await db.query.tasks.findFirst({ where: eq(tasks.id, notesBilling.id) });
+    expect(billingAfter?.description).toMatch(/Download the billing questionnaire/i);
+    expect(billingAfter?.description).toMatch(/Upload the completed file/i);
+    expect(trainingAfter?.description).toContain("- [ ] User Profile / Signature Capture");
+    expect(notesAfter?.description).toBe("Specialist notes for Cedar kickoff.");
+    const trainingChecks = await db.query.taskChecklistItems.findMany({
+      where: eq(taskChecklistItems.taskId, training.id),
+    });
+    expect(trainingChecks.some((c) => c.label === "Client Create / Term")).toBe(true);
   });
 });

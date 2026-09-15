@@ -210,12 +210,12 @@ spaces (MT Test, Test Dock, DRAFT Impl, …). Named staff are never
 removed. Optional `--keep-prism-analytics` keeps pipeline-only extras.
 Full runbook: `v1.12-DOCK-PARITY.md`.
 
-Then refresh playbooks + Learning Center catalogs (does not wipe live task
-completion):
+Then refresh playbooks + backfill existing WIP (descriptions, checklists,
+default files; does not wipe live completion or staff notes):
 
 ```bash
-npm run db:seed -- --templates-only
-npm run db:resync:playbook-from-dock
+npm run db:seed -- --templates-only          # template rows only
+npm run db:resync:playbook-from-dock         # dry-run; progress + 180s cap
 npm run db:resync:playbook-from-dock -- --apply
 ```
 
