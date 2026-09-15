@@ -1,15 +1,17 @@
 /**
  * Dock Implementation **task action buttons** (Dock: Task Actions / button
- * dependencies), ported in-repo.
+ * dependencies), ported from live PWMI (Project Wellness) Workflow Guided
+ * Discovery → Discovery on 2026-09-15.
  *
- * Dock puts a customizable CTA on the checklist row and in the task card.
- * Alexander’s 2026-09-15 report: Discovery org-details shows a blue
- * **Click here** that opens the wizard. That is not a Links & files chip.
+ * Dock puts a customizable CTA on the checklist row and in the task card
+ * Action slot. Labels below are copied from that workspace — not guessed.
  *
- * Kinds we can wire without guessing URLs:
- *   link     — known URL (Discovery Wizard only)
- *   download — playbook library file
- *   upload   — Dock File Request (logos, letterhead, submit documents, …)
+ * Destinations we can wire without inventing URLs:
+ *   link     — Organization Details Form / Guided Discovery → Discovery Wizard
+ *   form     — Clinical Workflow / Billing Questionnaire / Documentation
+ *              “Open form” (Dock native forms have no public URL in this repo;
+ *              PATH uses the playbook sheet when present)
+ *   upload   — Dock File Request (“Upload files”)
  *
  * No Storylane, Inbed, ClaimMD, DrFirst bamboo, or survey URLs are invented.
  */
@@ -20,9 +22,15 @@ import {
 } from "@/db/dock-default-attachments";
 import { normalizeOverlapTitle } from "@/lib/playbook-meta";
 
-export const DOCK_TASK_ACTION_LABEL = "Click here";
+/** Dock PWMI Organization Details Form Action label (capital H). */
+export const DOCK_TASK_ACTION_LABEL = "Click Here";
 
-export type DockTaskActionKind = "link" | "download" | "upload";
+export const DOCK_CLINICAL_FORM_LABEL = "Click Here to Submit Clinical Workflow Form";
+export const DOCK_BILLING_QUESTIONNAIRE_LABEL = "Click Here to Submit Billing Questionnaire";
+export const DOCK_UPLOAD_FILES_LABEL = "Upload files";
+export const DOCK_OPEN_FORM_LABEL = "Open form";
+
+export type DockTaskActionKind = "link" | "form" | "download" | "upload";
 
 export type DockTaskActionDef = {
   id: string;
@@ -41,6 +49,10 @@ function hasPhrase(normalized: string, phrase: string): boolean {
   return normalized.includes(n(phrase));
 }
 
+function isReviewTitle(title: string): boolean {
+  return /^\s*review\b/i.test(title);
+}
+
 /** Dock / PATH names for the Organization Details Form (wizard CTA). */
 export function isOrganizationDetailsTitle(title: string): boolean {
   const key = n(title);
@@ -52,7 +64,7 @@ export function isOrganizationDetailsTitle(title: string): boolean {
 }
 
 export function isClinicalWorkflowsTitle(title: string): boolean {
-  if (/^\s*review\b/i.test(title)) return false;
+  if (isReviewTitle(title)) return false;
   return hasPhrase(n(title), "clinical workflow");
 }
 
@@ -61,6 +73,7 @@ export function isGuidedDiscoveryTitle(title: string): boolean {
 }
 
 export function isBillingQuestionnaireTitle(title: string): boolean {
+  if (isReviewTitle(title)) return false;
   return hasPhrase(n(title), "billing questionnaire");
 }
 
@@ -73,12 +86,17 @@ export function isRcmIntakeTitle(title: string): boolean {
   return key.includes("rcm") && key.includes("intake");
 }
 
+export function isDocumentationAndFormsTitle(title: string): boolean {
+  const key = n(title);
+  return key === n("Documentation & Forms") || key === n("Documentation and Forms");
+}
+
 /**
- * Dock File Request tasks: the button opens an upload, not a known URL.
- * Exact / near-exact titles only so staff rows like “Logos” stay clean.
+ * Dock File Request tasks: blue **Upload files** (PWMI: spreadsheet, logos,
+ * letterhead, submit documents). Exact / near-exact titles so staff “Logos”
+ * stays clean.
  */
 const FILE_REQUEST_TITLES = [
-  "Documentation & Forms",
   "Submit Documents",
   "Upload Company Logo(s)",
   "Upload Company Logos",
@@ -88,18 +106,16 @@ const FILE_REQUEST_TITLES = [
 ];
 
 export function isDockFileRequestTitle(title: string): boolean {
+  if (isBillingSpreadsheetTitle(title) && !isReviewTitle(title)) return true;
   const key = n(title);
   if (!key) return false;
   return FILE_REQUEST_TITLES.some((t) => n(t) === key);
 }
 
+/** Wizard Click Here — org-details and Guided Discovery only (PWMI). */
 export function isDiscoveryWizardTaskTitle(title: string): boolean {
-  if (/^\s*review\b/i.test(title)) return false;
-  return (
-    isOrganizationDetailsTitle(title) ||
-    isClinicalWorkflowsTitle(title) ||
-    isGuidedDiscoveryTitle(title)
-  );
+  if (isReviewTitle(title)) return false;
+  return isOrganizationDetailsTitle(title) || isGuidedDiscoveryTitle(title);
 }
 
 const WIZARD_ACTION: DockTaskActionDef = {
@@ -109,6 +125,36 @@ const WIZARD_ACTION: DockTaskActionDef = {
   resourceName: "Discovery Wizard",
   url: DISCOVERY_WIZARD_URL,
   librarySlug: "discovery-wizard",
+};
+
+const CLINICAL_FORM_ACTION: DockTaskActionDef = {
+  id: "clinical-workflow-form",
+  kind: "form",
+  label: DOCK_CLINICAL_FORM_LABEL,
+  resourceName: "Clinical Workflow Form",
+  librarySlug: "clinical-workflows-sheet",
+};
+
+const BILLING_QUESTIONNAIRE_FORM_ACTION: DockTaskActionDef = {
+  id: "billing-questionnaire-form",
+  kind: "form",
+  label: DOCK_BILLING_QUESTIONNAIRE_LABEL,
+  resourceName: "Billing Questionnaire",
+  librarySlug: "billing-questionnaire",
+};
+
+const OPEN_FORM_ACTION: DockTaskActionDef = {
+  id: "open-form",
+  kind: "form",
+  label: DOCK_OPEN_FORM_LABEL,
+  resourceName: "Form",
+};
+
+const UPLOAD_ACTION: DockTaskActionDef = {
+  id: "file-request",
+  kind: "upload",
+  label: DOCK_UPLOAD_FILES_LABEL,
+  resourceName: "Upload files",
 };
 
 function downloadAction(slug: string): DockTaskActionDef | null {
@@ -123,37 +169,30 @@ function downloadAction(slug: string): DockTaskActionDef | null {
   };
 }
 
-const UPLOAD_ACTION: DockTaskActionDef = {
-  id: "file-request",
-  kind: "upload",
-  label: DOCK_TASK_ACTION_LABEL,
-  resourceName: "Upload files",
-};
-
 /**
- * Dock action buttons for a live or template task title.
- *
- * One primary **Click here** per task (Dock’s checklist CTA). Wizard tasks
- * open the Discovery Wizard. Sheet tasks download. File-request tasks upload.
- * Review / specialist titles keep download only (no upload CTA).
+ * Dock action buttons for a live or template task title (PWMI Discovery).
+ * One primary CTA per task. Review / specialist titles stay download-only.
  */
 export function dockTaskActionsForTitle(title: string): DockTaskActionDef[] {
   if (isDiscoveryWizardTaskTitle(title)) {
     return [WIZARD_ACTION];
   }
+  if (isClinicalWorkflowsTitle(title)) {
+    return [CLINICAL_FORM_ACTION];
+  }
+  if (isBillingQuestionnaireTitle(title)) {
+    return [BILLING_QUESTIONNAIRE_FORM_ACTION];
+  }
+  if (isDocumentationAndFormsTitle(title)) {
+    return [OPEN_FORM_ACTION];
+  }
+  if (isDockFileRequestTitle(title)) {
+    return [UPLOAD_ACTION];
+  }
 
   const defs = libraryDefsForTaskTitle(title);
   const slugs = new Set(defs.map((d) => d.slug));
-  const reviewOnly = /^\s*review\b/i.test(title);
 
-  if (slugs.has("billing-spreadsheet") || isBillingSpreadsheetTitle(title)) {
-    const dl = downloadAction("billing-spreadsheet");
-    return dl ? [dl] : [];
-  }
-  if (slugs.has("billing-questionnaire") || isBillingQuestionnaireTitle(title)) {
-    const dl = downloadAction("billing-questionnaire");
-    return dl ? [dl] : [];
-  }
   if (slugs.has("rcm-intake-questionnaire") || isRcmIntakeTitle(title)) {
     const dl = downloadAction("rcm-intake-questionnaire");
     return dl ? [dl] : [];
@@ -166,8 +205,9 @@ export function dockTaskActionsForTitle(title: string): DockTaskActionDef[] {
     const dl = downloadAction("organization-details-form");
     return dl ? [dl] : [];
   }
-  if (isDockFileRequestTitle(title) && !reviewOnly) {
-    return [UPLOAD_ACTION];
+  if (slugs.has("billing-questionnaire")) {
+    const dl = downloadAction("billing-questionnaire");
+    return dl ? [dl] : [];
   }
   return [];
 }

@@ -19,6 +19,7 @@ import { TaskComments } from "@/components/task-comments";
 import { AttachmentList, AddAttachment } from "@/components/attachments";
 import { TaskActionButtons } from "@/components/task-action-buttons";
 import { hasPlaybookFileResource, isCustomerUploadRequestTitle } from "@/lib/playbook-resources";
+import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import { TaskChecklist } from "@/components/task-checklist";
 import { AssigneePicker } from "@/components/assignee-picker";
 import { TaskDetailControls } from "./task-controls";
@@ -194,8 +195,10 @@ export default async function TaskDetailPage({
             <CardHeader
               title="Links & files"
               subtitle={
-                uploadRequest
-                  ? "Click here to download, complete the file, and upload it here — same pattern as Dock"
+                isDockFileRequestTitle(task.title)
+                  ? "Upload files on this task"
+                  : uploadRequest
+                  ? "Download, complete the file, and upload it here — same pattern as Dock"
                   : attachments.length > 0
                     ? `${attachments.length} attached`
                     : "Anything the work depends on"

@@ -12,6 +12,7 @@ import { TaskChecklist } from "@/components/task-checklist";
 import { AttachmentList, AddAttachment } from "@/components/attachments";
 import { TaskActionButtons } from "@/components/task-action-buttons";
 import { hasPlaybookFileResource, isCustomerUploadRequestTitle } from "@/lib/playbook-resources";
+import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import { PortalTaskRow } from "../../../../portal-task-row";
 import { fmtDate, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -153,8 +154,10 @@ export default async function PortalTaskPage({
             <CardHeader
               title="Links & files"
               subtitle={
-                uploadRequest
-                  ? "Click here to download, complete the file, then upload it here"
+                isDockFileRequestTitle(task.title)
+                  ? "Upload files on this task"
+                  : uploadRequest
+                  ? "Download, complete the file, then upload it here"
                   : attachments.length > 0
                     ? `${attachments.length} attached`
                     : "Anything you need for this step, and anywhere to send us documents"

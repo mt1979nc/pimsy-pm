@@ -51,11 +51,11 @@ export function TaskActionButtons({
         {!compact
           ? buttons.map((b) => (
               <span key={`${b.id}-hint`} className="text-[12.5px] text-ink-3">
-                {b.kind === "link"
+                {b.kind === "link" || b.kind === "form"
                   ? `Opens the ${b.resourceName}`
                   : b.kind === "download"
                     ? `Downloads ${b.resourceName}`
-                    : "Opens the upload on this task"}
+                    : "Opens Upload files on this task"}
               </span>
             ))
           : null}
@@ -81,8 +81,10 @@ function TaskActionButton({
   onPopup: () => void;
 }) {
   const className = cn(
-    "inline-flex items-center justify-center rounded-lg bg-[#113c64] px-3 font-semibold !text-white shadow-sm hover:bg-[#0d2f4f] hover:!text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#113c64]",
-    compact ? "h-7 px-2.5 text-[12.5px]" : "h-9 px-4 text-[14px]",
+    "inline-flex items-center justify-center rounded-lg bg-[#113c64] px-3 text-center font-semibold !text-white shadow-sm hover:bg-[#0d2f4f] hover:!text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#113c64]",
+    compact
+      ? "h-auto min-h-7 max-w-[min(100%,18rem)] px-2.5 py-1 text-[12px] leading-tight"
+      : "h-auto min-h-9 px-4 py-1.5 text-[14px] leading-snug",
   );
   const label = button.label || DOCK_TASK_ACTION_LABEL;
   const aria = `${label}: ${button.resourceName}`;

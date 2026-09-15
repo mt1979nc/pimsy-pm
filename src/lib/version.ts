@@ -27,12 +27,12 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: "1.13.1",
     date: "2026-09-15",
     summary:
-      "PATH now matches Dock task action buttons: a blue Click here CTA on Discovery org-details (and the rest of the Implementation template’s wizard / download / file-request tasks) that opens the right resource, on staff and portal task lists and task detail — not only Open/Download chips in Links & files.",
+      "PATH now matches live PWMI Dock task action buttons: blue Click Here / form / Upload files CTAs on Discovery (and the rest of the Implementation template), with the Discovery Wizard opening from Organization Details Form — not only Open/Download chips in Links & files.",
     highlights: [
-      "Dock Task Actions (button dependencies) are first-class: blue Click here on the checklist row and on the task. Discovery org details / Organization Details Form / Guided Discovery / Clinical Workflows open the Discovery Wizard (https://calm-mud-0fe119810.7.azurestaticapps.net/) in a popup, with Open in new tab. No invented Storylane or booking URLs.",
-      "Billing questionnaire/spreadsheet and RCM intake Click here downloads the playbook file. Logos, letterhead, submit documents / import files, and similar Dock File Request tasks Click here to upload on the task.",
-      "Buttons resolve from the task title (Dock aliases like “Discovery org details” included), so existing WIP shows Click here even before attachments are cloned. Resync still backfills missing wizard LINKs, sheets, and Click here descriptions without deleting user uploads or staff notes. Does not call the Dock API.",
-      "Staff and customer portal task lists, phase lists, and task detail all show the CTA. New workspaces inherit the same buttons from the playbook.",
+      "Dock Task Actions (button dependencies) are first-class on the checklist row and the task, staff and portal. Live PWMI labels: Organization Details Form is blue Click Here → https://calm-mud-0fe119810.7.azurestaticapps.net/ (Discovery Wizard popup + Open in new tab). Clinical Workflows is Click Here to Submit Clinical Workflow Form. Billing Questionnaire is Click Here to Submit Billing Questionnaire. Billing spreadsheet, Submit Documents, logos, and letterhead are Upload files. Documentation & Forms is Open form. No invented Storylane or Dock form URLs.",
+      "Clinical / Billing / Documentation native Dock forms have no public URL in this repo; PATH shows the Dock label and opens the playbook sheet (or Links & files) until Alexander pastes a URL. RCM intake still Click Here to download. Existing WIP shows the CTA from the task title before resync clones attachments.",
+      "Resync backfills missing wizard LINKs, sheets, and PWMI button copy without deleting user uploads or staff notes. Does not call the Dock API. New workspaces inherit the same buttons from the playbook.",
+      "Staff and customer portal task lists, phase lists, and task detail all show the CTA.",
       "PATH + Prism naming unchanged. Azure Cloud Shell: npm run db:seed -- --templates-only then npm run db:resync:playbook-from-dock -- --apply.",
     ],
   },

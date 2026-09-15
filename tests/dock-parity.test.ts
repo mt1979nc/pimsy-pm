@@ -320,27 +320,34 @@ describe("training checklists and nested tasks", () => {
   it("puts Discovery Wizard / billing copy in the description without URLs", () => {
     const wizard = dockPlaybookDescriptionForTitle("Guided Discovery Meeting");
     expect(wizard).toMatch(/Discovery Wizard/i);
-    expect(wizard).toMatch(/Click here/i);
+    expect(wizard).toMatch(/Click Here/i);
     expect(wizard).not.toMatch(/https?:\/\//i);
-    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/Click here to download the billing questionnaire/i);
-    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/Upload the completed file/i);
+    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(
+      /Click Here to Submit Billing Questionnaire/i,
+    );
+    expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).toMatch(/Upload any working copy/i);
     expect(dockPlaybookDescriptionForTitle("Billing Questionnaire")).not.toMatch(/https?:\/\//i);
     expect(
       dockPlaybookDescriptionForTitle(
         "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
       ),
-    ).toMatch(/Click here to download the billing spreadsheet/i);
+    ).toMatch(/Upload files/i);
     expect(
       dockPlaybookDescriptionForTitle(
         "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
       ),
-    ).toMatch(/Upload the completed file/i);
+    ).not.toMatch(/Click here to download the billing spreadsheet/i);
     expect(dockPlaybookDescriptionForTitle("Organization Details Form")).toMatch(
-      /Click here on this task to open the Discovery Wizard/i,
+      /Click Here on this task to open the Discovery Wizard/i,
     );
     expect(dockPlaybookDescriptionForTitle("Discovery org details")).toMatch(
-      /Click here on this task to open the Discovery Wizard/i,
+      /Click Here on this task to open the Discovery Wizard/i,
     );
+    expect(dockPlaybookDescriptionForTitle("Clinical Workflows")).toMatch(
+      /Click Here to Submit Clinical Workflow Form/i,
+    );
+    expect(dockPlaybookDescriptionForTitle("Clinical Workflows")).not.toMatch(/Discovery Wizard/i);
+    expect(dockPlaybookDescriptionForTitle("Documentation & Forms")).toMatch(/Open form/i);
     expect(dockPlaybookDescriptionForTitle("Review Billing Questionnaire Data Sheet")).toMatch(
       /review what the practice submitted/i,
     );
@@ -400,6 +407,8 @@ describe("training checklists and nested tasks", () => {
     );
     expect(librarySlugsForTaskTitle("Billing Spreadsheet")).toContain("billing-spreadsheet");
     expect(librarySlugsForTaskTitle("Complete RCM intake questionnaire")).toContain("rcm-intake-questionnaire");
+    expect(librarySlugsForTaskTitle("Clinical Workflows")).toContain("clinical-workflows-sheet");
+    expect(librarySlugsForTaskTitle("Clinical Workflows")).not.toContain("discovery-wizard");
     expect(librarySlugsForTaskTitle("Kickoff call")).toEqual([]);
     const wizard = DEFAULT_LIBRARY_ASSETS.find((a) => a.slug === "discovery-wizard");
     expect(wizard?.kind).toBe("LINK");

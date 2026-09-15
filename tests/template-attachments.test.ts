@@ -137,20 +137,20 @@ describe("playbook title inventory", () => {
 });
 
 describe("playbook resource buttons", () => {
-  it("labels Discovery Wizard and billing sheets as Click here", () => {
+  it("labels Discovery Wizard as Click Here", () => {
     expect(
       playbookResourceButtonLabel({
         kind: "LINK",
         name: "Discovery Wizard",
         url: DISCOVERY_WIZARD_URL,
       }),
-    ).toBe("Click here");
+    ).toBe("Click Here");
     expect(
       playbookResourceButtonLabel({
         kind: "FILE",
         name: "Billing questionnaire",
       }),
-    ).toBe("Click here");
+    ).toBe("Click Here to Submit Billing Questionnaire");
   });
 
   it("treats library clones and the live Wizard URL as playbook resources", () => {

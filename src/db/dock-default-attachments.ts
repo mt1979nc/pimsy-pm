@@ -47,7 +47,7 @@ export const DEFAULT_LIBRARY_ASSETS: DefaultLibraryDef[] = [
     description:
       "Guided discovery workbook (live PATH/Dock Discovery Wizard). Opens as a task attachment — not a description footnote.",
     adminNotes:
-      "Live URL from Dock (2026-09-14). Attaches as a LINK on Guided Discovery / Workflow Guided Discovery (and the Discovery worksheets that feed it). Replace the URL here only if the Azure Static Web App moves.",
+      "Live URL from Dock PWMI Organization Details Form (2026-09-15). Attaches as a LINK on Guided Discovery / Workflow Guided Discovery and Organization Details Form. Clinical Workflows is a Dock Form, not this wizard. Replace the URL here only if the Azure Static Web App moves.",
     visibility: "SHARED",
     attachToTitles: [
       "Guided Discovery Meeting",
@@ -58,7 +58,6 @@ export const DEFAULT_LIBRARY_ASSETS: DefaultLibraryDef[] = [
       "Discovery: Organization Details",
       "Org details",
       "Org Details Form",
-      "Clinical Workflows",
       "Schedule: Workflow Guided Discovery",
       "Workflow Guided Discovery",
       "Schedule Workflow Guided Discovery",
