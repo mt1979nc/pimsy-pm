@@ -41,7 +41,9 @@ export function TaskChecklist({
       </div>
       {items.length === 0 ? (
         <p className="px-5 py-3 text-[13px] text-ink-3">
-          Add the topics this session should cover. Staff check them off during training.
+          {canEdit
+            ? "Add the topics this session should cover. Staff check them off during training."
+            : "No areas listed on this task."}
         </p>
       ) : (
         <ul className="divide-y divide-border">

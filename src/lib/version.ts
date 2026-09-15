@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.3";
+export const APP_VERSION = "1.13.4";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.4",
+    date: "2026-09-15",
+    summary:
+      "Specialists add or remove live tasks and sub-tasks without a Dock-style template editor; customers see kickoff/area content as presentation, with parent status only (not specialist nested checklists).",
+    highlights: [
+      "Staff project task list: Add task, Add sub-task, and Remove on the live project. Nested specialist work stays on the staff list (internal / yellow). Playbook authoring remains Templates (OWNER/ADMIN) — specialists do not get a free-text workspace template editor.",
+      "New sub-tasks default to specialist/internal. The customer portal and staff Customer view show SHARED parent completion (e.g. User Setup done/not) plus customer-owned action items, not Create Users / User Codes style specialist children.",
+      "Portal area tabs and Customer view present status, assignee, and in-progress — no editing chrome. Training checklist add/remove stays on Templates; live tasks still check items off.",
+      "Removing a live task (and nested sub-tasks) does not change the playbook. No playbook seed/resync in this slice.",
+    ],
+  },
   {
     version: "1.13.3",
     date: "2026-09-15",

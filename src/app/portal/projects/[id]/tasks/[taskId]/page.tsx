@@ -16,6 +16,7 @@ import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import { PortalTaskRow } from "../../../../portal-task-row";
 import { fmtDate, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { isSpecialistSubtask } from "@/lib/task-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export default async function PortalTaskPage({
     },
   });
   if (!task) notFound();
+  if (isSpecialistSubtask(task)) notFound();
 
   const [comments, attachments, checklist] = await Promise.all([
     db.query.taskComments.findMany({

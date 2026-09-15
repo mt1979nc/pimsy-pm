@@ -111,7 +111,13 @@ export default async function ProjectTasksPage({
             ) : (
               <div className="divide-y divide-border">
                 {orderTasksForNesting(phaseTasks).map((t) => (
-                  <TaskRow key={t.id} task={{ ...t, projectId: id, depth: t.depth }} />
+                  <TaskRow
+                    key={t.id}
+                    task={{ ...t, projectId: id, depth: t.depth, phaseId: t.phaseId }}
+                    allowStructureEdit
+                    staff={staff}
+                    defaultAssigneeId={actor.id}
+                  />
                 ))}
               </div>
             )}
@@ -135,7 +141,13 @@ export default async function ProjectTasksPage({
           ) : (
             <div className="divide-y divide-border">
               {orderTasksForNesting(unphased).map((t) => (
-                <TaskRow key={t.id} task={{ ...t, projectId: id, depth: t.depth }} />
+                <TaskRow
+                  key={t.id}
+                  task={{ ...t, projectId: id, depth: t.depth, phaseId: t.phaseId }}
+                  allowStructureEdit
+                  staff={staff}
+                  defaultAssigneeId={actor.id}
+                />
               ))}
             </div>
           )}
@@ -146,10 +158,10 @@ export default async function ProjectTasksPage({
       ) : null}
 
       <p className="text-[12.5px] leading-relaxed text-ink-3">
-        Tasks marked <VisibilityBadge visibility="INTERNAL" className="align-middle" /> stay inside
-        your team. Anything marked{" "}
-        <VisibilityBadge visibility="SHARED" className="align-middle" /> appears in the customer&apos;s
-        portal, and anything owned by the customer always does.
+        Add or remove tasks on this live project — that does not change the playbook. Nested
+        specialist sub-tasks stay on this staff list (yellow / internal). The customer portal and
+        Customer view show parent status only (for example User Setup done or not), plus any
+        customer-owned action items. Playbook authoring is Templates (owner/admin).
       </p>
     </div>
   );

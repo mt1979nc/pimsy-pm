@@ -1,13 +1,16 @@
 /**
  * Portal data access. Every function here is written for a CUSTOMER actor and
- * filters on BOTH the customer account and `visibility = SHARED`. Nothing in
- * the portal should query the database except through this module.
+ * filters on BOTH the customer account and `visibility = SHARED`. Specialist
+ * nested sub-tasks are omitted even if SHARED — customers see parent status
+ * (and customer-owned nested actions) only. Nothing in the portal should query
+ * the database except through this module.
  */
 
 import { and, eq, ne, asc, desc, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { projects, tasks, phases, milestones, statusUpdates, fileAssets, taskComments } from "@/db/schema";
 import type { Actor } from "./authz";
+import { portalFacingTaskSql } from "./task-visibility";
 
 export type CustomerActor = Actor & { customerAccountId: string };
 
@@ -70,13 +73,10 @@ export async function portalPlan(actor: CustomerActor, projectId: string) {
     orderBy: [asc(phases.order)],
     with: {
       tasks: {
-        where: and(
-          eq(tasks.visibility, "SHARED"),
-          ne(tasks.status, "CANCELLED"),
-          eq(tasks.notApplicable, false),
-        ),
+        where: portalFacingTaskSql(),
         orderBy: [asc(tasks.order)],
         with: {
+          assignee: { columns: { id: true, name: true, image: true, title: true } },
           comments: {
             where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
             columns: { id: true },
@@ -90,12 +90,11 @@ export async function portalPlan(actor: CustomerActor, projectId: string) {
     where: and(
       eq(tasks.projectId, projectId),
       isNull(tasks.phaseId),
-      eq(tasks.visibility, "SHARED"),
-      ne(tasks.status, "CANCELLED"),
-      eq(tasks.notApplicable, false),
+      portalFacingTaskSql(),
     ),
     orderBy: [asc(tasks.order)],
     with: {
+      assignee: { columns: { id: true, name: true, image: true, title: true } },
       comments: {
         where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
         columns: { id: true },
@@ -136,13 +135,10 @@ export async function portalPhase(actor: CustomerActor, projectId: string, phase
     ),
     with: {
       tasks: {
-        where: and(
-          eq(tasks.visibility, "SHARED"),
-          ne(tasks.status, "CANCELLED"),
-          eq(tasks.notApplicable, false),
-        ),
+        where: portalFacingTaskSql(),
         orderBy: [asc(tasks.order)],
         with: {
+          assignee: { columns: { id: true, name: true, image: true, title: true } },
           comments: {
             where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
             columns: { id: true },

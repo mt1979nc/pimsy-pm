@@ -11,18 +11,26 @@ type Option = { id: string; name: string | null };
 export function AddTaskInline({
   projectId,
   phaseId,
+  parentTaskId,
   staff,
   defaultAssigneeId,
+  label,
 }: {
   projectId: string;
   phaseId?: string;
+  parentTaskId?: string;
   staff: Option[];
   defaultAssigneeId?: string;
+  /** Button label when collapsed. */
+  label?: string;
 }) {
+  const isSubtask = Boolean(parentTaskId);
   const [state, action] = useActionState(createTask, {});
   const [open, setOpen] = useState(false);
   const [ownerSide, setOwnerSide] = useState<"INTERNAL" | "CUSTOMER">("INTERNAL");
-  const [visibility, setVisibility] = useState<"INTERNAL" | "SHARED">("INTERNAL");
+  const [visibility, setVisibility] = useState<"INTERNAL" | "SHARED">(
+    isSubtask ? "INTERNAL" : "INTERNAL",
+  );
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -30,28 +38,43 @@ export function AddTaskInline({
       formRef.current?.reset();
       setOwnerSide("INTERNAL");
       setVisibility("INTERNAL");
+      if (isSubtask) setOpen(false);
     }
-  }, [state.ok]);
+  }, [state.ok, isSubtask]);
 
-  // A customer-owned task must be visible to them.
-  const effectiveVisibility = ownerSide === "CUSTOMER" ? "SHARED" : visibility;
+  // A customer-owned task must be visible to them. Specialist sub-tasks stay internal.
+  const effectiveVisibility =
+    ownerSide === "CUSTOMER" ? "SHARED" : isSubtask ? "INTERNAL" : visibility;
 
   if (!open) {
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full px-4 py-2.5 text-left text-[13px] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+        className={
+          isSubtask
+            ? "text-[12px] text-ink-3 hover:text-ink hover:underline"
+            : "w-full px-4 py-2.5 text-left text-[13px] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+        }
       >
-        + Add task
+        {label ?? (isSubtask ? "+ Add sub-task" : "+ Add task")}
       </button>
     );
   }
 
   return (
-    <form ref={formRef} action={action} className="space-y-2.5 border-t border-border bg-surface-2 p-4">
+    <form
+      ref={formRef}
+      action={action}
+      className={
+        isSubtask
+          ? "mt-2 w-full basis-full space-y-2 rounded-lg border border-border bg-surface-2 p-3"
+          : "space-y-2.5 border-t border-border bg-surface-2 p-4"
+      }
+    >
       <input type="hidden" name="projectId" value={projectId} />
       {phaseId ? <input type="hidden" name="phaseId" value={phaseId} /> : null}
+      {parentTaskId ? <input type="hidden" name="parentTaskId" value={parentTaskId} /> : null}
       <input type="hidden" name="ownerSide" value={ownerSide} />
       <input type="hidden" name="visibility" value={effectiveVisibility} />
       <FormError error={state.error} />
@@ -60,11 +83,11 @@ export function AddTaskInline({
         name="title"
         required
         autoFocus
-        placeholder="What needs to happen?"
+        placeholder={isSubtask ? "Specialist sub-task" : "What needs to happen?"}
         className={inputClass}
       />
 
-      <div className="grid gap-2 sm:grid-cols-4">
+      <div className={`grid gap-2 ${isSubtask ? "sm:grid-cols-2" : "sm:grid-cols-4"}`}>
         <select
           name="assigneeId"
           defaultValue={defaultAssigneeId ?? ""}
@@ -79,20 +102,24 @@ export function AddTaskInline({
           ))}
         </select>
         <input name="dueDate" type="date" className={inputClass} />
-        <select name="priority" defaultValue="MEDIUM" className={inputClass}>
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-          <option value="URGENT">Urgent</option>
-        </select>
-        <input
-          name="estimateHours"
-          type="number"
-          step="0.5"
-          min="0"
-          placeholder="Est. hrs"
-          className={inputClass}
-        />
+        {isSubtask ? null : (
+          <>
+            <select name="priority" defaultValue="MEDIUM" className={inputClass}>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="URGENT">Urgent</option>
+            </select>
+            <input
+              name="estimateHours"
+              type="number"
+              step="0.5"
+              min="0"
+              placeholder="Est. hrs"
+              className={inputClass}
+            />
+          </>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -105,7 +132,7 @@ export function AddTaskInline({
                 ownerSide === "INTERNAL" ? "bg-brand text-brand-ink" : "bg-surface text-ink-2"
               }`}
             >
-              Our team
+              {isSubtask ? "Specialist" : "Our team"}
             </button>
             <button
               type="button"
@@ -118,27 +145,35 @@ export function AddTaskInline({
             </button>
           </div>
 
-          <button
-            type="button"
-            disabled={ownerSide === "CUSTOMER"}
-            onClick={() => setVisibility(visibility === "SHARED" ? "INTERNAL" : "SHARED")}
-            title={
-              ownerSide === "CUSTOMER"
-                ? "Customer action items are always visible to them"
-                : "Toggle whether the customer can see this task"
-            }
-            className="disabled:opacity-70"
-          >
-            <VisibilityBadge visibility={effectiveVisibility} />
-          </button>
+          {isSubtask ? (
+            <span className="text-[11.5px] text-ink-3">
+              {ownerSide === "CUSTOMER"
+                ? "Shows in the portal as a customer action"
+                : "Staff only — customer sees the parent status"}
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={ownerSide === "CUSTOMER"}
+              onClick={() => setVisibility(visibility === "SHARED" ? "INTERNAL" : "SHARED")}
+              title={
+                ownerSide === "CUSTOMER"
+                  ? "Customer action items are always visible to them"
+                  : "Toggle whether the customer can see this task"
+              }
+              className="disabled:opacity-70"
+            >
+              <VisibilityBadge visibility={effectiveVisibility} />
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
           <Button size="sm" type="button" onClick={() => setOpen(false)}>
-            Done
+            Cancel
           </Button>
           <SubmitButton size="sm" pendingLabel="Adding…">
-            Add task
+            {isSubtask ? "Add sub-task" : "Add task"}
           </SubmitButton>
         </div>
       </div>

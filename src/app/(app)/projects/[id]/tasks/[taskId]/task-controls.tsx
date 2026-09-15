@@ -101,7 +101,7 @@ export function TaskDetailControls({
             {task.notApplicable ? "Restore from N/A" : "Not applicable"}
           </Button>
           <Button size="sm" onClick={() => setEditing(true)}>
-            Edit
+            Edit details
           </Button>
         </div>
 

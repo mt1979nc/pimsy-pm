@@ -32,12 +32,14 @@ export function orderTasksForNesting<T extends { id: string; parentTaskId: strin
   walk(null, 0);
 
   // Children whose parent is not in this list (filtered portal rows).
+  // Stay at depth 0 so customer action items under a hidden specialist parent
+  // present as top-level work, not a dangling indent.
   for (const t of rows) {
     if (placed.has(t.id)) continue;
     if (t.parentTaskId && !ids.has(t.parentTaskId)) {
       placed.add(t.id);
-      out.push({ ...t, depth: 1 });
-      walk(t.id, 2);
+      out.push({ ...t, depth: 0 });
+      walk(t.id, 1);
     }
   }
 
