@@ -10,7 +10,9 @@ import { Card, CardHeader, Badge, Avatar } from "@/components/ui";
 import { TaskComments } from "@/components/task-comments";
 import { TaskChecklist } from "@/components/task-checklist";
 import { AttachmentList, AddAttachment } from "@/components/attachments";
-import { hasPlaybookFileResource } from "@/lib/playbook-resources";
+import { TaskActionButtons } from "@/components/task-action-buttons";
+import { hasPlaybookFileResource, isCustomerUploadRequestTitle } from "@/lib/playbook-resources";
+import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import { PortalTaskRow } from "../../../../portal-task-row";
 import { fmtDate, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -64,7 +66,8 @@ export default async function PortalTaskPage({
   const yours = task.ownerSide === "CUSTOMER";
   const completedAt = task.status === "DONE" ? task.completedAt : null;
   const overdue = isOverdue(task.dueDate, completedAt);
-  const uploadRequest = yours && hasPlaybookFileResource(attachments);
+  const uploadRequest =
+    yours && (hasPlaybookFileResource(attachments) || isCustomerUploadRequestTitle(task.title));
 
   return (
     <>
@@ -88,6 +91,12 @@ export default async function PortalTaskPage({
         <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">
           {task.title}
         </h1>
+        <TaskActionButtons
+          title={task.title}
+          assets={attachments}
+          taskHref={`/portal/projects/${id}/tasks/${taskId}`}
+          className="mt-3"
+        />
         {task.dueDate ? (
           <p className={cn("mt-1.5 text-[13.5px]", overdue && task.status !== "DONE" ? "font-medium text-red" : "text-ink-2")}>
             Due {fmtDate(task.dueDate)}
@@ -104,6 +113,7 @@ export default async function PortalTaskPage({
                 subtitle="Checking this off updates your project progress straight away"
               />
               <PortalTaskRow
+                showActions={false}
                 task={{
                   id: task.id,
                   title: task.title,
@@ -144,26 +154,30 @@ export default async function PortalTaskPage({
             <CardHeader
               title="Links & files"
               subtitle={
-                uploadRequest
-                  ? "Download the file, complete it, then upload the finished file here"
+                isDockFileRequestTitle(task.title)
+                  ? "Upload files on this task"
+                  : uploadRequest
+                  ? "Download, complete the file, then upload it here"
                   : attachments.length > 0
                     ? `${attachments.length} attached`
                     : "Anything you need for this step, and anywhere to send us documents"
               }
             />
-            <AttachmentList
-              assets={attachments}
-              currentUserId={actor.id}
-              canManageVisibility={false}
-              uploadRequest={uploadRequest}
-            />
-            <AddAttachment
-              taskId={task.id}
-              canChooseVisibility={false}
-              defaultVisibility="SHARED"
-              taskIsInternal={false}
-              uploadRequest={uploadRequest}
-            />
+            <div id="files">
+              <AttachmentList
+                assets={attachments}
+                currentUserId={actor.id}
+                canManageVisibility={false}
+                uploadRequest={uploadRequest}
+              />
+              <AddAttachment
+                taskId={task.id}
+                canChooseVisibility={false}
+                defaultVisibility="SHARED"
+                taskIsInternal={false}
+                uploadRequest={uploadRequest}
+              />
+            </div>
           </Card>
 
           <Card>

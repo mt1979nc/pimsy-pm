@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { setTaskStatus, setTaskVisibility, markTaskNotApplicable } from "@/actions/tasks";
 import { Badge, PriorityBadge, VisibilityBadge, Avatar } from "@/components/ui";
+import { TaskActionButtons } from "@/components/task-action-buttons";
 import { dueLabel, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import type { Priority, TaskStatus, Visibility, OwnerSide } from "@/db/schema";
@@ -176,6 +177,7 @@ export function TaskRow({
         {error ? <p className="mt-1 text-[12px] text-red">{error}</p> : null}
       </div>
 
+      <TaskActionButtons title={task.title} taskHref={href} compact className="mt-0.5" />
       {task.assignee ? (
         <Avatar name={task.assignee.name} image={task.assignee.image} size={22} className="mt-0.5" />
       ) : null}

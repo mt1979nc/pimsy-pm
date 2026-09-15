@@ -6,6 +6,7 @@ import { Card, CardHeader, EmptyState, ProgressBar, Badge } from "@/components/u
 import { pctComplete } from "@/lib/rollup";
 import { fmtShort, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { TaskActionButtons } from "@/components/task-action-buttons";
 import { orderTasksForNesting } from "@/lib/task-tree";
 
 export const dynamic = "force-dynamic";
@@ -67,15 +68,22 @@ export default async function PortalPhasePage({
                 )}
               />
               <div className="min-w-0 flex-1">
-                <Link
-                  href={`/portal/projects/${id}/tasks/${t.id}`}
-                  className={cn(
-                    "block text-[13.5px] hover:text-brand hover:underline",
-                    t.status === "DONE" ? "text-ink-3 line-through" : "text-ink",
-                  )}
-                >
-                  {t.title}
-                </Link>
+                <div className="flex items-start gap-2">
+                  <Link
+                    href={`/portal/projects/${id}/tasks/${t.id}`}
+                    className={cn(
+                      "block min-w-0 flex-1 text-[13.5px] hover:text-brand hover:underline",
+                      t.status === "DONE" ? "text-ink-3 line-through" : "text-ink",
+                    )}
+                  >
+                    {t.title}
+                  </Link>
+                  <TaskActionButtons
+                    title={t.title}
+                    taskHref={`/portal/projects/${id}/tasks/${t.id}`}
+                    compact
+                  />
+                </div>
                 {t.dueDate && t.status !== "DONE" ? (
                   <div className={cn("text-[12px]", isOverdue(t.dueDate) ? "text-red" : "text-ink-3")}>
                     {fmtShort(t.dueDate)}

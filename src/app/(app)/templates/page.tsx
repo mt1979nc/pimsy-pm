@@ -194,10 +194,15 @@ export default async function TemplatesPage() {
       )}
 
       <p className="mt-5 max-w-2xl text-[12.5px] leading-relaxed text-ink-3">
-        Playbook tasks mirror Dock Implementation: clickable Open / Download buttons for Discovery
-        Wizard and billing sheets, download → complete → upload copy on customer upload requests,
-        and training descriptions. Duplicate makes a custom copy so the four site-creation paths
-        stay put. New workspaces inherit that copy automatically.
+        Playbook tasks mirror Dock Implementation: blue task action buttons with
+        the live PWMI labels (<strong>Click Here</strong> for Organization
+        Details Form / the wizard, <strong>Click Here to Submit Clinical
+        Workflow Form</strong>, <strong>Click Here to Submit Billing
+        Questionnaire</strong>, <strong>Upload files</strong>,{" "}
+        <strong>Open form</strong>), download → complete → upload copy on
+        customer file requests, and training descriptions.
+        Duplicate makes a custom copy so the four site-creation paths stay put. New workspaces
+        inherit that copy automatically.
         Live projects are not rewritten when the template changes — run{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
           npm run db:resync:playbook-from-dock -- --apply

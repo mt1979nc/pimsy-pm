@@ -172,8 +172,8 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
     expect(billingFiles.some((f) => f.name.toLowerCase().includes("billing questionnaire"))).toBe(
       true,
     );
-    expect(billing?.description).toMatch(/Download the billing questionnaire/i);
-    expect(billing?.description).toMatch(/Upload the completed file/i);
+    expect(billing?.description).toMatch(/Click Here to Submit Billing Questionnaire/i);
+    expect(billing?.description).toMatch(/Upload any working copy/i);
 
     const training = live.find((t) => t.title === "Training 1: Intro to PIMSY");
     expect(training?.description).toContain("- [ ] User Profile / Signature Capture");
@@ -405,8 +405,8 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
     const billingAfter = await db.query.tasks.findFirst({ where: eq(tasks.id, billing.id) });
     const trainingAfter = await db.query.tasks.findFirst({ where: eq(tasks.id, training.id) });
     const notesAfter = await db.query.tasks.findFirst({ where: eq(tasks.id, notesBilling.id) });
-    expect(billingAfter?.description).toMatch(/Download the billing questionnaire/i);
-    expect(billingAfter?.description).toMatch(/Upload the completed file/i);
+    expect(billingAfter?.description).toMatch(/Click Here to Submit Billing Questionnaire/i);
+    expect(billingAfter?.description).toMatch(/Upload any working copy/i);
     expect(trainingAfter?.description).toContain("- [ ] User Profile / Signature Capture");
     expect(notesAfter?.description).toBe("Specialist notes for Cedar kickoff.");
     const trainingChecks = await db.query.taskChecklistItems.findMany({
