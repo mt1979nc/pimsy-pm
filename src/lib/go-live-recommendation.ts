@@ -1,0 +1,330 @@
+/**
+ * Roster Forecast+ go-live recommendation.
+ *
+ * Standalone Prism Forecast+ projected kickoff → go-live under three
+ * scenarios (optimistic / typical / pessimistic). PATH already ports the
+ * discovery-responsiveness formula in `estimator.ts`. Add-to-roster also
+ * overlays **historical duration bands** from completed PATH / Prism-imported
+ * implementations (the Analysis table), so the date Alexander commits is
+ * grounded in past sites — not a blank field.
+ *
+ * Bands (after Analysis exclusions, default SENSORI / MHC / LECHRIS):
+ *   Optimistic = 25th percentile of kickoff → actual go-live
+ *   Typical    = 50th percentile (median)
+ *   Pessimistic = 75th percentile
+ *
+ * Same-tier history is preferred when the sample is large enough; otherwise
+ * all primary (non-excluded) completed sites. Too few rows → formula fallback.
+ */
+
+import type { ComplexityTier, DiscoveryScenario } from "@/db/schema";
+import { addDays } from "@/lib/dates";
+import {
+  complexityTier,
+  DISCOVERY_SCENARIOS,
+  estimateHours,
+  forecastImplementation,
+  parseDiscoveryScenario,
+  SCENARIO_LABELS,
+  type ForecastResult,
+  type ImplementationScope,
+  type ScenarioProjection,
+} from "@/lib/estimator";
+import {
+  DEFAULT_ANALYSIS_EXCLUSION_CODES,
+  isExcludedFromPrimaryAverages,
+  round1,
+  weeklyHoursForEngagement,
+} from "@/lib/forecast";
+
+export { parseDiscoveryScenario };
+
+/** Need this many completed durations before history replaces the formula. */
+export const HISTORICAL_BAND_MIN_SAMPLE = 3;
+
+export const HISTORICAL_SCENARIO_PERCENTILES: Record<DiscoveryScenario, number> = {
+  OPTIMISTIC: 0.25,
+  TYPICAL: 0.5,
+  PESSIMISTIC: 0.75,
+};
+
+export const HISTORICAL_SCENARIO_LABELS: Record<DiscoveryScenario, string> = {
+  OPTIMISTIC: "Optimistic · 25th percentile of past kickoff → go-live",
+  TYPICAL: "Typical · median of past kickoff → go-live",
+  PESSIMISTIC: "Pessimistic · 75th percentile of past kickoff → go-live",
+};
+
+export type DurationSample = {
+  code: string;
+  durationDays: number;
+  complexityTier: ComplexityTier | string | null;
+};
+
+export type HistoricalDurationBands = {
+  source: "tier" | "all" | "none";
+  n: number;
+  excludedCount: number;
+  excludedCodes: string[];
+  complexityTier: ComplexityTier | string | null;
+  /** Arithmetic mean — same statistic Analysis shows as avg. duration. */
+  meanDays: number | null;
+  optimisticDays: number | null;
+  typicalDays: number | null;
+  pessimisticDays: number | null;
+};
+
+export type RecommendedScenario = ScenarioProjection & {
+  /** Formula (discovery 7/14/21 + training cadence) days, before history. */
+  modelCalendarDays: number;
+  estimatedHours: number;
+  weeklyHours: number;
+};
+
+export type GoLiveRecommendation = Omit<ForecastResult, "scenarios"> & {
+  goLiveSource: "historical-tier" | "historical-all" | "model";
+  historical: HistoricalDurationBands;
+  scenarios: RecommendedScenario[];
+};
+
+/** Linear interpolation, Excel PERCENTILE.INC / “inclusive” method. */
+export function interpolatedPercentile(values: readonly number[], p: number): number {
+  if (values.length === 0) return Number.NaN;
+  const sorted = [...values].filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+  if (sorted.length === 0) return Number.NaN;
+  if (sorted.length === 1) return sorted[0]!;
+  const clamped = Math.min(1, Math.max(0, p));
+  const idx = (sorted.length - 1) * clamped;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  const low = sorted[lo]!;
+  const high = sorted[hi]!;
+  if (lo === hi) return low;
+  return low + (high - low) * (idx - lo);
+}
+
+function roundDays(n: number): number {
+  return Math.max(1, Math.round(n));
+}
+
+function mean(values: readonly number[]): number | null {
+  if (values.length === 0) return null;
+  return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+}
+
+function monotonicDays(opt: number, typ: number, pes: number): {
+  optimisticDays: number;
+  typicalDays: number;
+  pessimisticDays: number;
+} {
+  const optimisticDays = roundDays(opt);
+  const typicalDays = Math.max(optimisticDays, roundDays(typ));
+  const pessimisticDays = Math.max(typicalDays, roundDays(pes));
+  return { optimisticDays, typicalDays, pessimisticDays };
+}
+
+/**
+ * P25 / P50 / P75 of completed kickoff → actual go-live durations.
+ * Prefers the same complexity tier when that subset meets minSample.
+ */
+export function historicalDurationBands(
+  samples: readonly DurationSample[],
+  opts?: {
+    exclusions?: readonly string[];
+    complexityTier?: string | null;
+    minSample?: number;
+  },
+): HistoricalDurationBands {
+  const exclusions = opts?.exclusions ?? DEFAULT_ANALYSIS_EXCLUSION_CODES;
+  const minSample = opts?.minSample ?? HISTORICAL_BAND_MIN_SAMPLE;
+  const tier = opts?.complexityTier ?? null;
+
+  const excluded: DurationSample[] = [];
+  const usable: DurationSample[] = [];
+  for (const s of samples) {
+    if (!Number.isFinite(s.durationDays) || s.durationDays <= 0) continue;
+    if (isExcludedFromPrimaryAverages(s.code, exclusions)) excluded.push(s);
+    else usable.push(s);
+  }
+  const excludedCodes = excluded.map((r) => r.code);
+
+  const empty = (source: HistoricalDurationBands["source"], n: number): HistoricalDurationBands => ({
+    source,
+    n,
+    excludedCount: excludedCodes.length,
+    excludedCodes,
+    complexityTier: tier,
+    meanDays: null,
+    optimisticDays: null,
+    typicalDays: null,
+    pessimisticDays: null,
+  });
+
+  const fromPool = (
+    pool: typeof usable,
+    source: "tier" | "all",
+  ): HistoricalDurationBands | null => {
+    if (pool.length < minSample) return null;
+    const days = pool.map((r) => r.durationDays);
+    const { optimisticDays, typicalDays, pessimisticDays } = monotonicDays(
+      interpolatedPercentile(days, HISTORICAL_SCENARIO_PERCENTILES.OPTIMISTIC),
+      interpolatedPercentile(days, HISTORICAL_SCENARIO_PERCENTILES.TYPICAL),
+      interpolatedPercentile(days, HISTORICAL_SCENARIO_PERCENTILES.PESSIMISTIC),
+    );
+    return {
+      source,
+      n: pool.length,
+      excludedCount: excludedCodes.length,
+      excludedCodes,
+      complexityTier: source === "tier" ? tier : null,
+      meanDays: mean(days),
+      optimisticDays,
+      typicalDays,
+      pessimisticDays,
+    };
+  };
+
+  if (tier) {
+    const sameTier = usable.filter((r) => r.complexityTier === tier);
+    const tierBands = fromPool(sameTier, "tier");
+    if (tierBands) return tierBands;
+  }
+
+  return fromPool(usable, "all") ?? empty("none", usable.length);
+}
+
+function daysForScenario(bands: HistoricalDurationBands, scenario: DiscoveryScenario): number | null {
+  if (scenario === "OPTIMISTIC") return bands.optimisticDays;
+  if (scenario === "PESSIMISTIC") return bands.pessimisticDays;
+  return bands.typicalDays;
+}
+
+function scenarioHours(
+  scope: ImplementationScope,
+  kickoffDate: Date,
+  calendarDays: number,
+  customHoursPerWeek: number | null | undefined,
+): { estimatedHours: number; weeklyHours: number } {
+  const estimatedWeeks = Math.max(1, Math.round(calendarDays / 7));
+  const estimatedHours = estimateHours(scope, estimatedWeeks).totalHours;
+  const goLiveDate = addDays(kickoffDate, calendarDays);
+  const weeklyHours =
+    customHoursPerWeek != null && customHoursPerWeek > 0
+      ? round1(customHoursPerWeek)
+      : weeklyHoursForEngagement({
+          id: "_rec",
+          code: "_rec",
+          name: "_rec",
+          acronym: "_rec",
+          prismStatus: "active",
+          leadId: null,
+          coLeadId: null,
+          ownerSplitPercent: 100,
+          estimatedHours,
+          customHoursPerWeek: customHoursPerWeek ?? null,
+          startDate: kickoffDate,
+          initialGoLiveDate: goLiveDate,
+          targetGoLiveDate: goLiveDate,
+        });
+  return { estimatedHours, weeklyHours };
+}
+
+/**
+ * Formula Forecast+ scenarios, with go-live dates replaced by historical
+ * P25/P50/P75 when Analysis has enough completed sites.
+ */
+export function recommendGoLive(opts: {
+  scope: ImplementationScope;
+  kickoffDate: Date;
+  samples: readonly DurationSample[];
+  exclusions?: readonly string[];
+  customHoursPerWeek?: number | null;
+}): GoLiveRecommendation {
+  const model = forecastImplementation(opts.scope, opts.kickoffDate);
+  const tier = complexityTier(opts.scope);
+  const historical = historicalDurationBands(opts.samples, {
+    exclusions: opts.exclusions,
+    complexityTier: tier,
+  });
+  const useHistory = historical.source !== "none";
+  const goLiveSource: GoLiveRecommendation["goLiveSource"] = useHistory
+    ? historical.source === "tier"
+      ? "historical-tier"
+      : "historical-all"
+    : "model";
+
+  const scenarios: RecommendedScenario[] = model.scenarios.map((s) => {
+    const historicalDays = useHistory ? daysForScenario(historical, s.scenario) : null;
+    const calendarDays = historicalDays ?? s.calendarDays;
+    const { estimatedHours, weeklyHours } = scenarioHours(
+      opts.scope,
+      opts.kickoffDate,
+      calendarDays,
+      opts.customHoursPerWeek,
+    );
+    return {
+      ...s,
+      label: useHistory ? HISTORICAL_SCENARIO_LABELS[s.scenario] : SCENARIO_LABELS[s.scenario],
+      modelCalendarDays: s.calendarDays,
+      calendarDays,
+      goLiveDate: addDays(opts.kickoffDate, calendarDays),
+      estimatedHours,
+      weeklyHours,
+    };
+  });
+
+  const typical = scenarios.find((s) => s.scenario === "TYPICAL") ?? scenarios[1]!;
+  const typicalWeeks = Math.max(1, Math.round(typical.calendarDays / 7));
+
+  return {
+    scope: opts.scope,
+    complexityTier: tier,
+    hours: estimateHours(opts.scope, typicalWeeks),
+    scenarios,
+    goLiveSource,
+    historical,
+  };
+}
+
+export function chosenScenario(
+  rec: GoLiveRecommendation,
+  scenario: DiscoveryScenario | string | null | undefined,
+): RecommendedScenario {
+  const key = parseDiscoveryScenario(scenario);
+  return rec.scenarios.find((s) => s.scenario === key) ?? rec.scenarios[1]!;
+}
+
+/** Submitted date wins; otherwise the selected scenario’s projected go-live. */
+export function resolveCommittedGoLive(opts: {
+  rec: GoLiveRecommendation;
+  scenario: DiscoveryScenario | string | null | undefined;
+  requestedGoLive: Date | null;
+}): Date {
+  if (opts.requestedGoLive) return opts.requestedGoLive;
+  return chosenScenario(opts.rec, opts.scenario).goLiveDate;
+}
+
+export function kickoffOrToday(kickoff: Date | null | undefined, now = new Date()): Date {
+  if (kickoff) return kickoff;
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0));
+}
+
+export function historicalCaption(bands: HistoricalDurationBands): string {
+  if (bands.source === "none") {
+    const need = HISTORICAL_BAND_MIN_SAMPLE;
+    return bands.n === 0
+      ? `Not enough completed history yet (need ${need}+ after exclusions). Using the Forecast+ discovery model.`
+      : `Only ${bands.n} completed site${bands.n === 1 ? "" : "s"} after exclusions (need ${need}+). Using the Forecast+ discovery model.`;
+  }
+  const pool =
+    bands.source === "tier" && bands.complexityTier
+      ? `${bands.n} past ${String(bands.complexityTier).toLowerCase()} site${bands.n === 1 ? "" : "s"}`
+      : `${bands.n} past site${bands.n === 1 ? "" : "s"}`;
+  const excl =
+    bands.excludedCount > 0
+      ? ` Excludes ${bands.excludedCodes.join(", ") || `${bands.excludedCount} outliers`}.`
+      : "";
+  const avg = bands.meanDays != null ? ` Average duration ${bands.meanDays}d.` : "";
+  return `Based on ${pool} (kickoff → actual go-live, P25 / median / P75).${avg}${excl}`;
+}
+
+export { DISCOVERY_SCENARIOS };

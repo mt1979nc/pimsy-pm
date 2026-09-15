@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.12.3");
+    expect(APP_VERSION).toBe("1.12.4");
     expect(APP_VERSION).toMatch(/^1\.12\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,18 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.12.4 Forecast+ go-live scenarios on Add to roster", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.12.4");
+    expect(note?.summary).toMatch(/Optimistic|Typical|Pessimistic/i);
+    expect(note?.summary).toMatch(/past completed|go-live/i);
+    expect(note?.highlights?.some((h) => /Add to roster/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /P25|percentile|median/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /SENSORI/.test(h) && /MHC/.test(h) && /LECHRIS/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /Edit engagement/i.test(h))).toBe(true);
   });
 
   it("documents v1.12.3 Onboarded and historical complete-on-time", () => {

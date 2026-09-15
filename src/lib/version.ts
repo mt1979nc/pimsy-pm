@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.12.3";
+export const APP_VERSION = "1.12.4";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.12.4",
+    date: "2026-09-14",
+    summary:
+      "Add to roster projects go-live the way Prism Forecast+ did: Optimistic / Typical / Pessimistic from past completed sites, not a blank date field.",
+    highlights: [
+      "Prism → Engagements → Add to roster: pick Optimistic / Typical / Pessimistic. Recommended go-live (and even-spread hrs/wk) updates with kickoff, scope, and the selected band.",
+      "Go-live bands are P25 / median / P75 of kickoff → actual duration on completed PATH / Prism-imported implementations. Same-tier history is preferred. Primary averages still skip SENSORI / MHC / LECHRIS (editable on Forecast).",
+      "Caption explains the sample (e.g. based on N past standard sites) and shows the Forecast+ discovery-model days when history is used. Too few completed rows falls back to the 7 / 14 / 21-day discovery formula.",
+      "Edit engagement has the same picker. Applying a scenario fills current go-live; a locked initial go-live still requires a slip if that date moves.",
+      "Blank go-live on save now applies the selected scenario instead of storing null.",
+    ],
+  },
   {
     version: "1.12.3",
     date: "2026-09-14",

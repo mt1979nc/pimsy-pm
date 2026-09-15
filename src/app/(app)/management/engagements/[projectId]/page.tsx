@@ -4,6 +4,8 @@ import { Card, CardHeader, LinkButton } from "@/components/ui";
 import { getEngagementForEdit } from "@/actions/management-engagements";
 import { NotFoundError } from "@/lib/authz";
 import { EngagementEditForm } from "../../_components/engagement-edit-form";
+import { loadRosterGoLiveContext } from "@/lib/forecast-data";
+import { parseDiscoveryScenario } from "@/lib/estimator";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Edit engagement — Prism" };
@@ -23,6 +25,7 @@ export default async function ManagementEngagementEditPage({
   }
 
   const { project, leadOptions, effectivePrismStatus } = data;
+  const goLive = await loadRosterGoLiveContext();
 
   return (
     <div className="space-y-3">
@@ -40,7 +43,7 @@ export default async function ManagementEngagementEditPage({
       <Card>
         <CardHeader
           title="Edit engagement"
-          subtitle="Owners, split, scope, dates, Prism status — saved to PATH Postgres."
+          subtitle="Owners, split, scope, dates, Prism status — saved to PATH Postgres. Forecast+ can refill current go-live from past sites."
         />
         <EngagementEditForm
           projectId={project.id}
@@ -70,8 +73,11 @@ export default async function ManagementEngagementEditPage({
                 }
               : null
           }
+          discoveryScenario={parseDiscoveryScenario(project.scope?.discoveryScenario)}
           leadOptions={leadOptions}
           slips={project.slipEvents}
+          durationSamples={goLive.samples}
+          exclusions={goLive.exclusions}
         />
       </Card>
     </div>
