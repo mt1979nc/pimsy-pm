@@ -194,6 +194,11 @@ const PLAYBOOK_TITLE_ALIAS_PAIRS: Array<[string, string]> = [
     "Training 1: Intro to PIMSY",
     "Training 1: Intro to PIMSY, Client Charts, Appointments/Calendar",
   ],
+  ["Organization Details Form", "Discovery org details"],
+  ["Organization Details Form", "Org details"],
+  ["Organization Details Form", "Organization Details"],
+  ["Clinical Workflows", "Discovery clinical workflows"],
+  ["Clinical Workflows", "Clinical workflow form"],
 ];
 
 const PLAYBOOK_TITLE_ALIAS_MAP: Map<string, string[]> = (() => {

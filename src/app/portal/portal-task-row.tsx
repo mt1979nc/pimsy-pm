@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { setTaskStatus } from "@/actions/tasks";
+import { TaskActionButtons } from "@/components/task-action-buttons";
 import { dueLabel, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 
 export function PortalTaskRow({
   task,
+  showActions = true,
 }: {
   task: {
     id: string;
@@ -19,6 +21,7 @@ export function PortalTaskRow({
     projectId?: string | null;
     commentCount?: number;
   };
+  showActions?: boolean;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +84,9 @@ export function PortalTaskRow({
               {task.title}
             </div>
           )}
+          {showActions ? (
+            <TaskActionButtons title={task.title} taskHref={taskHref} compact />
+          ) : null}
           {comments > 0 ? (
             taskHref ? (
               <Link
