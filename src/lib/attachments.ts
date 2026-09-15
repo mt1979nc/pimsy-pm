@@ -26,9 +26,11 @@ export async function listTaskAttachments(actor: Actor, taskId: string) {
     // attachment itself claims.
     const task = await db.query.tasks.findFirst({
       where: eq(tasks.id, taskId),
-      columns: { visibility: true },
+      columns: { visibility: true, parentTaskId: true, ownerSide: true },
     });
     if (!task || task.visibility === "INTERNAL") return [];
+    // Specialist nested work is staff-only even if someone marked the row SHARED.
+    if (task.parentTaskId && task.ownerSide === "INTERNAL") return [];
   }
 
   const conditions = [eq(fileAssets.taskId, taskId)];
@@ -64,10 +66,13 @@ export async function assertAttachmentAccess(actor: Actor, assetId: string) {
   if (asset.taskId) {
     const task = await db.query.tasks.findFirst({
       where: eq(tasks.id, asset.taskId),
-      columns: { projectId: true, visibility: true },
+      columns: { projectId: true, visibility: true, parentTaskId: true, ownerSide: true },
     });
     if (!task) throw new NotFoundError("File not found.");
     if (isCustomer(actor) && task.visibility === "INTERNAL") {
+      throw new NotFoundError("File not found.");
+    }
+    if (isCustomer(actor) && task.parentTaskId && task.ownerSide === "INTERNAL") {
       throw new NotFoundError("File not found.");
     }
     projectId = task.projectId;

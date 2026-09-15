@@ -23,6 +23,7 @@ import { attachmentHref } from "@/lib/attachments";
 import { fmtShort, fmtRelative, fmtDate, daysUntil } from "@/lib/dates";
 import { pctComplete } from "@/lib/rollup";
 import { cn } from "@/lib/cn";
+import { orderTasksForNesting } from "@/lib/task-tree";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Customer view" };
@@ -52,24 +53,16 @@ export default async function CustomerViewPreviewPage({
     previewPortalPhaseTabs(id),
   ]);
 
-  const customerTasks = <T extends { ownerSide: string }>(tasks: T[]) =>
-    tasks.filter((t) => t.ownerSide === "CUSTOMER");
+  const areaGroups = phases
+    .map((phase) => ({ phase, tasks: phase.tasks }))
+    .filter((g) => g.tasks.length > 0);
 
-  const openByPhase = phases
-    .map((phase) => {
-      const mine = customerTasks(phase.tasks);
-      const open = mine.filter((t) => t.status !== "DONE");
-      const done = mine.filter((t) => t.status === "DONE");
-      return { phase, open, done, all: mine };
-    })
-    .filter((g) => g.all.length > 0);
-
-  const looseMine = customerTasks(looseTasks);
-  const looseOpen = looseMine.filter((t) => t.status !== "DONE");
-  const looseDone = looseMine.filter((t) => t.status === "DONE");
-
-  const openCount = openByPhase.reduce((n, g) => n + g.open.length, 0) + looseOpen.length;
-  const doneCount = openByPhase.reduce((n, g) => n + g.done.length, 0) + looseDone.length;
+  const openCount =
+    areaGroups.reduce((n, g) => n + g.tasks.filter((t) => t.status !== "DONE").length, 0) +
+    looseTasks.filter((t) => t.status !== "DONE").length;
+  const doneCount =
+    areaGroups.reduce((n, g) => n + g.tasks.filter((t) => t.status === "DONE").length, 0) +
+    looseTasks.filter((t) => t.status === "DONE").length;
   const milestoneDone = milestones.filter((m) => m.completedAt).length;
   const pct = pctComplete(project.taskCountDone, project.taskCountTotal);
   const days = daysUntil(project.targetGoLiveDate);
@@ -81,7 +74,8 @@ export default async function CustomerViewPreviewPage({
           <div className="text-[13px] font-semibold text-ink">Customer view (read-only preview)</div>
           <p className="mt-0.5 text-[12.5px] text-ink-2">
             Mirrors what {project.customerAccount?.name ?? "the customer"} sees in the portal —
-            SHARED items only. You cannot complete tasks or send messages from here.
+            parent / shared status only, not specialist sub-tasks. Presentation only; no editing
+            chrome. You cannot complete tasks or send messages from here.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -189,50 +183,78 @@ export default async function CustomerViewPreviewPage({
 
       <Card>
         <CardHeader
-          title="Your action items"
-          subtitle={`${openCount} open · ${doneCount} done (customer-owned, shared)`}
+          title="Shared progress"
+          subtitle={`${openCount} open · ${doneCount} done · parent status only (specialist sub-tasks hidden)`}
         />
         {openCount + doneCount === 0 ? (
           <EmptyState
-            title="Nothing assigned to the customer yet"
-            description="Shared tasks with owner side Customer appear here in the portal."
+            title="Nothing shared with the customer yet"
+            description="SHARED parent tasks and customer action items appear here. Specialist nested work stays on the staff task list."
           />
         ) : (
           <div className="divide-y divide-border">
-            {openByPhase.map(({ phase, open, done }) => (
+            {areaGroups.map(({ phase, tasks: phaseTasks }) => (
               <div key={phase.id} className="px-4 py-3">
                 <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
                   {phase.name}
                 </div>
-                <ul className="space-y-1.5">
-                  {[...open, ...done].map((t) => (
-                    <li key={t.id} className="flex items-center gap-2 text-[13px]">
+                <ul className="space-y-2">
+                  {orderTasksForNesting(phaseTasks).map((t) => (
+                    <li
+                      key={t.id}
+                      className="flex items-start gap-2 text-[13px]"
+                      style={t.depth ? { paddingLeft: t.depth * 16 } : undefined}
+                    >
                       <span
                         className={cn(
-                          "size-1.5 shrink-0 rounded-full",
-                          t.status === "DONE" ? "bg-green" : "bg-brand",
+                          "mt-1.5 size-1.5 shrink-0 rounded-full",
+                          t.status === "DONE"
+                            ? "bg-green"
+                            : t.status === "IN_PROGRESS"
+                              ? "bg-brand"
+                              : "bg-border-strong",
                         )}
                       />
-                      <span className={cn(t.status === "DONE" && "text-ink-3 line-through")}>
-                        {t.title}
-                      </span>
-                      {t.dueDate ? (
-                        <span className="ml-auto shrink-0 text-[11.5px] text-ink-3">
-                          {fmtShort(t.dueDate)}
-                        </span>
-                      ) : null}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={cn(t.status === "DONE" && "text-ink-3 line-through")}>
+                            {t.title}
+                          </span>
+                          <span className="text-[11.5px] text-ink-3">
+                            {t.status === "DONE"
+                              ? "Complete"
+                              : t.status === "IN_PROGRESS"
+                                ? "In progress"
+                                : "Not started"}
+                          </span>
+                          {t.ownerSide === "CUSTOMER" ? (
+                            <Badge tone="violet">Customer action</Badge>
+                          ) : null}
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[12px] text-ink-3">
+                          {t.assignee?.name ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <Avatar name={t.assignee.name} image={t.assignee.image} size={16} />
+                              {t.assignee.name}
+                            </span>
+                          ) : (
+                            <span>Unassigned</span>
+                          )}
+                          {t.dueDate ? <span>{fmtShort(t.dueDate)}</span> : null}
+                        </div>
+                      </div>
                     </li>
                   ))}
                 </ul>
               </div>
             ))}
-            {looseMine.length > 0 ? (
+            {looseTasks.length > 0 ? (
               <div className="px-4 py-3">
                 <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
                   General
                 </div>
-                <ul className="space-y-1.5">
-                  {[...looseOpen, ...looseDone].map((t) => (
+                <ul className="space-y-2">
+                  {orderTasksForNesting(looseTasks).map((t) => (
                     <li key={t.id} className="flex items-center gap-2 text-[13px]">
                       <span
                         className={cn(
@@ -243,6 +265,9 @@ export default async function CustomerViewPreviewPage({
                       <span className={cn(t.status === "DONE" && "text-ink-3 line-through")}>
                         {t.title}
                       </span>
+                      {t.assignee?.name ? (
+                        <span className="ml-auto text-[12px] text-ink-3">{t.assignee.name}</span>
+                      ) : null}
                     </li>
                   ))}
                 </ul>

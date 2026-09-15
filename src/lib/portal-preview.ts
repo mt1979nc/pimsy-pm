@@ -2,7 +2,7 @@
  * Staff "Customer view" — same SHARED filters as the portal, without requiring
  * a CUSTOMER actor. Callers must assert project access first.
  */
-import { and, eq, ne, asc, desc, isNull } from "drizzle-orm";
+import { and, eq, asc, desc, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
   projects,
@@ -13,6 +13,7 @@ import {
   fileAssets,
   taskComments,
 } from "@/db/schema";
+import { portalFacingTaskSql } from "./task-visibility";
 
 export async function previewPortalProject(projectId: string) {
   return (
@@ -36,13 +37,10 @@ export async function previewPortalPlan(projectId: string) {
     orderBy: [asc(phases.order)],
     with: {
       tasks: {
-        where: and(
-          eq(tasks.visibility, "SHARED"),
-          ne(tasks.status, "CANCELLED"),
-          eq(tasks.notApplicable, false),
-        ),
+        where: portalFacingTaskSql(),
         orderBy: [asc(tasks.order)],
         with: {
+          assignee: { columns: { id: true, name: true, image: true, title: true } },
           comments: {
             where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
             columns: { id: true },
@@ -56,12 +54,11 @@ export async function previewPortalPlan(projectId: string) {
     where: and(
       eq(tasks.projectId, projectId),
       isNull(tasks.phaseId),
-      eq(tasks.visibility, "SHARED"),
-      ne(tasks.status, "CANCELLED"),
-      eq(tasks.notApplicable, false),
+      portalFacingTaskSql(),
     ),
     orderBy: [asc(tasks.order)],
     with: {
+      assignee: { columns: { id: true, name: true, image: true, title: true } },
       comments: {
         where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
         columns: { id: true },

@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.13.3");
+    expect(APP_VERSION).toBe("1.13.4");
     expect(APP_VERSION).toMatch(/^1\.13\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,18 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.13.4 staff add/remove tasks and parent-only portal visibility", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.13.4");
+    expect(note?.summary).toMatch(/add or remove/i);
+    expect(note?.summary).toMatch(/parent/i);
+    expect(note?.highlights?.some((h) => /Add sub-task/i.test(h) && /Remove/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /User Setup/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Templates/i.test(h) && /OWNER|admin/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /presentation|editing chrome/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /playbook seed|resync/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/storylane/i.test(h))).toBe(true);
   });
 
   it("documents v1.13.3 US federal holiday go-live projections", () => {

@@ -23,6 +23,8 @@ import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import { TaskChecklist } from "@/components/task-checklist";
 import { AssigneePicker } from "@/components/assignee-picker";
 import { TaskDetailControls } from "./task-controls";
+import { AddTaskInline } from "../task-forms";
+import { DeleteTaskControl } from "@/components/task-row";
 import { fmtDate, dueLabel, isOverdue, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 
@@ -156,23 +158,27 @@ export default async function TaskDetailPage({
           <Card>
             <CardHeader
               title="Areas to cover"
-              subtitle="Training checklist — Dock-style checkboxes, first-class in PATH"
+              subtitle="Training checklist from the playbook — check items off during the session. Add or remove areas on Templates."
             />
             <TaskChecklist
               taskId={task.id}
               items={checklist}
-              canEdit
+              canEdit={false}
               canToggle
               taskIsInternal={task.visibility === "INTERNAL"}
             />
           </Card>
 
-          {subtasks.length > 0 ? (
-            <Card>
-              <CardHeader
-                title="Subtasks"
-                subtitle={`${subtasks.filter((s) => s.status === "DONE").length}/${subtasks.length} done`}
-              />
+          <Card>
+            <CardHeader
+              title="Sub-tasks"
+              subtitle={
+                subtasks.length > 0
+                  ? `${subtasks.filter((s) => s.status === "DONE").length}/${subtasks.length} done · specialist work stays off the customer view`
+                  : "Specialist checklist under this parent — the customer sees this task’s status only"
+              }
+            />
+            {subtasks.length > 0 ? (
               <ul className="divide-y divide-border">
                 {subtasks.map((s) => (
                   <li key={s.id} className="flex items-center justify-between gap-3 px-5 py-2.5">
@@ -183,13 +189,25 @@ export default async function TaskDetailPage({
                       {s.title}
                     </Link>
                     <span className="text-[12px] text-ink-3">
+                      {s.visibility === "INTERNAL" ? "Staff only · " : ""}
                       {s.status.replace("_", " ").toLowerCase()}
                     </span>
                   </li>
                 ))}
               </ul>
-            </Card>
-          ) : null}
+            ) : (
+              <p className="px-5 py-3 text-[13px] text-ink-3">No sub-tasks yet.</p>
+            )}
+            <div className="border-t border-border px-2 py-1">
+              <AddTaskInline
+                projectId={id}
+                phaseId={task.phaseId ?? undefined}
+                parentTaskId={task.id}
+                staff={staff}
+                defaultAssigneeId={actor.id}
+              />
+            </div>
+          </Card>
 
           <Card>
             <CardHeader
@@ -307,6 +325,9 @@ export default async function TaskDetailPage({
                 </div>
               ) : null}
             </dl>
+            <div className="border-t border-border px-4 py-3">
+              <DeleteTaskControl taskId={task.id} projectId={id} title={task.title} />
+            </div>
           </Card>
 
           {task.assignee ? (

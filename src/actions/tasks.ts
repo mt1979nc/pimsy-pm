@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, desc } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -22,6 +22,7 @@ import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
 import { fmtDate } from "@/lib/dates";
 import { setTaskNotApplicable } from "@/lib/playbook";
+import { isSpecialistSubtask, liveTaskCreateDefaults } from "@/lib/task-visibility";
 import type { ActionState } from "./messages";
 
 const optionalDate = z
@@ -32,6 +33,7 @@ const optionalDate = z
 const createTaskSchema = z.object({
   projectId: z.string().min(1),
   phaseId: z.string().optional(),
+  parentTaskId: z.string().optional(),
   title: z.string().trim().min(1, "Task needs a title.").max(300),
   description: z.string().trim().max(10000).optional(),
   status: z.enum(["TODO", "IN_PROGRESS", "BLOCKED", "IN_REVIEW", "DONE", "CANCELLED"]).optional(),
@@ -55,6 +57,7 @@ export async function createTask(
   const parsed = createTaskSchema.safeParse({
     projectId: formData.get("projectId"),
     phaseId: formData.get("phaseId") || undefined,
+    parentTaskId: formData.get("parentTaskId") || undefined,
     title: formData.get("title"),
     description: formData.get("description") || undefined,
     status: formData.get("status") || undefined,
@@ -72,18 +75,36 @@ export async function createTask(
 
   await assertProjectWrite(actor, d.projectId);
 
-  // A task assigned to the customer must be visible to them, or it is invisible
-  // work nobody will ever do.
-  const ownerSide = d.ownerSide ?? "INTERNAL";
-  let visibility = resolveVisibilityForActor(actor, d.visibility);
-  if (ownerSide === "CUSTOMER") visibility = "SHARED";
+  let phaseId = d.phaseId || null;
+  let parentTaskId: string | null = d.parentTaskId || null;
+  let workTrack: "EHR" | "RCM" | "SHARED" | undefined;
+  if (parentTaskId) {
+    const parent = await db.query.tasks.findFirst({
+      where: and(eq(tasks.id, parentTaskId), eq(tasks.projectId, d.projectId)),
+      columns: { id: true, phaseId: true, workTrack: true },
+    });
+    if (!parent) return { error: "That parent task is not on this project." };
+    phaseId = parent.phaseId;
+    workTrack = parent.workTrack;
+  }
+
+  const requestedVisibility = resolveVisibilityForActor(actor, d.visibility);
+  const defaults = liveTaskCreateDefaults({
+    ownerSide: d.ownerSide,
+    visibility: requestedVisibility,
+    parentTaskId,
+  });
+  const ownerSide = defaults.ownerSide;
+  const visibility = defaults.visibility;
 
   try {
+    const order = await nextSiblingOrder(d.projectId, phaseId, parentTaskId);
     const [task] = await db
       .insert(tasks)
       .values({
         projectId: d.projectId,
-        phaseId: d.phaseId || null,
+        phaseId,
+        parentTaskId,
         title: d.title,
         description: d.description || null,
         status: d.status ?? "TODO",
@@ -94,6 +115,8 @@ export async function createTask(
         dueDate: d.dueDate,
         estimateHours: d.estimateHours,
         createdById: actor.id,
+        order,
+        workTrack: workTrack ?? "EHR",
       })
       .returning({ id: tasks.id });
 
@@ -103,8 +126,8 @@ export async function createTask(
       action: "task.created",
       entityType: "task",
       entityId: task.id,
-      summary: d.title,
-      metadata: { projectId: d.projectId, visibility, ownerSide },
+      summary: parentTaskId ? `${d.title} (sub-task)` : d.title,
+      metadata: { projectId: d.projectId, visibility, ownerSide, parentTaskId },
     });
 
     if (d.assigneeId && d.assigneeId !== actor.id) {
@@ -123,16 +146,34 @@ export async function createTask(
 
   revalidatePath(`/projects/${d.projectId}`);
   revalidatePath(`/projects/${d.projectId}/tasks`);
+  if (parentTaskId) revalidatePath(`/projects/${d.projectId}/tasks/${parentTaskId}`);
   revalidatePath(`/portal/projects/${d.projectId}`);
   revalidatePath("/my-work");
   return { ok: true };
+}
+
+async function nextSiblingOrder(
+  projectId: string,
+  phaseId: string | null,
+  parentTaskId: string | null,
+) {
+  const sibling = await db.query.tasks.findFirst({
+    where: and(
+      eq(tasks.projectId, projectId),
+      phaseId ? eq(tasks.phaseId, phaseId) : isNull(tasks.phaseId),
+      parentTaskId ? eq(tasks.parentTaskId, parentTaskId) : isNull(tasks.parentTaskId),
+    ),
+    columns: { order: true },
+    orderBy: [desc(tasks.order)],
+  });
+  return (sibling?.order ?? -1) + 1;
 }
 
 async function loadTaskForActor(actor: Actor, taskId: string) {
   const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
   if (!task) throw new NotFoundError("Task not found.");
   await assertProjectAccess(actor, task.projectId);
-  if (isCustomer(actor) && task.visibility === "INTERNAL") {
+  if (isCustomer(actor) && (task.visibility === "INTERNAL" || isSpecialistSubtask(task))) {
     throw new NotFoundError("Task not found.");
   }
   return task;
@@ -349,9 +390,13 @@ export async function deleteTask(taskId: string) {
     entityType: "task",
     entityId: taskId,
     summary: task.title,
-    metadata: { projectId: task.projectId },
+    metadata: { projectId: task.projectId, parentTaskId: task.parentTaskId },
   });
+  revalidatePath(`/projects/${task.projectId}`);
   revalidatePath(`/projects/${task.projectId}/tasks`);
+  revalidatePath(`/projects/${task.projectId}/tasks/${taskId}`);
+  revalidatePath(`/portal/projects/${task.projectId}`);
+  revalidatePath("/my-work");
 }
 
 /** Marks a task (and its children) N/A on this project only — template unchanged. */
