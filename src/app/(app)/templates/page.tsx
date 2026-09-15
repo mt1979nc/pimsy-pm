@@ -194,15 +194,16 @@ export default async function TemplatesPage() {
       )}
 
       <p className="mt-5 max-w-2xl text-[12.5px] leading-relaxed text-ink-3">
-        Open a playbook and edit it like Dock: add or remove phases, nested tasks, descriptions,
-        training checklists, and default attachments. Duplicate makes a custom copy so the four
-        site-creation paths stay put. Paperclip chips clone onto new projects. Live projects are not
-        rewritten when the template changes — run{" "}
+        Playbook tasks mirror Dock Implementation: descriptions (training areas to cover) and
+        default attachments (Discovery Wizard, billing sheets). Duplicate makes a custom copy so
+        the four site-creation paths stay put. New workspaces inherit that copy automatically.
+        Live projects are not rewritten when the template changes — run{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
           npm run db:resync:playbook-from-dock -- --apply
         </code>{" "}
-        in Azure Cloud Shell to attach missing defaults on existing WIP without deleting user files
-        (dry-run logs progress and stops at 180s unless you pass{" "}
+        in Azure Cloud Shell to backfill missing descriptions, checklists, and default files on
+        existing WIP without deleting staff notes or user uploads (dry-run logs progress and
+        stops at 180s unless you pass{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">--timeout-sec 0</code>
         ). To reset the four standard paths from code, run{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">

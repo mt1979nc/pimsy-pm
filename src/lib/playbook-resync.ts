@@ -1,7 +1,8 @@
 /**
  * One-time (idempotent) playbook resync: add missing Dock nested tasks /
- * checklists / default attachments onto existing WIP projects without
- * wiping completion state. Match by normalized title within a phase.
+ * checklists / default attachments / descriptions onto existing WIP projects
+ * without wiping completion state or staff-authored notes. Match by
+ * normalized title within a phase (catalog pass also matches live title).
  *
  * Dry-run used to hang because each template task issued several sequential
  * queries. This path batch-loads catalogs and live rows, logs progress, and
@@ -23,6 +24,8 @@ import { loadTemplateById, type LoadedTemplate } from "@/lib/playbook";
 import { findByPlaybookTitle, normalizeOverlapTitle } from "@/lib/playbook-meta";
 import { copyLibraryAssetToTask, ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
 import { alreadyHasLibraryCoverage, fileCoversLibraryAsset, libraryDefsForTaskTitle } from "@/db/dock-default-attachments";
+import { dockPlaybookDescriptionForTitle, shouldReplacePlaybookDescription } from "@/db/dock-playbook-copy";
+import { checklistForTaskTitle } from "@/db/dock-training-checklists";
 import { scheduleFromOffsets, resolvePlaybookScale } from "@/lib/project-timeline";
 import {
   DEFAULT_RESYNC_DEADLINE_MS,
@@ -50,7 +53,7 @@ export type ResyncTaskPlan = {
   projectCode: string;
   phaseName: string;
   title: string;
-  action: "insert" | "relink-parent" | "add-checklist" | "add-attachment" | "skip";
+  action: "insert" | "relink-parent" | "add-checklist" | "add-attachment" | "set-description" | "skip";
   detail: string;
   librarySlug?: string;
 };
@@ -299,6 +302,17 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
               detail: `${templateAtt.length} default file(s)`,
             });
           }
+          const insertDesc = dockPlaybookDescriptionForTitle(tt.title) ?? tt.description;
+          if (insertDesc) {
+            rows.push({
+              projectId: project.id,
+              projectCode: project.code,
+              phaseName: tp.name,
+              title: tt.title,
+              action: "set-description",
+              detail: "Dock playbook copy",
+            });
+          }
           touched.add(project.id);
           continue;
         }
@@ -350,13 +364,25 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
             touched.add(project.id);
           }
         }
+
+        const nextDesc = dockPlaybookDescriptionForTitle(tt.title) ?? tt.description;
+        if (shouldReplacePlaybookDescription(liveTask.description, nextDesc)) {
+          rows.push({
+            projectId: project.id,
+            projectCode: project.code,
+            phaseName: tp.name,
+            title: tt.title,
+            action: "set-description",
+            detail: "Dock playbook copy",
+          });
+          touched.add(project.id);
+        }
       }
     }
 
     for (const livePhase of projectPhases) {
       for (const liveTask of livePhase.tasks) {
         const defs = libraryDefsForTaskTitle(liveTask.title);
-        if (defs.length === 0) continue;
         const existing = filesByTask.get(liveTask.id) ?? [];
         for (const def of defs) {
           const lib = libBySlug.get(def.slug);
@@ -377,6 +403,52 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
             action: "add-attachment",
             detail: def.kind === "LINK" ? `${def.name} (link)` : def.name,
             librarySlug: def.slug,
+          });
+          touched.add(project.id);
+        }
+
+        const catalogChecks = checklistForTaskTitle(liveTask.title);
+        if (catalogChecks.length > 0) {
+          const have = liveCheckLabels.get(liveTask.id) ?? new Set();
+          const missing = catalogChecks.filter((c) => !have.has(titleKey(c.label)));
+          if (
+            missing.length > 0 &&
+            !rows.some(
+              (r) =>
+                r.projectId === project.id &&
+                r.title === liveTask.title &&
+                r.action === "add-checklist",
+            )
+          ) {
+            rows.push({
+              projectId: project.id,
+              projectCode: project.code,
+              phaseName: livePhase.name,
+              title: liveTask.title,
+              action: "add-checklist",
+              detail: `${missing.length} area(s) to cover`,
+            });
+            touched.add(project.id);
+          }
+        }
+
+        const nextDesc = dockPlaybookDescriptionForTitle(liveTask.title);
+        if (
+          shouldReplacePlaybookDescription(liveTask.description, nextDesc) &&
+          !rows.some(
+            (r) =>
+              r.projectId === project.id &&
+              r.title === liveTask.title &&
+              r.action === "set-description",
+          )
+        ) {
+          rows.push({
+            projectId: project.id,
+            projectCode: project.code,
+            phaseName: livePhase.name,
+            title: liveTask.title,
+            action: "set-description",
+            detail: "Dock playbook copy",
           });
           touched.add(project.id);
         }
@@ -511,7 +583,7 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
                 phaseId: livePhase.id,
                 parentTaskId: liveParent?.id ?? null,
                 title: tt.title,
-                description: tt.description,
+                description: dockPlaybookDescriptionForTitle(tt.title) ?? tt.description,
                 priority: tt.priority,
                 visibility: tt.ownerSide === "CUSTOMER" ? "SHARED" : tt.visibility,
                 ownerSide: tt.ownerSide,
@@ -542,11 +614,17 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
 
           if (actions.some((a) => a.action === "add-checklist")) {
             const templateChecks = checksByTemplateTask.get(tt.id) ?? [];
+            const catalogChecks = checklistForTaskTitle(tt.title).map((c, i) => ({
+              label: c.label,
+              order: i,
+              visibility: c.visibility,
+            }));
+            const wantedChecks = templateChecks.length > 0 ? templateChecks : catalogChecks;
             const existing = await tx.query.taskChecklistItems.findMany({
               where: eq(taskChecklistItems.taskId, liveTask.id),
             });
             const have = new Set(existing.map((c) => titleKey(c.label)));
-            const missing = templateChecks.filter((c) => !have.has(titleKey(c.label)));
+            const missing = wantedChecks.filter((c) => !have.has(titleKey(c.label)));
             if (missing.length > 0) {
               await tx.insert(taskChecklistItems).values(
                 missing.map((c, i) => ({
@@ -577,29 +655,82 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
               uploadedById: opts.actorId,
             });
           }
+
+          if (actions.some((a) => a.action === "set-description")) {
+            const nextDesc = dockPlaybookDescriptionForTitle(liveTask.title) ?? tt.description;
+            if (shouldReplacePlaybookDescription(liveTask.description, nextDesc) && nextDesc) {
+              await tx
+                .update(tasks)
+                .set({ description: nextDesc, updatedAt: new Date() })
+                .where(eq(tasks.id, liveTask.id));
+              liveTask.description = nextDesc;
+            }
+          }
         }
       }
 
-      const titlesNeedingCatalog = new Set(
-        projectRows.filter((r) => r.action === "add-attachment" && r.librarySlug).map((r) => r.title),
+      // Catalog rows can land on a live task whose phase name drifted from the
+      // template. Apply leftover attachments / checklists / descriptions by title.
+      const catalogTitles = new Set(
+        projectRows
+          .filter(
+            (r) =>
+              r.action === "add-attachment" ||
+              r.action === "add-checklist" ||
+              r.action === "set-description",
+          )
+          .map((r) => r.title),
       );
-      if (titlesNeedingCatalog.size > 0) {
+      if (catalogTitles.size > 0) {
         const refreshed = await tx.query.phases.findMany({
           where: eq(phases.projectId, project.id),
           with: { tasks: true },
         });
         for (const phase of refreshed) {
           for (const task of phase.tasks) {
-            if (!titlesNeedingCatalog.has(task.title) && !libraryDefsForTaskTitle(task.title).length) continue;
-            if (!titlesNeedingCatalog.has(task.title) && !projectRows.some((r) => r.title === task.title && r.action === "add-attachment")) {
-              continue;
+            if (!catalogTitles.has(task.title)) continue;
+            const rowsFor = projectRows.filter((r) => r.title === task.title);
+
+            if (rowsFor.some((r) => r.action === "add-attachment")) {
+              await ensureDefaultAttachmentsOnTask(tx, {
+                taskId: task.id,
+                projectId: project.id,
+                title: task.title,
+                uploadedById: opts.actorId,
+              });
             }
-            await ensureDefaultAttachmentsOnTask(tx, {
-              taskId: task.id,
-              projectId: project.id,
-              title: task.title,
-              uploadedById: opts.actorId,
-            });
+
+            if (rowsFor.some((r) => r.action === "add-checklist")) {
+              const catalogChecks = checklistForTaskTitle(task.title);
+              if (catalogChecks.length > 0) {
+                const existing = await tx.query.taskChecklistItems.findMany({
+                  where: eq(taskChecklistItems.taskId, task.id),
+                });
+                const have = new Set(existing.map((c) => titleKey(c.label)));
+                const missing = catalogChecks.filter((c) => !have.has(titleKey(c.label)));
+                if (missing.length > 0) {
+                  await tx.insert(taskChecklistItems).values(
+                    missing.map((c, i) => ({
+                      taskId: task.id,
+                      label: c.label,
+                      order: existing.length + i,
+                      visibility: c.visibility,
+                      done: false,
+                    })),
+                  );
+                }
+              }
+            }
+
+            if (rowsFor.some((r) => r.action === "set-description")) {
+              const nextDesc = dockPlaybookDescriptionForTitle(task.title);
+              if (nextDesc && shouldReplacePlaybookDescription(task.description, nextDesc)) {
+                await tx
+                  .update(tasks)
+                  .set({ description: nextDesc, updatedAt: new Date() })
+                  .where(eq(tasks.id, task.id));
+              }
+            }
           }
         }
       }

@@ -27,14 +27,13 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: "1.13.0",
     date: "2026-09-15",
     summary:
-      "Template area: Dock-style playbook editor (descriptions, nested tasks, training checklists, default files), duplicate/rename, bulk optional areas, and a resync that no longer hangs in dry-run.",
+      "PATH playbook tasks now mirror Dock Implementation: training descriptions (areas-to-cover checklists in the body), default attachments, and a hang-free Azure resync that backfills existing WIP without overwriting staff notes.",
     highlights: [
-      "Settings → Playbooks and Setup → Templates / File library. Hub nav on playbooks, library, and the editor so Alexander can move between the four paths, reusable files, and Learning Center without hunting.",
-      "Edit a playbook task like Dock: description, nest under a section, add/remove training “areas to cover”, attach or detach library files (Discovery Wizard LINK, billing placeholders). Chips on the list stay auditable.",
-      "Optional-areas panel: see counts, filter the editor, bulk Mark optional / Include always. Custom area keys are allowed; New project include/exclude still uses those keys.",
-      "Duplicate copies phases, nested tasks, checklists, default files, and milestones into an inactive custom playbook (unique code, no playbookPath) so the four site-creation paths stay unique. Rename on the playbook card.",
-      "`npm run db:resync:playbook-from-dock` batch-loads extras, logs per-project progress, defaults to a 180s timeout (`--timeout-sec 0` to disable, `--limit N` / `--only CODE` to slice). Does not call the Dock API or edit live Dock Spaces. Azure Cloud Shell: export DATABASE_URL from App Service, dry-run, then `--apply`.",
-      "PATH + Prism naming unchanged. Live projects are not rewritten when a template changes.",
+      "Template extras upsert Dock playbook copy onto matching titles: training descriptions include `- [ ]` areas to cover (plus first-class checklist items), Discovery Wizard as a LINK attachment, billing/clinical/org/RCM sheets. Editor extras and staff-authored descriptions are not wiped.",
+      "`npm run db:resync:playbook-from-dock` dry-run then `--apply` backfills existing PATH playbooks (`set-description`, missing checklists, missing default files). Batch-loads extras, logs progress, 180s timeout (`--timeout-sec 0` to disable, `--limit` / `--only` to slice). Azure Cloud Shell: export DATABASE_URL from App Service. Does not call the Dock API or edit live Dock Spaces.",
+      "New workspaces inherit those descriptions and attachments from the playbook automatically. Blank or stale training blurbs are filled; custom specialist notes are left alone. User uploads are never deleted.",
+      "Playbook editor still supports Dock-style descriptions, nested tasks, add/remove training areas, and attach/detach library files. Duplicate / optional-areas / hub nav stay available.",
+      "PATH + Prism naming unchanged. Live projects are not rewritten when a template changes — run the resync to bring existing WIP into parity.",
     ],
   },
   {

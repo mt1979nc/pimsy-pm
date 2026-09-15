@@ -4,7 +4,7 @@
  */
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   learningCenterItems,
@@ -15,7 +15,8 @@ import {
   templateTasks,
 } from "@/db/schema";
 import { DEFAULT_LIBRARY_ASSETS, libraryDefsForTaskTitle } from "@/db/dock-default-attachments";
-import { checklistForTaskTitle, trainingDescriptionForTitle } from "@/db/dock-training-checklists";
+import { checklistForTaskTitle } from "@/db/dock-training-checklists";
+import { dockPlaybookDescriptionForTitle, shouldReplacePlaybookDescription } from "@/db/dock-playbook-copy";
 import { LEARNING_CENTER_SECTIONS } from "@/db/learning-center-catalog";
 import { putFile } from "@/lib/storage";
 import { resolveLibrarySourceFile } from "@/lib/template-attachment-pack";
@@ -108,58 +109,121 @@ export async function seedLibraryPlaceholders() {
   }
 }
 
+async function loadAllInChunks<T>(
+  ids: string[],
+  load: (chunk: string[]) => Promise<T[]>,
+  chunkSize = 400,
+): Promise<T[]> {
+  if (ids.length === 0) return [];
+  const out: T[] = [];
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    out.push(...(await load(ids.slice(i, i + chunkSize))));
+  }
+  return out;
+}
+
+async function insertInChunks<T extends Record<string, unknown>>(
+  table: typeof templateTaskChecklistItems | typeof templateTaskAttachments,
+  rows: T[],
+  chunkSize = 100,
+) {
+  if (rows.length === 0) return;
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    await db.insert(table).values(rows.slice(i, i + chunkSize) as never);
+  }
+}
+
+/**
+ * Upsert Dock playbook copy onto template tasks (descriptions, areas-to-cover
+ * checklists, default library attachments). Does not delete editor extras.
+ */
 export async function applyTemplateDockExtras() {
   const allTasks = await db.query.templateTasks.findMany({
     columns: { id: true, title: true, description: true },
   });
   const libs = await db.query.libraryAssets.findMany();
   const libBySlug = new Map(libs.map((l) => [l.slug, l]));
+  const ids = allTasks.map((t) => t.id);
 
-  let checklists = 0;
-  let attachments = 0;
-  let descriptions = 0;
+  const [existingChecks, existingAtt] = await Promise.all([
+    loadAllInChunks(ids, (chunk) =>
+      db.query.templateTaskChecklistItems.findMany({
+        where: inArray(templateTaskChecklistItems.templateTaskId, chunk),
+        columns: { templateTaskId: true, label: true, order: true },
+      }),
+    ),
+    loadAllInChunks(ids, (chunk) =>
+      db.query.templateTaskAttachments.findMany({
+        where: inArray(templateTaskAttachments.templateTaskId, chunk),
+        columns: { templateTaskId: true, libraryAssetId: true },
+      }),
+    ),
+  ]);
+
+  const checksByTask = new Map<string, { label: string; order: number }[]>();
+  for (const row of existingChecks) {
+    const list = checksByTask.get(row.templateTaskId) ?? [];
+    list.push(row);
+    checksByTask.set(row.templateTaskId, list);
+  }
+  const libsByTask = new Map<string, Set<string>>();
+  for (const row of existingAtt) {
+    const set = libsByTask.get(row.templateTaskId) ?? new Set();
+    set.add(row.libraryAssetId);
+    libsByTask.set(row.templateTaskId, set);
+  }
+
+  const checklistInserts: Array<{
+    templateTaskId: string;
+    label: string;
+    order: number;
+    visibility: "INTERNAL" | "SHARED";
+  }> = [];
+  const attachmentInserts: Array<{ templateTaskId: string; libraryAssetId: string }> = [];
+  const descriptionUpdates: Array<{ id: string; description: string }> = [];
 
   for (const task of allTasks) {
     const items = checklistForTaskTitle(task.title);
-    if (items.length > 0) {
-      await db
-        .delete(templateTaskChecklistItems)
-        .where(eq(templateTaskChecklistItems.templateTaskId, task.id));
-      await db.insert(templateTaskChecklistItems).values(
-        items.map((item, i) => ({
-          templateTaskId: task.id,
-          label: item.label,
-          order: i,
-          visibility: item.visibility,
-        })),
-      );
-      checklists += items.length;
-      const nextDescription = trainingDescriptionForTitle(task.title);
-      if (nextDescription && (!task.description || task.description.length < 40)) {
-        await db
-          .update(templateTasks)
-          .set({ description: nextDescription })
-          .where(eq(templateTasks.id, task.id));
-        descriptions += 1;
-      }
+    const existing = checksByTask.get(task.id) ?? [];
+    const have = new Set(existing.map((c) => c.label.trim().toLowerCase()));
+    const missing = items.filter((item) => !have.has(item.label.trim().toLowerCase()));
+    const maxOrder = existing.reduce((m, c) => Math.max(m, c.order), -1);
+    for (const [i, item] of missing.entries()) {
+      checklistInserts.push({
+        templateTaskId: task.id,
+        label: item.label,
+        order: maxOrder + 1 + i,
+        visibility: item.visibility,
+      });
     }
 
-    await db
-      .delete(templateTaskAttachments)
-      .where(eq(templateTaskAttachments.templateTaskId, task.id));
+    const nextDescription = dockPlaybookDescriptionForTitle(task.title);
+    if (nextDescription && shouldReplacePlaybookDescription(task.description, nextDescription)) {
+      descriptionUpdates.push({ id: task.id, description: nextDescription });
+    }
+
+    const haveLib = libsByTask.get(task.id) ?? new Set();
     for (const def of libraryDefsForTaskTitle(task.title)) {
       const lib = libBySlug.get(def.slug);
-      if (!lib) continue;
-      await db.insert(templateTaskAttachments).values({
-        templateTaskId: task.id,
-        libraryAssetId: lib.id,
-      });
-      attachments += 1;
+      if (!lib || haveLib.has(lib.id)) continue;
+      attachmentInserts.push({ templateTaskId: task.id, libraryAssetId: lib.id });
+      haveLib.add(lib.id);
     }
   }
 
+  await insertInChunks(templateTaskChecklistItems, checklistInserts);
+  await insertInChunks(templateTaskAttachments, attachmentInserts);
+  for (let i = 0; i < descriptionUpdates.length; i += 50) {
+    const chunk = descriptionUpdates.slice(i, i + 50);
+    await Promise.all(
+      chunk.map((row) =>
+        db.update(templateTasks).set({ description: row.description }).where(eq(templateTasks.id, row.id)),
+      ),
+    );
+  }
+
   console.log(
-    `  ✓ template extras: ${checklists} checklist items, ${attachments} default attachments, ${descriptions} training descriptions`,
+    `  ✓ template extras: ${checklistInserts.length} checklist items, ${attachmentInserts.length} default attachments, ${descriptionUpdates.length} playbook descriptions`,
   );
 }
 

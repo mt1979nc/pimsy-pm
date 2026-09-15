@@ -99,14 +99,17 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
   });
 
-  it("documents v1.13.0 template-area editor, duplicate, and safe resync", () => {
+  it("documents v1.13.0 Dock description/attachment parity and hang-free resync", () => {
     const note = RELEASE_NOTES.find((n) => n.version === "1.13.0");
-    expect(note?.summary).toMatch(/[Tt]emplate/i);
-    expect(note?.summary).toMatch(/playbook/i);
+    expect(note?.summary).toMatch(/description/i);
+    expect(note?.summary).toMatch(/attachment/i);
+    expect(note?.summary).toMatch(/resync/i);
     expect(note?.highlights?.some((h) => /description/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /checklist|areas to cover/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Discovery Wizard|billing/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Duplicate/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /db:resync:playbook-from-dock/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /set-description|backfill/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /180s|timeout/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Cloud Shell/.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Dock API|live Dock Spaces/.test(h))).toBe(true);

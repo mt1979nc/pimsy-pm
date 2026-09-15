@@ -47,10 +47,11 @@ export function trainingDescriptionForTitle(title: string): string | null {
   const isTraining1 =
     key === normalizeOverlapTitle(PATH_TRAINING_1_TITLE) ||
     key === normalizeOverlapTitle(DOCK_TRAINING_1_TITLE);
-  if (isTraining1) {
-    return `${TRAINING_SESSION_DESCRIPTION}\n\n${TRAINING_STORYLANE_DESCRIPTION}`;
-  }
-  return TRAINING_SESSION_DESCRIPTION;
+  const head = isTraining1
+    ? `${TRAINING_SESSION_DESCRIPTION}\n\n${TRAINING_STORYLANE_DESCRIPTION}`
+    : TRAINING_SESSION_DESCRIPTION;
+  const lines = items.map((i) => `- [ ] ${i.label}`).join("\n");
+  return `${head}\n\n${lines}`;
 }
 
 function withTitles(titles: string[], items: DockChecklistSeed[]): Record<string, DockChecklistSeed[]> {

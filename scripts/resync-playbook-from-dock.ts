@@ -1,8 +1,9 @@
 /**
- * Re-seed Dock-parity playbooks (templates + checklists + default files +
- * Learning Center), then carefully add missing nested tasks **and default
- * attachments** onto existing WIP projects. Does not wipe completion state
- * or user-uploaded files. Match by title (catalog + template join).
+ * Re-seed Dock-parity playbooks (templates + descriptions + checklists +
+ * default files + Learning Center), then carefully add missing nested tasks,
+ * Dock playbook copy, checklists, and default attachments onto existing WIP.
+ * Does not wipe completion state, staff-authored notes, or user-uploaded
+ * files. Match by title (catalog + template join).
  *
  * Dry-run by default. Does **not** call the Dock API or edit live Dock Spaces.
  *
@@ -137,8 +138,8 @@ async function main() {
     console.log("  1. npm run db:seed -- --templates-only");
     console.log("  2. npm run db:resync:playbook-from-dock          # review (progress + timeout)");
     console.log("  3. npm run db:resync:playbook-from-dock -- --apply");
-    console.log("Missing Discovery Wizard LINKs and billing-sheet defaults are attached.");
-    console.log("User-uploaded files are never deleted. Completed / cancelled sites are skipped.");
+    console.log("Missing descriptions, area-to-cover checklists, Discovery Wizard LINKs, and billing-sheet defaults are filled.");
+    console.log("Staff-authored notes and user-uploaded files are never deleted. Completed / cancelled sites are skipped.");
     console.log("This script never talks to Dock. Do not edit live Dock Spaces from PATH.\n");
     return;
   }
