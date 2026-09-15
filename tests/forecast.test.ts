@@ -241,9 +241,11 @@ describe("Analysis primary-average exclusions", () => {
 
 describe("Forecast+ weights (estimator)", () => {
   it("keeps the Prism service-line and minute weights", () => {
-    expect(FORECAST_WEIGHTS.minutesPerUser).toBe(5);
-    expect(FORECAST_WEIGHTS.minutesPerFormPage).toBe(15);
+    expect(FORECAST_WEIGHTS.minutesPerUser).toBe(30);
+    expect(FORECAST_WEIGHTS.minutesPerFormPage).toBe(25);
     expect(FORECAST_WEIGHTS.stateComplianceHours).toBe(2);
+    expect(FORECAST_WEIGHTS.minimalOrgHours).toBe(10);
+    expect(FORECAST_WEIGHTS.trainingHoursPerSession).toBe(2.5);
   });
 
   it("scores a small outpatient site as Standard", () => {
@@ -260,20 +262,18 @@ describe("Forecast+ weights (estimator)", () => {
     ).toBe("STANDARD");
   });
 
-  it("adds service-line and compliance hours into the estimate", () => {
-    const hours = estimateHours(
-      {
-        userCount: 6,
-        locationCount: 1,
-        formPageCount: 20,
-        trainingsPerWeek: 2,
-        serviceLines: ["OUTPATIENT_THERAPY", "MEDICATION_MANAGEMENT"],
-        stateCompliance: true,
-        minimalOrgStructure: false,
-      },
-      8,
-    );
+  it("adds service-line, compliance, training, and minimal-org hours into the estimate", () => {
+    const hours = estimateHours({
+      userCount: 6,
+      locationCount: 1,
+      formPageCount: 20,
+      trainingsPerWeek: 2,
+      serviceLines: ["OUTPATIENT_THERAPY", "MEDICATION_MANAGEMENT"],
+      stateCompliance: true,
+      minimalOrgStructure: false,
+    });
     expect(hours.totalHours).toBeGreaterThan(10);
+    expect(hours.trainingHours).toBeGreaterThan(0);
     expect(hours.lineItems.some((l) => l.label === "Medication Management")).toBe(true);
     expect(hours.lineItems.some((l) => l.label === "State compliance")).toBe(true);
   });

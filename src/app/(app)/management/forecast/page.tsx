@@ -291,7 +291,7 @@ export default async function ManagementForecastPage() {
         <Card>
           <CardHeader
             title="Forecast+ weights"
-            subtitle="Estimator constants ported from Prism. Tune in code against Analysis — not a dual-write to Prism SQL."
+            subtitle="Same constants as standalone Prism Forecast+. Tune here only to stay in lockstep with that model."
           />
           <div className="px-4 pb-4">
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12.5px]">
@@ -308,10 +308,16 @@ export default async function ManagementForecastPage() {
               </dd>
               <dt className="text-ink-3">State compliance</dt>
               <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.stateComplianceHours}h</dd>
-              <dt className="text-ink-3">Discovery (typical)</dt>
-              <dd className="text-right tabular-nums text-ink">14d</dd>
+              <dt className="text-ink-3">Minimal org structure</dt>
+              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.minimalOrgHours}h</dd>
+              <dt className="text-ink-3">Discovery (opt / typ / pes)</dt>
+              <dd className="text-right tabular-nums text-ink">10 / 14 / 21d</dd>
+              <dt className="text-ink-3">Config calendar</dt>
+              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.configDays}d</dd>
               <dt className="text-ink-3">Core training sessions</dt>
               <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.coreTrainingSessions}</dd>
+              <dt className="text-ink-3">Hours / training session</dt>
+              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.trainingHoursPerSession}h</dd>
             </dl>
             <div className="mt-3 border-t border-border pt-3">
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3">

@@ -8,13 +8,11 @@
  * tier, and a projected go-live under three discovery-responsiveness
  * scenarios.
  *
- * The constants below (minutes per form page, hours per service line, days
- * per phase) are carried over from PRISM's model. They are estimates, not
- * measurements — exactly like this project's own template phase durations
- * (see src/db/template-implementation.ts, which says as much). As real
- * projects complete with a recorded ProjectScope, actual vs. estimated
- * duration becomes visible on /reports/analysis — that's the feedback loop
- * meant to tune these numbers over time. Don't treat them as precise.
+ * Weights and phase lengths are pinned to standalone Prism Forecast+
+ * (nice-rock) so PATH New project / Add to roster / Forecast show the same
+ * staff hours and go-live as Prism for the same scope. Training hours are
+ * part of the total. Playbook template duration is a separate schedule
+ * scale and is not this estimate.
  */
 
 import { addDays } from "@/lib/dates";
@@ -146,28 +144,31 @@ export type HourEstimate = {
   lineItems: HourLineItem[];
   /** Training sessions the curriculum calls for, before /week is applied. */
   trainingSessions: number;
+  /** Sessions × trainingHoursPerSession — included in totalHours. */
+  trainingHours: number;
+  /** totalHours minus training. */
+  configHours: number;
 };
 
 /**
- * Forecast+ weights — the Prism constants this estimator carries.
- * Shown on Management → Forecast. Override via org_settings is out of
- * this slice; change here (and tests) when tuning against Analysis.
+ * Forecast+ weights — standalone Prism Forecast+ (nice-rock) constants.
+ * Shown on Management → Forecast. Change here (and tests) only to match Prism.
  */
 export const FORECAST_WEIGHTS = {
-  orgSetupHours: 1,
-  billingConfigHours: 1,
-  otherSettingsHours: 1,
-  minutesPerUser: 5,
-  minutesPerFormPage: 15,
+  orgSetupHours: 2,
+  billingConfigHours: 3,
+  otherSettingsHours: 2,
+  minutesPerUser: 30,
+  minutesPerFormPage: 25,
   coreTrainingSessions: 7,
   stateComplianceHours: 2,
-  minimalOrgHoursPerWeek: 1,
-  kickoffDays: 1,
-  configOverhangDays: 7,
+  /** Flat add-on when the practice has no org structure to copy. */
+  minimalOrgHours: 10,
+  /** Config calendar days after discovery (Prism "Config 21d"). */
+  configDays: 21,
+  /** Folded into the training span (8 sessions @ 2/wk → 30d, not 28). */
   schedulingBufferDays: 2,
-  kickoffStaffHours: 0.5,
-  discoveryStaffHours: 1.5,
-  trainingHoursPerSession: 1.25,
+  trainingHoursPerSession: 2.5,
 } as const;
 
 const ORG_SETUP_HOURS = FORECAST_WEIGHTS.orgSetupHours;
@@ -177,7 +178,11 @@ const MINUTES_PER_USER = FORECAST_WEIGHTS.minutesPerUser;
 const MINUTES_PER_FORM_PAGE = FORECAST_WEIGHTS.minutesPerFormPage;
 const CORE_TRAINING_SESSIONS = FORECAST_WEIGHTS.coreTrainingSessions;
 
-export function estimateHours(scope: ImplementationScope, estimatedWeeks: number): HourEstimate {
+export function trainingSessionCount(scope: ImplementationScope): number {
+  return CORE_TRAINING_SESSIONS + (scope.serviceLines.some((l) => COMPLEX_CLINICAL_TRIGGERS.has(l)) ? 1 : 0);
+}
+
+export function estimateHours(scope: ImplementationScope, _estimatedWeeks?: number): HourEstimate {
   const lineItems: HourLineItem[] = [
     { label: "Org setup", hours: ORG_SETUP_HOURS },
     { label: `User setup (${scope.userCount} × ${MINUTES_PER_USER}min)`, hours: round1((scope.userCount * MINUTES_PER_USER) / 60) },
@@ -198,19 +203,23 @@ export function estimateHours(scope: ImplementationScope, estimatedWeeks: number
   }
 
   if (scope.minimalOrgStructure) {
-    const structureHours = round1(estimatedWeeks * FORECAST_WEIGHTS.minimalOrgHoursPerWeek);
     lineItems.push({
-      label: `Minimal Org Structure (+1h/wk × ${estimatedWeeks} est. weeks)`,
-      hours: structureHours,
+      label: "Minimal Org Structure",
+      hours: FORECAST_WEIGHTS.minimalOrgHours,
     });
   }
 
-  const trainingSessions =
-    CORE_TRAINING_SESSIONS + (scope.serviceLines.some((l) => COMPLEX_CLINICAL_TRIGGERS.has(l)) ? 1 : 0);
+  const trainingSessions = trainingSessionCount(scope);
+  const trainingHours = round1(trainingSessions * FORECAST_WEIGHTS.trainingHoursPerSession);
+  lineItems.push({
+    label: `Training (${trainingSessions} sessions × ${FORECAST_WEIGHTS.trainingHoursPerSession}h)`,
+    hours: trainingHours,
+  });
 
   const totalHours = round1(lineItems.reduce((sum, l) => sum + l.hours, 0));
+  const configHours = round1(totalHours - trainingHours);
 
-  return { totalHours, lineItems, trainingSessions };
+  return { totalHours, lineItems, trainingSessions, trainingHours, configHours };
 }
 
 // ---------------------------------------------------------------------------
@@ -240,14 +249,14 @@ export type ForecastResult = {
   scenarios: ScenarioProjection[];
 };
 
-const KICKOFF_DAYS = FORECAST_WEIGHTS.kickoffDays;
-const CONFIG_OVERHANG_DAYS = FORECAST_WEIGHTS.configOverhangDays;
+const CONFIG_DAYS = FORECAST_WEIGHTS.configDays;
 const SCHEDULING_BUFFER_DAYS = FORECAST_WEIGHTS.schedulingBufferDays;
 
 export const DISCOVERY_SCENARIOS = ["OPTIMISTIC", "TYPICAL", "PESSIMISTIC"] as const satisfies readonly DiscoveryScenario[];
 
+/** Prism Forecast+ discovery-responsiveness bands (not historical percentiles). */
 export const DISCOVERY_DAYS: Record<DiscoveryScenario, number> = {
-  OPTIMISTIC: 7,
+  OPTIMISTIC: 10,
   TYPICAL: 14,
   PESSIMISTIC: 21,
 };
@@ -264,59 +273,47 @@ export function parseDiscoveryScenario(raw: unknown): DiscoveryScenario {
   return "TYPICAL";
 }
 
-function trainingDays(sessions: number, perWeek: number) {
-  return Math.ceil(sessions / Math.max(1, perWeek)) * 7;
+/** Training span: whole weeks of sessions plus Prism's 2-day scheduling buffer. */
+export function trainingDays(sessions: number, perWeek: number) {
+  const weeks = Math.ceil(sessions / Math.max(1, perWeek));
+  return weeks * 7 + SCHEDULING_BUFFER_DAYS;
 }
 
 /**
  * Builds the full estimate: hours, complexity tier, and a projected go-live
  * under each of the three discovery-responsiveness scenarios, anchored to a
- * kickoff date.
+ * kickoff date. Calendar = discovery + 21d config + training (Prism Forecast+).
  */
 export function forecastImplementation(
   scope: ImplementationScope,
   kickoffDate: Date,
 ): ForecastResult {
   const tier = complexityTier(scope);
+  const hours = estimateHours(scope);
 
   const scenarios: ScenarioProjection[] = DISCOVERY_SCENARIOS.map(
     (scenario) => {
       const discoveryDays = DISCOVERY_DAYS[scenario];
-      const trainDays = trainingDays(
-        estimateHours(scope, 1).trainingSessions,
-        scope.trainingsPerWeek,
-      );
-      const calendarDays =
-        KICKOFF_DAYS + discoveryDays + CONFIG_OVERHANG_DAYS + SCHEDULING_BUFFER_DAYS + trainDays;
-      const estimatedWeeks = Math.max(1, Math.round(calendarDays / 7));
-      const hours = estimateHours(scope, estimatedWeeks);
+      const trainDays = trainingDays(hours.trainingSessions, scope.trainingsPerWeek);
+      const calendarDays = discoveryDays + CONFIG_DAYS + trainDays;
 
       const phases: PhaseProjection[] = [
-        { name: "Kickoff", calendarDays: KICKOFF_DAYS, staffHours: FORECAST_WEIGHTS.kickoffStaffHours, notes: "Kickoff call + schedule touchpoints" },
         {
           name: "Discovery",
           calendarDays: discoveryDays,
-          staffHours: FORECAST_WEIGHTS.discoveryStaffHours,
+          staffHours: 0,
           notes: "Customer-led; config starts as items are submitted",
         },
         {
           name: "Config",
-          calendarDays: CONFIG_OVERHANG_DAYS,
-          staffHours: round1(
-            hours.totalHours - FORECAST_WEIGHTS.discoveryStaffHours - FORECAST_WEIGHTS.kickoffStaffHours,
-          ),
+          calendarDays: CONFIG_DAYS,
+          staffHours: hours.configHours,
           notes: "Org, billing, forms, service-line setup — finishes after discovery",
-        },
-        {
-          name: "Scheduling buffer",
-          calendarDays: SCHEDULING_BUFFER_DAYS,
-          staffHours: 0,
-          notes: "Booking rules prevent same-day scheduling",
         },
         {
           name: "Training",
           calendarDays: trainDays,
-          staffHours: round1(hours.trainingSessions * FORECAST_WEIGHTS.trainingHoursPerSession),
+          staffHours: hours.trainingHours,
           notes: `${hours.trainingSessions} sessions × ${scope.trainingsPerWeek}/week`,
         },
       ];
@@ -332,12 +329,10 @@ export function forecastImplementation(
     },
   );
 
-  const typicalWeeks = Math.max(1, Math.round((scenarios[1]?.calendarDays ?? 42) / 7));
-
   return {
     scope,
     complexityTier: tier,
-    hours: estimateHours(scope, typicalWeeks),
+    hours,
     scenarios,
   };
 }

@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.13.0");
+    expect(APP_VERSION).toBe("1.13.2");
     expect(APP_VERSION).toMatch(/^1\.13\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,18 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.13.2 Forecast+ Prism hour and go-live parity", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.13.2");
+    expect(note?.summary).toMatch(/Forecast\+/);
+    expect(note?.summary).toMatch(/Prism/);
+    expect(note?.highlights?.some((h) => /30 min\/user|25 min\/form/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /training/i.test(h) && /2\.5h/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /65/.test(h) && /21d config/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /percentiles/.test(h) || /reference caption/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /playbook/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/storylane/i.test(h))).toBe(true);
   });
 
   it("documents v1.13.0 Dock description/attachment parity and hang-free resync", () => {

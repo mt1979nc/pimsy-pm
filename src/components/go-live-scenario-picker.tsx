@@ -20,8 +20,6 @@ export function GoLiveScenarioPicker({
   name?: string;
   disabled?: boolean;
 }) {
-  const usingHistory = recommendation.goLiveSource !== "model";
-
   return (
     <div>
       <div className="text-[12px] font-semibold uppercase tracking-wide text-ink-3">
@@ -35,7 +33,6 @@ export function GoLiveScenarioPicker({
             key={s.scenario}
             row={s}
             selected={scenario === s.scenario}
-            usingHistory={usingHistory}
             disabled={disabled}
             onSelect={() => onChange(s.scenario)}
           />
@@ -48,13 +45,11 @@ export function GoLiveScenarioPicker({
 function ScenarioRow({
   row,
   selected,
-  usingHistory,
   disabled,
   onSelect,
 }: {
   row: RecommendedScenario;
   selected: boolean;
-  usingHistory: boolean;
   disabled: boolean;
   onSelect: () => void;
 }) {
@@ -80,11 +75,6 @@ function ScenarioRow({
             {row.scenario.toLowerCase()}
           </span>
           <span className="block text-[12px] text-ink-3">{row.label}</span>
-          {usingHistory && row.modelCalendarDays !== row.calendarDays ? (
-            <span className="mt-0.5 block text-[11.5px] text-ink-3">
-              Forecast+ model {row.modelCalendarDays}d
-            </span>
-          ) : null}
         </span>
       </span>
       <span className="shrink-0 text-right">
@@ -99,11 +89,13 @@ function ScenarioRow({
 }
 
 export function GoLiveSourceBadge({ recommendation }: { recommendation: GoLiveRecommendation }) {
-  if (recommendation.goLiveSource === "model") {
-    return <Badge>Forecast+ model</Badge>;
-  }
-  if (recommendation.goLiveSource === "historical-tier") {
-    return <Badge tone="green">Past sites · same tier</Badge>;
-  }
-  return <Badge tone="green">Past sites</Badge>;
+  const title =
+    recommendation.goLiveSource === "model"
+      ? "Forecast+ discovery formula"
+      : "Forecast+ discovery formula; past-site duration is shown as a caption only";
+  return (
+    <span title={title}>
+      <Badge>Forecast+ model</Badge>
+    </span>
+  );
 }
