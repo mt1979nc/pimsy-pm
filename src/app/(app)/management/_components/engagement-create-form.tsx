@@ -7,6 +7,7 @@ import { Field, inputClass, Badge } from "@/components/ui";
 import { GoLiveScenarioPicker, GoLiveSourceBadge } from "@/components/go-live-scenario-picker";
 import {
   DEFAULT_SCOPE,
+  DEFAULT_SKIP_US_FEDERAL_HOLIDAYS,
   SERVICE_LINE_LABELS,
   type ImplementationScope,
 } from "@/lib/estimator";
@@ -52,6 +53,7 @@ export function EngagementCreateForm({
   const [kickoff, setKickoff] = useState("");
   const [status, setStatus] = useState<PrismStatus>("pipeline");
   const [scenario, setScenario] = useState<DiscoveryScenario>("TYPICAL");
+  const [skipUsFederalHolidays, setSkipUsFederalHolidays] = useState(DEFAULT_SKIP_US_FEDERAL_HOLIDAYS);
   const [customHpw, setCustomHpw] = useState("");
   const [goLiveOverride, setGoLiveOverride] = useState<string | null>(null);
 
@@ -65,8 +67,9 @@ export function EngagementCreateForm({
       samples: durationSamples,
       exclusions,
       customHoursPerWeek: Number.isFinite(customHoursPerWeek) ? customHoursPerWeek : null,
+      skipUsFederalHolidays,
     });
-  }, [scope, kickoff, durationSamples, exclusions, customHoursPerWeek]);
+  }, [scope, kickoff, durationSamples, exclusions, customHoursPerWeek, skipUsFederalHolidays]);
 
   const chosen =
     recommendation.scenarios.find((s) => s.scenario === scenario) ?? recommendation.scenarios[1];
@@ -304,8 +307,9 @@ export function EngagementCreateForm({
         </div>
         <p className="mt-1 text-[12.5px] text-ink-3">
           Same three discovery bands as Prism Forecast+. Go-live is kickoff + discovery + 21d
-          config + training. Est. hours are Prism config weights plus training sessions (not
-          playbook duration). Pipeline stays off department capacity.
+          config + training. US federal holidays are skipped when the toggle is on (default).
+          Est. hours are Prism config weights plus training sessions (not playbook duration).
+          Pipeline stays off department capacity.
         </p>
         <div className="mt-4 space-y-2">
           <div className="flex items-center justify-between text-[13px]">
@@ -333,6 +337,11 @@ export function EngagementCreateForm({
             recommendation={recommendation}
             scenario={scenario}
             onChange={selectScenario}
+            skipUsFederalHolidays={skipUsFederalHolidays}
+            onSkipUsFederalHolidaysChange={(next) => {
+              setSkipUsFederalHolidays(next);
+              setGoLiveOverride(null);
+            }}
           />
         </div>
       </aside>

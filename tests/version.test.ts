@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.13.2");
+    expect(APP_VERSION).toBe("1.13.3");
     expect(APP_VERSION).toMatch(/^1\.13\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,17 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.13.3 US federal holiday go-live projections", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.13.3");
+    expect(note?.summary).toMatch(/federal holiday/i);
+    expect(note?.summary).toMatch(/Forecast\+/);
+    expect(note?.highlights?.some((h) => /default on/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Thanksgiving/i.test(h) && /Christmas/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /hrs\/wk|even-spread/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /0014_skip_us_federal_holidays/.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/storylane/i.test(h))).toBe(true);
   });
 
   it("documents v1.13.2 Forecast+ Prism hour and go-live parity", () => {

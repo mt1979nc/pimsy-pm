@@ -40,7 +40,7 @@ import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
 import { completeHistoricalProjectOnTime } from "@/lib/historical-complete";
 import { addDays, parseDateInput } from "@/lib/dates";
-import { forecastImplementation, type ImplementationScope } from "@/lib/estimator";
+import { forecastImplementation, parseSkipUsFederalHolidays, type ImplementationScope } from "@/lib/estimator";
 import {
   cascadeRescheduleProject,
   resolvePlaybookScale,
@@ -102,6 +102,7 @@ const createProjectSchema = z.object({
   description: z.string().trim().max(5000).optional(),
   scopeJson: z.string().optional(),
   discoveryScenario: z.enum(["OPTIMISTIC", "TYPICAL", "PESSIMISTIC"]).optional(),
+  skipUsFederalHolidays: z.string().optional(),
 });
 
 async function nextProjectCode(type: string) {
@@ -159,6 +160,7 @@ export async function createProject(
     description: formData.get("description")?.toString() || undefined,
     scopeJson: formData.get("scopeJson")?.toString() || undefined,
     discoveryScenario: (formData.get("discoveryScenario")?.toString() as never) || undefined,
+    skipUsFederalHolidays: formData.get("skipUsFederalHolidays")?.toString() || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
@@ -245,7 +247,8 @@ export async function createProject(
   // and task timing. We recompute the forecast server-side rather than
   // trusting whatever the client displayed.
   const scope = parseScope(d.scopeJson);
-  const forecast = scope ? forecastImplementation(scope, start) : null;
+  const skipUsFederalHolidays = parseSkipUsFederalHolidays(d.skipUsFederalHolidays);
+  const forecast = scope ? forecastImplementation(scope, start, { skipUsFederalHolidays }) : null;
   const scenarioProjection = forecast?.scenarios.find(
     (s) => s.scenario === (d.discoveryScenario ?? "TYPICAL"),
   );
@@ -313,6 +316,7 @@ export async function createProject(
           complexityTier: forecast.complexityTier,
           estimatedHours: forecast.hours.totalHours,
           discoveryScenario: d.discoveryScenario ?? "TYPICAL",
+          skipUsFederalHolidays,
         });
       }
 

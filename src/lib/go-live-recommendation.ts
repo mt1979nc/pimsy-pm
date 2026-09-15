@@ -14,14 +14,15 @@
  */
 
 import type { ComplexityTier, DiscoveryScenario } from "@/db/schema";
-import { addDays } from "@/lib/dates";
 import {
   complexityTier,
   DISCOVERY_SCENARIOS,
   estimateHours,
   forecastImplementation,
   parseDiscoveryScenario,
+  parseSkipUsFederalHolidays,
   SCENARIO_LABELS,
+  type ForecastOptions,
   type ForecastResult,
   type ImplementationScope,
   type ScenarioProjection,
@@ -33,7 +34,7 @@ import {
   weeklyHoursForEngagement,
 } from "@/lib/forecast";
 
-export { parseDiscoveryScenario };
+export { parseDiscoveryScenario, parseSkipUsFederalHolidays };
 
 /** Need this many completed durations before past-site stats appear in the caption. */
 export const HISTORICAL_BAND_MIN_SAMPLE = 3;
@@ -64,8 +65,6 @@ export type HistoricalDurationBands = {
 };
 
 export type RecommendedScenario = ScenarioProjection & {
-  /** Formula (discovery 7/14/21 + training cadence) days, before history. */
-  modelCalendarDays: number;
   estimatedHours: number;
   weeklyHours: number;
 };
@@ -185,11 +184,10 @@ export function historicalDurationBands(
 function scenarioHours(
   scope: ImplementationScope,
   kickoffDate: Date,
-  calendarDays: number,
+  goLiveDate: Date,
   customHoursPerWeek: number | null | undefined,
 ): { estimatedHours: number; weeklyHours: number } {
   const estimatedHours = estimateHours(scope).totalHours;
-  const goLiveDate = addDays(kickoffDate, calendarDays);
   const weeklyHours =
     customHoursPerWeek != null && customHoursPerWeek > 0
       ? round1(customHoursPerWeek)
@@ -221,8 +219,10 @@ export function recommendGoLive(opts: {
   samples: readonly DurationSample[];
   exclusions?: readonly string[];
   customHoursPerWeek?: number | null;
+  skipUsFederalHolidays?: boolean;
 }): GoLiveRecommendation {
-  const model = forecastImplementation(opts.scope, opts.kickoffDate);
+  const forecastOpts: ForecastOptions = { skipUsFederalHolidays: opts.skipUsFederalHolidays };
+  const model = forecastImplementation(opts.scope, opts.kickoffDate, forecastOpts);
   const tier = complexityTier(opts.scope);
   const historical = historicalDurationBands(opts.samples, {
     exclusions: opts.exclusions,
@@ -239,13 +239,13 @@ export function recommendGoLive(opts: {
     const { estimatedHours, weeklyHours } = scenarioHours(
       opts.scope,
       opts.kickoffDate,
-      s.calendarDays,
+      s.goLiveDate,
       opts.customHoursPerWeek,
     );
     return {
       ...s,
       label: SCENARIO_LABELS[s.scenario],
-      modelCalendarDays: s.calendarDays,
+      modelCalendarDays: s.modelCalendarDays,
       estimatedHours,
       weeklyHours,
     };

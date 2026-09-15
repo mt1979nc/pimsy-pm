@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.2";
+export const APP_VERSION = "1.13.3";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.3",
+    date: "2026-09-15",
+    summary:
+      "Forecast+ and Add to roster can skip observed US federal holidays when projecting go-live, so Thanksgiving, Christmas, and New Year’s are not treated as work days.",
+    highlights: [
+      "Toggle default on: Account for US federal holidays. Off restores Prism-parity calendar math (discovery + 21d config + training, weekends still count).",
+      "Holiday set is the standard US federal list on observed dates: New Year’s Day, MLK Day, Washington’s Birthday (Presidents Day), Memorial Day, Juneteenth, Independence Day, Labor Day, Columbus Day / Indigenous Peoples’ Day, Veterans Day, Thanksgiving, Christmas.",
+      "The estimator walks the Prism formula days while skipping those holidays (including cascading days that become holidays after a push). Optimistic / Typical / Pessimistic and Add to roster all use the same window.",
+      "Even-spread hrs/wk uses the holiday-adjusted kickoff → go-live span. Custom hrs/wk is unchanged.",
+      "Preference is stored on the engagement’s Forecast+ scope (`project_scope.skip_us_federal_holidays`, default true). Migration `0014_skip_us_federal_holidays`.",
+    ],
+  },
   {
     version: "1.13.2",
     date: "2026-09-15",

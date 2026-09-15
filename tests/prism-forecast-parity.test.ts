@@ -75,7 +75,7 @@ describe("Prism Forecast+ parity — TEST Implementation", () => {
 
   it("matches Prism typical / optimistic / pessimistic calendar days and go-live", () => {
     const kickoff = d("2026-09-15");
-    const result = forecastImplementation(PRISM_TEST_SCOPE, kickoff);
+    const result = forecastImplementation(PRISM_TEST_SCOPE, kickoff, { skipUsFederalHolidays: false });
     const [opt, typ, pes] = result.scenarios;
     expect(opt!.calendarDays).toBe(61);
     expect(typ!.calendarDays).toBe(65);
@@ -89,7 +89,7 @@ describe("Prism Forecast+ parity — TEST Implementation", () => {
 
   it("keeps Add-to-roster recommendation on the Forecast+ dates even when history exists", () => {
     const kickoff = d("2026-09-15");
-    const model = forecastImplementation(PRISM_TEST_SCOPE, kickoff);
+    const model = forecastImplementation(PRISM_TEST_SCOPE, kickoff, { skipUsFederalHolidays: false });
     const rec = recommendGoLive({
       scope: PRISM_TEST_SCOPE,
       kickoffDate: kickoff,
@@ -100,6 +100,7 @@ describe("Prism Forecast+ parity — TEST Implementation", () => {
         { code: "ABQW", durationDays: 56, complexityTier: "STANDARD" },
         { code: "MPA", durationDays: 60, complexityTier: "STANDARD" },
       ],
+      skipUsFederalHolidays: false,
     });
     expect(rec.scenarios.map((s) => s.calendarDays)).toEqual(model.scenarios.map((s) => s.calendarDays));
     expect(rec.hours.totalHours).toBe(model.hours.totalHours);

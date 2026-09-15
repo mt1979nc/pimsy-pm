@@ -8,6 +8,7 @@ import { LinkButton } from "@/components/ui";
 import { fmtDate } from "@/lib/dates";
 import {
   DEFAULT_SCOPE,
+  DEFAULT_SKIP_US_FEDERAL_HOLIDAYS,
   SERVICE_LINE_LABELS,
   forecastImplementation,
   type ImplementationScope,
@@ -15,6 +16,7 @@ import {
 import type { ComplexityTier, DiscoveryScenario, PlaybookPath } from "@/db/schema";
 import { PLAYBOOK_PATHS, PLAYBOOK_PATH_META } from "@/lib/playbook-meta";
 import { STAFFING_ROLES, STAFFING_ROLE_LABELS, MANAGER_OVERVIEW_ROLES } from "@/lib/staffing";
+import { UsFederalHolidayToggle } from "@/components/us-federal-holiday-toggle";
 
 type Option = { id: string; name: string | null; staffingRole?: string | null };
 type ExistingProject = { id: string; name: string; code: string; customerAccountId: string | null };
@@ -72,6 +74,7 @@ export function NewProjectForm({
   const [scoped, setScoped] = useState(true);
   const [scope, setScope] = useState<ImplementationScope>(DEFAULT_SCOPE);
   const [scenario, setScenario] = useState<DiscoveryScenario>("TYPICAL");
+  const [skipUsFederalHolidays, setSkipUsFederalHolidays] = useState(DEFAULT_SKIP_US_FEDERAL_HOLIDAYS);
 
   const pathTemplate = playbookPath
     ? templates.find((t) => t.playbookPath === playbookPath || t.code === PLAYBOOK_PATH_META[playbookPath].code)
@@ -86,8 +89,8 @@ export function NewProjectForm({
 
   const forecast = useMemo(() => {
     const kickoff = startDate ? new Date(`${startDate}T12:00:00.000Z`) : new Date();
-    return forecastImplementation(scope, kickoff);
-  }, [scope, startDate]);
+    return forecastImplementation(scope, kickoff, { skipUsFederalHolidays });
+  }, [scope, startDate, skipUsFederalHolidays]);
 
   const chosen = forecast.scenarios.find((s) => s.scenario === scenario) ?? forecast.scenarios[1];
 
@@ -364,8 +367,15 @@ export function NewProjectForm({
       <div className="space-y-5">
         {scoped ? (
           <Card>
-            <CardHeader title="Projected go-live" subtitle="Pick a discovery-responsiveness band — same 10 / 14 / 21d + 21d config + training as Prism Forecast+" />
+            <CardHeader title="Projected go-live" subtitle="Pick a discovery-responsiveness band — same 10 / 14 / 21d + 21d config + training as Prism Forecast+. Federal holidays are skipped when the toggle is on." />
             <div className="space-y-2 p-4">
+              <div className="rounded-lg border border-border bg-surface-2/50 px-3 py-2.5">
+                <UsFederalHolidayToggle
+                  checked={skipUsFederalHolidays}
+                  onChange={setSkipUsFederalHolidays}
+                  holidayDays={chosen?.holidayDays ?? 0}
+                />
+              </div>
               {forecast.scenarios.map((s) => (
                 <label
                   key={s.scenario}
@@ -396,6 +406,9 @@ export function NewProjectForm({
                     </span>
                     <span className="block text-[11.5px] text-ink-3">
                       {s.calendarDays}d · {forecast.hours.totalHours}h staff
+                      {s.holidayDays > 0
+                        ? ` · +${s.holidayDays} holiday${s.holidayDays === 1 ? "" : "s"}`
+                        : ""}
                     </span>
                   </span>
                 </label>

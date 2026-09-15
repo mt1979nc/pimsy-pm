@@ -15,8 +15,13 @@
  * scale and is not this estimate.
  */
 
-import { addDays } from "@/lib/dates";
+import { addDays, utcCalendarDaysBetween } from "@/lib/dates";
 import type { ComplexityTier, DiscoveryScenario } from "@/db/schema";
+import {
+  addDaysSkippingUsFederalHolidays,
+  usFederalHolidaysInWindow,
+  type UsFederalHoliday,
+} from "@/lib/us-federal-holidays";
 
 // ---------------------------------------------------------------------------
 // Service lines
@@ -237,7 +242,12 @@ export type ScenarioProjection = {
   scenario: DiscoveryScenario;
   label: string;
   discoveryDays: number;
+  /** Prism formula days (discovery + 21d config + training), before holiday skips. */
+  modelCalendarDays: number;
+  /** Kickoff → go-live elapsed calendar days (includes skipped holidays when the toggle is on). */
   calendarDays: number;
+  holidayDays: number;
+  holidaysSkipped: UsFederalHoliday[];
   goLiveDate: Date;
   phases: PhaseProjection[];
 };
@@ -273,6 +283,26 @@ export function parseDiscoveryScenario(raw: unknown): DiscoveryScenario {
   return "TYPICAL";
 }
 
+/** Product default: account for US federal holidays when projecting go-live. */
+export const DEFAULT_SKIP_US_FEDERAL_HOLIDAYS = true;
+
+export function parseSkipUsFederalHolidays(raw: unknown): boolean {
+  if (raw == null || String(raw).trim() === "") return DEFAULT_SKIP_US_FEDERAL_HOLIDAYS;
+  const s = String(raw).trim().toLowerCase();
+  if (s === "0" || s === "false" || s === "off" || s === "no") return false;
+  if (s === "1" || s === "true" || s === "on" || s === "yes") return true;
+  return DEFAULT_SKIP_US_FEDERAL_HOLIDAYS;
+}
+
+export type ForecastOptions = {
+  /** When true (default), skip observed US federal holidays in the kickoff → go-live window. */
+  skipUsFederalHolidays?: boolean;
+};
+
+function addProjectedDays(start: Date, days: number, skipHolidays: boolean): Date {
+  return skipHolidays ? addDaysSkippingUsFederalHolidays(start, days) : addDays(start, days);
+}
+
 /** Training span: whole weeks of sessions plus Prism's 2-day scheduling buffer. */
 export function trainingDays(sessions: number, perWeek: number) {
   const weeks = Math.ceil(sessions / Math.max(1, perWeek));
@@ -283,36 +313,49 @@ export function trainingDays(sessions: number, perWeek: number) {
  * Builds the full estimate: hours, complexity tier, and a projected go-live
  * under each of the three discovery-responsiveness scenarios, anchored to a
  * kickoff date. Calendar = discovery + 21d config + training (Prism Forecast+).
+ * When `skipUsFederalHolidays` is on (default), those formula days are walked
+ * on the calendar with observed US federal holidays skipped, so go-live moves
+ * later instead of treating Thanksgiving / Christmas / etc. as work days.
  */
 export function forecastImplementation(
   scope: ImplementationScope,
   kickoffDate: Date,
+  opts?: ForecastOptions,
 ): ForecastResult {
   const tier = complexityTier(scope);
   const hours = estimateHours(scope);
+  const skipHolidays = opts?.skipUsFederalHolidays ?? DEFAULT_SKIP_US_FEDERAL_HOLIDAYS;
 
   const scenarios: ScenarioProjection[] = DISCOVERY_SCENARIOS.map(
     (scenario) => {
       const discoveryDays = DISCOVERY_DAYS[scenario];
       const trainDays = trainingDays(hours.trainingSessions, scope.trainingsPerWeek);
-      const calendarDays = discoveryDays + CONFIG_DAYS + trainDays;
+      const modelCalendarDays = discoveryDays + CONFIG_DAYS + trainDays;
+
+      const discoveryEnd = addProjectedDays(kickoffDate, discoveryDays, skipHolidays);
+      const configEnd = addProjectedDays(discoveryEnd, CONFIG_DAYS, skipHolidays);
+      const goLiveDate = addProjectedDays(configEnd, trainDays, skipHolidays);
+      const calendarDays = skipHolidays
+        ? utcCalendarDaysBetween(kickoffDate, goLiveDate)
+        : modelCalendarDays;
+      const holidaysSkipped = skipHolidays ? usFederalHolidaysInWindow(kickoffDate, goLiveDate) : [];
 
       const phases: PhaseProjection[] = [
         {
           name: "Discovery",
-          calendarDays: discoveryDays,
+          calendarDays: skipHolidays ? utcCalendarDaysBetween(kickoffDate, discoveryEnd) : discoveryDays,
           staffHours: 0,
           notes: "Customer-led; config starts as items are submitted",
         },
         {
           name: "Config",
-          calendarDays: CONFIG_DAYS,
+          calendarDays: skipHolidays ? utcCalendarDaysBetween(discoveryEnd, configEnd) : CONFIG_DAYS,
           staffHours: hours.configHours,
           notes: "Org, billing, forms, service-line setup — finishes after discovery",
         },
         {
           name: "Training",
-          calendarDays: trainDays,
+          calendarDays: skipHolidays ? utcCalendarDaysBetween(configEnd, goLiveDate) : trainDays,
           staffHours: hours.trainingHours,
           notes: `${hours.trainingSessions} sessions × ${scope.trainingsPerWeek}/week`,
         },
@@ -322,8 +365,11 @@ export function forecastImplementation(
         scenario,
         label: SCENARIO_LABELS[scenario],
         discoveryDays,
+        modelCalendarDays,
         calendarDays,
-        goLiveDate: addDays(kickoffDate, calendarDays),
+        holidayDays: holidaysSkipped.length,
+        holidaysSkipped,
+        goLiveDate,
         phases,
       };
     },
