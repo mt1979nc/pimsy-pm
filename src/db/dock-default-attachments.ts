@@ -47,13 +47,17 @@ export const DEFAULT_LIBRARY_ASSETS: DefaultLibraryDef[] = [
     description:
       "Guided discovery workbook (live PATH/Dock Discovery Wizard). Opens as a task attachment — not a description footnote.",
     adminNotes:
-      "Live URL from Dock (2026-09-14). Attaches as a LINK on Guided Discovery / Workflow Guided Discovery (and the Discovery worksheets that feed it). Replace the URL here only if the Azure Static Web App moves.",
+      "Live URL from Dock PWMI Organization Details Form (2026-09-15). Attaches as a LINK on Guided Discovery / Workflow Guided Discovery and Organization Details Form. Clinical Workflows is a Dock Form, not this wizard. Replace the URL here only if the Azure Static Web App moves.",
     visibility: "SHARED",
     attachToTitles: [
       "Guided Discovery Meeting",
       "Guided Discovery",
       "Organization Details Form",
-      "Clinical Workflows",
+      "Organization Details",
+      "Discovery org details",
+      "Discovery: Organization Details",
+      "Org details",
+      "Org Details Form",
       "Schedule: Workflow Guided Discovery",
       "Workflow Guided Discovery",
       "Schedule Workflow Guided Discovery",
@@ -113,6 +117,8 @@ export const DEFAULT_LIBRARY_ASSETS: DefaultLibraryDef[] = [
     visibility: "SHARED",
     attachToTitles: [
       "Clinical Workflows",
+      "Discovery clinical workflows",
+      "Clinical workflow form",
       "Review Clinical Workflow Data Sheet",
       "Review Clinical Workflows Data Sheet",
       "Clinical Workflow Data Sheet",
@@ -129,7 +135,14 @@ export const DEFAULT_LIBRARY_ASSETS: DefaultLibraryDef[] = [
     description: "Org / division / hours capture form.",
     adminNotes: "Replace with the Dock organization details form if it is a separate file.",
     visibility: "SHARED",
-    attachToTitles: ["Organization Details Form", "Organization Details"],
+    attachToTitles: [
+      "Organization Details Form",
+      "Organization Details",
+      "Discovery org details",
+      "Discovery: Organization Details",
+      "Org details",
+      "Org Details Form",
+    ],
   },
   {
     slug: "rcm-intake-questionnaire",

@@ -8,13 +8,12 @@ import {
   setAttachmentVisibility,
 } from "@/actions/attachments";
 import { SubmitButton, FormError } from "@/components/submit-button";
-import { Button, LinkButton, inputClass, VisibilityBadge } from "@/components/ui";
+import { Button, inputClass, VisibilityBadge } from "@/components/ui";
 import { fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import {
   DOWNLOAD_COMPLETE_UPLOAD_HINT,
   isPlaybookResourceAsset,
-  playbookResourceButtonLabel,
 } from "@/lib/playbook-resources";
 
 type Asset = {
@@ -92,8 +91,7 @@ export function AttachmentList({
 
   const images = assets.filter((a) => a.kind === "IMAGE");
   const rest = assets.filter((a) => a.kind !== "IMAGE");
-  const resources = rest.filter((a) => isPlaybookResourceAsset(a));
-  const hasFileResource = resources.some((a) => a.kind !== "LINK");
+  const hasFileResource = rest.some((a) => isPlaybookResourceAsset(a) && a.kind !== "LINK");
 
   return (
     <div>
@@ -101,23 +99,6 @@ export function AttachmentList({
         <p className="border-b border-border px-4 py-3 text-[13.5px] leading-relaxed text-ink-2">
           {DOWNLOAD_COMPLETE_UPLOAD_HINT}
         </p>
-      ) : null}
-
-      {resources.length > 0 ? (
-        <div className="flex flex-wrap gap-2 border-b border-border px-4 py-3">
-          {resources.map((a) => (
-            <LinkButton
-              key={a.id}
-              href={href(a)}
-              variant="primary"
-              size="sm"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {playbookResourceButtonLabel({ kind: a.kind, name: a.name, url: a.url })}
-            </LinkButton>
-          ))}
-        </div>
       ) : null}
 
       {images.length > 0 ? (
@@ -297,6 +278,10 @@ export function AddAttachment({
   const fileRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash === "#upload") setMode("file");
+  }, []);
+  useEffect(() => {
     if (linkState.ok) {
       linkRef.current?.reset();
       setMode("none");
@@ -313,7 +298,7 @@ export function AddAttachment({
 
   if (mode === "none") {
     return (
-      <div className="flex items-center gap-2 border-t border-border px-4 py-2.5">
+      <div id="upload" className="flex items-center gap-2 border-t border-border px-4 py-2.5">
         <Button size="sm" onClick={() => setMode("link")}>
           Add link
         </Button>

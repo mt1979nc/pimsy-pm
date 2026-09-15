@@ -13,6 +13,18 @@
  */
 import { libraryDefsForTaskTitle } from "@/db/dock-default-attachments";
 import {
+  DOCK_BILLING_QUESTIONNAIRE_LABEL,
+  DOCK_CLINICAL_FORM_LABEL,
+  DOCK_OPEN_FORM_LABEL,
+  DOCK_TASK_ACTION_LABEL,
+  DOCK_UPLOAD_FILES_LABEL,
+  isBillingQuestionnaireTitle,
+  isClinicalWorkflowsTitle,
+  isDockFileRequestTitle,
+  isDocumentationAndFormsTitle,
+  isOrganizationDetailsTitle,
+} from "@/db/dock-task-buttons";
+import {
   TRAINING_SESSION_DESCRIPTION,
   TRAINING_STORYLANE_DESCRIPTION,
   trainingDescriptionForTitle,
@@ -30,7 +42,7 @@ const STALE_TRAINING_BLURBS = new Set(
   ].map((s) => s.trim()),
 );
 
-/** Short v1.13 blurbs replaced by download → complete → upload / Open-button copy. */
+/** Short v1.13 blurbs replaced by download → complete → upload / Click here copy. */
 const STALE_ATTACHMENT_BLURBS = new Set(
   [
     "Complete and upload the attached billing spreadsheet (accepted payers and modifiers).",
@@ -39,6 +51,27 @@ const STALE_ATTACHMENT_BLURBS = new Set(
     "Complete the attached organization details form. The Discovery Wizard link is also on this task when it applies.",
     "Complete the attached RCM intake questionnaire.",
     "Complete the attached Discovery Wizard (live link under Links & files). Do not paste the URL into this description.",
+    "Open the Discovery Wizard with the button on this task (not a URL in this description).",
+    "Open the Discovery Wizard with the button on this task (not a URL in this description). Complete it there.",
+    "1. Download the billing spreadsheet with the button on this task.\n2. Fill in accepted payers and modifiers.\n3. Upload the completed file back on this task.",
+    "1. Download the billing questionnaire with the button on this task.\n2. Complete it.\n3. Upload the completed file back on this task.",
+    "1. Download the clinical workflows data sheet with the button on this task.\n2. Complete it.\n3. Upload the completed file back on this task.\n\nOpen the Discovery Wizard with the button on this task (not a URL in this description).",
+    "1. Download the organization details form with the button on this task.\n2. Complete it.\n3. Upload the completed file back on this task.\n\nOpen the Discovery Wizard with the button on this task (not a URL in this description).",
+    "1. Download the RCM intake questionnaire with the button on this task.\n2. Complete it.\n3. Upload the completed file back on this task.",
+    "Download the billing spreadsheet with the button on this task to review what the practice submitted.",
+    "Download the billing questionnaire with the button on this task to review what the practice submitted.",
+    "Download the clinical workflows data sheet with the button on this task to review what the practice submitted.",
+    "Download the organization details form with the button on this task to review what the practice submitted.",
+    "Download the RCM intake questionnaire with the button on this task to review what the practice submitted.",
+    "Click here on this task to open the Discovery Wizard (not a URL in this description).",
+    "Click here on this task to open the Discovery Wizard (not a URL in this description). Complete it there.",
+    "Click here on this task to open the Discovery Wizard (not a URL in this description). Complete the practice sections there, then upload any working copy back on this task.",
+    "Click here to upload the requested file(s) on this task.",
+    "1. Click here to download the billing spreadsheet.\n2. Fill in accepted payers and modifiers.\n3. Upload the completed file back on this task.",
+    "1. Click here to download the billing questionnaire.\n2. Complete it.\n3. Upload the completed file back on this task.",
+    "1. Click here to download the clinical workflows data sheet.\n2. Complete it.\n3. Upload the completed file back on this task.",
+    "1. Click here to download the organization details form.\n2. Complete it.\n3. Upload the completed file back on this task.",
+    "1. Click here to download the RCM intake questionnaire.\n2. Complete it.\n3. Upload the completed file back on this task.",
   ].map((s) => s.trim()),
 );
 
@@ -57,57 +90,78 @@ export function shouldReplacePlaybookDescription(
   if (STALE_TRAINING_BLURBS.has(cur)) return true;
   if (STALE_ATTACHMENT_BLURBS.has(cur)) return true;
   if (cur.startsWith("Use the attached file(s):")) return true;
+  if (cur.startsWith("Open the Discovery Wizard with the button")) return true;
+  if (cur.includes("with the button on this task")) return true;
+  if (/^Click [Hh]ere on this task to open the Discovery Wizard/.test(cur)) return true;
   return false;
 }
 
-const WIZARD_BUTTON_NOTE =
-  "Open the Discovery Wizard with the button on this task (not a URL in this description).";
+const WIZARD_BUTTON_NOTE = `${DOCK_TASK_ACTION_LABEL} on this task to open the Discovery Wizard (not a URL in this description).`;
 
-function uploadRequestCopy(fileLabel: string, stepTwo: string, withWizard: boolean): string {
-  const body = [
-    `1. Download the ${fileLabel} with the button on this task.`,
+const CLINICAL_FORM_NOTE = `${DOCK_CLINICAL_FORM_LABEL} on this task. Dock’s native Clinical Workflow Form has no public URL in PATH; the playbook sheet opens when attached. Upload any working copy back on this task.`;
+
+const BILLING_QUESTIONNAIRE_FORM_NOTE = `${DOCK_BILLING_QUESTIONNAIRE_LABEL} on this task. Dock’s native Billing Questionnaire form has no public URL in PATH; the playbook questionnaire opens when attached. Upload any working copy back on this task.`;
+
+const DOCUMENTATION_OPEN_FORM_NOTE = `${DOCK_OPEN_FORM_LABEL} on this task. Dock’s native Documentation & Forms form has no public URL in PATH.`;
+
+function uploadRequestCopy(fileLabel: string, stepTwo: string): string {
+  return [
+    `1. ${DOCK_TASK_ACTION_LABEL} to download the ${fileLabel}.`,
     `2. ${stepTwo}`,
     "3. Upload the completed file back on this task.",
   ].join("\n");
-  return withWizard ? `${body}\n\n${WIZARD_BUTTON_NOTE}` : body;
+}
+
+function fileRequestDescription(title: string): string | null {
+  if (!isDockFileRequestTitle(title)) return null;
+  if (/billing spreadsheet/i.test(title)) {
+    return `${DOCK_UPLOAD_FILES_LABEL} on this task to submit the completed billing spreadsheet (accepted payers and modifiers). A template is in Links & files when attached.`;
+  }
+  return `${DOCK_UPLOAD_FILES_LABEL} on this task to submit the requested file(s).`;
 }
 
 function attachmentTaskDescription(title: string): string | null {
+  if (isDocumentationAndFormsTitle(title)) return DOCUMENTATION_OPEN_FORM_NOTE;
+  const fileRequest = fileRequestDescription(title);
   const defs = libraryDefsForTaskTitle(title);
-  if (defs.length === 0) return null;
+  if (defs.length === 0) return fileRequest;
   const slugs = new Set(defs.map((d) => d.slug));
   const upload = isCustomerUploadRequestTitle(title);
-  const withWizard = slugs.has("discovery-wizard");
+
+  if (
+    (isOrganizationDetailsTitle(title) || slugs.has("discovery-wizard")) &&
+    !isClinicalWorkflowsTitle(title) &&
+    !isBillingQuestionnaireTitle(title)
+  ) {
+    return `${WIZARD_BUTTON_NOTE} Complete the practice sections there.`;
+  }
+
+  if (isClinicalWorkflowsTitle(title) || slugs.has("clinical-workflows-sheet")) {
+    return upload ? CLINICAL_FORM_NOTE : "Click Here to download the clinical workflows data sheet and review what the practice submitted.";
+  }
 
   if (slugs.has("billing-spreadsheet")) {
     return upload
-      ? uploadRequestCopy("billing spreadsheet", "Fill in accepted payers and modifiers.", withWizard)
-      : "Download the billing spreadsheet with the button on this task to review what the practice submitted.";
+      ? fileRequest ??
+        `${DOCK_UPLOAD_FILES_LABEL} on this task to submit the completed billing spreadsheet (accepted payers and modifiers). A template is in Links & files when attached.`
+      : "Click Here to download the billing spreadsheet and review what the practice submitted.";
   }
-  if (slugs.has("billing-questionnaire")) {
+  if (isBillingQuestionnaireTitle(title) || slugs.has("billing-questionnaire")) {
     return upload
-      ? uploadRequestCopy("billing questionnaire", "Complete it.", withWizard)
-      : "Download the billing questionnaire with the button on this task to review what the practice submitted.";
-  }
-  if (slugs.has("clinical-workflows-sheet")) {
-    return upload
-      ? uploadRequestCopy("clinical workflows data sheet", "Complete it.", withWizard)
-      : "Download the clinical workflows data sheet with the button on this task to review what the practice submitted.";
+      ? BILLING_QUESTIONNAIRE_FORM_NOTE
+      : "Click Here to download the billing questionnaire and review what the practice submitted.";
   }
   if (slugs.has("organization-details-form")) {
     return upload
-      ? uploadRequestCopy("organization details form", "Complete it.", withWizard)
-      : "Download the organization details form with the button on this task to review what the practice submitted.";
+      ? uploadRequestCopy("organization details form", "Complete it.")
+      : "Click Here to download the organization details form and review what the practice submitted.";
   }
   if (slugs.has("rcm-intake-questionnaire")) {
     return upload
-      ? uploadRequestCopy("RCM intake questionnaire", "Complete it.", withWizard)
-      : "Download the RCM intake questionnaire with the button on this task to review what the practice submitted.";
+      ? uploadRequestCopy("RCM intake questionnaire", "Complete it.")
+      : "Click Here to download the RCM intake questionnaire and review what the practice submitted.";
   }
-  if (slugs.has("discovery-wizard")) {
-    return `${WIZARD_BUTTON_NOTE} Complete it there.`;
-  }
-  return `Use the button(s) on this task: ${defs.map((d) => d.name).join("; ")}.`;
+  return fileRequest ?? `Use the button(s) on this task: ${defs.map((d) => d.name).join("; ")}.`;
 }
 
 /** Dock playbook description for a task title, or null when Dock has none. */
