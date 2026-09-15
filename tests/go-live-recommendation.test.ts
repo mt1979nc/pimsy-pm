@@ -80,14 +80,16 @@ describe("historicalDurationBands", () => {
 describe("recommendGoLive", () => {
   const kickoff = d("2026-09-14");
 
-  it("projects three increasing go-live dates from past-site percentiles", () => {
+  it("projects three increasing Forecast+ go-live dates (history is caption-only)", () => {
     const rec = recommendGoLive({
       scope: DEFAULT_SCOPE,
       kickoffDate: kickoff,
       samples: STANDARD_HISTORY,
     });
+    const model = forecastImplementation(DEFAULT_SCOPE, kickoff);
     expect(rec.goLiveSource).toBe("historical-tier");
     expect(rec.scenarios).toHaveLength(3);
+    expect(rec.scenarios.map((s) => s.calendarDays)).toEqual(model.scenarios.map((s) => s.calendarDays));
     const [opt, typ, pes] = rec.scenarios;
     expect(opt!.scenario).toBe("OPTIMISTIC");
     expect(typ!.scenario).toBe("TYPICAL");
@@ -95,6 +97,7 @@ describe("recommendGoLive", () => {
     expect(opt!.calendarDays).toBeLessThan(typ!.calendarDays);
     expect(typ!.calendarDays).toBeLessThanOrEqual(pes!.calendarDays);
     expect(opt!.goLiveDate.getTime()).toBeLessThan(pes!.goLiveDate.getTime());
+    expect(historicalCaption(rec.historical)).toMatch(/Forecast\+/);
     expect(historicalCaption(rec.historical)).toMatch(/5 past standard/i);
     expect(historicalCaption(rec.historical)).toMatch(/SENSORI/);
   });
@@ -108,10 +111,10 @@ describe("recommendGoLive", () => {
     const model = forecastImplementation(DEFAULT_SCOPE, kickoff);
     expect(rec.goLiveSource).toBe("model");
     expect(rec.scenarios.map((s) => s.calendarDays)).toEqual(model.scenarios.map((s) => s.calendarDays));
-    expect(historicalCaption(rec.historical)).toMatch(/Forecast\+ discovery model/);
+    expect(historicalCaption(rec.historical)).toMatch(/Forecast\+/);
   });
 
-  it("keeps the formula phase lengths as modelCalendarDays when history wins", () => {
+  it("keeps formula calendar days even when past-site bands are available", () => {
     const rec = recommendGoLive({
       scope: DEFAULT_SCOPE,
       kickoffDate: kickoff,
@@ -119,7 +122,7 @@ describe("recommendGoLive", () => {
     });
     const model = forecastImplementation(DEFAULT_SCOPE, kickoff);
     expect(rec.scenarios[1]!.modelCalendarDays).toBe(model.scenarios[1]!.calendarDays);
-    expect(rec.scenarios[1]!.calendarDays).not.toBe(rec.scenarios[1]!.modelCalendarDays);
+    expect(rec.scenarios[1]!.calendarDays).toBe(rec.scenarios[1]!.modelCalendarDays);
   });
 
   it("lengthens typical weekly hours when custom hrs/wk is set", () => {

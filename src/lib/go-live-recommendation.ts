@@ -1,20 +1,16 @@
 /**
  * Roster Forecast+ go-live recommendation.
  *
- * Standalone Prism Forecast+ projected kickoff → go-live under three
- * scenarios (optimistic / typical / pessimistic). PATH already ports the
- * discovery-responsiveness formula in `estimator.ts`. Add-to-roster also
- * overlays **historical duration bands** from completed PATH / Prism-imported
- * implementations (the Analysis table), so the date Alexander commits is
- * grounded in past sites — not a blank field.
+ * Standalone Prism Forecast+ projects kickoff → go-live from the discovery
+ * formula in `estimator.ts` (Optimistic / Typical / Pessimistic = how fast
+ * the customer returns discovery, not historical percentiles). Hours are the
+ * same Prism config + training total on every band; a longer band only
+ * dilutes hrs/wk.
  *
- * Bands (after Analysis exclusions, default SENSORI / MHC / LECHRIS):
- *   Optimistic = 25th percentile of kickoff → actual go-live
- *   Typical    = 50th percentile (median)
- *   Pessimistic = 75th percentile
- *
- * Same-tier history is preferred when the sample is large enough; otherwise
- * all primary (non-excluded) completed sites. Too few rows → formula fallback.
+ * Historical P25 / median / P75 of completed sites stay as a caption so
+ * Analysis outliers remain visible — they do not replace the Forecast+ date.
+ * (v1.12.4 briefly used those percentiles as the committed go-live, which
+ * diverged from Prism Forecast+.)
  */
 
 import type { ComplexityTier, DiscoveryScenario } from "@/db/schema";
@@ -39,19 +35,13 @@ import {
 
 export { parseDiscoveryScenario };
 
-/** Need this many completed durations before history replaces the formula. */
+/** Need this many completed durations before past-site stats appear in the caption. */
 export const HISTORICAL_BAND_MIN_SAMPLE = 3;
 
 export const HISTORICAL_SCENARIO_PERCENTILES: Record<DiscoveryScenario, number> = {
   OPTIMISTIC: 0.25,
   TYPICAL: 0.5,
   PESSIMISTIC: 0.75,
-};
-
-export const HISTORICAL_SCENARIO_LABELS: Record<DiscoveryScenario, string> = {
-  OPTIMISTIC: "Optimistic · 25th percentile of past kickoff → go-live",
-  TYPICAL: "Typical · median of past kickoff → go-live",
-  PESSIMISTIC: "Pessimistic · 75th percentile of past kickoff → go-live",
 };
 
 export type DurationSample = {
@@ -192,20 +182,13 @@ export function historicalDurationBands(
   return fromPool(usable, "all") ?? empty("none", usable.length);
 }
 
-function daysForScenario(bands: HistoricalDurationBands, scenario: DiscoveryScenario): number | null {
-  if (scenario === "OPTIMISTIC") return bands.optimisticDays;
-  if (scenario === "PESSIMISTIC") return bands.pessimisticDays;
-  return bands.typicalDays;
-}
-
 function scenarioHours(
   scope: ImplementationScope,
   kickoffDate: Date,
   calendarDays: number,
   customHoursPerWeek: number | null | undefined,
 ): { estimatedHours: number; weeklyHours: number } {
-  const estimatedWeeks = Math.max(1, Math.round(calendarDays / 7));
-  const estimatedHours = estimateHours(scope, estimatedWeeks).totalHours;
+  const estimatedHours = estimateHours(scope).totalHours;
   const goLiveDate = addDays(kickoffDate, calendarDays);
   const weeklyHours =
     customHoursPerWeek != null && customHoursPerWeek > 0
@@ -229,8 +212,8 @@ function scenarioHours(
 }
 
 /**
- * Formula Forecast+ scenarios, with go-live dates replaced by historical
- * P25/P50/P75 when Analysis has enough completed sites.
+ * Formula Forecast+ scenarios (same dates as Prism). Historical bands are
+ * attached for captions only.
  */
 export function recommendGoLive(opts: {
   scope: ImplementationScope;
@@ -253,32 +236,25 @@ export function recommendGoLive(opts: {
     : "model";
 
   const scenarios: RecommendedScenario[] = model.scenarios.map((s) => {
-    const historicalDays = useHistory ? daysForScenario(historical, s.scenario) : null;
-    const calendarDays = historicalDays ?? s.calendarDays;
     const { estimatedHours, weeklyHours } = scenarioHours(
       opts.scope,
       opts.kickoffDate,
-      calendarDays,
+      s.calendarDays,
       opts.customHoursPerWeek,
     );
     return {
       ...s,
-      label: useHistory ? HISTORICAL_SCENARIO_LABELS[s.scenario] : SCENARIO_LABELS[s.scenario],
+      label: SCENARIO_LABELS[s.scenario],
       modelCalendarDays: s.calendarDays,
-      calendarDays,
-      goLiveDate: addDays(opts.kickoffDate, calendarDays),
       estimatedHours,
       weeklyHours,
     };
   });
 
-  const typical = scenarios.find((s) => s.scenario === "TYPICAL") ?? scenarios[1]!;
-  const typicalWeeks = Math.max(1, Math.round(typical.calendarDays / 7));
-
   return {
     scope: opts.scope,
     complexityTier: tier,
-    hours: estimateHours(opts.scope, typicalWeeks),
+    hours: estimateHours(opts.scope),
     scenarios,
     goLiveSource,
     historical,
@@ -309,11 +285,15 @@ export function kickoffOrToday(kickoff: Date | null | undefined, now = new Date(
 }
 
 export function historicalCaption(bands: HistoricalDurationBands): string {
+  const formula =
+    "Projected go-live is Forecast+ (discovery + 21d config + training), same as Prism — not the playbook day count.";
   if (bands.source === "none") {
     const need = HISTORICAL_BAND_MIN_SAMPLE;
-    return bands.n === 0
-      ? `Not enough completed history yet (need ${need}+ after exclusions). Using the Forecast+ discovery model.`
-      : `Only ${bands.n} completed site${bands.n === 1 ? "" : "s"} after exclusions (need ${need}+). Using the Forecast+ discovery model.`;
+    const sample =
+      bands.n === 0
+        ? `Not enough completed history yet to quote past-site duration (need ${need}+ after exclusions).`
+        : `Only ${bands.n} completed site${bands.n === 1 ? "" : "s"} after exclusions (need ${need}+) for a past-site quote.`;
+    return `${formula} ${sample}`;
   }
   const pool =
     bands.source === "tier" && bands.complexityTier
@@ -324,7 +304,11 @@ export function historicalCaption(bands: HistoricalDurationBands): string {
       ? ` Excludes ${bands.excludedCodes.join(", ") || `${bands.excludedCount} outliers`}.`
       : "";
   const avg = bands.meanDays != null ? ` Average duration ${bands.meanDays}d.` : "";
-  return `Based on ${pool} (kickoff → actual go-live, P25 / median / P75).${avg}${excl}`;
+  const bandsTxt =
+    bands.optimisticDays != null && bands.typicalDays != null && bands.pessimisticDays != null
+      ? ` Past kickoff → actual: P25 ${bands.optimisticDays}d / median ${bands.typicalDays}d / P75 ${bands.pessimisticDays}d (reference only).`
+      : "";
+  return `${formula} For reference, ${pool}.${avg}${bandsTxt}${excl}`;
 }
 
 export { DISCOVERY_SCENARIOS };

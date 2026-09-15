@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.1";
+export const APP_VERSION = "1.13.2";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.2",
+    date: "2026-09-15",
+    summary:
+      "Forecast+ staff hours and projected go-live now match standalone Prism Forecast+ for the same scope (config weights + training in the total; discovery + 21d config + training calendar).",
+    highlights: [
+      "New project, Add to roster, and Edit engagement use Prism Forecast+ weights: 30 min/user, 25 min/form page, org 2h / billing 3h / other 2h, state compliance +2h, minimal org +10h, training 2.5h per session (counted in estimated staff time).",
+      "Typical go-live is kickoff + 14d discovery + 21d config + training (8 sessions at 2/week → 30d including the 2-day buffer) = 65 calendar days. Optimistic / Typical / Pessimistic are discovery-responsiveness bands (10 / 14 / 21d), not past-site percentiles.",
+      "Past completed sites still appear as a reference caption (P25 / median / P75 after SENSORI / MHC / LECHRIS exclusions). They no longer replace the Forecast+ date — that was why PATH showed ~52d / ~27h while Prism showed 65d / 61.2h on the TEST Implementation.",
+      "Playbook template duration (e.g. 32 days) still scales task due dates when you commit a window; it is not the Forecast+ hour or go-live formula.",
+      "Re-save an engagement or create a new project to refresh stored estimated hours. Existing roster rows keep their previous hour total until saved.",
+    ],
+  },
   {
     version: "1.13.1",
     date: "2026-09-15",

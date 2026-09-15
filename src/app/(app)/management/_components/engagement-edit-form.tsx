@@ -219,7 +219,7 @@ export function EngagementEditForm({
           <Field
             label="Custom hrs/wk"
             htmlFor="customHoursPerWeek"
-            hint="Leave blank to use estimator total."
+            hint="Leave blank to spread the Forecast+ hour total across kickoff → go-live."
           >
             <input
               id="customHoursPerWeek"
@@ -251,8 +251,9 @@ export function EngagementEditForm({
         <p className="text-[12px] text-ink-3">
           Kickoff and current go-live drive the schedule — incomplete phase/task dates rescale when
           this window changes. A slip must push go-live (new date or +days), not just add a note.
-          Picking Optimistic / Typical / Pessimistic fills current go-live from past sites (or the
-          Forecast+ model if history is thin).
+          Picking Optimistic / Typical / Pessimistic fills current go-live from the Forecast+
+          discovery formula (same as Prism: discovery + 21d config + training). Past-site
+          averages are shown as reference only.
         </p>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Kickoff" htmlFor="kickoffDate">
@@ -428,7 +429,7 @@ export function EngagementEditForm({
               }
               className="size-4 rounded border-border-strong"
             />
-            Minimal org structure
+            Minimal org structure (+10h)
           </label>
         </div>
         <div>

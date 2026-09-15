@@ -85,7 +85,7 @@ export function NewProjectForm({
   const isPrismPath = playbookPath === "RCM_PRISM";
 
   const forecast = useMemo(() => {
-    const kickoff = startDate ? new Date(`${startDate}T00:00:00`) : new Date();
+    const kickoff = startDate ? new Date(`${startDate}T12:00:00.000Z`) : new Date();
     return forecastImplementation(scope, kickoff);
   }, [scope, startDate]);
 
@@ -223,7 +223,7 @@ export function NewProjectForm({
         <Card>
           <CardHeader
             title="Scope this implementation"
-            subtitle="Estimates staff hours and a go-live date from what you know about the practice"
+            subtitle="Estimates staff hours (config + training) and a go-live date the same way Prism Forecast+ does"
             action={
               <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-ink-2">
                 <input
@@ -315,7 +315,7 @@ export function NewProjectForm({
                     }
                     className="size-4 shrink-0 accent-[var(--color-brand)]"
                   />
-                  Minimal org structure (+1h/wk)
+                  Minimal org structure (+10h)
                 </label>
               </div>
 
@@ -339,16 +339,22 @@ export function NewProjectForm({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2">
-                <span className="text-[12.5px] text-ink-2">Estimated staff time</span>
-                <span className="flex items-center gap-2">
-                  <span className="text-[13.5px] font-semibold text-ink">
-                    {forecast.hours.totalHours}h
+              <div className="space-y-1 rounded-lg bg-surface-2 px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12.5px] text-ink-2">Estimated staff time</span>
+                  <span className="flex items-center gap-2">
+                    <span className="text-[13.5px] font-semibold text-ink">
+                      {forecast.hours.totalHours}h
+                    </span>
+                    <Badge tone={tierTone[forecast.complexityTier]}>
+                      {forecast.complexityTier.charAt(0) + forecast.complexityTier.slice(1).toLowerCase()}
+                    </Badge>
                   </span>
-                  <Badge tone={tierTone[forecast.complexityTier]}>
-                    {forecast.complexityTier.charAt(0) + forecast.complexityTier.slice(1).toLowerCase()}
-                  </Badge>
-                </span>
+                </div>
+                <div className="text-[11.5px] tabular-nums text-ink-3">
+                  {forecast.hours.configHours.toFixed(1)}h config + {forecast.hours.trainingHours.toFixed(1)}h
+                  training · same total as Prism Forecast+
+                </div>
               </div>
             </div>
           )}
@@ -358,7 +364,7 @@ export function NewProjectForm({
       <div className="space-y-5">
         {scoped ? (
           <Card>
-            <CardHeader title="Projected go-live" subtitle="Pick a discovery-responsiveness scenario" />
+            <CardHeader title="Projected go-live" subtitle="Pick a discovery-responsiveness band — same 10 / 14 / 21d + 21d config + training as Prism Forecast+" />
             <div className="space-y-2 p-4">
               {forecast.scenarios.map((s) => (
                 <label
@@ -388,7 +394,9 @@ export function NewProjectForm({
                     <span className="block text-[13px] font-semibold text-ink">
                       {fmtDate(s.goLiveDate)}
                     </span>
-                    <span className="block text-[11.5px] text-ink-3">{s.calendarDays}d</span>
+                    <span className="block text-[11.5px] text-ink-3">
+                      {s.calendarDays}d · {forecast.hours.totalHours}h staff
+                    </span>
                   </span>
                 </label>
               ))}

@@ -289,7 +289,7 @@ export function EngagementCreateForm({
                 checked={scope.minimalOrgStructure}
                 onChange={(e) => setScope((s) => ({ ...s, minimalOrgStructure: e.target.checked }))}
               />
-              Minimal org structure
+              Minimal org structure (+10h)
             </label>
           </div>
         </section>
@@ -303,8 +303,9 @@ export function EngagementCreateForm({
           <GoLiveSourceBadge recommendation={recommendation} />
         </div>
         <p className="mt-1 text-[12.5px] text-ink-3">
-          Same three scenarios as Prism Forecast+. Go-live uses past completed sites when Analysis has
-          enough history; hours still use Prism weights. Pipeline stays off department capacity.
+          Same three discovery bands as Prism Forecast+. Go-live is kickoff + discovery + 21d
+          config + training. Est. hours are Prism config weights plus training sessions (not
+          playbook duration). Pipeline stays off department capacity.
         </p>
         <div className="mt-4 space-y-2">
           <div className="flex items-center justify-between text-[13px]">
@@ -315,7 +316,12 @@ export function EngagementCreateForm({
           </div>
           <div className="flex items-center justify-between text-[13px]">
             <span className="text-ink-3">Est. hours</span>
-            <span className="tabular-nums text-ink">{(chosen?.estimatedHours ?? recommendation.hours.totalHours).toFixed(1)}h</span>
+            <span className="tabular-nums text-ink">
+              {(chosen?.estimatedHours ?? recommendation.hours.totalHours).toFixed(1)}h
+              {recommendation.hours.trainingHours > 0
+                ? ` (${recommendation.hours.configHours.toFixed(1)} config + ${recommendation.hours.trainingHours.toFixed(1)} training)`
+                : ""}
+            </span>
           </div>
           <div className="flex items-center justify-between text-[13px]">
             <span className="text-ink-3">Counts toward load</span>
