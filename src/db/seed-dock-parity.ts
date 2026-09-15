@@ -125,7 +125,7 @@ async function loadAllInChunks<T>(
 async function insertInChunks<T extends Record<string, unknown>>(
   table: typeof templateTaskChecklistItems | typeof templateTaskAttachments,
   rows: T[],
-  chunkSize = 100,
+  chunkSize = 40,
 ) {
   if (rows.length === 0) return;
   for (let i = 0; i < rows.length; i += chunkSize) {
@@ -211,10 +211,17 @@ export async function applyTemplateDockExtras() {
     }
   }
 
-  await insertInChunks(templateTaskChecklistItems, checklistInserts);
-  await insertInChunks(templateTaskAttachments, attachmentInserts);
-  for (let i = 0; i < descriptionUpdates.length; i += 50) {
-    const chunk = descriptionUpdates.slice(i, i + 50);
+  const confirmedIds = new Set(
+    (await db.query.templateTasks.findMany({ columns: { id: true } })).map((t) => t.id),
+  );
+  const checklistInsertsLive = checklistInserts.filter((r) => confirmedIds.has(r.templateTaskId));
+  const attachmentInsertsLive = attachmentInserts.filter((r) => confirmedIds.has(r.templateTaskId));
+  const descriptionUpdatesLive = descriptionUpdates.filter((r) => confirmedIds.has(r.id));
+
+  await insertInChunks(templateTaskChecklistItems, checklistInsertsLive);
+  await insertInChunks(templateTaskAttachments, attachmentInsertsLive);
+  for (let i = 0; i < descriptionUpdatesLive.length; i += 50) {
+    const chunk = descriptionUpdatesLive.slice(i, i + 50);
     await Promise.all(
       chunk.map((row) =>
         db.update(templateTasks).set({ description: row.description }).where(eq(templateTasks.id, row.id)),
@@ -223,7 +230,7 @@ export async function applyTemplateDockExtras() {
   }
 
   console.log(
-    `  ✓ template extras: ${checklistInserts.length} checklist items, ${attachmentInserts.length} default attachments, ${descriptionUpdates.length} playbook descriptions`,
+    `  ✓ template extras: ${checklistInsertsLive.length} checklist items, ${attachmentInsertsLive.length} default attachments, ${descriptionUpdatesLive.length} playbook descriptions`,
   );
 }
 
