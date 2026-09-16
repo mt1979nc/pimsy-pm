@@ -155,12 +155,11 @@ const createProjectSchema = z.object({
   description: z.string().trim().max(5000).optional(),
   hubspotDealUrl: z.string().optional(),
   crmAcronym: z.string().trim().max(40).optional(),
+  crmKey: z.string().trim().max(120).optional(),
+  bookmarkUrl: z.string().trim().max(500).optional(),
   scopeJson: z.string().optional(),
   discoveryScenario: z.enum(["OPTIMISTIC", "TYPICAL", "PESSIMISTIC"]).optional(),
   skipUsFederalHolidays: z.string().optional(),
-  crmAcronym: z.string().trim().max(40).optional(),
-  crmKey: z.string().trim().max(120).optional(),
-  bookmarkUrl: z.string().trim().max(500).optional(),
 });
 
 async function nextProjectCode(type: string) {
@@ -218,12 +217,11 @@ export async function createProject(
     description: formData.get("description")?.toString() || undefined,
     hubspotDealUrl: formData.get("hubspotDealUrl")?.toString() || undefined,
     crmAcronym: formData.get("crmAcronym")?.toString() || undefined,
+    crmKey: formData.get("crmKey")?.toString() || undefined,
+    bookmarkUrl: formData.get("bookmarkUrl")?.toString() || undefined,
     scopeJson: formData.get("scopeJson")?.toString() || undefined,
     discoveryScenario: (formData.get("discoveryScenario")?.toString() as never) || undefined,
     skipUsFederalHolidays: formData.get("skipUsFederalHolidays")?.toString() || undefined,
-    crmAcronym: formData.get("crmAcronym")?.toString() || undefined,
-    crmKey: formData.get("crmKey")?.toString() || undefined,
-    bookmarkUrl: formData.get("bookmarkUrl")?.toString() || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
