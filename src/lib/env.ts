@@ -114,4 +114,12 @@ export const env = {
   get PIMSY_AUDIT_FEED_WINDOW_DAYS() {
     return optional("PIMSY_AUDIT_FEED_WINDOW_DAYS", "14");
   },
+  /**
+   * Bearer token for POST/GET /api/cron/task-due-reminders (assignee
+   * due-soon / overdue pings). Same secret as the customer digest job
+   * (PR #39) when both are deployed. Unset → those routes 404.
+   */
+  get CRON_SECRET() {
+    return optional("CRON_SECRET");
+  },
 };

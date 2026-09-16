@@ -25,8 +25,10 @@ export type PortalListTask = {
   ownerSide: "INTERNAL" | "CUSTOMER";
   parentTaskId: string | null;
   assigneeId?: string | null;
+  assigneeIds?: string[];
   notApplicable?: boolean | null;
   assignee?: { id: string; name: string | null; image?: string | null } | null;
+  assignees?: Array<{ id: string; name: string | null; image?: string | null }>;
   commentCount?: number;
 };
 

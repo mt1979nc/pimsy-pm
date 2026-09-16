@@ -127,6 +127,13 @@ export function PortalContactsPanel({
               </select>
             </Field>
           </div>
+          <Field label="Project role" htmlFor="contactMemberRole">
+            <select id="contactMemberRole" name="memberRole" defaultValue="CUSTOMER_CONTACT" className={inputClass}>
+              <option value="CUSTOMER_PROJECT_LEAD">Project lead — all customer tasks</option>
+              <option value="CUSTOMER_BILLING">Billing — customer billing tasks</option>
+              <option value="CUSTOMER_CONTACT">Team member</option>
+            </select>
+          </Field>
 
           <p className="text-[12px] leading-relaxed text-ink-3">
             They&apos;ll get a PATH invite email with a one-click set-password link when Resend

@@ -16,6 +16,7 @@ import {
   planCustomerDelete,
 } from "@/lib/delete-records";
 import { audit } from "@/lib/audit";
+import { autoAssignForProjectRole } from "@/lib/task-assignees";
 import type { ActionState } from "./messages";
 import {
   parseExcludeFromAnalytics,
@@ -207,6 +208,7 @@ const inviteSchema = z.object({
   title: z.string().trim().max(120).optional(),
   phone: z.string().trim().max(40).optional(),
   projectId: z.string().optional(),
+  memberRole: z.enum(["CUSTOMER_CONTACT", "CUSTOMER_PROJECT_LEAD", "CUSTOMER_BILLING"]).optional(),
 });
 
 /**
@@ -228,6 +230,7 @@ export async function inviteCustomerContact(
     title: formData.get("title")?.toString() || undefined,
     phone: formData.get("phone")?.toString() || undefined,
     projectId: formData.get("projectId")?.toString() || undefined,
+    memberRole: formData.get("memberRole")?.toString() || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
@@ -245,12 +248,22 @@ export async function inviteCustomerContact(
     phone: d.phone,
     actor,
     projectId: d.projectId,
+    memberRole: d.memberRole,
     force,
   });
   if (!result.ok) return { error: result.error };
 
   if (result.refuseReason === "inactive") {
     return { error: "That contact's access is revoked. Restore access first." };
+  }
+
+  if (d.projectId && result.userId) {
+    await autoAssignForProjectRole({
+      projectId: d.projectId,
+      userId: result.userId,
+      role: d.memberRole ?? "CUSTOMER_CONTACT",
+      actorId: actor.id,
+    });
   }
 
   if (result.created || result.inviteUrl) {

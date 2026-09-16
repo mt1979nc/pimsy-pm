@@ -13,7 +13,6 @@ import {
   VisibilityBadge,
   TaskStatusBadge,
   PriorityBadge,
-  Avatar,
 } from "@/components/ui";
 import { TaskComments } from "@/components/task-comments";
 import { AttachmentList, AddAttachment } from "@/components/attachments";
@@ -54,6 +53,9 @@ export default async function TaskDetailPage({
     where: and(eq(tasks.id, taskId), eq(tasks.projectId, id)),
     with: {
       assignee: { columns: { id: true, name: true, email: true, image: true, role: true, title: true } },
+      assignees: {
+        with: { user: { columns: { id: true, name: true, email: true, image: true, role: true, title: true } } },
+      },
       phase: { columns: { id: true, name: true } },
       project: {
         columns: {
@@ -401,6 +403,9 @@ export default async function TaskDetailPage({
               <AssigneePicker
                 taskId={task.id}
                 current={task.assignee ?? null}
+                assignees={(task.assignees ?? [])
+                  .map((a) => a.user)
+                  .filter((u): u is NonNullable<typeof u> => Boolean(u))}
                 staff={staff}
                 contacts={contacts}
                 customerName={task.project.customerAccount?.name}
@@ -473,22 +478,6 @@ export default async function TaskDetailPage({
               <DeleteTaskControl taskId={task.id} projectId={id} title={task.title} />
             </div>
           </Card>
-
-          {task.assignee ? (
-            <Card>
-              <CardHeader title="Owner" />
-              <div className="flex items-center gap-3 px-4 py-3">
-                <Avatar name={task.assignee.name} image={task.assignee.image} size={32} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13.5px] font-medium text-ink">
-                    {task.assignee.name}
-                  </div>
-                  <div className="truncate text-[12px] text-ink-3">{task.assignee.email}</div>
-                </div>
-                {task.assignee.role === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
-              </div>
-            </Card>
-          ) : null}
         </div>
       </div>
     </div>

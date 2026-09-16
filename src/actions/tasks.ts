@@ -5,7 +5,7 @@ import { and, eq, inArray, isNull, desc } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { tasks, taskComments, milestones, projects, users } from "@/db/schema";
+import { tasks, taskComments, milestones, projects, users, projectMembers, phases } from "@/db/schema";
 import { requireUser } from "@/lib/guard";
 import {
   assertProjectAccess,
@@ -23,9 +23,16 @@ import { audit } from "@/lib/audit";
 import { fmtDate } from "@/lib/dates";
 import { setTaskNotApplicable } from "@/lib/playbook";
 import { isSpecialistSubtask, liveTaskCreateDefaults } from "@/lib/task-visibility";
+import { customerMayChangeAssignee } from "@/lib/task-role-match";
 import { exposePhaseFromCompletedTask } from "@/lib/expose-phase";
 import { applyTaskMove } from "@/lib/task-relink";
 import { syncMilestonesFromTaskCompletion } from "@/lib/milestone-rollup";
+import {
+  addAssigneesToTask,
+  newTaskAssigneeIds,
+  removeAssigneeFromTask,
+  taskAssigneeIds,
+} from "@/lib/task-assignees";
 import type { ActionState } from "./messages";
 
 const optionalDate = z
@@ -123,6 +130,22 @@ export async function createTask(
       })
       .returning({ id: tasks.id });
 
+    const assigned = await resolveCreateAssignees({
+      projectId: d.projectId,
+      phaseId,
+      title: d.title,
+      ownerSide,
+      explicitAssigneeId: d.assigneeId || null,
+    });
+    if (assigned.length > 0) {
+      await addAssigneesToTask({
+        taskId: task.id,
+        userIds: assigned,
+        actorId: actor.id,
+        source: d.assigneeId ? "MANUAL" : "AUTO_ROLE",
+      });
+    }
+
     await refreshProjectCounters(d.projectId);
     await syncMilestonesFromTaskCompletion(d.projectId);
     await audit({
@@ -134,9 +157,9 @@ export async function createTask(
       metadata: { projectId: d.projectId, visibility, ownerSide, parentTaskId },
     });
 
-    if (d.assigneeId && d.assigneeId !== actor.id) {
+    if (assigned.some((id) => id !== actor.id)) {
       await notify({
-        userIds: [d.assigneeId],
+        userIds: assigned.filter((id) => id !== actor.id),
         type: "TASK_ASSIGNED",
         title: `You were assigned: ${d.title}`,
         linkUrl: `/projects/${d.projectId}/tasks`,
@@ -171,6 +194,41 @@ async function nextSiblingOrder(
     orderBy: [desc(tasks.order)],
   });
   return (sibling?.order ?? -1) + 1;
+}
+
+async function resolveCreateAssignees(opts: {
+  projectId: string;
+  phaseId: string | null;
+  title: string;
+  ownerSide: "INTERNAL" | "CUSTOMER";
+  explicitAssigneeId: string | null;
+}): Promise<string[]> {
+  if (opts.explicitAssigneeId) return [opts.explicitAssigneeId];
+  const [project, members, phase] = await Promise.all([
+    db.query.projects.findFirst({
+      where: eq(projects.id, opts.projectId),
+      columns: { leadId: true },
+    }),
+    db.query.projectMembers.findMany({
+      where: eq(projectMembers.projectId, opts.projectId),
+      columns: { userId: true, role: true },
+    }),
+    opts.phaseId
+      ? db.query.phases.findFirst({
+          where: eq(phases.id, opts.phaseId),
+          columns: { name: true },
+        })
+      : Promise.resolve(null),
+  ]);
+  const assignments: Record<string, string> = {};
+  for (const m of members) assignments[m.role] = m.userId;
+  if (project?.leadId) assignments.LEAD = project.leadId;
+  return newTaskAssigneeIds({
+    task: { title: opts.title, ownerSide: opts.ownerSide },
+    phaseName: phase?.name ?? null,
+    roleAssignments: assignments,
+    fallbackLeadId: project?.leadId ?? null,
+  });
 }
 
 async function loadTaskForActor(actor: Actor, taskId: string) {
@@ -257,6 +315,7 @@ export async function setTaskStatus(taskId: string, status: string) {
     // that isn't the person who just ticked it.
     const audience = new Set<string>();
     if (project?.leadId) audience.add(project.leadId);
+    for (const id of await taskAssigneeIds(taskId)) audience.add(id);
     if (task.assigneeId) audience.add(task.assigneeId);
 
     // A customer completing their own action item is the single event an
@@ -335,12 +394,20 @@ export async function updateTask(
       ...(d.title ? { title: d.title } : {}),
       ...(d.description !== undefined ? { description: d.description || null } : {}),
       ...(d.priority ? { priority: d.priority } : {}),
-      ...(d.assigneeId !== undefined ? { assigneeId: d.assigneeId || null } : {}),
       ...(d.phaseId !== undefined ? { phaseId: d.phaseId || null } : {}),
       dueDate: d.dueDate,
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, d.taskId));
+
+  if (d.assigneeId) {
+    await addAssigneesToTask({
+      taskId: d.taskId,
+      userIds: [d.assigneeId],
+      actorId: actor.id,
+      source: "MANUAL",
+    });
+  }
 
   await audit({
     actor,
@@ -546,6 +613,7 @@ export async function addTaskComment(
     columns: { id: true, leadId: true, name: true },
   });
   const audience = new Set<string>();
+  for (const id of await taskAssigneeIds(taskId)) audience.add(id);
   if (task.assigneeId) audience.add(task.assigneeId);
   if (project?.leadId) audience.add(project.leadId);
 
@@ -586,93 +654,146 @@ export async function addTaskComment(
 }
 
 /**
- * Assign a task to somebody — including a named contact at the customer.
- *
- * Assigning to a customer contact is the point of this: "the practice" is not
- * a person and work addressed to everyone gets done by no one. The contact
- * must belong to this project's customer account, and the task becomes a
- * customer-side, customer-visible item as a consequence.
+ * Add someone to a task. Additive — does not wipe other assignees.
+ * Customers may add their own teammates on customer-owned SHARED tasks.
  */
-export async function assignTask(taskId: string, userId: string | null) {
+export async function addTaskAssignee(taskId: string, userId: string) {
   const actor = await requireUser();
-  if (isCustomer(actor)) throw new ForbiddenError("Only your implementation team can reassign work.");
-
   const task = await loadTaskForActor(actor, taskId);
-  await assertProjectWrite(actor, task.projectId);
-
-  if (!userId) {
-    await db
-      .update(tasks)
-      .set({ assigneeId: null, updatedAt: new Date() })
-      .where(eq(tasks.id, taskId));
-    revalidatePath(`/projects/${task.projectId}/tasks/${taskId}`);
-    revalidatePath(`/projects/${task.projectId}/tasks`);
-    return;
-  }
-
   const target = await db.query.users.findFirst({
     where: eq(users.id, userId),
     columns: { id: true, name: true, role: true, customerAccountId: true, isActive: true },
   });
   if (!target || !target.isActive) throw new NotFoundError("That person is not available.");
 
-  const patch: Record<string, unknown> = { assigneeId: target.id, updatedAt: new Date() };
-
-  if (target.role === "CUSTOMER") {
-    const project = await db.query.projects.findFirst({
-      where: eq(projects.id, task.projectId),
-      columns: { customerAccountId: true },
+  if (isCustomer(actor)) {
+    const member = await db.query.projectMembers.findFirst({
+      where: and(eq(projectMembers.projectId, task.projectId), eq(projectMembers.userId, target.id)),
     });
-    if (!project?.customerAccountId || target.customerAccountId !== project.customerAccountId) {
-      throw new ForbiddenError("That contact belongs to a different customer.");
+    const gate = customerMayChangeAssignee({
+      taskOwnerSide: task.ownerSide,
+      taskVisibility: task.visibility,
+      targetRole: target.role,
+      actorAccountId: actor.customerAccountId,
+      targetAccountId: target.customerAccountId,
+      targetIsProjectMember: Boolean(member),
+    });
+    if (!gate.ok) throw new ForbiddenError(gate.reason);
+  } else {
+    await assertProjectWrite(actor, task.projectId);
+    if (target.role === "CUSTOMER") {
+      const project = await db.query.projects.findFirst({
+        where: eq(projects.id, task.projectId),
+        columns: { customerAccountId: true },
+      });
+      if (!project?.customerAccountId || target.customerAccountId !== project.customerAccountId) {
+        throw new ForbiddenError("That contact belongs to a different customer.");
+      }
     }
-    // Customer-owned work must be visible to the customer, or nobody does it.
-    patch.ownerSide = "CUSTOMER";
-    patch.visibility = "SHARED";
   }
 
-  await db.update(tasks).set(patch).where(eq(tasks.id, taskId));
-
-  await audit({
-    actor,
-    action: "task.assigned",
-    entityType: "task",
-    entityId: taskId,
-    summary: `${task.title} → ${target.name ?? target.id}`,
-    metadata: { projectId: task.projectId, assigneeRole: target.role },
+  const { added } = await addAssigneesToTask({
+    taskId,
+    userIds: [target.id],
+    actorId: actor.id,
+    source: "MANUAL",
   });
 
-  if (target.id !== actor.id) {
-    const project = await db.query.projects.findFirst({
-      where: eq(projects.id, task.projectId),
-      columns: { name: true, code: true },
-    });
-    const facts = [
-      { name: "Project", value: `${project?.name ?? "—"} (${project?.code ?? "—"})` },
-      { name: "Assigned by", value: actor.name ?? actor.email ?? "—" },
-    ];
-    if (task.dueDate) facts.push({ name: "Due", value: fmtDate(task.dueDate) });
+  if (target.role === "CUSTOMER") {
+    await db
+      .update(tasks)
+      .set({ ownerSide: "CUSTOMER", visibility: "SHARED", updatedAt: new Date() })
+      .where(eq(tasks.id, taskId));
+  }
 
-    await notify({
-      userIds: [target.id],
-      type: "TASK_ASSIGNED",
-      title: `You were assigned: ${task.title}`,
-      body:
-        target.role === "CUSTOMER"
-          ? "This is an action item for your practice. Open it to see what's needed and mark it done when it's finished."
-          : undefined,
-      facts,
-      linkUrl: `/projects/${task.projectId}/tasks/${taskId}`,
-      portalLinkUrl: `/portal/projects/${task.projectId}/tasks/${taskId}`,
-      ctaLabel: "Open the task",
-      email: true,
+  if (added.length > 0) {
+    await audit({
+      actor,
+      action: "task.assigned",
+      entityType: "task",
+      entityId: taskId,
+      summary: `${task.title} + ${target.name ?? target.id}`,
+      metadata: { projectId: task.projectId, assigneeRole: target.role },
     });
+    if (target.id !== actor.id) {
+      const project = await db.query.projects.findFirst({
+        where: eq(projects.id, task.projectId),
+        columns: { name: true, code: true },
+      });
+      const facts = [
+        { name: "Project", value: `${project?.name ?? "—"} (${project?.code ?? "—"})` },
+        { name: "Assigned by", value: actor.name ?? actor.email ?? "—" },
+      ];
+      if (task.dueDate) facts.push({ name: "Due", value: fmtDate(task.dueDate) });
+      await notify({
+        userIds: [target.id],
+        type: "TASK_ASSIGNED",
+        title: `You were assigned: ${task.title}`,
+        body:
+          target.role === "CUSTOMER"
+            ? "This is an action item for your practice. Open it to see what's needed and mark it done when it's finished."
+            : undefined,
+        facts,
+        linkUrl: `/projects/${task.projectId}/tasks/${taskId}`,
+        portalLinkUrl: `/portal/projects/${task.projectId}/tasks/${taskId}`,
+        ctaLabel: "Open the task",
+        email: true,
+      });
+    }
   }
 
   revalidatePath(`/projects/${task.projectId}/tasks/${taskId}`);
   revalidatePath(`/projects/${task.projectId}/tasks`);
+  revalidatePath(`/portal/projects/${task.projectId}/tasks/${taskId}`);
   revalidatePath(`/portal/projects/${task.projectId}`);
   revalidatePath("/my-work");
+}
+
+export async function removeTaskAssignee(taskId: string, userId: string) {
+  const actor = await requireUser();
+  const task = await loadTaskForActor(actor, taskId);
+
+  if (isCustomer(actor)) {
+    const target = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { role: true, customerAccountId: true },
+    });
+    const member = target
+      ? await db.query.projectMembers.findFirst({
+          where: and(eq(projectMembers.projectId, task.projectId), eq(projectMembers.userId, userId)),
+        })
+      : null;
+    const gate = customerMayChangeAssignee({
+      taskOwnerSide: task.ownerSide,
+      taskVisibility: task.visibility,
+      targetRole: target?.role ?? "SPECIALIST",
+      actorAccountId: actor.customerAccountId,
+      targetAccountId: target?.customerAccountId ?? null,
+      targetIsProjectMember: Boolean(member),
+      removingStaff: target?.role !== "CUSTOMER",
+    });
+    if (!gate.ok) throw new ForbiddenError(gate.reason);
+  } else {
+    await assertProjectWrite(actor, task.projectId);
+  }
+
+  await removeAssigneeFromTask({ taskId, userId });
+  revalidatePath(`/projects/${task.projectId}/tasks/${taskId}`);
+  revalidatePath(`/projects/${task.projectId}/tasks`);
+  revalidatePath(`/portal/projects/${task.projectId}/tasks/${taskId}`);
+  revalidatePath(`/portal/projects/${task.projectId}`);
+  revalidatePath("/my-work");
+}
+
+/**
+ * Assign a task to somebody — including a named contact at the customer.
+ *
+ * Additive: adding a person does not wipe other assignees. Pass null is a
+ * no-op (use removeTaskAssignee to drop one person).
+ */
+export async function assignTask(taskId: string, userId: string | null) {
+  if (!userId) return;
+  await addTaskAssignee(taskId, userId);
 }
 
 // ---------------------------------------------------------------------------

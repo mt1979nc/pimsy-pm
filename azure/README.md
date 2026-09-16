@@ -155,6 +155,16 @@ Optional App Settings `PIMSY_AUDIT_FEED_URL` / `PIMSY_AUDIT_FEED_TOKEN` /
 EHR who/duration card. Leave them blank until a real read-only login feed
 exists — PATH will not invent audit rows. See `v1.14-PIMSY-LOGIN-AUDIT.md`.
 
+**Wave B assignee due reminders (P1-G).** `POST`/`GET`
+`/api/cron/task-due-reminders` with `Authorization: Bearer <CRON_SECRET>`
+writes per-assignee `TASK_DUE_SOON` / `TASK_OVERDUE` in-app notifications
+(today + tomorrow Eastern, plus overdue). Unset or wrong secret → 404.
+Does **not** send the batched customer digest — that remains the separate
+digest job (PR #39), which can reuse the same `CRON_SECRET`. Set the App
+Setting with `openssl rand -base64 32`. Call from a Logic App recurrence
+(every 15 minutes is plenty; the cooldown is ~20 hours per user+task).
+Migration `0017_task_assignees`.
+
 See `v1.10-REPORT.md` in the repo root.
 
 **v1.9.0** added `0010_playbook_staffing`. To refresh the four standard

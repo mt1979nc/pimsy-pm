@@ -18,6 +18,8 @@ import { cn } from "@/lib/cn";
 import { isSpecialistSubtask } from "@/lib/task-visibility";
 import { resolveTaskDescription } from "@/lib/task-description";
 import { TaskCompleteControl } from "@/components/task-complete-control";
+import { CustomerAssigneePicker } from "@/components/customer-assignee-picker";
+import { listCustomerProjectTeam, assigneesOf } from "@/lib/task-assignees";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +44,9 @@ export default async function PortalTaskPage({
     ),
     with: {
       assignee: { columns: { id: true, name: true, email: true, image: true, role: true, title: true } },
+      assignees: {
+        with: { user: { columns: { id: true, name: true, email: true, image: true, role: true, title: true } } },
+      },
       phase: { columns: { id: true, name: true, visibility: true, notApplicable: true } },
     },
   });
@@ -66,8 +71,10 @@ export default async function PortalTaskPage({
     }),
   ]);
 
-  const mine = task.assigneeId === actor.id;
+  const people = assigneesOf(task);
+  const mine = people.some((p) => p.id === actor.id) || task.assigneeId === actor.id;
   const yours = task.ownerSide === "CUSTOMER";
+  const team = yours ? await listCustomerProjectTeam(id) : [];
   const completedAt = task.status === "DONE" ? task.completedAt : null;
   const overdue = isOverdue(task.dueDate, completedAt);
   const uploadRequest =
@@ -240,26 +247,51 @@ export default async function PortalTaskPage({
         <div className="space-y-5">
           <Card>
             <CardHeader title="Who's doing this" />
-            {task.assignee ? (
-              <div className="flex items-center gap-3 px-4 py-3">
-                <Avatar name={task.assignee.name} image={task.assignee.image} size={32} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13.5px] font-medium text-ink">
-                    {task.assignee.name}
-                    {mine ? <span className="ml-1 font-normal text-ink-3">(you)</span> : null}
+            {yours ? (
+              <div className="px-4 py-3">
+                <CustomerAssigneePicker
+                  taskId={task.id}
+                  currentUserId={actor.id}
+                  assignees={people.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    email: p.email ?? "",
+                    image: p.image,
+                    role: p.role ?? "CUSTOMER",
+                    title: p.title,
+                  }))}
+                  team={team.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    email: p.email ?? "",
+                    image: p.image,
+                    role: p.role ?? "CUSTOMER",
+                    title: p.title,
+                  }))}
+                />
+              </div>
+            ) : people.length > 0 ? (
+              <div className="space-y-1 px-4 py-3">
+                {people.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3">
+                    <Avatar name={p.name} image={p.image} size={32} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[13.5px] font-medium text-ink">
+                        {p.name}
+                        {p.id === actor.id ? (
+                          <span className="ml-1 font-normal text-ink-3">(you)</span>
+                        ) : null}
+                      </div>
+                      <div className="truncate text-[12px] text-ink-3">
+                        {p.role === "CUSTOMER" ? (p.title ?? "Your team") : "Your implementation specialist"}
+                      </div>
+                    </div>
                   </div>
-                  <div className="truncate text-[12px] text-ink-3">
-                    {task.assignee.role === "CUSTOMER"
-                      ? (task.assignee.title ?? "Your team")
-                      : "Your implementation specialist"}
-                  </div>
-                </div>
+                ))}
               </div>
             ) : (
               <p className="px-4 py-3 text-[13px] text-ink-3">
-                {yours
-                  ? "Nobody at your practice is named on this yet."
-                  : "Your implementation team will pick this up."}
+                Your implementation team will pick this up.
               </p>
             )}
           </Card>

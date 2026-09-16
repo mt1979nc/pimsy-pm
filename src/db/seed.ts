@@ -13,6 +13,7 @@
 
 import { eq } from "drizzle-orm";
 import { db } from "./index";
+import { backfillPrimaryAssignees } from "@/lib/task-assignees";
 import {
   projectTemplates,
   templatePhases,
@@ -415,6 +416,7 @@ async function main() {
 
   console.log("\nSeeding demo data…");
   await seedDemoData(implId);
+  await backfillPrimaryAssignees();
   console.log("\nDone.\n");
 }
 

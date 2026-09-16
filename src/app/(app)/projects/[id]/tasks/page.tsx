@@ -8,6 +8,7 @@ import { orderTasksForNesting } from "@/lib/task-tree";
 import { resolveTaskDescription } from "@/lib/task-description";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
 import type { ChecklistItemView } from "@/components/task-checklist";
+import { loadAssigneesByTaskIds } from "@/lib/task-assignees";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ export default async function ProjectTasksPage({
   ]);
 
   const taskIds = allTasks.map((t) => t.id);
-  const [attachmentRows, checklistRows] = await Promise.all([
+  const [attachmentRows, checklistRows, assigneesByTask] = await Promise.all([
     taskIds.length
       ? db.query.fileAssets.findMany({
           where: eq(fileAssets.projectId, id),
@@ -69,6 +70,7 @@ export default async function ProjectTasksPage({
           orderBy: [asc(taskChecklistItems.order)],
         })
       : Promise.resolve([]),
+    loadAssigneesByTaskIds(taskIds),
   ]);
 
   const assetsByTaskId: Record<string, TaskActionAsset[]> = {};
@@ -122,7 +124,9 @@ export default async function ProjectTasksPage({
         dueDate: iso(t.dueDate),
         completedAt: iso(t.completedAt),
         assignee: t.assignee,
+        assignees: assigneesByTask.get(t.id) ?? (t.assignee ? [t.assignee] : []),
         assigneeId: t.assigneeId,
+        assigneeIds: (assigneesByTask.get(t.id) ?? []).map((p) => p.id),
         notApplicable: t.notApplicable,
         workTrack: t.workTrack,
         parentTaskId: t.parentTaskId,

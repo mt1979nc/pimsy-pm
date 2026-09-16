@@ -21,6 +21,7 @@ export type FilterableTask = {
   status: string;
   ownerSide: string;
   assigneeId?: string | null;
+  assigneeIds?: string[] | null;
   notApplicable?: boolean | null;
 };
 
@@ -66,7 +67,9 @@ function matchesView(t: FilterableTask, view: TaskListView, currentUserId?: stri
     case "customer":
       return t.ownerSide === "CUSTOMER";
     case "mine":
-      return Boolean(currentUserId) && t.assigneeId === currentUserId;
+      if (!currentUserId) return false;
+      if (t.assigneeId === currentUserId) return true;
+      return Boolean(t.assigneeIds?.includes(currentUserId));
     default:
       return true;
   }

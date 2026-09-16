@@ -81,6 +81,9 @@ export async function portalPlan(actor: CustomerActor, projectId: string) {
         orderBy: [asc(tasks.order)],
         with: {
           assignee: { columns: { id: true, name: true, image: true, title: true } },
+          assignees: {
+            with: { user: { columns: { id: true, name: true, image: true, title: true, role: true } } },
+          },
           comments: {
             where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
             columns: { id: true },
@@ -99,6 +102,9 @@ export async function portalPlan(actor: CustomerActor, projectId: string) {
     orderBy: [asc(tasks.order)],
     with: {
       assignee: { columns: { id: true, name: true, image: true, title: true } },
+      assignees: {
+        with: { user: { columns: { id: true, name: true, image: true, title: true, role: true } } },
+      },
       comments: {
         where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
         columns: { id: true },
@@ -143,6 +149,9 @@ export async function portalPhase(actor: CustomerActor, projectId: string, phase
         orderBy: [asc(tasks.order)],
         with: {
           assignee: { columns: { id: true, name: true, image: true, title: true } },
+          assignees: {
+            with: { user: { columns: { id: true, name: true, image: true, title: true, role: true } } },
+          },
           comments: {
             where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
             columns: { id: true },
@@ -215,6 +224,9 @@ export async function portalTask(actor: CustomerActor, projectId: string, taskId
     where: and(eq(tasks.id, taskId), eq(tasks.projectId, projectId), portalFacingTaskSql()),
     with: {
       assignee: { columns: { id: true, name: true, email: true, image: true, role: true, title: true } },
+      assignees: {
+        with: { user: { columns: { id: true, name: true, email: true, image: true, role: true, title: true } } },
+      },
       phase: { columns: { id: true, name: true, visibility: true, notApplicable: true } },
     },
   });

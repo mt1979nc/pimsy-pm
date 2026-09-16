@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { addProjectMember, removeProjectMember } from "@/actions/projects";
+import { addProjectMember, removeProjectMember, setProjectMemberRole } from "@/actions/projects";
 import { inviteCustomerContact } from "@/actions/customers";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Button, Field, inputClass, EmptyState } from "@/components/ui";
@@ -16,6 +16,7 @@ type Contact = {
   image?: string | null;
   isActive: boolean;
   lastSeenAt: Date | string | null;
+  memberRole?: string;
 };
 
 /**
@@ -102,23 +103,44 @@ export function ProjectContacts({
               key={c.id}
               person={c}
               actions={
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => {
-                    setError(null);
-                    start(async () => {
-                      try {
-                        await removeProjectMember(projectId, c.id);
-                      } catch (e) {
-                        setError(e instanceof Error ? e.message : "Could not remove them.");
-                      }
-                    });
-                  }}
-                  className="text-[12px] text-ink-3 underline-offset-2 hover:text-red hover:underline disabled:opacity-50"
-                >
-                  Remove
-                </button>
+                <div className="flex items-center gap-2">
+                  <select
+                    defaultValue={c.memberRole ?? "CUSTOMER_CONTACT"}
+                    disabled={pending}
+                    onChange={(e) => {
+                      const role = e.target.value;
+                      setError(null);
+                      start(async () => {
+                        const result = await setProjectMemberRole(projectId, c.id, role);
+                        if (result && "error" in result && result.error) {
+                          setError(result.error);
+                        }
+                      });
+                    }}
+                    className={`${inputClass} w-[170px] shrink-0 py-1 text-[12px]`}
+                  >
+                    <option value="CUSTOMER_PROJECT_LEAD">Project lead</option>
+                    <option value="CUSTOMER_BILLING">Billing</option>
+                    <option value="CUSTOMER_CONTACT">Team member</option>
+                  </select>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => {
+                      setError(null);
+                      start(async () => {
+                        try {
+                          await removeProjectMember(projectId, c.id);
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : "Could not remove them.");
+                        }
+                      });
+                    }}
+                    className="text-[12px] text-ink-3 underline-offset-2 hover:text-red hover:underline disabled:opacity-50"
+                  >
+                    Remove
+                  </button>
+                </div>
               }
             />
           ))}
@@ -154,7 +176,6 @@ export function ProjectContacts({
       {available.length > 0 ? (
         <form action={addAction} className="flex flex-wrap items-end gap-2 border-t border-border p-4">
           <input type="hidden" name="projectId" value={projectId} />
-          <input type="hidden" name="role" value="CUSTOMER_CONTACT" />
           <Field label="Add an existing contact" htmlFor="contactPick" className="min-w-[220px] flex-1">
             <select id="contactPick" name="userId" required className={inputClass}>
               <option value="">Choose someone…</option>
@@ -164,6 +185,13 @@ export function ProjectContacts({
                   {c.title ? ` · ${c.title}` : ""}
                 </option>
               ))}
+            </select>
+          </Field>
+          <Field label="Role" htmlFor="contactRole" className="w-[170px]">
+            <select id="contactRole" name="role" defaultValue="CUSTOMER_CONTACT" className={inputClass}>
+              <option value="CUSTOMER_PROJECT_LEAD">Project lead</option>
+              <option value="CUSTOMER_BILLING">Billing</option>
+              <option value="CUSTOMER_CONTACT">Team member</option>
             </select>
           </Field>
           <SubmitButton size="sm">Add to project</SubmitButton>
@@ -195,6 +223,13 @@ export function ProjectContacts({
           </Field>
           <Field label="Phone" htmlFor="newPhone">
             <input id="newPhone" name="phone" className={inputClass} />
+          </Field>
+          <Field label="Project role" htmlFor="newMemberRole">
+            <select id="newMemberRole" name="memberRole" defaultValue="CUSTOMER_CONTACT" className={inputClass}>
+              <option value="CUSTOMER_PROJECT_LEAD">Project lead — all customer tasks</option>
+              <option value="CUSTOMER_BILLING">Billing — customer billing tasks</option>
+              <option value="CUSTOMER_CONTACT">Team member</option>
+            </select>
           </Field>
 
           <p className="text-[12px] leading-relaxed text-ink-3">

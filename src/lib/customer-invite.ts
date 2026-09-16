@@ -332,6 +332,7 @@ export async function autoInviteCustomerContact(opts: {
   phone?: string | null;
   actor: Pick<Actor, "id" | "email" | "name">;
   projectId?: string;
+  memberRole?: "CUSTOMER_CONTACT" | "CUSTOMER_PROJECT_LEAD" | "CUSTOMER_BILLING";
   force?: boolean;
   deliver?: InviteDeliver;
 }): Promise<AutoInviteResult> {
@@ -351,10 +352,14 @@ export async function autoInviteCustomerContact(opts: {
   if (!provisioned.ok) return provisioned;
 
   if (opts.projectId) {
+    const role = opts.memberRole ?? "CUSTOMER_CONTACT";
     await db
       .insert(projectMembers)
-      .values({ projectId: opts.projectId, userId: provisioned.userId, role: "CUSTOMER_CONTACT" })
-      .onConflictDoNothing();
+      .values({ projectId: opts.projectId, userId: provisioned.userId, role })
+      .onConflictDoUpdate({
+        target: [projectMembers.projectId, projectMembers.userId],
+        set: { role },
+      });
   }
 
   const sent = await sendCustomerInvite({

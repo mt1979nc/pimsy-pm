@@ -106,6 +106,9 @@ export const projectMemberRoleEnum = pgEnum("project_member_role", [
   "RCM_MANAGER",
   "IMPLEMENTATION_DIRECTOR",
   "SUPPORT_DIRECTOR",
+  /** v1.14.2 customer project roles — CUSTOMER_CONTACT remains the generic teammate. */
+  "CUSTOMER_PROJECT_LEAD",
+  "CUSTOMER_BILLING",
 ]);
 
 /** Which playbook path was chosen when the site was created or reactivated. */
@@ -755,6 +758,32 @@ export const tasks = pgTable(
   ],
 );
 
+/**
+ * Multi-assignee join. `task.assignee_id` stays as the denormalized primary
+ * (first remaining person) so Mine / capacity queries keep a cheap path.
+ */
+export const taskAssignees = pgTable(
+  "task_assignee",
+  {
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    assignedAt: timestamp("assigned_at", { withTimezone: true }).notNull().defaultNow(),
+    assignedById: text("assigned_by_id").references((): AnyPgColumn => users.id, {
+      onDelete: "set null",
+    }),
+    /** AUTO_ROLE when filled by specialist / billing / customer-lead assignment. */
+    source: text("source").notNull().default("MANUAL"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.taskId, t.userId] }),
+    index("task_assignee_user_idx").on(t.userId),
+  ],
+);
+
 export const taskDependencies = pgTable(
   "task_dependency",
   {
@@ -1254,6 +1283,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
   memberships: many(projectMembers),
   assignedTasks: many(tasks, { relationName: "TaskAssignee" }),
+  taskAssignments: many(taskAssignees),
   messages: many(messages),
   threadParticipants: many(threadParticipants),
   notifications: many(notifications),
@@ -1319,6 +1349,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [users.id],
     relationName: "TaskAssignee",
   }),
+  assignees: many(taskAssignees),
   parentTask: one(tasks, {
     fields: [tasks.parentTaskId],
     references: [tasks.id],
@@ -1328,6 +1359,11 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   comments: many(taskComments),
   checklistItems: many(taskChecklistItems),
   attachments: many(fileAssets),
+}));
+
+export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
+  task: one(tasks, { fields: [taskAssignees.taskId], references: [tasks.id] }),
+  user: one(users, { fields: [taskAssignees.userId], references: [users.id] }),
 }));
 
 export const taskChecklistItemsRelations = relations(taskChecklistItems, ({ one }) => ({

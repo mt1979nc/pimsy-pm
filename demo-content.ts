@@ -158,6 +158,13 @@ async function main() {
     })
     .where(eq(tasks.id, task.id));
 
+  const { addAssigneesToTask } = await import("@/lib/task-assignees");
+  await addAssigneesToTask({
+    taskId: task.id,
+    userIds: [contact.id],
+    source: "MANUAL",
+  });
+
   await db.delete(taskComments).where(eq(taskComments.taskId, task.id));
   await db.insert(taskComments).values([
     {

@@ -1,4 +1,4 @@
-import { and, eq, ne, inArray, notInArray, isNull, isNotNull, lt, lte, gte, desc, asc, sql, count } from "drizzle-orm";
+import { and, eq, ne, inArray, notInArray, isNull, isNotNull, lt, lte, gte, desc, asc, sql, count, or } from "drizzle-orm";
 import { db } from "@/db";
 import {
   projects,
@@ -12,6 +12,7 @@ import {
   slipEvents,
   messageThreads,
   projectMembers,
+  taskAssignees,
   type ComplexityTier,
   type WaitingOn,
 } from "@/db/schema";
@@ -236,8 +237,12 @@ export async function attentionProjects(actor: Actor, limit = 12) {
 /** Tasks assigned to the actor across every project they can reach. */
 export async function myTasks(actor: Actor) {
   const skipOnboarded = await onboardedProjectIds();
+  const assignedIds = db
+    .select({ taskId: taskAssignees.taskId })
+    .from(taskAssignees)
+    .where(eq(taskAssignees.userId, actor.id));
   const conditions = [
-    eq(tasks.assigneeId, actor.id),
+    or(eq(tasks.assigneeId, actor.id), inArray(tasks.id, assignedIds)),
     ne(tasks.status, "DONE"),
     ne(tasks.status, "CANCELLED"),
     eq(tasks.notApplicable, false),
@@ -337,12 +342,13 @@ export async function teamCapacity() {
   const excludedIds = await analyticsExcludedProjectIds();
   const workload = await db
     .select({
-      assigneeId: tasks.assigneeId,
+      assigneeId: taskAssignees.userId,
       openTasks: count(),
       hours: sql<number>`coalesce(sum(${tasks.estimateHours}), 0)::float`,
       overdue: sql<number>`count(*) filter (where ${tasks.dueDate} < now() and ${tasks.status} not in ('DONE','CANCELLED'))::int`,
     })
-    .from(tasks)
+    .from(taskAssignees)
+    .innerJoin(tasks, eq(taskAssignees.taskId, tasks.id))
     .where(
       and(
         ne(tasks.status, "DONE"),
@@ -351,7 +357,7 @@ export async function teamCapacity() {
         notInExcludedProjects(tasks.projectId, excludedIds),
       ),
     )
-    .groupBy(tasks.assigneeId);
+    .groupBy(taskAssignees.userId);
 
   const leads = await db
     .select({ leadId: projects.leadId, n: count() })

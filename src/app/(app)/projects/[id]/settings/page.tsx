@@ -83,7 +83,12 @@ export default async function ProjectSettingsPage({
   const contactIdsOnProject = new Set(
     project.members.filter((m) => m.user.role === "CUSTOMER").map((m) => m.userId),
   );
-  const contactsOnProject = accountContacts.filter((c) => contactIdsOnProject.has(c.id));
+  const contactsOnProject = accountContacts
+    .filter((c) => contactIdsOnProject.has(c.id))
+    .map((c) => ({
+      ...c,
+      memberRole: project.members.find((m) => m.userId === c.id)?.role ?? "CUSTOMER_CONTACT",
+    }));
   const contactsAvailable = accountContacts.filter(
     (c) => !contactIdsOnProject.has(c.id) && c.isActive,
   );

@@ -62,6 +62,9 @@ export async function previewPortalPlan(projectId: string) {
         orderBy: [asc(tasks.order)],
         with: {
           assignee: { columns: { id: true, name: true, image: true, title: true } },
+          assignees: {
+            with: { user: { columns: { id: true, name: true, image: true, title: true, role: true } } },
+          },
           comments: {
             where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
             columns: { id: true },
@@ -80,6 +83,9 @@ export async function previewPortalPlan(projectId: string) {
     orderBy: [asc(tasks.order)],
     with: {
       assignee: { columns: { id: true, name: true, image: true, title: true } },
+      assignees: {
+        with: { user: { columns: { id: true, name: true, image: true, title: true, role: true } } },
+      },
       comments: {
         where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
         columns: { id: true },
@@ -157,6 +163,9 @@ export async function previewPortalPhase(projectId: string, phaseId: string) {
           orderBy: [asc(tasks.order)],
           with: {
             assignee: { columns: { id: true, name: true, image: true, title: true } },
+            assignees: {
+              with: { user: { columns: { id: true, name: true, image: true, title: true, role: true } } },
+            },
             comments: {
               where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
               columns: { id: true },
@@ -173,6 +182,9 @@ export async function previewPortalTask(projectId: string, taskId: string) {
     where: and(eq(tasks.id, taskId), eq(tasks.projectId, projectId), portalFacingTaskSql()),
     with: {
       assignee: { columns: { id: true, name: true, image: true, title: true } },
+      assignees: {
+        with: { user: { columns: { id: true, name: true, image: true, title: true, role: true } } },
+      },
       phase: { columns: { id: true, name: true, visibility: true, notApplicable: true } },
     },
   });

@@ -70,6 +70,9 @@ export const ASSIGNABLE_PROJECT_ROLES: readonly ProjectMemberRole[] = [
   "BILLING_SUPPORT",
   "CONTRIBUTOR",
   "OBSERVER",
+  "CUSTOMER_CONTACT",
+  "CUSTOMER_PROJECT_LEAD",
+  "CUSTOMER_BILLING",
 ];
 
 export function canonicalStaffingRole(
@@ -87,6 +90,8 @@ export function staffingRoleLabel(role: string | null | undefined): string {
   if (role === "CONTRIBUTOR") return "Contributor";
   if (role === "OBSERVER") return "Observer";
   if (role === "CUSTOMER_CONTACT") return "Customer contact";
+  if (role === "CUSTOMER_PROJECT_LEAD") return "Customer project lead";
+  if (role === "CUSTOMER_BILLING") return "Customer billing";
   return role.toLowerCase().replaceAll("_", " ");
 }
 
