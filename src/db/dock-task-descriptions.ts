@@ -6,6 +6,7 @@
  * Do not invent PHI, Storylane URLs, or Dock-native form hosts.
  */
 import { normalizeOverlapTitle, playbookTitleAliases } from "@/lib/playbook-meta";
+import { SUPPORT_HANDOFF_INSTRUCTIONS, SUPPORT_HANDOFF_TASK_TITLE } from "@/lib/support-handoff-meta";
 
 function entries(rows: Array<[string, string]>): Record<string, string> {
   const out: Record<string, string> = {};
@@ -303,6 +304,10 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   [
     "Please complete this post go-live survey",
     "Practice completes the post go-live survey. Mark done when the response is in.",
+  ],
+  [
+    SUPPORT_HANDOFF_TASK_TITLE,
+    SUPPORT_HANDOFF_INSTRUCTIONS,
   ],
   ["Create RCM Zendesk ticket", "Open the RCM onboarding Zendesk ticket and link it on this task."],
   ["Schedule RCM kickoff", "Book the RCM kickoff with the RCM specialist and the practice billing lead."],

@@ -585,6 +585,12 @@ export const projects = pgTable(
      * portal still show it. Default false.
      */
     excludeFromAnalytics: boolean("exclude_from_analytics").notNull().default(false),
+    /**
+     * Set when the playbook “Hand off to Support” task is completed. Stamps
+     * the Support email so completing the task again does not re-send. The
+     * project is also marked COMPLETED (out of implementation).
+     */
+    supportHandoffAt: timestamp("support_handoff_at", { withTimezone: true }),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -601,6 +607,7 @@ export const projects = pgTable(
     index("project_go_live_idx").on(t.targetGoLiveDate),
     index("project_onboarded_idx").on(t.onboarded),
     index("project_exclude_analytics_idx").on(t.excludeFromAnalytics),
+    index("project_support_handoff_idx").on(t.supportHandoffAt),
   ],
 );
 

@@ -30,12 +30,10 @@ export default async function AdminProjectsPage({
     status: sp.status,
     health: sp.health,
     includeArchived: sp.all === "1",
+    openOnly: !sp.status && sp.all !== "1",
   });
 
-  const rows =
-    sp.all === "1" || sp.status || sp.health
-      ? all
-      : all.filter((p) => !["COMPLETED", "CANCELLED"].includes(p.status));
+  const rows = all;
 
   const activeKey = sp.health
     ? `health=${sp.health}`

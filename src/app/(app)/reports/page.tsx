@@ -28,6 +28,7 @@ import { pctComplete } from "@/lib/pct-complete";
 import { cn } from "@/lib/cn";
 import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
 import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
+import { isOpenProjectStatus } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Portfolio" };
@@ -49,9 +50,7 @@ export default async function ReportsPage() {
   const waitingCustomer = waiting.reduce((n, r) => n + r.customerCount, 0);
   const chaseHint = formatWaitingOnAreaHint(countWaitingOnByArea(chase));
 
-  const active = all.filter((p) =>
-    ["NOT_STARTED", "IN_PROGRESS", "ON_HOLD", "BLOCKED"].includes(p.status),
-  );
+  const active = all.filter((p) => isOpenProjectStatus(p.status));
   const goLives = active
     .filter((p) => p.targetGoLiveDate)
     .sort(

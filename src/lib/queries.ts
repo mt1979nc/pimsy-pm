@@ -27,7 +27,12 @@ import {
 import { includedInAnalytics, analyticsExcludedProjectIds, notInExcludedProjects } from "@/lib/analytics-scope";
 import { isExcludedFromAnalytics, keepAnalyticsByProject } from "@/lib/analytics-exclude";
 
-const OPEN_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "ON_HOLD", "BLOCKED"] as const;
+export const OPEN_PROJECT_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "ON_HOLD", "BLOCKED"] as const;
+export type OpenProjectStatus = (typeof OPEN_PROJECT_STATUSES)[number];
+
+export function isOpenProjectStatus(status: string | null | undefined): boolean {
+  return OPEN_PROJECT_STATUSES.includes((status ?? "") as OpenProjectStatus);
+}
 
 /** Accessible projects that still participate in overdue / upcoming-due rollups. */
 async function dueOverviewProjectIds(accessibleIds: string[]): Promise<string[]> {
@@ -61,6 +66,11 @@ export async function listProjects(
     customerId?: string;
     /** Portfolio / reporting lists skip E2E flags. Delivery lists leave this off. */
     skipAnalyticsExcluded?: boolean;
+    /**
+     * Active Implementation WIP: NOT_STARTED / IN_PROGRESS / ON_HOLD / BLOCKED.
+     * Staff “All active” uses this so COMPLETED (handoff) sites drop off.
+     */
+    openOnly?: boolean;
   } = {},
 ) {
   const ids = await accessibleProjectIds(actor);
@@ -70,6 +80,7 @@ export async function listProjects(
   if (!opts.includeArchived) conditions.push(isNull(projects.archivedAt));
   if (opts.skipAnalyticsExcluded) conditions.push(includedInAnalytics());
   if (opts.status) conditions.push(eq(projects.status, opts.status as never));
+  else if (opts.openOnly) conditions.push(inArray(projects.status, [...OPEN_PROJECT_STATUSES]));
   if (opts.health) conditions.push(eq(projects.health, opts.health as never));
   if (opts.customerId) conditions.push(eq(projects.customerAccountId, opts.customerId));
 
@@ -109,7 +120,7 @@ export async function portfolioSummary(actor: Actor) {
   const [active] = await db
     .select({ n: count() })
     .from(projects)
-    .where(and(scope, isNull(projects.archivedAt), inAnalytics, inArray(projects.status, [...OPEN_STATUSES])));
+    .where(and(scope, isNull(projects.archivedAt), inAnalytics, inArray(projects.status, [...OPEN_PROJECT_STATUSES])));
 
   const [atRisk] = await db
     .select({ n: count() })
@@ -129,7 +140,7 @@ export async function portfolioSummary(actor: Actor) {
         scope,
         isNull(projects.archivedAt),
         inAnalytics,
-        inArray(projects.status, [...OPEN_STATUSES]),
+        inArray(projects.status, [...OPEN_PROJECT_STATUSES]),
         gte(projects.targetGoLiveDate, startOfDay(new Date())),
         lte(projects.targetGoLiveDate, in30),
       ),
@@ -201,7 +212,7 @@ export async function attentionProjects(actor: Actor, limit = 12) {
       isNull(projects.archivedAt),
       eq(projects.onboarded, false),
       includedInAnalytics(),
-      inArray(projects.status, [...OPEN_STATUSES]),
+      inArray(projects.status, [...OPEN_PROJECT_STATUSES]),
     ),
     with: {
       customerAccount: { columns: { id: true, name: true } },
@@ -366,7 +377,7 @@ export async function teamCapacity() {
       and(
         isNull(projects.archivedAt),
         includedInAnalytics(),
-        inArray(projects.status, [...OPEN_STATUSES]),
+        inArray(projects.status, [...OPEN_PROJECT_STATUSES]),
       ),
     )
     .groupBy(projects.leadId);
@@ -507,7 +518,7 @@ export async function weeklyCapacityForecast(weeksAhead = 12) {
     where: and(
       isNull(projects.archivedAt),
       includedInAnalytics(),
-      inArray(projects.status, [...OPEN_STATUSES]),
+      inArray(projects.status, [...OPEN_PROJECT_STATUSES]),
       isNotNull(projects.leadId),
     ),
     columns: { id: true, leadId: true, startDate: true, targetGoLiveDate: true, estimatedHours: true },
@@ -866,7 +877,7 @@ export async function managedSiteCards(actor: Actor, limit = 8) {
   const cards = memberships
     .filter((m) => isManagerOverviewRole(m.role) || m.role === "LEAD")
     .map((m) => m.project)
-    .filter((p) => p && !p.archivedAt && OPEN_STATUSES.includes(p.status as (typeof OPEN_STATUSES)[number]));
+    .filter((p) => p && !p.archivedAt && OPEN_PROJECT_STATUSES.includes(p.status as (typeof OPEN_PROJECT_STATUSES)[number]));
 
   const unique = new Map(cards.map((p) => [p.id, p]));
   return [...unique.values()]

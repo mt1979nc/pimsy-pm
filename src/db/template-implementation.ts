@@ -25,6 +25,7 @@
  */
 
 import { dockDefaultPhaseVisibility } from "@/lib/dock-phase-visibility";
+import { SUPPORT_HANDOFF_INSTRUCTIONS, SUPPORT_HANDOFF_TASK_TITLE } from "@/lib/support-handoff-meta";
 
 export type SeedTask = {
   title: string;
@@ -384,11 +385,18 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   },
   {
     name: "Post Go-Live Survey",
-    description: "Closing the loop on the engagement.",
+    description: "Closing the loop on the engagement, then handoff to Support.",
     visibility: dockDefaultPhaseVisibility("Post Go-Live Survey"),
     offsetDays: 97,
     durationDays: 14,
-    tasks: [C("Please complete this post go-live survey")],
+    tasks: [
+      C("Please complete this post go-live survey"),
+      I(SUPPORT_HANDOFF_TASK_TITLE, {
+        offsetDays: 14,
+        priority: "HIGH",
+        description: SUPPORT_HANDOFF_INSTRUCTIONS,
+      }),
+    ],
   },
 ];
 
