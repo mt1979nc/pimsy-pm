@@ -10,7 +10,7 @@ import {
   upcomingMilestones,
   managedSiteCards,
 } from "@/lib/queries";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 import { listInboxThreads, isUnread } from "@/lib/threads";
 import {
   Card,
