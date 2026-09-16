@@ -30,7 +30,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       "Hotfix: Azure production build no longer fails webpack by bundling Postgres (node:fs / net / tls) into the customer portal task list.",
     highlights: [
       "v1.13.5 portal task list imported pctComplete from the server rollup module, which pulled the Postgres client into the browser bundle. Deploy skipped; live PATH stayed on the previous image.",
-      "Percentage helper lives in a client-safe module. The DB client and project-counter refresh stay server-only.",
+      "Percentage helper lives in a client-safe module. The DB client and project-counter refresh are not imported from client components.",
       "No WIP resync. Task list UX from v1.13.5 is unchanged.",
     ],
   },

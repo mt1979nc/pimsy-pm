@@ -104,7 +104,7 @@ describe("staff Update History source", () => {
     expect(note?.summary).toMatch(/Hotfix/i);
     expect(note?.summary).toMatch(/webpack|Postgres|node:fs/i);
     expect(note?.highlights?.some((h) => /pctComplete|rollup|portal task list/i.test(h))).toBe(true);
-    expect(note?.highlights?.some((h) => /client-safe|server-only/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /client-safe|not imported from client/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /No WIP resync/i.test(h))).toBe(true);
     expect(RELEASE_NOTES.find((n) => n.version === "1.13.5")).toBeTruthy();
   });

@@ -1,5 +1,3 @@
-import "server-only";
-
 import { drizzle as drizzlePg, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { PGlite } from "@electric-sql/pglite";
