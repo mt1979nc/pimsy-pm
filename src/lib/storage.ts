@@ -56,12 +56,29 @@ const ALLOWED_EXT = new Set([
   ".xls", ".xlsx", ".doc", ".docx", ".ppt", ".pptx", ".zip",
 ]);
 
+/** Browsers often send these instead of the real Office/PDF MIME type. */
+const GENERIC_MIME = new Set([
+  "",
+  "application/octet-stream",
+  "binary/octet-stream",
+  "application/x-download",
+  "application/download",
+  "application/x-zip-compressed",
+]);
+
 export function uploadRoot() {
   return resolve(process.cwd(), process.env.UPLOAD_DIR || "uploads");
 }
 
 export function isImage(mimeType: string | null | undefined) {
   return !!mimeType && mimeType.startsWith("image/");
+}
+
+/** RFC 5987 Content-Disposition so download filenames with spaces/unicode work. */
+export function contentDisposition(filename: string, inline: boolean): string {
+  const fallback = filename.replace(/[^\x20-\x7E]+/g, "_").replace(/["\\]/g, "_") || "download";
+  const encoded = encodeURIComponent(filename);
+  return `${inline ? "inline" : "attachment"}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
 }
 
 export type UploadCheck = { ok: true } | { ok: false; reason: string };
@@ -78,7 +95,8 @@ export function checkUpload(name: string, mimeType: string, size: number): Uploa
   if (!ALLOWED_EXT.has(ext)) {
     return { ok: false, reason: `${ext || "That file type"} isn't allowed here.` };
   }
-  if (mimeType && !ALLOWED_MIME.has(mimeType)) {
+  const mime = (mimeType || "").trim().toLowerCase();
+  if (mime && !ALLOWED_MIME.has(mime) && !GENERIC_MIME.has(mime)) {
     return { ok: false, reason: `${mimeType} isn't an allowed file type.` };
   }
   return { ok: true };

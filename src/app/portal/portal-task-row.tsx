@@ -4,12 +4,16 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { setTaskStatus } from "@/actions/tasks";
 import { TaskActionButtons } from "@/components/task-action-buttons";
+import { AddAttachment } from "@/components/attachments";
 import { dueLabel, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import type { TaskActionAsset } from "@/lib/playbook-resources";
 
 export function PortalTaskRow({
   task,
   showActions = true,
+  assets,
+  canUpload = false,
 }: {
   task: {
     id: string;
@@ -20,11 +24,15 @@ export function PortalTaskRow({
     projectName?: string | null;
     projectId?: string | null;
     commentCount?: number;
+    visibility?: "INTERNAL" | "SHARED";
   };
   showActions?: boolean;
+  assets?: TaskActionAsset[];
+  canUpload?: boolean;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const done = task.status === "DONE";
   const overdue = isOverdue(task.dueDate) && !done;
   const comments = task.commentCount ?? 0;
@@ -85,7 +93,13 @@ export function PortalTaskRow({
             </div>
           )}
           {showActions ? (
-            <TaskActionButtons title={task.title} taskHref={taskHref} compact />
+            <TaskActionButtons
+              title={task.title}
+              assets={assets}
+              taskHref={taskHref}
+              compact
+              onUpload={canUpload ? () => setUploadOpen((v) => !v) : undefined}
+            />
           ) : null}
           {comments > 0 ? (
             taskHref ? (
@@ -110,9 +124,23 @@ export function PortalTaskRow({
           <div className="mt-0.5 text-[12px] text-ink-3">{task.projectName}</div>
         ) : null}
         {task.description ? (
-          <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-relaxed text-ink-2">
+          <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-[12.5px] leading-relaxed text-ink-2">
             {task.description}
           </p>
+        ) : null}
+        {uploadOpen && task.projectId ? (
+          <div className="mt-2 overflow-hidden rounded-lg border border-border">
+            <AddAttachment
+              taskId={task.id}
+              canChooseVisibility={false}
+              defaultVisibility="SHARED"
+              taskIsInternal={false}
+              uploadRequest
+              startInFileMode
+              fileOnly
+              onFinished={() => setUploadOpen(false)}
+            />
+          </div>
         ) : null}
         {task.dueDate ? (
           <div className={cn("mt-1 text-[12px]", overdue ? "font-medium text-red" : "text-ink-3")}>

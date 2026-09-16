@@ -262,37 +262,66 @@ export function AddAttachment({
   defaultVisibility,
   taskIsInternal,
   uploadRequest = false,
+  startInFileMode = false,
+  fileOnly = false,
+  onFinished,
 }: {
   taskId: string;
   canChooseVisibility: boolean;
   defaultVisibility: "INTERNAL" | "SHARED";
   taskIsInternal: boolean;
   uploadRequest?: boolean;
+  /** Open the file picker UI immediately (task#upload or list Upload files). */
+  startInFileMode?: boolean;
+  fileOnly?: boolean;
+  onFinished?: () => void;
 }) {
-  const [mode, setMode] = useState<"none" | "link" | "file">("none");
+  const [mode, setMode] = useState<"none" | "link" | "file">(
+    startInFileMode || fileOnly ? "file" : "none",
+  );
   const [visibility, setVisibility] = useState<"INTERNAL" | "SHARED">(defaultVisibility);
 
   const [linkState, linkAction] = useActionState(addTaskLink, {});
   const [fileState, fileAction] = useActionState(uploadTaskFile, {});
   const linkRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (window.location.hash === "#upload") setMode("file");
+    function applyHash() {
+      if (window.location.hash === "#upload") setMode("file");
+    }
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
   }, []);
+  useEffect(() => {
+    if (mode !== "file") return;
+    fileRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [mode]);
   useEffect(() => {
     if (linkState.ok) {
       linkRef.current?.reset();
-      setMode("none");
+      setMode(fileOnly ? "file" : "none");
+      onFinished?.();
     }
-  }, [linkState.ok]);
+  }, [linkState.ok, fileOnly, onFinished]);
   useEffect(() => {
     if (fileState.ok) {
       fileRef.current?.reset();
-      setMode("none");
+      setMode(fileOnly ? "file" : "none");
+      onFinished?.();
     }
-  }, [fileState.ok]);
+  }, [fileState.ok, fileOnly, onFinished]);
+
+  const close = () => {
+    if (fileOnly) {
+      onFinished?.();
+      return;
+    }
+    setMode("none");
+  };
 
   const effective = taskIsInternal ? "INTERNAL" : visibility;
 
@@ -344,7 +373,7 @@ export function AddAttachment({
         <div className="flex flex-wrap items-center justify-between gap-2">
           {visibilityControl}
           <div className="flex items-center gap-2">
-            <Button size="sm" type="button" onClick={() => setMode("none")}>
+            <Button size="sm" type="button" onClick={close}>
               Cancel
             </Button>
             <SubmitButton size="sm" pendingLabel="Adding…">
@@ -357,7 +386,12 @@ export function AddAttachment({
   }
 
   return (
-    <form ref={fileRef} action={fileAction} className="space-y-2.5 border-t border-border bg-surface-2 p-4">
+    <form
+      id="upload"
+      ref={fileRef}
+      action={fileAction}
+      className="space-y-2.5 border-t border-border bg-surface-2 p-4"
+    >
       <input type="hidden" name="taskId" value={taskId} />
       <input type="hidden" name="visibility" value={effective} />
       <FormError error={fileState.error} />
@@ -365,6 +399,7 @@ export function AddAttachment({
         type="file"
         name="file"
         required
+        ref={fileInputRef}
         className="w-full text-[13px] text-ink-2 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-[13px] file:font-medium file:text-brand-ink hover:file:opacity-90"
       />
       <input name="description" placeholder="Note (optional)" className={inputClass} />
@@ -375,7 +410,7 @@ export function AddAttachment({
       <div className="flex flex-wrap items-center justify-between gap-2">
         {visibilityControl}
         <div className="flex items-center gap-2">
-          <Button size="sm" type="button" onClick={() => setMode("none")}>
+          <Button size="sm" type="button" onClick={close}>
             Cancel
           </Button>
             <SubmitButton size="sm" pendingLabel="Uploading…">

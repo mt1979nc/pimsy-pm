@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.13.4");
+    expect(APP_VERSION).toBe("1.13.5");
     expect(APP_VERSION).toMatch(/^1\.13\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,23 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.13.5 Dock-clean task list UX", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.13.5");
+    expect(note?.summary).toMatch(/Dock/i);
+    expect(note?.summary).toMatch(/filter/i);
+    expect(note?.highlights?.some((h) => /description/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /upload/i.test(h) && /download/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Mark done|checkbox/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /collaps/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /templates-only|resync/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /25 MB|octet-stream/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/storylane\.com/i.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.13.4")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.13.3")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.13.2")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.13.1")).toBeTruthy();
   });
 
   it("documents v1.13.4 staff add/remove tasks and parent-only portal visibility", () => {

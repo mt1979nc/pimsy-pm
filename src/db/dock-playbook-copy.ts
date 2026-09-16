@@ -24,7 +24,10 @@ import {
   isDocumentationAndFormsTitle,
   isOrganizationDetailsTitle,
 } from "@/db/dock-task-buttons";
+import { operationalDescriptionForTitle } from "@/db/dock-task-descriptions";
 import {
+  parseChecklistFromDescription,
+  stripChecklistMarkdown,
   TRAINING_SESSION_DESCRIPTION,
   TRAINING_STORYLANE_DESCRIPTION,
   trainingDescriptionForTitle,
@@ -93,6 +96,14 @@ export function shouldReplacePlaybookDescription(
   if (cur.startsWith("Open the Discovery Wizard with the button")) return true;
   if (cur.includes("with the button on this task")) return true;
   if (/^Click [Hh]ere on this task to open the Discovery Wizard/.test(cur)) return true;
+  // Checkbox dump in the description is the Dock training pattern PATH already
+  // promotes to first-class checklist items — replace with operational copy.
+  if (parseChecklistFromDescription(cur).length > 0) {
+    const remainder = stripChecklistMarkdown(cur);
+    if (!remainder || STALE_TRAINING_BLURBS.has(remainder) || remainder === TRAINING_SESSION_DESCRIPTION) {
+      return true;
+    }
+  }
   return false;
 }
 
@@ -166,5 +177,15 @@ function attachmentTaskDescription(title: string): string | null {
 
 /** Dock playbook description for a task title, or null when Dock has none. */
 export function dockPlaybookDescriptionForTitle(title: string): string | null {
-  return trainingDescriptionForTitle(title) ?? attachmentTaskDescription(title);
+  const attachment = attachmentTaskDescription(title);
+  if (attachment) return attachment;
+  const operational = operationalDescriptionForTitle(title);
+  if (operational) {
+    const training = trainingDescriptionForTitle(title);
+    if (training?.includes("Storylane")) {
+      return `${operational}\n\n${TRAINING_STORYLANE_DESCRIPTION}`;
+    }
+    return operational;
+  }
+  return trainingDescriptionForTitle(title);
 }

@@ -146,6 +146,20 @@ describe("Dock task action buttons (PWMI Discovery)", () => {
       label: DOCK_UPLOAD_FILES_LABEL,
       href: "/projects/p/tasks/t#upload",
     });
+    const withSheet = resolveTaskActionButtons({
+      title: "Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers",
+      taskHref: "/projects/p/tasks/t",
+      assets: [
+        {
+          id: "sheet-9",
+          kind: "FILE",
+          name: "Billing spreadsheet",
+          libraryAssetId: "lib-b",
+        },
+      ],
+    });
+    expect(withSheet[0]?.kind).toBe("upload");
+    expect(withSheet[0]?.href).toBe("/projects/p/tasks/t#upload");
   });
 
   it("Upload files on Dock File Request titles; Open form on Documentation & Forms", () => {

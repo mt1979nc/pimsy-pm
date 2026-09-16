@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.4";
+export const APP_VERSION = "1.13.5";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.5",
+    date: "2026-09-15",
+    summary:
+      "Staff and portal task lists match Dock for day-to-day work: playbook descriptions on the row, simpler nested checklists, working upload/download, a clear Mark done checkbox, fast filter, and collapsible completed groups.",
+    highlights: [
+      "Task descriptions resolve from the Dock playbook catalog by title when the live row is blank or still has the old checkbox dump. No live WIP resync required. Optional `npm run db:seed -- --templates-only` persists catalog copy onto playbook rows for new workspaces.",
+      "Master list: check the box to complete without opening the task. Nested specialist items stay on the list with less chrome. Training checklists render as checkboxes on the parent — not a separate “areas to cover” card on every task.",
+      "Upload files and download → fill → resubmit work from the list (inline upload; file buttons use attached playbook sheets). Server actions accept the same 25 MB limit as storage. Browsers that send application/octet-stream for .xlsx/.pdf are no longer refused.",
+      "Task detail: Mark done is at the top. Links & files move up on upload/download tasks. Empty checklist cards are gone.",
+      "Filter (All / Open / Done / Customer / Mine) plus a search box. Completed parent groups collapse under “N completed” so finished work is not an infinite scroll.",
+      "Portal area lists get the same filter, collapse, descriptions, checkbox, and working actions. PATH + Prism naming unchanged. Out of scope: template expose/hide tabs, wizard spreadsheet deep-links, cross-specialist access, auto invite.",
+    ],
+  },
   {
     version: "1.13.4",
     date: "2026-09-15",

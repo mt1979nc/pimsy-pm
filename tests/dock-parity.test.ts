@@ -299,7 +299,10 @@ describe("training checklists and nested tasks", () => {
     expect(training1).not.toMatch(/https:\/\/.*storylane/i);
     expect(training1).toContain("- [ ] User Profile / Signature Capture");
     expect(training1).toContain("- [ ] Client Create / Term");
-    expect(dockPlaybookDescriptionForTitle(DOCK_TRAINING_1_TITLE)).toBe(training1);
+    const liveCopy = dockPlaybookDescriptionForTitle(DOCK_TRAINING_1_TITLE);
+    expect(liveCopy).toMatch(/nested items|checklist/i);
+    expect(liveCopy).toMatch(/Storylane/);
+    expect(liveCopy).not.toContain("- [ ] User Profile / Signature Capture");
     expect(checklistForTaskTitle("Training 2: Client Charts").some((i) => /Diagnoses/i.test(i.label))).toBe(
       true,
     );
@@ -308,10 +311,13 @@ describe("training checklists and nested tasks", () => {
 
   it("fills blank or stale training blurbs and never overwrites staff notes", () => {
     const next = dockPlaybookDescriptionForTitle("Training 2: Client Charts");
-    expect(next).toContain("- [ ] Diagnoses");
+    expect(next).toMatch(/nested items|checklist/i);
+    expect(next).not.toContain("- [ ] Diagnoses");
     expect(shouldReplacePlaybookDescription(null, next)).toBe(true);
     expect(shouldReplacePlaybookDescription("   ", next)).toBe(true);
     expect(shouldReplacePlaybookDescription(TRAINING_SESSION_DESCRIPTION, next)).toBe(true);
+    const checkboxDump = `${TRAINING_SESSION_DESCRIPTION}\n\n- [ ] Diagnoses\n- [ ] Chart documents`;
+    expect(shouldReplacePlaybookDescription(checkboxDump, next)).toBe(true);
     expect(shouldReplacePlaybookDescription(next, next)).toBe(false);
     expect(shouldReplacePlaybookDescription("Specialist notes for Cedar kickoff.", next)).toBe(false);
     expect(shouldReplacePlaybookDescription("hello", null)).toBe(false);

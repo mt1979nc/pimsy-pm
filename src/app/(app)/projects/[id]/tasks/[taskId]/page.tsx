@@ -21,12 +21,14 @@ import { TaskActionButtons } from "@/components/task-action-buttons";
 import { hasPlaybookFileResource, isCustomerUploadRequestTitle } from "@/lib/playbook-resources";
 import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import { TaskChecklist } from "@/components/task-checklist";
+import { TaskCompleteControl } from "@/components/task-complete-control";
 import { AssigneePicker } from "@/components/assignee-picker";
 import { TaskDetailControls } from "./task-controls";
 import { AddTaskInline } from "../task-forms";
 import { DeleteTaskControl } from "@/components/task-row";
 import { fmtDate, dueLabel, isOverdue, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { resolveTaskDescription } from "@/lib/task-description";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +90,19 @@ export default async function TaskDetailPage({
     db.query.tasks.findMany({
       where: eq(tasks.parentTaskId, taskId),
       orderBy: [asc(tasks.order)],
-      columns: { id: true, title: true, status: true, visibility: true },
+      columns: {
+        id: true,
+        title: true,
+        status: true,
+        visibility: true,
+        ownerSide: true,
+        dueDate: true,
+        completedAt: true,
+        notApplicable: true,
+        priority: true,
+        parentTaskId: true,
+        phaseId: true,
+      },
     }),
   ]);
 
@@ -99,6 +113,14 @@ export default async function TaskDetailPage({
   const uploadRequest =
     task.ownerSide === "CUSTOMER" &&
     (hasPlaybookFileResource(attachments) || isCustomerUploadRequestTitle(task.title));
+  const displayDescription = resolveTaskDescription(task.title, task.description, {
+    stripChecklist: checklist.length > 0,
+  });
+  const hasFileAction = Boolean(
+    attachments.some((a) => a.kind !== "LINK") ||
+      isDockFileRequestTitle(task.title) ||
+      uploadRequest,
+  );
 
   return (
     <div className="mx-auto max-w-[900px]">
@@ -120,12 +142,19 @@ export default async function TaskDetailPage({
         <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">
           {task.title}
         </h1>
-        <TaskActionButtons
-          title={task.title}
-          assets={attachments}
-          taskHref={`/projects/${id}/tasks/${taskId}`}
-          className="mt-3"
-        />
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <TaskCompleteControl
+            taskId={task.id}
+            title={task.title}
+            status={task.status}
+            canEdit={!task.notApplicable}
+          />
+          <TaskActionButtons
+            title={task.title}
+            assets={attachments}
+            taskHref={`/projects/${id}/tasks/${taskId}`}
+          />
+        </div>
         {task.dueDate ? (
           <p className={cn("mt-1.5 text-[13.5px]", overdue ? "font-medium text-red" : "text-ink-2")}>
             {dueLabel(task.dueDate, completedAt)} · {fmtDate(task.dueDate)}
@@ -137,13 +166,45 @@ export default async function TaskDetailPage({
 
       <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-5">
+          {hasFileAction ? (
+            <Card>
+              <CardHeader
+                title="Links & files"
+                subtitle={
+                  isDockFileRequestTitle(task.title)
+                    ? "Upload files on this task"
+                    : uploadRequest
+                      ? "Download, complete the file, and upload it here — same pattern as Dock"
+                      : attachments.length > 0
+                        ? `${attachments.length} attached`
+                        : "Anything the work depends on"
+                }
+              />
+              <div id="files">
+                <AttachmentList
+                  assets={attachments}
+                  currentUserId={actor.id}
+                  canManageVisibility
+                  uploadRequest={uploadRequest}
+                />
+                <AddAttachment
+                  taskId={task.id}
+                  canChooseVisibility
+                  defaultVisibility={task.visibility === "INTERNAL" ? "INTERNAL" : "SHARED"}
+                  taskIsInternal={task.visibility === "INTERNAL"}
+                  uploadRequest={uploadRequest}
+                />
+              </div>
+            </Card>
+          ) : null}
+
           <Card>
             <CardHeader title="Details" />
             <TaskDetailControls
               task={{
                 id: task.id,
                 title: task.title,
-                description: task.description,
+                description: displayDescription,
                 status: task.status,
                 priority: task.priority,
                 visibility: task.visibility,
@@ -155,19 +216,21 @@ export default async function TaskDetailPage({
             />
           </Card>
 
-          <Card>
-            <CardHeader
-              title="Areas to cover"
-              subtitle="Training checklist from the playbook — check items off during the session. Add or remove areas on Templates."
-            />
-            <TaskChecklist
-              taskId={task.id}
-              items={checklist}
-              canEdit={false}
-              canToggle
-              taskIsInternal={task.visibility === "INTERNAL"}
-            />
-          </Card>
+          {checklist.length > 0 ? (
+            <Card>
+              <CardHeader
+                title="Checklist"
+                subtitle="Check items off here — add or remove items on Templates."
+              />
+              <TaskChecklist
+                taskId={task.id}
+                items={checklist}
+                canEdit={false}
+                canToggle
+                taskIsInternal={task.visibility === "INTERNAL"}
+              />
+            </Card>
+          ) : null}
 
           <Card>
             <CardHeader
@@ -181,17 +244,25 @@ export default async function TaskDetailPage({
             {subtasks.length > 0 ? (
               <ul className="divide-y divide-border">
                 {subtasks.map((s) => (
-                  <li key={s.id} className="flex items-center justify-between gap-3 px-5 py-2.5">
-                    <Link
-                      href={`/projects/${id}/tasks/${s.id}`}
-                      className="text-[13.5px] text-ink hover:text-brand hover:underline"
-                    >
-                      {s.title}
-                    </Link>
-                    <span className="text-[12px] text-ink-3">
-                      {s.visibility === "INTERNAL" ? "Staff only · " : ""}
-                      {s.status.replace("_", " ").toLowerCase()}
-                    </span>
+                  <li key={s.id} className="flex items-start gap-3 px-5 py-2.5">
+                    <TaskCompleteControl
+                      taskId={s.id}
+                      title={s.title}
+                      status={s.status}
+                      canEdit={!s.notApplicable}
+                      size="sm"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/projects/${id}/tasks/${s.id}`}
+                        className="text-[13.5px] text-ink hover:text-brand hover:underline"
+                      >
+                        {s.title}
+                      </Link>
+                      <div className="text-[12px] text-ink-3">
+                        {s.visibility === "INTERNAL" ? "Staff only" : "Shared"}
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -209,35 +280,31 @@ export default async function TaskDetailPage({
             </div>
           </Card>
 
-          <Card>
-            <CardHeader
-              title="Links & files"
-              subtitle={
-                isDockFileRequestTitle(task.title)
-                  ? "Upload files on this task"
-                  : uploadRequest
-                  ? "Download, complete the file, and upload it here — same pattern as Dock"
-                  : attachments.length > 0
-                    ? `${attachments.length} attached`
-                    : "Anything the work depends on"
-              }
-            />
-            <div id="files">
-              <AttachmentList
-                assets={attachments}
-                currentUserId={actor.id}
-                canManageVisibility
-                uploadRequest={uploadRequest}
+          {hasFileAction ? null : (
+            <Card>
+              <CardHeader
+                title="Links & files"
+                subtitle={
+                  attachments.length > 0 ? `${attachments.length} attached` : "Anything the work depends on"
+                }
               />
-              <AddAttachment
-                taskId={task.id}
-                canChooseVisibility
-                defaultVisibility={task.visibility === "INTERNAL" ? "INTERNAL" : "SHARED"}
-                taskIsInternal={task.visibility === "INTERNAL"}
-                uploadRequest={uploadRequest}
-              />
-            </div>
-          </Card>
+              <div id="files">
+                <AttachmentList
+                  assets={attachments}
+                  currentUserId={actor.id}
+                  canManageVisibility
+                  uploadRequest={uploadRequest}
+                />
+                <AddAttachment
+                  taskId={task.id}
+                  canChooseVisibility
+                  defaultVisibility={task.visibility === "INTERNAL" ? "INTERNAL" : "SHARED"}
+                  taskIsInternal={task.visibility === "INTERNAL"}
+                  uploadRequest={uploadRequest}
+                />
+              </div>
+            </Card>
+          )}
 
           <Card>
             <CardHeader
