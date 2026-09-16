@@ -70,6 +70,7 @@ describe("Dock task action buttons (PWMI Discovery)", () => {
           kind: "FILE",
           name: "Clinical workflows data sheet",
           libraryAssetId: "lib-c",
+          hasBlob: true,
         },
         {
           id: "wiz-1",
@@ -102,6 +103,7 @@ describe("Dock task action buttons (PWMI Discovery)", () => {
           kind: "FILE",
           name: "Billing questionnaire",
           libraryAssetId: "lib-q",
+          hasBlob: true,
         },
       ],
     });
@@ -115,7 +117,7 @@ describe("Dock task action buttons (PWMI Discovery)", () => {
       title: "Billing Questionnaire",
       taskHref: "/projects/p/tasks/t",
     });
-    expect(withoutFile[0]?.href).toBe("/projects/p/tasks/t#files");
+    expect(withoutFile).toEqual([]);
   });
 
   it("does not treat specialist review rows as the wizard or form CTA", () => {
@@ -155,6 +157,7 @@ describe("Dock task action buttons (PWMI Discovery)", () => {
           kind: "FILE",
           name: "Billing spreadsheet",
           libraryAssetId: "lib-b",
+          hasBlob: true,
         },
       ],
     });

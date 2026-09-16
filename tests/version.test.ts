@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.13.9");
+    expect(APP_VERSION).toBe("1.13.10");
     expect(APP_VERSION).toMatch(/^1\.13\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,23 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.13.10 Customer view comments and missing-library-file downloads", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.13.10");
+    expect(note?.summary).toMatch(/comment/i);
+    expect(note?.summary).toMatch(/Customer view|portal/i);
+    expect(note?.summary).toMatch(/download|FILE|library/i);
+    expect(note?.highlights?.some((h) => /SHARED|shared/i.test(h) && /comment/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /internal/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /blob|storage|404|missing/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /File library/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No playbook resync/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /templates-only/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /client/i.test(h) && /Postgres/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/storylane\.com/i.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.13.9")).toBeTruthy();
   });
 
   it("documents v1.13.9 analytics-exclude for test/E2E customers and projects", () => {

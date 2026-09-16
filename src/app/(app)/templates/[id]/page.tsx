@@ -62,6 +62,7 @@ export default async function TemplateEditorPage({
           isPlaceholder: att.libraryAsset?.isPlaceholder ?? false,
           libraryAssetId: att.libraryAssetId,
           url: att.libraryAsset?.url ?? null,
+          storageKey: att.libraryAsset?.storageKey ?? null,
         })),
       })),
   }));

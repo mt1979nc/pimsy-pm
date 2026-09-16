@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { setTaskStatus } from "@/actions/tasks";
 import { TaskActionButtons } from "@/components/task-action-buttons";
 import { AddAttachment } from "@/components/attachments";
+import { CommentCountBadge } from "@/components/comment-count-badge";
 import { dueLabel, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
@@ -102,22 +103,7 @@ export function PortalTaskRow({
             />
           ) : null}
           {comments > 0 ? (
-            taskHref ? (
-              <Link
-                href={taskHref}
-                title={`${comments} comment${comments === 1 ? "" : "s"}`}
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11.5px] font-semibold text-[#113c64] dark:text-[#cee0e7]"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                {comments}
-              </Link>
-            ) : (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11.5px] font-semibold text-[#113c64] dark:text-[#cee0e7]">
-                {comments}
-              </span>
-            )
+            <CommentCountBadge count={comments} href={taskHref} />
           ) : null}
         </div>
         {task.projectName ? (

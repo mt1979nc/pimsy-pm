@@ -12,7 +12,7 @@ import { SubmitButton, FormError } from "@/components/submit-button";
 import { Button, inputClass, VisibilityBadge } from "@/components/ui";
 import { fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
-import { fileAssetOpenHref, libraryKindLabel } from "@/lib/library-meta";
+import { fileAssetOpenHref, libraryKindLabel, MISSING_LIBRARY_FILE_CUSTOMER_NOTE, MISSING_LIBRARY_FILE_STAFF_NOTE } from "@/lib/library-meta";
 import {
   DOWNLOAD_COMPLETE_UPLOAD_HINT,
   isPlaybookResourceAsset,
@@ -30,12 +30,9 @@ type Asset = {
   createdAt: Date | string;
   uploadedById: string | null;
   libraryAssetId?: string | null;
+  storageKey?: string | null;
   uploadedBy?: { id: string; name: string | null; image?: string | null } | null;
 };
-
-function href(a: Asset) {
-  return fileAssetOpenHref(a);
-}
 
 function prettySize(bytes: number | null) {
   if (!bytes) return null;
@@ -75,6 +72,7 @@ export function AttachmentList({
   canManageVisibility,
   canDelete = true,
   uploadRequest = false,
+  staffPreview = false,
 }: {
   assets: Asset[];
   currentUserId: string;
@@ -82,18 +80,25 @@ export function AttachmentList({
   canDelete?: boolean;
   /** Customer upload-request: download → complete → upload back on this task. */
   uploadRequest?: boolean;
+  /** Customer view: staff-facing missing-file note even though the list is read-only. */
+  staffPreview?: boolean;
 }) {
   if (assets.length === 0) {
     return (
       <p className="px-5 py-4 text-[13px] text-ink-3">
-        Nothing attached yet. Add a link or a file below.
+        {canDelete
+          ? "Nothing attached yet. Add a link or a file below."
+          : "Nothing attached yet."}
       </p>
     );
   }
 
   const images = assets.filter((a) => a.kind === "IMAGE");
   const rest = assets.filter((a) => a.kind !== "IMAGE");
-  const hasFileResource = rest.some((a) => isPlaybookResourceAsset(a) && a.kind !== "LINK");
+  const hasFileResource = rest.some(
+    (a) => isPlaybookResourceAsset(a) && a.kind !== "LINK" && Boolean(fileAssetOpenHref(a)),
+  );
+  const showStaffMissingHint = canManageVisibility || staffPreview;
 
   return (
     <div>
@@ -105,17 +110,25 @@ export function AttachmentList({
 
       {images.length > 0 ? (
         <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3">
-          {images.map((a) => (
+          {images.map((a) => {
+            const openHref = fileAssetOpenHref(a);
+            return (
             <figure key={a.id} className="group relative overflow-hidden rounded-lg border border-border">
-              <a href={href(a)} target="_blank" rel="noopener noreferrer">
+              {openHref ? (
+              <a href={openHref} target="_blank" rel="noopener noreferrer">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={href(a)}
+                  src={openHref}
                   alt={a.description || a.name}
                   className="aspect-[4/3] w-full bg-surface-2 object-cover transition-opacity group-hover:opacity-90"
                   loading="lazy"
                 />
               </a>
+              ) : (
+                <div className="flex aspect-[4/3] items-center justify-center bg-surface-2 px-2 text-center text-[12px] text-ink-3">
+                  Image not available yet
+                </div>
+              )}
               <figcaption className="flex items-center justify-between gap-2 border-t border-border px-2 py-1.5">
                 <span className="truncate text-[11.5px] text-ink-2" title={a.name}>
                   {a.name}
@@ -129,32 +142,50 @@ export function AttachmentList({
                 />
               </figcaption>
             </figure>
-          ))}
+            );
+          })}
         </div>
       ) : null}
 
       {rest.length > 0 ? (
         <div className="divide-y divide-border">
-          {rest.map((a) => (
+          {rest.map((a) => {
+            const openHref = fileAssetOpenHref(a);
+            const missingFile = a.kind !== "LINK" && !openHref;
+            return (
             <div key={a.id} className="flex items-start gap-3 px-4 py-2.5">
               <span className="mt-0.5 shrink-0 text-ink-3">
                 <KindIcon kind={a.kind} />
               </span>
               <div className="min-w-0 flex-1">
+                {missingFile || !openHref ? (
+                  <span className="block truncate text-[13.5px] font-medium text-ink" title={a.name}>
+                    {a.name}
+                  </span>
+                ) : (
                 <a
-                  href={href(a)}
+                  href={openHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block truncate text-[13.5px] font-medium text-ink hover:text-brand hover:underline"
                 >
                   {a.name}
                 </a>
+                )}
                 {a.description ? (
                   <p className="mt-0.5 text-[12.5px] leading-snug text-ink-2">{a.description}</p>
+                ) : null}
+                {missingFile ? (
+                  <p className="mt-0.5 text-[12.5px] leading-snug text-ink-2">
+                    {showStaffMissingHint
+                      ? MISSING_LIBRARY_FILE_STAFF_NOTE
+                      : MISSING_LIBRARY_FILE_CUSTOMER_NOTE}
+                  </p>
                 ) : null}
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">
                   <span>{libraryKindLabel(a.kind)}</span>
                   {a.libraryAssetId ? <span>Playbook default</span> : null}
+                  {missingFile ? <span>Unavailable</span> : null}
                   {a.uploadedBy ? <span>{a.uploadedBy.name}</span> : null}
                   <span>{fmtRelative(a.createdAt)}</span>
                   {prettySize(a.sizeBytes) ? <span>{prettySize(a.sizeBytes)}</span> : null}
@@ -170,7 +201,8 @@ export function AttachmentList({
                 canDelete={canDelete}
               />
             </div>
-          ))}
+            );
+          })}
         </div>
       ) : null}
     </div>

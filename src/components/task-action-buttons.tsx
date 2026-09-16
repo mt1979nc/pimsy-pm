@@ -20,6 +20,7 @@ export function TaskActionButtons({
   compact = false,
   className,
   onUpload,
+  readOnly = false,
 }: {
   title: string;
   assets?: TaskActionAsset[];
@@ -28,8 +29,12 @@ export function TaskActionButtons({
   className?: string;
   /** List: open an inline upload instead of navigating to the task page. */
   onUpload?: () => void;
+  /** Customer view: hide Upload files (preview cannot accept files). */
+  readOnly?: boolean;
 }) {
-  const buttons = resolveTaskActionButtons({ title, assets, taskHref });
+  const buttons = resolveTaskActionButtons({ title, assets, taskHref }).filter(
+    (b) => !(readOnly && b.kind === "upload"),
+  );
   const [popup, setPopup] = useState<ResolvedTaskActionButton | null>(null);
 
   if (buttons.length === 0) return null;

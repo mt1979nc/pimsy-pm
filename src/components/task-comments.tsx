@@ -20,12 +20,15 @@ export function TaskComments({
   currentUserId,
   canChooseVisibility,
   taskIsInternal,
+  readOnly = false,
 }: {
   taskId: string;
   comments: Comment[];
   currentUserId: string;
   canChooseVisibility: boolean;
   taskIsInternal: boolean;
+  /** Customer view / portal preview: show SHARED comments without posting. */
+  readOnly?: boolean;
 }) {
   const [state, action] = useActionState(addTaskComment, {});
   const [visibility, setVisibility] = useState<"INTERNAL" | "SHARED">(
@@ -49,9 +52,11 @@ export function TaskComments({
         <EmptyState
           title="No comments yet"
           description={
-            canChooseVisibility
-              ? "Ask a question, record a decision, or leave a note for your team."
-              : "Ask your implementation team anything about this item."
+            readOnly
+              ? "Shared comments from your implementation team appear here."
+              : canChooseVisibility
+                ? "Ask a question, record a decision, or leave a note for your team."
+                : "Ask your implementation team anything about this item."
           }
         />
       ) : (
@@ -80,6 +85,7 @@ export function TaskComments({
         </div>
       )}
 
+      {readOnly ? null : (
       <form ref={formRef} action={action} className="border-t border-border p-4">
         <input type="hidden" name="taskId" value={taskId} />
         <input type="hidden" name="visibility" value={effective} />
@@ -129,6 +135,7 @@ export function TaskComments({
           </div>
         </div>
       </form>
+      )}
     </div>
   );
 }
