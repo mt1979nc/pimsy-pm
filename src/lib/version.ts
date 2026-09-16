@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.14.2";
+export const APP_VERSION = "1.14.3";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,16 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.14.3",
+    date: "2026-09-16",
+    summary:
+      "Hotfix: Azure image build no longer fails TypeScript on a duplicate inviteUrl field in ActionState after auto-invite and slip/weekly merged.",
+    highlights: [
+      "src/actions/messages.ts ActionState keeps one inviteUrl / emailSkipped (auto customer invite) plus message / slipped / targetGoLiveDate (Record slip). Duplicate members from the #47 + #37 merge are gone.",
+      "No schema migrate. Auto-invite and specialist slip / weekly meeting behavior unchanged.",
+    ],
+  },
   {
       version: "1.14.2",
       date: "2026-09-16",

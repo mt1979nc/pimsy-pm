@@ -33,8 +33,7 @@ const createThreadSchema = z.object({
 export type ActionState = {
   error?: string;
   ok?: boolean;
-  inviteUrl?: string;
-  emailSkipped?: boolean;
+  /** Set-password / magic-link URL from auto customer invite. */
   inviteUrl?: string;
   emailSkipped?: boolean;
   inviteSkipped?: boolean;
