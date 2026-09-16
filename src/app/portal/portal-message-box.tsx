@@ -31,7 +31,8 @@ export function PortalMessageBox({
       <div className="mb-3">
         <h2 className="text-[14px] font-semibold text-ink">Message your team</h2>
         <p className="mt-0.5 text-[12.5px] text-ink-2">
-          Questions stay with your implementation project. We’ll see it in Dock-side threads.
+          One topic per conversation so we can track who is waiting. Start a new thread for a
+          different question.
         </p>
       </div>
       <form ref={formRef} action={action} className="space-y-3">

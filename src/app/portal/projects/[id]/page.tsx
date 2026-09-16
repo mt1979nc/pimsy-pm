@@ -8,10 +8,12 @@ import {
   portalStatusUpdates,
   portalFiles,
 } from "@/lib/portal";
-import { listInboxThreads, isUnread } from "@/lib/threads";
+import { listInboxThreads } from "@/lib/threads";
+import { partitionThreads } from "@/lib/thread-state";
 import { Card, CardHeader, EmptyState, Badge, Avatar, ProgressBar } from "@/components/ui";
 import { PortalTaskRow } from "../../portal-task-row";
 import { PortalMessageBox } from "../../portal-message-box";
+import { ThreadPreviewList } from "@/components/thread-list";
 import { attachmentHref } from "@/lib/attachments";
 import { fmtShort, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -39,7 +41,8 @@ export default async function PortalProjectPage({
   ]);
 
   const projectThreads = threads.filter((t) => t.projectId === id);
-  const unread = projectThreads.filter((t) => isUnread(t, actor.id));
+  const { unreadOpen } = partitionThreads(projectThreads, actor.id);
+  const unread = unreadOpen;
 
   const customerTasks = (tasks: typeof looseTasks) =>
     tasks.filter((t) => t.ownerSide === "CUSTOMER");
@@ -289,33 +292,11 @@ export default async function PortalProjectPage({
             {projectThreads.length === 0 ? (
               <EmptyState title="No messages yet" description="Send a note below anytime." />
             ) : (
-              <div className="divide-y divide-border">
-                {projectThreads.map((t) => (
-                  <Link
-                    key={t.id}
-                    href={`/portal/projects/${id}/messages/${t.id}`}
-                    className="block px-4 py-2.5 hover:bg-surface-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "size-1.5 shrink-0 rounded-full",
-                          isUnread(t, actor.id) ? "bg-brand" : "bg-transparent",
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "truncate text-[13px]",
-                          isUnread(t, actor.id) ? "font-semibold text-ink" : "text-ink",
-                        )}
-                      >
-                        {t.subject}
-                      </span>
-                    </div>
-                    <div className="pl-3.5 text-[12px] text-ink-3">{fmtRelative(t.lastMessageAt)}</div>
-                  </Link>
-                ))}
-              </div>
+              <ThreadPreviewList
+                threads={projectThreads}
+                currentUserId={actor.id}
+                hrefFor={(t) => `/portal/projects/${id}/messages/${t.id}`}
+              />
             )}
           </Card>
 

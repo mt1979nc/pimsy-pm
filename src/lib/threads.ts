@@ -9,6 +9,9 @@ import {
   accessibleProjectIds,
   type Actor,
 } from "./authz";
+import { isUnread } from "./thread-state";
+
+export { isUnread, partitionThreads } from "./thread-state";
 
 /**
  * Resolve a thread the actor is allowed to read, or throw NotFoundError.
@@ -96,25 +99,13 @@ export async function listInboxThreads(actor: Actor, limit = 60) {
   });
 }
 
-/** Unread count for the actor across all reachable threads. */
+/**
+ * Open (unresolved) unread count for the nav badge. Resolved topics stay
+ * out of the number so SLA work is not drowned by closed history.
+ */
 export async function unreadThreadCount(actor: Actor) {
-  const threads = await listInboxThreads(actor, 200);
-  return threads.filter((t) => {
-    const p = t.participants.find((x) => x.userId === actor.id);
-    if (!p) return false;
-    if (!p.lastReadAt) return true;
-    return new Date(t.lastMessageAt) > new Date(p.lastReadAt);
-  }).length;
-}
-
-export function isUnread(
-  thread: { lastMessageAt: Date | string; participants: { userId: string; lastReadAt: Date | string | null }[] },
-  userId: string,
-) {
-  const p = thread.participants.find((x) => x.userId === userId);
-  if (!p) return false;
-  if (!p.lastReadAt) return true;
-  return new Date(thread.lastMessageAt) > new Date(p.lastReadAt);
+  const threads = await listInboxThreads(actor, 500);
+  return threads.filter((t) => !t.isResolved && isUnread(t, actor.id)).length;
 }
 
 /** Add users to a thread without duplicating rows. */

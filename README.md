@@ -33,7 +33,10 @@ surfaces it in their portal under their name.
 **Two-channel messaging** — every project has customer-facing threads *and* an
 internal back channel. The internal channel is invisible to the customer, which
 is the thing Dock cannot do. An internal thread can be promoted to shared; that
-action is deliberate, confirmed, and audit-logged.
+action is deliberate, confirmed, and audit-logged. Open topics sit above
+resolved ones; either side can mark a SHARED thread resolved. Prefer **one
+topic per conversation** so waiting-on aging (SLA) stays honest. Unread is the
+missing or stale last-read cursor, not “you were not in the participant table.”
 
 **Customer portal** — each practice signs in with a magic link and sees their
 timeline, their action items, shared milestones, **project updates** (dated

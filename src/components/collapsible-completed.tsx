@@ -7,16 +7,25 @@ export function CollapsibleCompleted({
   count,
   children,
   defaultOpen = false,
+  noun = "completed",
+  hideHint = "— hide finished work",
+  showHint = "— show",
+  flush = false,
 }: {
   count: number;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  noun?: string;
+  hideHint?: string;
+  showHint?: string;
+  /** Skip the top border when this is already the first child of a card. */
+  flush?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   if (count <= 0) return null;
 
   return (
-    <div className="border-t border-border">
+    <div className={cn(!flush && "border-t border-border")}>
       <button
         type="button"
         aria-expanded={open}
@@ -35,8 +44,8 @@ export function CollapsibleCompleted({
         >
           <path d="m9 6 6 6-6 6" />
         </svg>
-        {count} completed
-        <span className="font-normal text-ink-3">{open ? "— hide finished work" : "— show"}</span>
+        {count} {noun}
+        <span className="font-normal text-ink-3">{open ? hideHint : showHint}</span>
       </button>
       {open ? <div className="divide-y divide-border border-t border-border">{children}</div> : null}
     </div>

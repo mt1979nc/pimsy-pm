@@ -10,10 +10,14 @@ export function MessageComposer({
   threadId,
   visibility,
   placeholder,
+  isResolved = false,
+  newConversationHref,
 }: {
   threadId: string;
   visibility: "INTERNAL" | "SHARED";
   placeholder?: string;
+  isResolved?: boolean;
+  newConversationHref?: string;
 }) {
   const [state, action] = useActionState(postMessage, {});
   const formRef = useRef<HTMLFormElement>(null);
@@ -30,6 +34,22 @@ export function MessageComposer({
     <form ref={formRef} action={action} className="border-t border-border p-3">
       <input type="hidden" name="threadId" value={threadId} />
       <FormError error={state.error} />
+      {isResolved ? (
+        <p className="mb-2 text-[12.5px] leading-relaxed text-ink-2">
+          This topic is resolved. Reply to reopen it.
+          {newConversationHref ? (
+            <>
+              {" "}
+              <a href={newConversationHref} className="font-medium text-brand hover:underline">
+                Start a new conversation
+              </a>{" "}
+              for a different question so waiting-on aging stays honest.
+            </>
+          ) : (
+            " Start a new conversation for a different question so waiting-on aging stays honest."
+          )}
+        </p>
+      ) : null}
       <textarea
         ref={taRef}
         name="body"
@@ -90,18 +110,21 @@ export function NewThreadForm({
       <input type="hidden" name="visibility" value={visibility} />
       <FormError error={state.error} />
 
-      <input name="subject" required autoFocus placeholder="Subject" className={inputClass} />
+      <input name="subject" required autoFocus placeholder="Subject — one topic" className={inputClass} />
       <textarea
         name="body"
         rows={4}
         required
         placeholder={
           visibility === "SHARED"
-            ? "The customer will see this thread and be emailed."
-            : "Internal back channel — the customer will never see this."
+            ? "The customer will see this thread and be emailed. Use a new conversation for a different topic."
+            : "Internal back channel — the customer will never see this. One topic per thread."
         }
         className={inputClass}
       />
+      <p className="text-[12px] leading-relaxed text-ink-3">
+        One topic per conversation keeps waiting-on aging honest for SLA.
+      </p>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         {canChooseVisibility ? (
@@ -148,12 +171,14 @@ export function ThreadActions({
   visibility,
   canShare,
   waitingOn = "UNKNOWN",
+  canSetWaitingOn = true,
 }: {
   threadId: string;
   isResolved: boolean;
   visibility: "INTERNAL" | "SHARED";
   canShare: boolean;
   waitingOn?: "PIMSY" | "CUSTOMER" | "UNKNOWN";
+  canSetWaitingOn?: boolean;
 }) {
   const [pending, start] = useTransition();
   const [confirmShare, setConfirmShare] = useState(false);
@@ -168,7 +193,7 @@ export function ThreadActions({
         {isResolved ? "Reopen" : "Mark resolved"}
       </Button>
 
-      {visibility === "SHARED" && !isResolved ? (
+      {visibility === "SHARED" && !isResolved && canSetWaitingOn ? (
         <div className="flex flex-wrap items-center gap-1.5">
           <WaitingOnBadge waitingOn={waitingOn} />
           <select

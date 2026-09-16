@@ -6,11 +6,11 @@ import { messages } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { NotFoundError, ForbiddenError, canSeeInternal } from "@/lib/authz";
 import { assertThreadAccess } from "@/lib/threads";
-import { markThreadRead } from "@/actions/messages";
 import { Card, Badge, VisibilityBadge, WaitingOnBadge } from "@/components/ui";
 import { MessageList } from "@/components/thread-list";
 import { differenceInCalendarDays, startOfDay } from "@/lib/dates";
 import { MessageComposer, ThreadActions } from "@/components/message-composer";
+import { MarkThreadRead } from "@/components/mark-thread-read";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +36,9 @@ export default async function ThreadPage({
     with: { author: { columns: { id: true, name: true, image: true, role: true } } },
   });
 
-  await markThreadRead(threadId);
-
   return (
     <div className="mx-auto max-w-[760px]">
+      <MarkThreadRead threadId={threadId} />
       <Link
         href={`/projects/${id}/messages`}
         className="mb-3 inline-block text-[12.5px] text-ink-3 hover:text-brand"
@@ -65,8 +64,8 @@ export default async function ThreadPage({
           </div>
           <p className="mt-1.5 text-[12.5px] text-ink-3">
             {thread.visibility === "SHARED"
-              ? "Customer contacts on this project can read and reply to this thread."
-              : "Only your internal team can see this thread."}
+              ? "Customer contacts on this project can read and reply to this thread. One topic — start a new conversation for a different question."
+              : "Only your internal team can see this thread. One topic — start a new conversation for a different question."}
           </p>
           <div className="mt-3">
             <ThreadActions
@@ -80,7 +79,12 @@ export default async function ThreadPage({
         </div>
 
         <MessageList messages={rows} currentUserId={actor.id} />
-        <MessageComposer threadId={threadId} visibility={thread.visibility} />
+        <MessageComposer
+          threadId={threadId}
+          visibility={thread.visibility}
+          isResolved={thread.isResolved}
+          newConversationHref={`/projects/${id}/messages`}
+        />
       </Card>
     </div>
   );
