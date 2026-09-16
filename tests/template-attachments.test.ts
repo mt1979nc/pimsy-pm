@@ -66,6 +66,7 @@ describe("default template attachments catalog", () => {
     expect(libraryDefsForTaskTitle("Zendesk Company Setup")).toEqual([]);
     expect(libraryDefsForTaskTitle("Schedule Kickoff")).toEqual([]);
     expect(libraryDefsForTaskTitle("ClaimMD Enrollment")).toEqual([]);
+    expect(librarySlugsForTaskTitle("Accessing Pimsy")).toEqual(["pimsy-desktop-install"]);
   });
 });
 

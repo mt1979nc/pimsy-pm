@@ -416,6 +416,7 @@ describe("training checklists and nested tasks", () => {
     expect(librarySlugsForTaskTitle("Clinical Workflows")).toContain("clinical-workflows-sheet");
     expect(librarySlugsForTaskTitle("Clinical Workflows")).not.toContain("discovery-wizard");
     expect(librarySlugsForTaskTitle("Kickoff call")).toEqual([]);
+    expect(librarySlugsForTaskTitle("Accessing Pimsy")).toEqual(["pimsy-desktop-install"]);
     const wizard = DEFAULT_LIBRARY_ASSETS.find((a) => a.slug === "discovery-wizard");
     expect(wizard?.kind).toBe("LINK");
     expect(wizard?.url).toBe(DISCOVERY_WIZARD_URL);

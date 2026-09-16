@@ -32,7 +32,7 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ["Pre-Kickoff", PARENT],
   [
     "Zendesk Company Setup",
-    "Create the Zendesk organization for this practice and confirm the support email domain. Link the org from this task when it exists.",
+    "Create the Zendesk organization for this practice and confirm the support email domain. Open Zendesk on this task searches agent by org name / email domain — no API token. Link the org from this task when it exists.",
   ],
   [
     "Inbed Bookings",
@@ -82,7 +82,7 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ],
   [
     "Accessing Pimsy",
-    "Bookmark / CRM link, desktop application, practice acronym, and security key. Hidden from the customer until staff expose this tab.",
+    "Bookmark / CRM link, desktop application, practice acronym, and security key. New workspaces fill those fields when they already exist on the project or customer. Hidden from the customer until staff expose this tab.",
   ],
   ["Organization Setup", PARENT],
   [
@@ -111,7 +111,7 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ],
   [
     "Add Zendesk Users to Org",
-    "Add the practice’s named contacts to the Zendesk organization so tickets route correctly.",
+    "Add the practice’s named contacts to the Zendesk organization so tickets route correctly. Open Zendesk on this task searches agent by contact email / domain.",
   ],
   ["Billing Config", PARENT],
   [

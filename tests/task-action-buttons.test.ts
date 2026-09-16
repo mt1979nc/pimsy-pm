@@ -185,7 +185,10 @@ describe("Dock task action buttons (PWMI Discovery)", () => {
       label: DOCK_OPEN_FORM_LABEL,
     });
     expect(isDockFileRequestTitle("Logos")).toBe(false);
-    expect(dockTaskActionsForTitle("Zendesk Company Setup")).toEqual([]);
+    expect(dockTaskActionsForTitle("Zendesk Company Setup")[0]).toMatchObject({
+      kind: "link",
+      label: "Open Zendesk",
+    });
     expect(dockTaskActionsForTitle("ClaimMD Enrollment")).toEqual([]);
   });
 
@@ -240,18 +243,75 @@ describe("Dock task action buttons (PWMI Discovery)", () => {
     expect(titles.has("Documentation & Forms")).toBe(true);
     expect(titles.has("Upload Company Logo(s)")).toBe(true);
     expect(titles.has("Complete RCM intake questionnaire")).toBe(true);
-    expect(titles.has("Zendesk Company Setup")).toBe(false);
+    expect(titles.has("Zendesk Company Setup")).toBe(true);
+    expect(titles.has("Add Zendesk Users to Org")).toBe(true);
+    expect(titles.has("Accessing Pimsy")).toBe(true);
     expect(isOrganizationDetailsTitle("Discovery org details")).toBe(true);
   });
 
   it("does not invent Storylane or other unknown URLs", () => {
+    const allowed = new Set([
+      DISCOVERY_WIZARD_URL,
+      "https://pimsyehr.com/solutions/install-pimsy/",
+      "https://pimsyemr.zendesk.com/agent/search/1",
+    ]);
     for (const title of flattenSeedTasks(IMPLEMENTATION_PHASES).map((r) => r.title)) {
       for (const action of dockTaskActionsForTitle(title)) {
         if (action.url) {
-          expect(action.url).toBe(DISCOVERY_WIZARD_URL);
+          expect(allowed.has(action.url), `${title} → ${action.url}`).toBe(true);
           expect(action.url).not.toMatch(/storylane/i);
         }
       }
     }
+  });
+
+  it("opens Zendesk agent search on org and user setup tasks", () => {
+    const org = resolveTaskActionButtons({ title: "Zendesk Company Setup" });
+    expect(org).toEqual([
+      expect.objectContaining({
+        kind: "link",
+        label: "Open Zendesk",
+        href: "https://pimsyemr.zendesk.com/agent/search/1",
+        popup: true,
+      }),
+    ]);
+    const users = resolveTaskActionButtons({
+      title: "Add Zendesk Users to Org",
+      assets: [
+        {
+          id: "zd-1",
+          kind: "LINK",
+          name: "Zendesk user / email search",
+          url: "https://pimsyemr.zendesk.com/agent/search/1?q=email%3Ajane%40clinic.example",
+        },
+      ],
+    });
+    expect(users[0]?.href).toContain("email%3Ajane%40clinic.example");
+    expect(users[0]?.href).toMatch(/pimsyemr\.zendesk\.com/);
+  });
+
+  it("Accessing Pimsy always offers the documented desktop installer; bookmark only when attached", () => {
+    const bare = resolveTaskActionButtons({ title: "Accessing Pimsy" });
+    expect(bare).toEqual([
+      expect.objectContaining({
+        kind: "link",
+        label: "Install desktop app",
+        href: "https://pimsyehr.com/solutions/install-pimsy/",
+        popup: true,
+      }),
+    ]);
+    const withBookmark = resolveTaskActionButtons({
+      title: "Accessing Pimsy",
+      assets: [
+        {
+          id: "bm-1",
+          kind: "LINK",
+          name: "Bookmark / CRM link",
+          url: "https://cedar.pimsyehr.com/",
+        },
+      ],
+    });
+    expect(withBookmark.map((b) => b.label)).toEqual(["Install desktop app", "Open bookmark"]);
+    expect(withBookmark[1]?.href).toBe("https://cedar.pimsyehr.com/");
   });
 });

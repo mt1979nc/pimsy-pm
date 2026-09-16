@@ -11,6 +11,7 @@
 import {
   DISCOVERY_WIZARD_URL,
   libraryDefsForTaskTitle,
+  normalizeAttachmentUrl,
 } from "@/db/dock-default-attachments";
 import { assetHasDownloadableBlob } from "@/lib/library-meta";
 import { isDiscoveryWizardUrl, wizardLaunchFromTaskHref } from "@/lib/path-deep-links";
@@ -20,10 +21,15 @@ import {
   DOCK_OPEN_FORM_LABEL,
   DOCK_TASK_ACTION_LABEL,
   DOCK_UPLOAD_FILES_LABEL,
+  DOCK_ZENDESK_OPEN_LABEL,
+  DOCK_DESKTOP_INSTALL_LABEL,
+  DOCK_BOOKMARK_LABEL,
   dockTaskActionsForTitle,
   isDockFileRequestTitle,
   type DockTaskActionKind,
 } from "@/db/dock-task-buttons";
+import { isZendeskAgentUrl } from "@/lib/zendesk";
+import { PIMSY_DESKTOP_INSTALL_URL } from "@/lib/accessing-pimsy";
 
 export const DOWNLOAD_COMPLETE_UPLOAD_HINT =
   "Download the file, complete it, then use Upload files on this task to send it back.";
@@ -34,6 +40,9 @@ export {
   DOCK_OPEN_FORM_LABEL,
   DOCK_TASK_ACTION_LABEL,
   DOCK_UPLOAD_FILES_LABEL,
+  DOCK_ZENDESK_OPEN_LABEL,
+  DOCK_DESKTOP_INSTALL_LABEL,
+  DOCK_BOOKMARK_LABEL,
 };
 export type { DockTaskActionKind };
 
@@ -144,6 +153,46 @@ function isHttpUrl(href: string): boolean {
   return /^https?:\/\//i.test(href);
 }
 
+function matchingNamedLink(
+  assets: TaskActionAsset[] | undefined,
+  matcher: (asset: TaskActionAsset) => boolean,
+): TaskActionAsset | undefined {
+  if (!assets?.length) return undefined;
+  return assets.find(
+    (a) => a.kind === "LINK" && Boolean(a.url?.trim()) && isHttpUrl(a.url!.trim()) && matcher(a),
+  );
+}
+
+function resolveLinkHref(
+  action: { id: string; url?: string },
+  assets: TaskActionAsset[] | undefined,
+): string | null {
+  if (action.id.startsWith("zendesk-")) {
+    const attached = matchingNamedLink(
+      assets,
+      (a) => isZendeskAgentUrl(a.url) || /zendesk/i.test(a.name),
+    );
+    return (attached?.url?.trim() || action.url || null);
+  }
+  if (action.id === "pimsy-desktop-install") {
+    const attached = matchingNamedLink(
+      assets,
+      (a) =>
+        Boolean(a.url && normalizeAttachmentUrl(a.url) === normalizeAttachmentUrl(PIMSY_DESKTOP_INSTALL_URL)) ||
+        /desktop/i.test(a.name),
+    );
+    return attached?.url?.trim() || action.url || PIMSY_DESKTOP_INSTALL_URL;
+  }
+  if (action.id === "pimsy-bookmark") {
+    const attached = matchingNamedLink(
+      assets,
+      (a) => /bookmark|crm link|crmlink/i.test(a.name) && !isZendeskAgentUrl(a.url),
+    );
+    return attached?.url?.trim() || null;
+  }
+  return action.url || wizardHref(assets);
+}
+
 /**
  * Resolve Dock-style task action buttons. Title catalog is the source of
  * truth (PWMI labels). Assets fill form/download file URLs when a FILE blob or
@@ -163,7 +212,8 @@ export function resolveTaskActionButtons(opts: {
 
   for (const action of actions) {
     if (action.kind === "link") {
-      const raw = action.url || wizardHref(opts.assets);
+      const raw = resolveLinkHref(action, opts.assets);
+      if (!raw) continue;
       const href = wizardLaunchFromTaskHref(raw, {
         title: opts.title,
         taskHref: opts.taskHref,

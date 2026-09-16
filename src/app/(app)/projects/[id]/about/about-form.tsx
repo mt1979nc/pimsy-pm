@@ -5,6 +5,7 @@ import { updateProjectAbout } from "@/actions/projects";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Field, inputClass } from "@/components/ui";
 import { customFieldsAsLines } from "@/lib/about-profile";
+import { bookmarkFromCustomFields, customFieldsWithoutBookmark } from "@/lib/accessing-pimsy";
 
 export function ProjectAboutForm({
   project,
@@ -22,7 +23,8 @@ export function ProjectAboutForm({
   };
 }) {
   const [state, action] = useActionState(updateProjectAbout, {});
-  const customLines = customFieldsAsLines(project.customFields);
+  const bookmarkUrl = bookmarkFromCustomFields(project.customFields);
+  const customLines = customFieldsAsLines(customFieldsWithoutBookmark(project.customFields ?? {}));
 
   return (
     <form action={action} className="space-y-4 p-5">
@@ -62,19 +64,34 @@ export function ProjectAboutForm({
           />
         </Field>
         <Field
-          label="CRM key"
+          label="CRM key / security key"
           htmlFor="crmKey"
-          hint="Internal security key. Staff only — never on the portal."
+          hint="Internal security key. Staff only — never on the portal. Copies onto Accessing Pimsy when that task still has the catalog blurb."
         >
           <input
             id="crmKey"
             name="crmKey"
             defaultValue={project.crmKey ?? ""}
-            placeholder="Internal CRM key"
+            placeholder="Desktop-install security key when issued"
             className={inputClass}
           />
         </Field>
       </div>
+
+      <Field
+        label="Bookmark / CRM link"
+        htmlFor="bookmarkUrl"
+        hint="PIMSY web bookmark for Accessing Pimsy. Not the HubSpot deal URL. Saved as custom field bookmark."
+      >
+        <input
+          id="bookmarkUrl"
+          name="bookmarkUrl"
+          type="url"
+          defaultValue={bookmarkUrl ?? ""}
+          placeholder="https://…"
+          className={inputClass}
+        />
+      </Field>
 
       <Field
         label="HubSpot deal URL"
@@ -134,7 +151,7 @@ export function ProjectAboutForm({
       <Field
         label="Extra fields"
         htmlFor="customFields"
-        hint="Optional leftovers that are not HubSpot, CRM, Zoom, or Prism (those have fields above). One per line as key=value. Staff only. Empty keys are dropped."
+        hint="Optional leftovers that are not HubSpot, CRM, Zoom, Prism, or the PIMSY bookmark (those have fields above). One per line as key=value. Staff only. Empty keys are dropped."
       >
         <textarea
           id="customFields"
