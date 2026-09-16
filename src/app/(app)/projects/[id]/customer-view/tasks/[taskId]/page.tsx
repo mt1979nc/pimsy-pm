@@ -7,7 +7,7 @@ import {
   previewPortalTaskAttachments,
   previewPortalTaskComments,
 } from "@/lib/portal-preview";
-import { Card, CardHeader, Badge, Avatar } from "@/components/ui";
+import { Card, CardHeader, Badge, AvatarStack } from "@/components/ui";
 import { TaskComments } from "@/components/task-comments";
 import { AttachmentList } from "@/components/attachments";
 import { TaskActionButtons } from "@/components/task-action-buttons";
@@ -16,6 +16,7 @@ import { fmtDate } from "@/lib/dates";
 import { hasPlaybookFileResource, isCustomerUploadRequestTitle } from "@/lib/playbook-resources";
 import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import { commentsForCustomerSurface } from "@/lib/comment-visibility";
+import { assigneesOf } from "@/lib/task-assignees";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Customer view · Task" };
@@ -51,6 +52,8 @@ export default async function CustomerViewTaskPage({
       isDockFileRequestTitle(task.title) ||
       uploadRequest,
   );
+
+  const people = assigneesOf(task);
 
   return (
     <div className="space-y-5">
@@ -96,10 +99,13 @@ export default async function CustomerViewTaskPage({
             <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">{description}</p>
           ) : null}
           <div className="flex flex-wrap items-center gap-4 text-[13px] text-ink-2">
-            {task.assignee?.name ? (
+            {people.length > 0 ? (
               <span className="inline-flex items-center gap-1.5">
-                <Avatar name={task.assignee.name} image={task.assignee.image} size={22} />
-                {task.assignee.name}
+                <AvatarStack people={people} size={22} />
+                {people
+                  .map((p) => p.name)
+                  .filter(Boolean)
+                  .join(", ")}
               </span>
             ) : (
               <span>Unassigned</span>

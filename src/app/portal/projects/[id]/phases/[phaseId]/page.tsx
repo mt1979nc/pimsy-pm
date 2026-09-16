@@ -8,6 +8,7 @@ import { fileAssets } from "@/db/schema";
 import { resolveTaskDescription } from "@/lib/task-description";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
 import { orderTasksForNesting } from "@/lib/task-tree";
+import { loadAssigneesByTaskIds } from "@/lib/task-assignees";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,8 @@ export default async function PortalPhasePage({
     assetsByTaskId[a.taskId] = list;
   }
 
+  const assigneesByTask = await loadAssigneesByTaskIds(taskIds);
+
   return (
     <PortalPhaseTaskList
       projectId={id}
@@ -80,8 +83,10 @@ export default async function PortalPhasePage({
         ownerSide: t.ownerSide,
         parentTaskId: t.parentTaskId,
         assigneeId: t.assigneeId,
+        assigneeIds: (assigneesByTask.get(t.id) ?? []).map((p) => p.id),
         notApplicable: t.notApplicable,
         assignee: t.assignee,
+        assignees: assigneesByTask.get(t.id) ?? (t.assignee ? [t.assignee] : []),
         commentCount: t.comments?.length ?? 0,
       }))}
     />

@@ -414,6 +414,9 @@ async function main() {
     );
   }
 
+  const { backfillPrimaryAssignees } = await import("@/lib/task-assignees");
+  await backfillPrimaryAssignees();
+
   console.log(`\nImported acronyms (${imported.length}): ${imported.join(", ") || "(none)"}`);
   console.log(`Skipped (${skipped.length}): ${skipped.join(", ") || "(none)"}`);
   console.log("\nDone. No contacts created. No emails sent.");

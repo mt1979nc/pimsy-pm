@@ -23,6 +23,7 @@ import { defaultLinkLabel, parseHttpUrl } from "@/lib/http-url";
 import { attachLibraryToLiveTask } from "@/lib/library";
 import { checkUpload, putFile, deleteFile, isImage } from "@/lib/storage";
 import { audit } from "@/lib/audit";
+import { taskAssigneeIds } from "@/lib/task-assignees";
 import type { ActionState } from "./messages";
 
 /** Load a task the actor may act on, and the visibility ceiling that applies. */
@@ -56,6 +57,7 @@ async function notifyAttachment(
 
   const audience = new Set<string>();
   if (project?.leadId) audience.add(project.leadId);
+  for (const id of await taskAssigneeIds(task.id)) audience.add(id);
   if (task.assigneeId) audience.add(task.assigneeId);
   audience.delete(actor.id);
   if (audience.size === 0) return;

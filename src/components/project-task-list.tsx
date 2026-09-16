@@ -22,6 +22,7 @@ import type { TaskActionAsset } from "@/lib/playbook-resources";
 
 export type ProjectTaskListItem = TaskRowData & {
   assigneeId?: string | null;
+  assigneeIds?: string[];
   order: number;
   description?: string | null;
   parentTaskId: string | null;

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { setTaskStatus, setTaskVisibility, markTaskNotApplicable, deleteTask } from "@/actions/tasks";
-import { Badge, PriorityBadge, VisibilityBadge, Avatar } from "@/components/ui";
+import { Badge, PriorityBadge, VisibilityBadge, Avatar, AvatarStack } from "@/components/ui";
 import { TaskActionButtons } from "@/components/task-action-buttons";
 import { AddAttachment } from "@/components/attachments";
 import { TaskChecklist, type ChecklistItemView } from "@/components/task-checklist";
@@ -29,6 +29,7 @@ export type TaskRowData = {
   dueDate: Date | string | null;
   completedAt: Date | string | null;
   assignee?: { id: string; name: string | null; image?: string | null } | null;
+  assignees?: Array<{ id: string; name: string | null; image?: string | null }>;
   project?: { id: string; name: string; code: string } | null;
   projectCode?: string | null;
   notApplicable?: boolean;
@@ -372,7 +373,9 @@ export function TaskRow({
           className="mt-0.5"
           onUpload={() => setUploadOpen((v) => !v)}
         />
-        {task.assignee ? (
+        {task.assignees && task.assignees.length > 0 ? (
+          <AvatarStack people={task.assignees} size={22} className="mt-0.5" />
+        ) : task.assignee ? (
           <Avatar name={task.assignee.name} image={task.assignee.image} size={22} className="mt-0.5" />
         ) : null}
       </div>

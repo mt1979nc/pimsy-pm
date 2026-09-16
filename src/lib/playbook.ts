@@ -27,7 +27,8 @@ import {
 import { dockPlaybookDescriptionForTitle } from "@/db/dock-playbook-copy";
 import { recommendPhaseSchedule, scheduleFromOffsets } from "@/lib/project-timeline";
 import type { ForecastSectionInput } from "@/lib/project-timeline";
-import { resolveAssigneeForRole, canonicalStaffingRole } from "@/lib/staffing";
+import { canonicalStaffingRole } from "@/lib/staffing";
+import { insertTaskAssigneeRows, newTaskAssigneeIds } from "@/lib/task-assignees";
 import { refreshProjectCounters } from "@/lib/rollup";
 import { syncMilestonesFromTaskCompletion } from "@/lib/milestone-rollup";
 import { copyLibraryAssetToTask, ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
@@ -273,12 +274,19 @@ export async function materializeTemplatesOnProject(opts: {
           minDate: opts.start,
         });
         const parentLiveId = tt.parentTaskId ? (templateIdToTaskId.get(tt.parentTaskId) ?? null) : null;
-        const assigneeId = resolveAssigneeForRole(
-          tt.defaultRole,
-          opts.roleAssignments,
-          opts.defaultInternalAssigneeId,
-          tt.ownerSide,
-        );
+        const assigneeIds = newTaskAssigneeIds({
+          task: {
+            title: tt.title,
+            ownerSide: tt.ownerSide,
+            defaultRole: tt.defaultRole,
+            overlapKey: tt.overlapKey,
+            areaKey: tt.areaKey,
+          },
+          phaseName: tp.name,
+          roleAssignments: opts.roleAssignments,
+          fallbackLeadId: opts.defaultInternalAssigneeId,
+        });
+        const assigneeId = assigneeIds[0] ?? null;
         const [created] = await opts.tx
           .insert(tasks)
           .values({
@@ -304,6 +312,14 @@ export async function materializeTemplatesOnProject(opts: {
           .returning({ id: tasks.id });
         templateIdToTaskId.set(tt.id, created.id);
         taskCount += 1;
+        if (assigneeIds.length > 0) {
+          await insertTaskAssigneeRows(opts.tx, {
+            taskId: created.id,
+            userIds: assigneeIds,
+            actorId: opts.actorId,
+            source: "AUTO_ROLE",
+          });
+        }
 
         const checklist = await opts.tx.query.templateTaskChecklistItems.findMany({
           where: eq(templateTaskChecklistItems.templateTaskId, tt.id),

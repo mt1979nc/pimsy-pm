@@ -69,6 +69,8 @@ import {
   setPhaseNotApplicable,
 } from "@/lib/playbook";
 import { ASSIGNABLE_PROJECT_ROLES } from "@/lib/staffing";
+import { autoAssignForProjectRole } from "@/lib/task-assignees";
+import { isCustomerMemberRole } from "@/lib/task-role-match";
 import {
   parseExcludeFromAnalytics,
   parseExcludeFromAnalyticsIfPresent,
@@ -565,6 +567,22 @@ export async function updateProject(
     })
     .where(eq(projects.id, projectId));
 
+  if (leadId && leadId !== before.leadId) {
+    await db
+      .insert(projectMembers)
+      .values({ projectId, userId: leadId, role: "LEAD" })
+      .onConflictDoUpdate({
+        target: [projectMembers.projectId, projectMembers.userId],
+        set: { role: "LEAD" },
+      });
+    await autoAssignForProjectRole({
+      projectId,
+      userId: leadId,
+      role: "LEAD",
+      actorId: actor.id,
+    });
+  }
+
   if (slip.slipped) {
     await commitGoLiveSlip({
       actor,
@@ -721,16 +739,34 @@ export async function addProjectMember(
     if (!project?.customerAccountId || target.customerAccountId !== project.customerAccountId) {
       return { error: "That contact belongs to a different customer account." };
     }
+  } else if (isCustomerMemberRole(role)) {
+    return { error: "That role is for a customer contact." };
   }
+
+  const storedRole = target.role === "CUSTOMER"
+    ? isCustomerMemberRole(role)
+      ? role
+      : "CUSTOMER_CONTACT"
+    : role;
 
   await db
     .insert(projectMembers)
     .values({
       projectId,
       userId,
-      role: target.role === "CUSTOMER" ? "CUSTOMER_CONTACT" : role,
+      role: storedRole,
     })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: [projectMembers.projectId, projectMembers.userId],
+      set: { role: storedRole },
+    });
+
+  await autoAssignForProjectRole({
+    projectId,
+    userId,
+    role: storedRole,
+    actorId: actor.id,
+  });
 
   await audit({
     actor,
@@ -755,6 +791,65 @@ export async function addProjectMember(
   }
 
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/settings`);
+  revalidatePath(`/projects/${projectId}/tasks`);
+  revalidatePath(`/portal/projects/${projectId}`);
+  revalidateAboutSurfaces({ projectId, customerAccountId: project?.customerAccountId });
+  return { ok: true };
+}
+
+export async function setProjectMemberRole(
+  projectId: string,
+  userId: string,
+  roleRaw: string,
+): Promise<{ ok: true } | { error: string }> {
+  const actor = await requireStaff();
+  await assertProjectWrite(actor, projectId);
+  if (!ASSIGNABLE_PROJECT_ROLES.includes(roleRaw as (typeof ASSIGNABLE_PROJECT_ROLES)[number])) {
+    return { error: "Pick a valid project role." };
+  }
+  const role = roleRaw as (typeof ASSIGNABLE_PROJECT_ROLES)[number];
+  const target = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { id: true, role: true, customerAccountId: true, name: true },
+  });
+  if (!target) return { error: "That person no longer exists." };
+  if (target.role === "CUSTOMER" && !isCustomerMemberRole(role)) {
+    return { error: "Pick project lead, billing, or team member for a customer contact." };
+  }
+  if (target.role !== "CUSTOMER" && isCustomerMemberRole(role)) {
+    return { error: "That role is for a customer contact." };
+  }
+
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { customerAccountId: true },
+  });
+
+  await db
+    .update(projectMembers)
+    .set({ role })
+    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
+
+  await autoAssignForProjectRole({
+    projectId,
+    userId,
+    role,
+    actorId: actor.id,
+  });
+
+  await audit({
+    actor,
+    action: "project.member.role_changed",
+    entityType: "project",
+    entityId: projectId,
+    summary: `${target.name ?? userId} → ${role}`,
+  });
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/settings`);
+  revalidatePath(`/projects/${projectId}/tasks`);
+  revalidatePath(`/portal/projects/${projectId}`);
   revalidateAboutSurfaces({ projectId, customerAccountId: project?.customerAccountId });
   return { ok: true };
 }

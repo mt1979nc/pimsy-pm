@@ -44,9 +44,9 @@ describe("task list filter and completed collapse", () => {
     expect(rows.map((r) => r.id)).toEqual(["logos"]);
   });
 
-  it("Mine view uses assigneeId", () => {
+  it("Mine view uses assigneeId or assigneeIds", () => {
     const withAssignee = tree.map((row) =>
-      row.id === "logos" ? { ...row, assigneeId: "sam" } : row,
+      row.id === "logos" ? { ...row, assigneeIds: ["sam"] } : row,
     );
     const rows = filterNestedTasks(withAssignee, {
       query: "",

@@ -390,6 +390,46 @@ export function Avatar({
   );
 }
 
+export function AvatarStack({
+  people,
+  size = 22,
+  max = 3,
+  className,
+}: {
+  people: Array<{ id?: string; name: string | null; image?: string | null }>;
+  size?: number;
+  max?: number;
+  className?: string;
+}) {
+  if (people.length === 0) return null;
+  const shown = people.slice(0, max);
+  const extra = people.length - shown.length;
+  return (
+    <span
+      className={cn("inline-flex items-center", className)}
+      title={people.map((p) => p.name).filter(Boolean).join(", ")}
+    >
+      {shown.map((p, i) => (
+        <Avatar
+          key={p.id ?? `${p.name}-${i}`}
+          name={p.name}
+          image={p.image}
+          size={size}
+          className={cn("ring-2 ring-surface", i > 0 && "-ml-1.5")}
+        />
+      ))}
+      {extra > 0 ? (
+        <span
+          className="-ml-1.5 inline-flex items-center justify-center rounded-full bg-surface-2 text-[10px] font-medium text-ink-2 ring-2 ring-surface"
+          style={{ width: size, height: size }}
+        >
+          +{extra}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export function ProgressBar({
   value,
   total,
