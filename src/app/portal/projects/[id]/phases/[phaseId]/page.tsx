@@ -82,6 +82,7 @@ export default async function PortalPhasePage({
         description: resolveTaskDescription(t.title, t.description),
         status: t.status,
         dueDate: iso(t.dueDate),
+        sessionAt: iso(t.sessionAt),
         ownerSide: t.ownerSide,
         parentTaskId: t.parentTaskId,
         assigneeId: t.assigneeId,

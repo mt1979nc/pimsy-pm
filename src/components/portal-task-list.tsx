@@ -23,6 +23,7 @@ export type PortalListTask = {
   description: string | null;
   status: string;
   dueDate: string | null;
+  sessionAt?: string | null;
   ownerSide: "INTERNAL" | "CUSTOMER";
   parentTaskId: string | null;
   assigneeId?: string | null;
@@ -84,6 +85,7 @@ export function PortalPhaseTaskList({
             description: t.description,
             status: t.status,
             dueDate: t.dueDate,
+            sessionAt: t.sessionAt ?? null,
             projectId,
             projectCode,
             commentCount: t.commentCount,

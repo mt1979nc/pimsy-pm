@@ -112,14 +112,17 @@ export default async function ProjectTasksPage({
     assetsByTaskId[a.taskId] = list;
   }
 
+  const titleById = new Map(allTasks.map((t) => [t.id, t.title]));
   const checklistByTaskId: Record<string, ChecklistItemView[]> = {};
   for (const c of checklistRows) {
     const list = checklistByTaskId[c.taskId] ?? [];
+    const fromTitle = c.carriedFromTaskId ? titleById.get(c.carriedFromTaskId) : null;
     list.push({
       id: c.id,
       label: c.label,
       done: c.done,
       visibility: c.visibility,
+      carriedFromLabel: fromTitle ?? null,
     });
     checklistByTaskId[c.taskId] = list;
   }
@@ -159,6 +162,7 @@ export default async function ProjectTasksPage({
         visibility: t.visibility,
         ownerSide: t.ownerSide,
         dueDate: iso(t.dueDate),
+        sessionAt: iso(t.sessionAt),
         completedAt: iso(t.completedAt),
         assignee: t.assignee,
         assignees: assigneesByTask.get(t.id) ?? (t.assignee ? [t.assignee] : []),

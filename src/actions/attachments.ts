@@ -35,6 +35,8 @@ import { attachLibraryToLiveTask } from "@/lib/library";
 import { checkUpload, putFile, deleteFile, isImage } from "@/lib/storage";
 import { audit } from "@/lib/audit";
 import { taskAssigneeIds } from "@/lib/task-assignees";
+import { mirrorRecordingToSession } from "@/lib/training-ops";
+import { shouldTreatLinkAsRecording } from "@/lib/training-session";
 import type { ActionState } from "./messages";
 
 /** Load a task the actor may act on, and the visibility ceiling that applies. */
@@ -111,6 +113,9 @@ function revalidateTask(projectId: string, taskId: string) {
   revalidatePath(`/projects/${projectId}/tasks`);
   revalidatePath(`/portal/projects/${projectId}/tasks/${taskId}`);
   revalidatePath(`/portal/projects/${projectId}`);
+  revalidatePath(`/portal/projects/${projectId}/recordings`);
+  revalidatePath(`/projects/${projectId}/settings`);
+  revalidatePath(`/projects/${projectId}/customer-view`);
 }
 
 // ---------------------------------------------------------------------------
@@ -150,15 +155,27 @@ export async function addTaskLink(
   // An attachment can never be more visible than the task carrying it.
   const effective = task.visibility === "INTERNAL" ? "INTERNAL" : visibility;
 
-  await db.insert(fileAssets).values({
-    name: defaultLinkLabel(parsedUrl.url, parsed.data.name),
-    kind: "LINK",
-    url: parsedUrl.url.toString(),
-    visibility: effective,
-    taskId: task.id,
-    projectId: task.projectId,
-    uploadedById: actor.id,
-  });
+  if (shouldTreatLinkAsRecording(task.title, parsedUrl.url)) {
+    await mirrorRecordingToSession({
+      projectId: task.projectId,
+      url: parsedUrl.url.toString(),
+      name: defaultLinkLabel(parsedUrl.url, parsed.data.name),
+      visibility: effective,
+      uploadedById: actor.id,
+      hintTaskId: task.id,
+      hintName: parsed.data.name ?? task.title,
+    });
+  } else {
+    await db.insert(fileAssets).values({
+      name: defaultLinkLabel(parsedUrl.url, parsed.data.name),
+      kind: "LINK",
+      url: parsedUrl.url.toString(),
+      visibility: effective,
+      taskId: task.id,
+      projectId: task.projectId,
+      uploadedById: actor.id,
+    });
+  }
 
   await audit({
     actor,
@@ -212,14 +229,13 @@ const recordingSchema = z.object({
   name: z.string().trim().min(1, "Give it a name, e.g. \"Core Training — Session 2\".").max(200),
   description: z.string().trim().max(2000).optional(),
   visibility: z.enum(["INTERNAL", "SHARED"]).optional(),
+  taskId: z.string().optional(),
 });
 
 /**
- * A training-session recording, shown in the portal's Recordings tab. Always
- * project-level (no task) since a recording isn't one action item. Defaults
- * to INTERNAL — same "hide until relevant" pattern as everything else in the
- * portal — so a specialist adds it privately first and shares it once it's
- * ready for the customer to rewatch.
+ * A training-session recording. Shown on the portal Recordings tab, and
+ * mirrored onto the matching Training N task when a session is selected or
+ * the name parses (e.g. "Training 2").
  */
 export async function addProjectRecording(
   _prev: ActionState,
@@ -233,6 +249,7 @@ export async function addProjectRecording(
     name: formData.get("name"),
     description: formData.get("description")?.toString() || undefined,
     visibility: formData.get("visibility")?.toString() || undefined,
+    taskId: formData.get("taskId")?.toString() || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
@@ -244,15 +261,15 @@ export async function addProjectRecording(
   await assertProjectWrite(actor, parsed.data.projectId);
   const visibility = resolveVisibilityForActor(actor, parsed.data.visibility);
 
-  await db.insert(fileAssets).values({
-    name: parsed.data.name,
-    kind: "LINK",
+  const mirrored = await mirrorRecordingToSession({
+    projectId: parsed.data.projectId,
     url: parsedUrl.url.toString(),
+    name: parsed.data.name,
     description: parsed.data.description || null,
     visibility,
-    isRecording: true,
-    projectId: parsed.data.projectId,
     uploadedById: actor.id,
+    hintTaskId: parsed.data.taskId || null,
+    hintName: parsed.data.name,
   });
 
   await audit({
@@ -261,11 +278,18 @@ export async function addProjectRecording(
     entityType: "project",
     entityId: parsed.data.projectId,
     summary: parsed.data.name,
-    metadata: { visibility },
+    metadata: { visibility, taskId: mirrored.sessionTaskId, created: mirrored.created },
   });
 
   revalidatePath(`/projects/${parsed.data.projectId}/settings`);
+  revalidatePath(`/projects/${parsed.data.projectId}/tasks`);
+  if (mirrored.sessionTaskId) {
+    revalidatePath(`/projects/${parsed.data.projectId}/tasks/${mirrored.sessionTaskId}`);
+    revalidatePath(`/portal/projects/${parsed.data.projectId}/tasks/${mirrored.sessionTaskId}`);
+  }
   revalidatePath(`/portal/projects/${parsed.data.projectId}`);
+  revalidatePath(`/portal/projects/${parsed.data.projectId}/recordings`);
+  revalidatePath(`/projects/${parsed.data.projectId}/customer-view`);
   return { ok: true };
 }
 

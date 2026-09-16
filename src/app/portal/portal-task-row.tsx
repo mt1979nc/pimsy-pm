@@ -8,6 +8,7 @@ import { AddAttachment } from "@/components/attachments";
 import { CommentCountBadge } from "@/components/comment-count-badge";
 import { dueLabel, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { scheduledSessionLabel } from "@/lib/training-session";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
 import type { BookingUrlMap } from "@/lib/booking-urls";
 
@@ -24,6 +25,7 @@ export function PortalTaskRow({
     description: string | null;
     status: string;
     dueDate: string | null;
+    sessionAt?: string | null;
     projectName?: string | null;
     projectId?: string | null;
     projectCode?: string | null;
@@ -134,7 +136,9 @@ export function PortalTaskRow({
             />
           </div>
         ) : null}
-        {task.dueDate ? (
+        {task.sessionAt ? (
+          <div className="mt-1 text-[12px] font-medium text-ink-2">{scheduledSessionLabel(task.sessionAt)}</div>
+        ) : task.dueDate ? (
           <div className={cn("mt-1 text-[12px]", overdue ? "font-medium text-red" : "text-ink-3")}>
             {dueLabel(task.dueDate)}
           </div>

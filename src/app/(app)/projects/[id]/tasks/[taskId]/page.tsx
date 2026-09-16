@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq, ne, asc, isNull } from "drizzle-orm";
+import { and, eq, ne, asc, isNull, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { libraryAssets, phases, tasks, taskComments, taskChecklistItems, users, projectScopes } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
@@ -35,6 +35,12 @@ import { buildPimsyLoginConfirmation, isConfirmUsersLoggedInTitle } from "@/lib/
 import { showReviewRequiredBadge } from "@/lib/discovery-config-review";
 import { listConnectedPeers } from "@/lib/connected-task-sync";
 import { resolveProjectBookingUrls } from "@/lib/booking-urls";
+import { TrainingSessionBook } from "@/components/training-session-book";
+import {
+  canBookTrainingSession,
+  isTrainingSessionParent,
+  scheduledSessionLabel,
+} from "@/lib/training-session";
 
 export const dynamic = "force-dynamic";
 
@@ -133,6 +139,7 @@ export default async function TaskDetailPage({
         visibility: true,
         ownerSide: true,
         dueDate: true,
+        sessionAt: true,
         completedAt: true,
         notApplicable: true,
         priority: true,
@@ -171,6 +178,29 @@ export default async function TaskDetailPage({
   const attachedLibraryIds = attachments
     .map((a) => a.libraryAssetId)
     .filter((id): id is string => Boolean(id));
+
+  const carriedIds = [
+    ...new Set(
+      checklist.map((c) => c.carriedFromTaskId).filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const carriedRows = carriedIds.length
+    ? await db.query.tasks.findMany({
+        where: inArray(tasks.id, carriedIds),
+        columns: { id: true, title: true },
+      })
+    : [];
+  const carriedTitleById = new Map(carriedRows.map((r) => [r.id, r.title]));
+  const checklistView = checklist.map((c) => ({
+    id: c.id,
+    label: c.label,
+    done: c.done,
+    visibility: c.visibility,
+    carriedFromLabel: c.carriedFromTaskId ? (carriedTitleById.get(c.carriedFromTaskId) ?? null) : null,
+  }));
+  const sessionTask = canBookTrainingSession(task.title);
+  const agendaTask = isTrainingSessionParent(task.title);
+  const sessionLabel = scheduledSessionLabel(task.sessionAt);
 
   // A stale completedAt from an earlier "done" must not read as complete once
   // the task is reopened — the status is the source of truth.
@@ -238,11 +268,14 @@ export default async function TaskDetailPage({
             bookingUrls={resolveProjectBookingUrls(task.project)}
           />
         </div>
+        {sessionLabel ? (
+          <p className="mt-1.5 text-[13.5px] font-medium text-ink">{sessionLabel}</p>
+        ) : null}
         {task.dueDate ? (
           <p className={cn("mt-1.5 text-[13.5px]", overdue ? "font-medium text-red" : "text-ink-2")}>
             {dueLabel(task.dueDate, completedAt)} · {fmtDate(task.dueDate)}
           </p>
-        ) : (
+        ) : sessionLabel ? null : (
           <p className="mt-1.5 text-[13.5px] text-ink-3">No due date</p>
         )}
         {connectedPeers.length > 0 ? (
@@ -327,15 +360,31 @@ export default async function TaskDetailPage({
             />
           </Card>
 
+          {sessionTask ? (
+            <Card>
+              <CardHeader
+                title="Session time"
+                subtitle="Booked on the specialist calendar — saved on this training task"
+              />
+              <div className="px-5 py-4">
+                <TrainingSessionBook taskId={task.id} sessionAt={task.sessionAt} />
+              </div>
+            </Card>
+          ) : null}
+
           {checklist.length > 0 ? (
             <Card>
               <CardHeader
-                title="Checklist"
-                subtitle="Check items off here — add or remove items on Templates."
+                title={agendaTask ? "Training agenda" : "Checklist"}
+                subtitle={
+                  agendaTask
+                    ? "Check areas off as you cover them. Incomplete items carry to the next session when this one is completed."
+                    : "Check items off here — add or remove items on Templates."
+                }
               />
               <TaskChecklist
                 taskId={task.id}
-                items={checklist}
+                items={checklistView}
                 canEdit={false}
                 canToggle
                 taskIsInternal={task.visibility === "INTERNAL"}

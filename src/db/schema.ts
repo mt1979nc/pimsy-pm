@@ -756,6 +756,12 @@ export const tasks = pgTable(
 
     startDate: timestamp("start_date", { withTimezone: true }),
     dueDate: timestamp("due_date", { withTimezone: true }),
+    /**
+     * Booked training-session slot (Outlook/calendar). Distinct from playbook
+     * `startDate`/`dueDate`, which stay timeline offsets and still move on a
+     * go-live slip. Null until staff records the meeting time.
+     */
+    sessionAt: timestamp("session_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     estimateHours: real("estimate_hours"),
     order: integer("order").notNull().default(0),
@@ -786,6 +792,7 @@ export const tasks = pgTable(
     index("task_project_status_idx").on(t.projectId, t.status),
     index("task_assignee_status_idx").on(t.assigneeId, t.status),
     index("task_due_idx").on(t.dueDate),
+    index("task_session_at_idx").on(t.sessionAt),
     index("task_phase_order_idx").on(t.phaseId, t.order),
     index("task_visibility_idx").on(t.visibility),
     index("task_owner_side_idx").on(t.ownerSide, t.status),
@@ -869,6 +876,10 @@ export const taskChecklistItems = pgTable(
     order: integer("order").notNull().default(0),
     visibility: visibilityEnum("visibility").notNull().default("SHARED"),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    /** When this agenda item was copied from an earlier session that did not cover it. */
+    carriedFromTaskId: text("carried_from_task_id").references((): AnyPgColumn => tasks.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -1128,9 +1139,9 @@ export const fileAssets = pgTable(
       onDelete: "set null",
     }),
     /**
-     * A recording is a LINK asset the portal's Recordings tab surfaces
-     * separately from ordinary shared documents. Not attached to a task —
-     * always project-level, since a training session isn't one action item.
+     * A recording is a LINK the portal Recordings tab surfaces. May also hang
+     * off the individual training-session task (`taskId`) so the same row
+     * mirrors onto that session. Project-level (null taskId) still allowed.
      */
     isRecording: boolean("is_recording").notNull().default(false),
 
