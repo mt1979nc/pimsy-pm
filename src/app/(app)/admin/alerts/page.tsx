@@ -12,6 +12,7 @@ import { Card, CardHeader, Badge, Avatar, EmptyState } from "@/components/ui";
 import { OrgDefaultsForm, UserAlertOverride } from "@/components/alert-settings";
 import { EmailKillSwitch } from "./email-switch";
 import { TeamsPanel } from "./teams-panel";
+import { ContactCard } from "@/components/contact-card";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Alerts" };
@@ -28,7 +29,17 @@ export default async function AdminAlertsPage() {
     }),
     db.query.users.findMany({
       where: and(eq(users.role, "CUSTOMER"), eq(users.isActive, true)),
-      columns: { id: true, name: true, email: true, role: true, image: true, notificationPrefs: true },
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        title: true,
+        image: true,
+        isActive: true,
+        lastSeenAt: true,
+        notificationPrefs: true,
+      },
       orderBy: [asc(users.name)],
       with: { customerAccount: { columns: { id: true, name: true } } },
     }),
@@ -129,23 +140,26 @@ export default async function AdminAlertsPage() {
             {contacts.map((u) => {
               const prefs = resolvePrefs(u, org);
               return (
-                <div key={u.id} className="flex flex-wrap items-start gap-3 px-4 py-2.5">
-                  <Avatar name={u.name} image={u.image} size={26} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] text-ink">{u.name ?? u.email}</div>
-                    <div className="truncate text-[12px] text-ink-3">{u.email}</div>
-                  </div>
-                  <Badge tone="violet">{u.customerAccount?.name ?? "No account"}</Badge>
-                  {!u.notificationPrefs ? <Badge>Defaults</Badge> : <Badge tone="brand">Custom</Badge>}
-                  {!prefs.emailEnabled ? <Badge tone="amber">Email off</Badge> : null}
-                  <UserAlertOverride
-                    userId={u.id}
-                    userName={u.name ?? u.email}
-                    types={typesFor(sideForRole(u.role))}
-                    prefs={prefs}
-                    usingDefaults={!u.notificationPrefs}
-                  />
-                </div>
+                <ContactCard
+                  key={u.id}
+                  person={u}
+                  badges={
+                    <>
+                      <Badge tone="violet">{u.customerAccount?.name ?? "No account"}</Badge>
+                      {!u.notificationPrefs ? <Badge>Defaults</Badge> : <Badge tone="brand">Custom</Badge>}
+                      {!prefs.emailEnabled ? <Badge tone="amber">Email off</Badge> : null}
+                    </>
+                  }
+                  actions={
+                    <UserAlertOverride
+                      userId={u.id}
+                      userName={u.name ?? u.email}
+                      types={typesFor(sideForRole(u.role))}
+                      prefs={prefs}
+                      usingDefaults={!u.notificationPrefs}
+                    />
+                  }
+                />
               );
             })}
           </div>

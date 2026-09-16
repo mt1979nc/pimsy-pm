@@ -271,6 +271,21 @@ describe("Director / morning snapshot", () => {
           initialGoLiveDate: null,
           targetGoLiveDate: null,
         },
+        {
+          id: "3",
+          code: "NEWKO",
+          name: "New Kickoff Site",
+          acronym: "NEWKO",
+          prismStatus: "pre-kickoff",
+          leadId: "am",
+          coLeadId: null,
+          ownerSplitPercent: 100,
+          estimatedHours: 20,
+          customHoursPerWeek: null,
+          startDate: d("2026-09-18"),
+          initialGoLiveDate: d("2026-11-01"),
+          targetGoLiveDate: d("2026-11-01"),
+        },
       ],
     });
     const snap = buildDirectorSnapshot({ asOf: d("2026-09-14"), forecast, exclusions: ["SENSORI"] });
@@ -278,6 +293,9 @@ describe("Director / morning snapshot", () => {
     expect(snap.pipelineCount).toBe(1);
     expect(snap.pipeline[0]?.acronym).toBe("PIPEX");
     expect(snap.goLivesNext14.map((g) => g.acronym)).toContain("CEDAR");
+    expect(snap.goLivesNext14[0]?.id).toBe("1");
+    expect(snap.kickoffsNext14.map((k) => k.acronym)).toContain("NEWKO");
+    expect(snap.kickoffsNext14[0]?.id).toBe("3");
     expect(snap.analysisExclusions).toEqual(["SENSORI"]);
     expect(snap.team).toHaveLength(1);
     expect(snap.team[0]?.thisWeekHours).toBeGreaterThan(0);

@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, ForbiddenError, NotFoundError } from "@/lib/authz";
-import { previewPortalAbout } from "@/lib/portal-preview";
+import { previewPortalAbout, previewPortalRecordings } from "@/lib/portal-preview";
 import { PortalAboutView } from "@/components/portal-about-view";
+import { extraKickoffFacts } from "@/lib/kickoff-about";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Customer view · About" };
@@ -23,6 +24,23 @@ export default async function CustomerViewAboutPage({
 
   const payload = await previewPortalAbout(id);
   if (!payload) notFound();
+  const recordings = await previewPortalRecordings(id);
+  const extraFacts = extraKickoffFacts(
+    {
+      startDate: payload.kickoffDate,
+      targetGoLiveDate: payload.goLiveDate,
+      zoomBookingUrl: payload.zoomBookingUrl,
+      crmAcronym: payload.crmAcronym,
+      aboutNotes: payload.aboutNotes,
+      leadName: payload.implementationTeam[0]?.name,
+      leadTitle: payload.implementationTeam[0]?.title,
+      customFields: {},
+      recordings,
+    },
+    "portal",
+  );
 
-  return <PortalAboutView payload={payload} projectId={id} staffPreview />;
+  return (
+    <PortalAboutView payload={payload} projectId={id} staffPreview extraFacts={extraFacts} />
+  );
 }

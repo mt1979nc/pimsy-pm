@@ -30,7 +30,7 @@ export default async function ManagementHubPage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <Stat label="This week load" value={`${snap.thisWeekLoad}h`} hint={`headroom ${snap.thisWeekHeadroom}h`} />
         <Stat
           label="Peak week"
@@ -40,6 +40,11 @@ export default async function ManagementHubPage() {
         />
         <Stat label="Hire now" value={snap.hireNow ? "Yes" : "No"} tone={snap.hireNow ? "red" : "green"} />
         <Stat label="Active / pre-KO" value={snap.activeCount} />
+        <Stat
+          label="Kickoffs 14d"
+          value={snap.kickoffsNext14.length}
+          hint={snap.kickoffsNext14[0] ? `next ${snap.kickoffsNext14[0].acronym}` : "none"}
+        />
         <Stat label="Pipeline" value={snap.pipelineCount} href="/management/engagements?status=pipeline" />
       </div>
 
@@ -81,7 +86,7 @@ export default async function ManagementHubPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader
             title="Go-lives next 14 days"
@@ -97,11 +102,36 @@ export default async function ManagementHubPage() {
           ) : (
             <ul className="divide-y divide-border">
               {snap.goLivesNext14.map((g) => (
-                <li key={g.acronym} className="flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]">
-                  <span className="font-medium text-ink">{g.acronym}</span>
-                  <span className="truncate text-ink-3">{g.name}</span>
-                  <span className="tabular-nums text-ink-2">
+                <li key={g.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]">
+                  <Link href={`/management/engagements/${g.id}`} className="min-w-0 font-medium text-ink hover:text-brand">
+                    <span className="block truncate">{g.acronym}</span>
+                    <span className="block truncate text-[12px] font-normal text-ink-3">{g.name}</span>
+                  </Link>
+                  <span className="shrink-0 tabular-nums text-ink-2">
                     {fmtShort(g.goLive)} · {g.daysUntil}d
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+        <Card>
+          <CardHeader
+            title="Kickoffs next 14 days"
+            subtitle="Same book — no extra analytics"
+          />
+          {snap.kickoffsNext14.length === 0 ? (
+            <p className="px-4 py-4 text-[13px] text-ink-3">No kickoffs scheduled in the next two weeks.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {snap.kickoffsNext14.map((k) => (
+                <li key={k.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]">
+                  <Link href={`/management/engagements/${k.id}`} className="min-w-0 font-medium text-ink hover:text-brand">
+                    <span className="block truncate">{k.acronym}</span>
+                    <span className="block truncate text-[12px] font-normal text-ink-3">{k.name}</span>
+                  </Link>
+                  <span className="shrink-0 tabular-nums text-ink-2">
+                    {fmtShort(k.kickoff)} · {k.daysUntil}d
                   </span>
                 </li>
               ))}

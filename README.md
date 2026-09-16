@@ -36,11 +36,24 @@ is the thing Dock cannot do. An internal thread can be promoted to shared; that
 action is deliberate, confirmed, and audit-logged.
 
 **Customer portal** — each practice signs in with a magic link and sees their
-timeline, their action items, shared milestones, project updates, shared
-documents, a **Learning Center** of searchable topic cards (Intro, Training
-Guide, Password Reset, Scheduling, Notes, Providers, Discovery, Billing — not
-Dock’s unlabeled PDF dump), and their conversation with your team.
+timeline, their action items, shared milestones, **project updates** (dated
+specialist snapshots — not a chat), shared documents, a **Learning Center** of
+searchable topic cards (Intro, Training Guide, Password Reset, Scheduling,
+Notes, Providers, Discovery, Billing — not Dock’s unlabeled PDF dump), About
+(kickoff date, go-live, specialist, Zoom booking, notes — not HubSpot), and
+their conversation with your team.
 Nothing else.
+
+**Project updates** — the Overview composer is the weekly “where are we?”
+snapshot (done / next / needs from the practice). Use it when the week’s
+picture changed or before a touchpoint. **Messages** are for conversation;
+a **task comment** is for one action item. Shared posts land on the customer
+portal (and can email contacts). Internal is a staff note — customers never
+see it.
+
+**About / kickoff** — staff About shows kickoff and go-live already stored on
+the project, Zoom booking, notes, and staff-only HubSpot / Prism / CRM key.
+The portal About tab never shows HubSpot.
 
 **Leadership reporting** — portfolio health, at-risk projects, go-live
 schedule, median cycle time, on-time rate, risk register, and per-specialist

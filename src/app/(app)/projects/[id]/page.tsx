@@ -27,6 +27,11 @@ import { cn } from "@/lib/cn";
 import { staffingRoleLabel } from "@/lib/staffing";
 import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
 import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
+import { ContactCard } from "@/components/contact-card";
+import {
+  PROJECT_UPDATES_PURPOSE,
+  PROJECT_UPDATES_WHEN,
+} from "@/lib/project-updates";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +49,7 @@ export default async function ProjectOverviewPage({
     with: {
       customerAccount: { columns: { id: true, name: true, practiceType: true, seatCount: true, priorSystem: true } },
       members: {
-        with: { user: { columns: { id: true, name: true, email: true, image: true, role: true } } },
+        with: { user: { columns: { id: true, name: true, email: true, image: true, role: true, title: true, phone: true, isActive: true, lastSeenAt: true } } },
       },
     },
   });
@@ -89,13 +94,17 @@ export default async function ProjectOverviewPage({
         <Card>
           <CardHeader
             title="Project updates"
-            subtitle="What the customer sees as the running record"
-            action={<StatusUpdateForm projectId={id} currentHealth={project.health} />}
+            subtitle="Weekly snapshot for the practice — not a chat"
           />
+          <p className="border-b border-border px-5 py-2.5 text-[12.5px] leading-relaxed text-ink-3">
+            {PROJECT_UPDATES_PURPOSE} {PROJECT_UPDATES_WHEN} Shared publishes to the portal and can
+            email contacts; Internal is staff-only.
+          </p>
+          <StatusUpdateForm projectId={id} currentHealth={project.health} />
           {updates.length === 0 ? (
             <EmptyState
               title="No updates posted yet"
-              description="A short weekly update keeps the customer out of your inbox."
+              description="Post when the picture changed, or before a touchpoint. Messages are for conversation; a task comment is for one action item."
             />
           ) : (
             <div className="divide-y divide-border">
@@ -274,13 +283,7 @@ export default async function ProjectOverviewPage({
               </div>
               <div className="divide-y divide-border">
                 {customerContacts.map((m) => (
-                  <div key={m.id} className="flex items-center gap-2.5 px-4 py-2.5">
-                    <Avatar name={m.user.name} image={m.user.image} size={24} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] text-ink">{m.user.name}</div>
-                      <div className="truncate text-[12px] text-ink-3">{m.user.email}</div>
-                    </div>
-                  </div>
+                  <ContactCard key={m.id} person={m.user} />
                 ))}
               </div>
             </>

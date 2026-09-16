@@ -258,7 +258,10 @@ export default async function PortalProjectPage({
 
           {updates.length > 0 ? (
             <Card>
-              <CardHeader title="Project updates" subtitle="From your implementation team" />
+              <CardHeader
+                title="Project updates"
+                subtitle="Dated snapshots from your specialist — not a replacement for Messages"
+              />
               <div className="divide-y divide-border">
                 {updates.map((u) => (
                   <div key={u.id} className="px-5 py-4">

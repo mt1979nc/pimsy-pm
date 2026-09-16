@@ -1,18 +1,22 @@
 import { Card, CardHeader, EmptyState } from "@/components/ui";
 import { AboutContactCardGrid } from "@/components/about-contact-card";
 import { AboutKickoffPanel } from "@/components/about-kickoff-panel";
+import { KickoffFacts } from "@/components/kickoff-facts";
+import type { KickoffFact } from "@/lib/kickoff-about";
 import { portalAboutHasContent, type PortalAboutPayload } from "@/lib/about-profile";
 
 export function PortalAboutView({
   payload,
   projectId,
   staffPreview,
+  extraFacts = [],
 }: {
   payload: PortalAboutPayload;
   projectId: string;
   staffPreview: boolean;
+  extraFacts?: KickoffFact[];
 }) {
-  if (!portalAboutHasContent(payload)) {
+  if (!portalAboutHasContent(payload) && extraFacts.length === 0) {
     return (
       <Card>
         <CardHeader
@@ -55,6 +59,11 @@ export function PortalAboutView({
           projectId={projectId}
           staffLinks={false}
         />
+        {extraFacts.length > 0 ? (
+          <div className="border-t border-border px-5 py-4">
+            <KickoffFacts facts={extraFacts} />
+          </div>
+        ) : null}
         {payload.aboutNotes ? (
           <div className="border-t border-border px-5 py-4">
             <div className="text-[11.5px] uppercase tracking-wide text-ink-3">Notes</div>

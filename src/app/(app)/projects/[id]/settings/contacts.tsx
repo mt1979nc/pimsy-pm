@@ -4,14 +4,15 @@ import { useActionState, useEffect, useRef, useState, useTransition } from "reac
 import { addProjectMember, removeProjectMember } from "@/actions/projects";
 import { inviteCustomerContact } from "@/actions/customers";
 import { SubmitButton, FormError } from "@/components/submit-button";
-import { Button, Field, inputClass, Avatar, Badge, EmptyState } from "@/components/ui";
-import { fmtRelative } from "@/lib/dates";
+import { Button, Field, inputClass, EmptyState } from "@/components/ui";
+import { ContactCard } from "@/components/contact-card";
 
 type Contact = {
   id: string;
   name: string | null;
   email: string;
   title: string | null;
+  phone?: string | null;
   image?: string | null;
   isActive: boolean;
   lastSeenAt: Date | string | null;
@@ -97,38 +98,29 @@ export function ProjectContacts({
       ) : (
         <div className="divide-y divide-border">
           {onProject.map((c) => (
-            <div key={c.id} className="flex items-center gap-3 px-4 py-2.5">
-              <Avatar name={c.name} image={c.image} size={28} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-[13px] text-ink">{c.name ?? c.email}</span>
-                  {!c.isActive ? <Badge tone="red">Access revoked</Badge> : null}
-                  {c.isActive && !c.lastSeenAt ? <Badge tone="amber">Never signed in</Badge> : null}
-                </div>
-                <div className="truncate text-[12px] text-ink-3">
-                  {c.email}
-                  {c.title ? ` · ${c.title}` : ""}
-                  {c.lastSeenAt ? ` · seen ${fmtRelative(c.lastSeenAt)}` : ""}
-                </div>
-              </div>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => {
-                  setError(null);
-                  start(async () => {
-                    try {
-                      await removeProjectMember(projectId, c.id);
-                    } catch (e) {
-                      setError(e instanceof Error ? e.message : "Could not remove them.");
-                    }
-                  });
-                }}
-                className="shrink-0 text-[12px] text-ink-3 underline-offset-2 hover:text-red hover:underline disabled:opacity-50"
-              >
-                Remove
-              </button>
-            </div>
+            <ContactCard
+              key={c.id}
+              person={c}
+              actions={
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => {
+                    setError(null);
+                    start(async () => {
+                      try {
+                        await removeProjectMember(projectId, c.id);
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : "Could not remove them.");
+                      }
+                    });
+                  }}
+                  className="text-[12px] text-ink-3 underline-offset-2 hover:text-red hover:underline disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              }
+            />
           ))}
         </div>
       )}
