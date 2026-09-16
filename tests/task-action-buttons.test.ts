@@ -193,15 +193,37 @@ describe("Dock task action buttons (PWMI Discovery)", () => {
     const buttons = resolveTaskActionButtons({
       title: "Discovery org details",
       taskHref: "/projects/p/tasks/t",
+      projectCode: "CEDAR",
     });
     expect(buttons).toHaveLength(1);
     expect(buttons[0]).toMatchObject({
       kind: "link",
       label: "Click Here",
-      href: DISCOVERY_WIZARD_URL,
       popup: true,
       resourceName: "Discovery Wizard",
     });
+    const href = new URL(buttons[0]!.href);
+    expect(href.origin + href.pathname).toBe(
+      new URL(DISCOVERY_WIZARD_URL).origin + new URL(DISCOVERY_WIZARD_URL).pathname,
+    );
+    expect(href.searchParams.get("project")).toBe("CEDAR");
+    expect(href.searchParams.get("projectId")).toBe("p");
+    expect(href.searchParams.get("taskId")).toBe("t");
+    expect(href.searchParams.get("audience")).toBe("staff");
+    expect(href.searchParams.get("task")).toMatch(/org details/i);
+  });
+
+  it("stamps portal audience when the task href is a portal route", () => {
+    const buttons = resolveTaskActionButtons({
+      title: "Organization Details Form",
+      taskHref: "/portal/projects/p/tasks/t",
+      projectCode: "TANC",
+      appOrigin: "https://path.example",
+    });
+    const href = new URL(buttons[0]!.href);
+    expect(href.searchParams.get("audience")).toBe("portal");
+    expect(href.searchParams.get("return")).toContain("https://path.example/go?");
+    expect(href.searchParams.get("return")).toContain("project=TANC");
   });
 
   it("covers every Implementation and RCM playbook title that should have a Dock button", () => {

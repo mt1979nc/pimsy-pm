@@ -15,8 +15,10 @@ import { cn } from "@/lib/cn";
 import { fileAssetOpenHref, libraryKindLabel, MISSING_LIBRARY_FILE_CUSTOMER_NOTE, MISSING_LIBRARY_FILE_STAFF_NOTE } from "@/lib/library-meta";
 import {
   DOWNLOAD_COMPLETE_UPLOAD_HINT,
+  isDiscoveryWizardResource,
   isPlaybookResourceAsset,
 } from "@/lib/playbook-resources";
+import { wizardLaunchFromTaskHref } from "@/lib/path-deep-links";
 
 type Asset = {
   id: string;
@@ -73,6 +75,7 @@ export function AttachmentList({
   canDelete = true,
   uploadRequest = false,
   staffPreview = false,
+  wizardLaunch,
 }: {
   assets: Asset[];
   currentUserId: string;
@@ -82,7 +85,31 @@ export function AttachmentList({
   uploadRequest?: boolean;
   /** Customer view: staff-facing missing-file note even though the list is read-only. */
   staffPreview?: boolean;
+  /** Stamp Discovery Wizard LINKs with PATH `/go` return context. */
+  wizardLaunch?: {
+    title: string;
+    taskHref: string;
+    projectCode?: string | null;
+  };
 }) {
+  const [appOrigin, setAppOrigin] = useState("");
+  useEffect(() => {
+    setAppOrigin(window.location.origin);
+  }, []);
+
+  function stampedHref(asset: Asset): string | null {
+    const raw = fileAssetOpenHref(asset);
+    if (!raw) return null;
+    if (wizardLaunch && asset.kind === "LINK" && isDiscoveryWizardResource(asset)) {
+      return wizardLaunchFromTaskHref(raw, {
+        title: wizardLaunch.title,
+        taskHref: wizardLaunch.taskHref,
+        projectCode: wizardLaunch.projectCode,
+        appOrigin: appOrigin || null,
+      });
+    }
+    return raw;
+  }
   if (assets.length === 0) {
     return (
       <p className="px-5 py-4 text-[13px] text-ink-3">
@@ -111,7 +138,7 @@ export function AttachmentList({
       {images.length > 0 ? (
         <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3">
           {images.map((a) => {
-            const openHref = fileAssetOpenHref(a);
+            const openHref = stampedHref(a);
             return (
             <figure key={a.id} className="group relative overflow-hidden rounded-lg border border-border">
               {openHref ? (
@@ -150,7 +177,7 @@ export function AttachmentList({
       {rest.length > 0 ? (
         <div className="divide-y divide-border">
           {rest.map((a) => {
-            const openHref = fileAssetOpenHref(a);
+            const openHref = stampedHref(a);
             const missingFile = a.kind !== "LINK" && !openHref;
             return (
             <div key={a.id} className="flex items-start gap-3 px-4 py-2.5">

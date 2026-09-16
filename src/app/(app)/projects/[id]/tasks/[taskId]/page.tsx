@@ -172,6 +172,7 @@ export default async function TaskDetailPage({
             title={task.title}
             assets={attachments}
             taskHref={`/projects/${id}/tasks/${taskId}`}
+            projectCode={task.project.code}
           />
         </div>
         {task.dueDate ? (
@@ -205,6 +206,11 @@ export default async function TaskDetailPage({
                   currentUserId={actor.id}
                   canManageVisibility
                   uploadRequest={uploadRequest}
+                  wizardLaunch={{
+                    title: task.title,
+                    taskHref: `/projects/${id}/tasks/${taskId}`,
+                    projectCode: task.project.code,
+                  }}
                 />
                 <AddAttachment
                   taskId={task.id}
@@ -315,6 +321,11 @@ export default async function TaskDetailPage({
                   currentUserId={actor.id}
                   canManageVisibility
                   uploadRequest={uploadRequest}
+                  wizardLaunch={{
+                    title: task.title,
+                    taskHref: `/projects/${id}/tasks/${taskId}`,
+                    projectCode: task.project.code,
+                  }}
                 />
                 <AddAttachment
                   taskId={task.id}

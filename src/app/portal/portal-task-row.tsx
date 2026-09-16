@@ -24,6 +24,7 @@ export function PortalTaskRow({
     dueDate: string | null;
     projectName?: string | null;
     projectId?: string | null;
+    projectCode?: string | null;
     commentCount?: number;
     visibility?: "INTERNAL" | "SHARED";
   };
@@ -98,6 +99,7 @@ export function PortalTaskRow({
               title={task.title}
               assets={assets}
               taskHref={taskHref}
+              projectCode={task.projectCode}
               compact
               onUpload={canUpload ? () => setUploadOpen((v) => !v) : undefined}
             />

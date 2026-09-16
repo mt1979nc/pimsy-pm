@@ -8,4 +8,4 @@ PATH attaches this as a **LINK** on Guided Discovery / Workflow Guided Discovery
 
 Practice teams: complete the wizard with your specialist during Guided Discovery. Billing questionnaire files still upload on the Billing Questionnaire task.
 
-Do not put patient information in the wizard or in this workspace.
+PATH opens this URL with the site and task in the query string, plus a `/go` return into the portal or staff app. Do not put patient information in the wizard or in this workspace.

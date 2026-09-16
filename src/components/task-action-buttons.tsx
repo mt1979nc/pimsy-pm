@@ -17,6 +17,7 @@ export function TaskActionButtons({
   title,
   assets,
   taskHref,
+  projectCode,
   compact = false,
   className,
   onUpload,
@@ -25,6 +26,8 @@ export function TaskActionButtons({
   title: string;
   assets?: TaskActionAsset[];
   taskHref?: string | null;
+  /** Human site code (CEDAR) stamped onto the wizard URL for Power Automate. */
+  projectCode?: string | null;
   compact?: boolean;
   className?: string;
   /** List: open an inline upload instead of navigating to the task page. */
@@ -32,9 +35,17 @@ export function TaskActionButtons({
   /** Customer view: hide Upload files (preview cannot accept files). */
   readOnly?: boolean;
 }) {
-  const buttons = resolveTaskActionButtons({ title, assets, taskHref }).filter(
-    (b) => !(readOnly && b.kind === "upload"),
-  );
+  const [appOrigin, setAppOrigin] = useState("");
+  useEffect(() => {
+    setAppOrigin(window.location.origin);
+  }, []);
+  const buttons = resolveTaskActionButtons({
+    title,
+    assets,
+    taskHref,
+    projectCode,
+    appOrigin: appOrigin || null,
+  }).filter((b) => !(readOnly && b.kind === "upload"));
   const [popup, setPopup] = useState<ResolvedTaskActionButton | null>(null);
 
   if (buttons.length === 0) return null;

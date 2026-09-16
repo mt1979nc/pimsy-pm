@@ -230,8 +230,27 @@ npm run db:resync:playbook-from-dock -- --apply # attach missing defaults; keep 
 ```
 
 Discovery Wizard is a **LINK** (`https://calm-mud-0fe119810.7.azurestaticapps.net/`)
-on the matching tasks — not a URL in the description. Same Blob Storage as task
-uploads.
+on the matching tasks — not a URL in the description. PATH stamps that URL with
+the site code / task / a `/go` return when Click Here is opened. Completion and
+Power Automate emails should use the durable PATH link, not the bare SWA:
+
+```
+https://<webapp>.azurewebsites.net/go?project=CEDAR&task=Organization%20Details%20Form
+https://<webapp>.azurewebsites.net/go?project=CEDAR&step=org
+https://<webapp>.azurewebsites.net/go?project=CEDAR&dest=about
+```
+
+`/go` sends customers to `/portal/projects/…` and staff to `/projects/…` after
+sign-in. Expand both audiences (JSON, no PHI):
+
+```
+GET https://<webapp>.azurewebsites.net/api/go?project=CEDAR&task=Organization%20Details%20Form
+Authorization: Bearer <PRISM_READ_API_KEY>
+```
+
+Wrong/missing secret without a session → 404 (same convention as `/api/prism/snapshot`).
+
+Same Blob Storage as task uploads.
 
 To change infrastructure
 (bump the App Service Plan tier, for instance), edit `azure/main.parameters.json`

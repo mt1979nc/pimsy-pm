@@ -1,6 +1,6 @@
 import { and, eq, ne, asc, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { phases, tasks, users, fileAssets, taskChecklistItems } from "@/db/schema";
+import { phases, projects, tasks, users, fileAssets, taskChecklistItems } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess } from "@/lib/authz";
 import { ProjectTaskBoard, type ProjectTaskListItem } from "@/components/project-task-list";
@@ -26,7 +26,7 @@ export default async function ProjectTasksPage({
   const actor = await requireStaff();
   await assertProjectAccess(actor, id);
 
-  const [projectPhases, allTasks, staff] = await Promise.all([
+  const [projectPhases, allTasks, staff, project] = await Promise.all([
     db.query.phases.findMany({
       where: eq(phases.projectId, id),
       orderBy: [asc(phases.order)],
@@ -40,6 +40,10 @@ export default async function ProjectTasksPage({
       where: and(eq(users.isActive, true), ne(users.role, "CUSTOMER")),
       columns: { id: true, name: true },
       orderBy: [asc(users.name)],
+    }),
+    db.query.projects.findFirst({
+      where: eq(projects.id, id),
+      columns: { id: true, code: true },
     }),
   ]);
 
@@ -125,6 +129,7 @@ export default async function ProjectTasksPage({
         depth: t.depth,
         phaseId: t.phaseId,
         order: t.order,
+        projectCode: project?.code,
       };
     });
   }
