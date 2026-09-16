@@ -41,7 +41,7 @@ export default async function DashboardPage() {
       portfolioSummary(actor),
       attentionProjects(actor, 6),
       myTasks(actor),
-      waitingOnCustomer(actor, 40),
+      waitingOnCustomer(actor, 80),
       upcomingMilestones(actor, 30, 8),
       listInboxThreads(actor, 8),
       waitingOnThreadRollup(actor),
