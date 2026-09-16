@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.14.0");
+    expect(APP_VERSION).toBe("1.14.1");
     expect(APP_VERSION).toMatch(/^1\.14\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,22 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.14.1 auto customer portal invite", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.14.1");
+    expect(note?.summary).toMatch(/auto-invite/i);
+    expect(note?.summary).toMatch(/PATH/);
+    expect(note?.summary).toMatch(/Resend|magic-link|set-password/i);
+    expect(note?.highlights?.some((h) => /New customer|New project|portal enabled/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Idempotent|pending|Resend invite/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /INTERNAL_EMAIL_DOMAINS/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Hold from live|Alexander/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/\bPHI\b/.test(h) || /patient information|No PHI/i.test(h))).toBe(
+      true,
+    );
+    expect(RELEASE_NOTES.find((n) => n.version === "1.14.0")).toBeTruthy();
   });
 
   it("documents v1.14.0 any-specialist access to implementation sites", () => {

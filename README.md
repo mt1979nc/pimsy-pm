@@ -255,9 +255,11 @@ that address is the configured `BOOTSTRAP_OWNER_EMAIL`.
 Each request overwrites the file, links work once, and they expire after 24
 hours.
 
-To see the customer side, open any project → **Settings** → **Portal contacts**
-→ invite a contact with any address, then use that sign-in link in a private
-window.
+To see the customer side, add a portal contact on **New customer** or **New project**
+(or **Settings → Portal contacts**). PATH emails the invite automatically when
+Resend is configured. Repeats are skipped; use **Resend invite** on the contact
+if they need a new link. In local dev the set-password URL is written to
+**`PASSWORD-RESET-LINK.txt`**. Open it in a private window.
 
 The first person to sign in with `BOOTSTRAP_OWNER_EMAIL` becomes `OWNER`.
 Anyone on a domain in `INTERNAL_EMAIL_DOMAINS` becomes a `SPECIALIST`. Every

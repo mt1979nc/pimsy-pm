@@ -151,7 +151,8 @@ export function ProjectSettingsForm({
             </span>
             <span className="block text-[12.5px] text-ink-3">
               When off, contacts at this practice cannot open the project at all — even shared
-              items.
+              items. Turning it on auto-invites account contacts who have not yet signed in
+              (skipped if they already have a pending invite).
             </span>
           </span>
         </label>

@@ -203,9 +203,10 @@ export function ProjectContacts({
           </Field>
 
           <p className="text-[12px] leading-relaxed text-ink-3">
-            They&apos;ll get an email with a sign-in link and be added to this project. They can
-            only ever see {customerName ?? "this customer"}&apos;s projects, and only the parts
-            marked visible to the customer.
+            They&apos;ll get a PATH invite email with a set-password link and be added to this
+            project. Repeats are skipped if they already have a pending invite or have signed in.
+            They can only ever see {customerName ?? "this customer"}&apos;s projects, and only the
+            parts marked visible to the customer.
           </p>
 
           <div className="flex justify-end gap-2">

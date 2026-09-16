@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.14.0";
+export const APP_VERSION = "1.14.1";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.14.1",
+    date: "2026-09-16",
+    summary:
+      "PATH auto-invites customer portal contacts when a site is set up or a contact is added for portal access, using the existing Resend set-password / magic-link path — no separate manual invite step on the common path.",
+    highlights: [
+      "Triggers: New customer (optional Portal contact), New project / turning Customer portal enabled on, adding a contact on the customer page or project Settings, adding an existing contact to a portal-enabled project. Dock WIP import and Prism import still never send invites.",
+      "Email is the existing Resend invite (PATH-branded set-password link, one hour, implementation logistics only — never post patient information). With no RESEND_API_KEY the link is written to PASSWORD-RESET-LINK.txt the same way forgot-password works locally.",
+      "Idempotent: a pending unused invite, an existing password, or a prior sign-in skips a repeat send. Staff Resend invite on the contact row force-mints a new link and emails it. Repeating the add-contact form does not spam.",
+      "INTERNAL_EMAIL_DOMAINS (and the bootstrap owner address) cannot be provisioned as CUSTOMER portal users — customers are not staff. Existing staff addresses stay refused.",
+      "No schema migrate. No playbook resync. PATH + Prism naming unchanged. Hold from live until Alexander ships. Out of scope: HubSpot-on-create, contact roles / Zoom booking, SSO.",
+    ],
+  },
   {
     version: "1.14.0",
     date: "2026-09-16",

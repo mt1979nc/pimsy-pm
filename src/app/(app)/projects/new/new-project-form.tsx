@@ -18,6 +18,7 @@ import { PLAYBOOK_PATHS, PLAYBOOK_PATH_META } from "@/lib/playbook-meta";
 import { STAFFING_ROLES, STAFFING_ROLE_LABELS, MANAGER_OVERVIEW_ROLES } from "@/lib/staffing";
 import { UsFederalHolidayToggle } from "@/components/us-federal-holiday-toggle";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
+import { PortalContactFields } from "@/components/portal-contact-fields";
 
 type Option = { id: string; name: string | null; staffingRole?: string | null };
 type ExistingProject = { id: string; name: string; code: string; customerAccountId: string | null };
@@ -225,6 +226,18 @@ export function NewProjectForm({
             <AnalyticsExcludeToggle />
           </div>
         </Card>
+
+        {!isInternal ? (
+          <Card>
+            <CardHeader
+              title="Portal contact"
+              subtitle="Optional. PATH invites them when this site is created — no separate invite step"
+            />
+            <div className="space-y-4 p-5">
+              <PortalContactFields />
+            </div>
+          </Card>
+        ) : null}
 
         <Card>
           <CardHeader

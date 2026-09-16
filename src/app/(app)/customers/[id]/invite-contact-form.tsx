@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { inviteCustomerContact, setUserActive } from "@/actions/customers";
+import { inviteCustomerContact, setUserActive, resendCustomerInvite } from "@/actions/customers";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Button, inputClass, Field, CardHeader } from "@/components/ui";
 
@@ -17,6 +17,7 @@ export function PortalContactsPanel({
   const [open, setOpen] = useState(false);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [emailSkipped, setEmailSkipped] = useState(false);
+  const [inviteSkipped, setInviteSkipped] = useState(false);
   const [copied, setCopied] = useState(false);
   const [state, action] = useActionState(inviteCustomerContact, {});
   const formRef = useRef<HTMLFormElement>(null);
@@ -25,6 +26,7 @@ export function PortalContactsPanel({
     if (state.ok) {
       formRef.current?.reset();
       setOpen(false);
+      setInviteSkipped(Boolean(state.inviteSkipped) && !state.inviteUrl);
       if (state.inviteUrl) {
         setInviteUrl(state.inviteUrl);
         setEmailSkipped(Boolean(state.emailSkipped));
@@ -56,6 +58,13 @@ export function PortalContactsPanel({
           ) : null
         }
       />
+
+      {inviteSkipped ? (
+        <p className="border-b border-border bg-amber-soft px-5 py-2.5 text-[12.5px] text-amber">
+          That contact already has PATH access or a pending invite. Use Resend invite if they
+          need a new link.
+        </p>
+      ) : null}
 
       {inviteUrl ? (
         <div className="space-y-2 border-b border-border bg-brand-soft px-5 py-3">
@@ -117,9 +126,11 @@ export function PortalContactsPanel({
           </div>
 
           <p className="text-[12px] leading-relaxed text-ink-3">
-            They&apos;ll get an email with a one-click sign-in link when Resend is configured.
-            They can only ever see this customer&apos;s projects, and only the parts marked visible
-            to the customer. A copyable invite link always appears here for staff after send.
+            They&apos;ll get a PATH invite email with a one-click set-password link when Resend
+            is configured. Repeats are skipped if they already have a pending invite or have
+            signed in — use Resend invite on the contact if they need a new link. They can only
+            ever see this customer&apos;s projects, and only the parts marked visible to the
+            customer. A copyable invite link appears here after a new send.
           </p>
 
           <div className="flex justify-end gap-2">
@@ -170,5 +181,72 @@ export function ToggleContactActive({
     >
       {isActive ? "Revoke access" : "Restore access"}
     </button>
+  );
+}
+
+export function ResendContactInvite({ userId }: { userId: string }) {
+  const [pending, start] = useTransition();
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [emailSkipped, setEmailSkipped] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function copyLink() {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <div className="shrink-0 text-right">
+      {inviteUrl ? (
+        <div className="mb-1 max-w-[220px] space-y-1">
+          <p className="text-[11px] text-ink-3">
+            {emailSkipped ? "Link created (email not sent):" : "New invite sent. Copy:"}
+          </p>
+          <input
+            readOnly
+            value={inviteUrl}
+            className={`${inputClass} font-mono text-[11px]`}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <button
+            type="button"
+            onClick={() => void copyLink()}
+            className="text-[12px] text-ink-3 underline-offset-2 hover:text-ink hover:underline"
+          >
+            {copied ? "Copied" : "Copy link"}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            start(async () => {
+              setError(null);
+              const result = await resendCustomerInvite(userId);
+              if (result.error) {
+                setError(result.error);
+                return;
+              }
+              if (result.inviteUrl) {
+                setInviteUrl(result.inviteUrl);
+                setEmailSkipped(Boolean(result.emailSkipped));
+                setCopied(false);
+              }
+            })
+          }
+          className="text-[12px] text-ink-3 underline-offset-2 hover:text-ink hover:underline disabled:opacity-50"
+        >
+          {pending ? "Sending…" : "Resend invite"}
+        </button>
+      )}
+      {error ? <p className="text-[11px] text-red">{error}</p> : null}
+    </div>
   );
 }
