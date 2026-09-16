@@ -98,6 +98,12 @@ Three rules, enforced in `src/lib/authz.ts` and `src/lib/portal.ts`:
 2. A `CUSTOMER` user can only see rows whose `visibility` is `SHARED`.
 3. A `CUSTOMER` user can only reach projects with `portalEnabled = true`.
 
+Internal staff (`SPECIALIST` and leadership) can open and edit any unarchived
+project — covering specialists are not locked to the named primary assignee.
+`MEMBER` (RCM / billing) stays membership-scoped. Auto-assignment still uses
+the primary specialist and billing roles. Portfolio / Prism reporting stays
+OWNER / ADMIN / MANAGER.
+
 Reaching another customer's project returns **404, never 403** — a 403 would
 confirm the project exists.
 

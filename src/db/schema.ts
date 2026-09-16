@@ -34,8 +34,8 @@ export const roleEnum = pgEnum("role", [
   "OWNER", // full control including settings
   "ADMIN", // manage users, templates, all projects
   "MANAGER", // COO / director: read-all + portfolio reporting
-  "SPECIALIST", // implementation specialist: owns projects
-  "MEMBER", // internal contributor, assigned projects only
+  "SPECIALIST", // implementation specialist: can open/edit any delivery site
+  "MEMBER", // internal contributor (RCM / billing), assigned projects only
   "CUSTOMER", // external customer contact — portal only
 ]);
 

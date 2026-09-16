@@ -6,7 +6,10 @@
  *  1. A CUSTOMER user can only ever reach rows belonging to their own
  *     customerAccountId.
  *  2. A CUSTOMER user can only ever see rows whose visibility is SHARED.
- *  3. A CUSTOMER user can only reach projects with portalEnabled = true.
+ *  3. A CUSTOMER user can only ever reach projects with portalEnabled = true.
+ *  4. SPECIALIST staff can open and edit any unarchived project (Dock-parity
+ *     coverage). MEMBER stays membership-scoped. Portfolio / Prism stays
+ *     OWNER/ADMIN/MANAGER.
  *
  * Every portal query must go through `customerScope()` or one of the
  * `assert*` helpers below. Tests in tests/authz.test.ts lock this down.
@@ -36,13 +39,18 @@ const ADMIN_ROLES: Role[] = ["OWNER", "ADMIN"];
 /** Roles allowed to see portfolio-wide reporting (the COO view). */
 const PORTFOLIO_ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER"];
 /**
- * Roles that can read every project without explicit membership.
+ * Roles that can open and edit every project without being the named lead
+ * or an explicit project member.
  *
- * SPECIALIST is deliberately NOT here: a specialist should only reach
- * projects they lead or have been added to as a member, same as MEMBER.
- * Only leadership roles get the portfolio-wide view.
+ * Dock-parity for a small internal team (~15): any SPECIALIST can cover any
+ * WIP site. Primary specialist / billing membership still drives auto-assignment
+ * and staffing; it must not lock other specialists out.
+ *
+ * MEMBER (RCM / billing contributors) stay membership-scoped.
+ * CUSTOMER stays portal-scoped.
+ * Portfolio / Prism reporting stays OWNER/ADMIN/MANAGER only.
  */
-const READ_ALL_ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER"];
+const READ_ALL_ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER", "SPECIALIST"];
 
 export const isStaff = (a: Pick<Actor, "role">) => STAFF_ROLES.includes(a.role);
 export const isCustomer = (a: Pick<Actor, "role">) => a.role === "CUSTOMER";
@@ -51,6 +59,8 @@ export const canSeePortfolio = (a: Pick<Actor, "role">) => PORTFOLIO_ROLES.inclu
 /** Alias: Prism Management staffing / engagement edit (OWNER/ADMIN/MANAGER). */
 export const canManagePrismCapacity = (a: Pick<Actor, "role">) => canSeePortfolio(a);
 export const canReadAllProjects = (a: Pick<Actor, "role">) => READ_ALL_ROLES.includes(a.role);
+/** Team-wide open implies team-wide edit; create / delete / Prism stay leadership-only. */
+export const canWriteAllProjects = (a: Pick<Actor, "role">) => canReadAllProjects(a);
 
 /** Only staff may ever read INTERNAL rows. */
 export const canSeeInternal = (a: Pick<Actor, "role">) => isStaff(a);
@@ -59,7 +69,7 @@ export const canManageUsers = (a: Pick<Actor, "role">) => isAdmin(a);
 export const canManageTemplates = (a: Pick<Actor, "role">) => isAdmin(a);
 /** Learning Center curation uses the same OWNER/ADMIN bar as playbooks. */
 export const canManageLearningCenter = (a: Pick<Actor, "role">) => isAdmin(a);
-/** Leadership creates portfolio structure; specialists execute on assigned projects. */
+/** Leadership creates portfolio structure; specialists execute on existing sites. */
 export const canCreateProjects = (a: Pick<Actor, "role">) =>
   ["OWNER", "ADMIN", "MANAGER"].includes(a.role);
 
@@ -117,8 +127,8 @@ export function visibilityFilter(
 /**
  * Projects the actor is allowed to read.
  * - Customers: only their own account's portal-enabled, unarchived projects.
- * - Read-all staff: everything not archived.
- * - Other staff: projects they lead or are a member of.
+ * - Read-all staff (OWNER / ADMIN / MANAGER / SPECIALIST): everything not archived.
+ * - Other staff (MEMBER): projects they lead or are a member of.
  */
 export async function accessibleProjectIds(actor: Actor): Promise<string[]> {
   if (isCustomer(actor)) {
@@ -215,7 +225,7 @@ export async function assertProjectWrite(actor: Actor, projectId: string) {
     throw new ForbiddenError("Customer contacts cannot modify project structure.");
   }
   const project = await assertProjectAccess(actor, projectId);
-  if (isAdmin(actor) || actor.role === "MANAGER") return project;
+  if (canWriteAllProjects(actor)) return project;
   if (project.leadId === actor.id) return project;
 
   const membership = await db.query.projectMembers.findFirst({

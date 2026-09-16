@@ -20,6 +20,7 @@ function isClientModule(src: string): boolean {
 
 const FORBIDDEN = [
   /from ["']@\/db["']/,
+  /from ["']@\/lib\/authz["']/,
   /from ["']@\/lib\/rollup["']/,
   /from ["']@\/lib\/library["']/,
   /from ["']@\/lib\/analytics-scope["']/,
@@ -42,7 +43,7 @@ describe("client components stay off the Postgres client", () => {
     expect(files.length).toBeGreaterThan(20);
   });
 
-  it("does not import @/db, rollup, the library server module, or postgres", () => {
+  it("does not import @/db, authz, rollup, the library server module, or postgres", () => {
     const offenders: string[] = [];
     for (const file of files) {
       const src = readFileSync(file, "utf8");
