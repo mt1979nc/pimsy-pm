@@ -29,6 +29,7 @@ import {
   isCustomer,
   ForbiddenError,
   NotFoundError,
+  type Actor,
 } from "@/lib/authz";
 import {
   hardDeleteProject,
@@ -64,6 +65,13 @@ import {
   parseExcludeFromAnalytics,
   parseExcludeFromAnalyticsIfPresent,
 } from "@/lib/analytics-exclude";
+import {
+  autoInviteCustomerContact,
+  autoInviteCustomerContactsForProject,
+  parseOptionalPortalContact,
+  sendCustomerInvite,
+  type PortalContactFields,
+} from "@/lib/customer-invite";
 import type { ActionState } from "./messages";
 
 const scopeSchema = z.object({
@@ -86,6 +94,34 @@ function parseScope(raw: string | undefined): ImplementationScope | null {
   } catch {
     return null;
   }
+}
+
+async function invitePortalContactsForSite(opts: {
+  actor: Actor;
+  projectId: string;
+  customerAccountId: string | null | undefined;
+  portalEnabled: boolean;
+  newContact?: PortalContactFields | null;
+}) {
+  if (!opts.portalEnabled || !opts.customerAccountId) return;
+  if (opts.newContact) {
+    const invited = await autoInviteCustomerContact({
+      customerAccountId: opts.customerAccountId,
+      email: opts.newContact.email,
+      name: opts.newContact.name,
+      title: opts.newContact.title,
+      actor: opts.actor,
+      projectId: opts.projectId,
+    });
+    if (!invited.ok) {
+      console.error("auto-invite new project contact failed", invited.error);
+    }
+  }
+  await autoInviteCustomerContactsForProject({
+    projectId: opts.projectId,
+    customerAccountId: opts.customerAccountId,
+    actor: opts.actor,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -175,6 +211,12 @@ export async function createProject(
     return { error: "Pick the customer this project belongs to." };
   }
 
+  const portalContact = parseOptionalPortalContact(formData);
+  if (!portalContact.ok) return { error: portalContact.error };
+  if (d.type === "INTERNAL" && portalContact.contact) {
+    return { error: "Internal projects have no customer portal contacts." };
+  }
+
   const start = d.startDate ? (parseDateInput(d.startDate) ?? new Date()) : new Date();
   const code = await nextProjectCode(d.type);
 
@@ -239,6 +281,17 @@ export async function createProject(
       entityId: d.sourceProjectId,
       summary: "RCM track added (Prism data path)",
       metadata: { playbookPath, excludedAreaKeys },
+    });
+    const source = await db.query.projects.findFirst({
+      where: eq(projects.id, d.sourceProjectId),
+      columns: { customerAccountId: true, portalEnabled: true },
+    });
+    await invitePortalContactsForSite({
+      actor,
+      projectId: d.sourceProjectId,
+      customerAccountId: source?.customerAccountId,
+      portalEnabled: source?.portalEnabled ?? false,
+      newContact: portalContact.contact,
     });
     revalidatePrismSurfaces(d.sourceProjectId);
     revalidatePath(`/projects/${d.sourceProjectId}`);
@@ -368,6 +421,14 @@ export async function createProject(
       scoped: Boolean(scope),
       complexityTier: forecast?.complexityTier ?? null,
     },
+  });
+
+  await invitePortalContactsForSite({
+    actor,
+    projectId,
+    customerAccountId: d.type === "INTERNAL" ? null : d.customerAccountId,
+    portalEnabled: d.type !== "INTERNAL",
+    newContact: portalContact.contact,
   });
 
   revalidatePrismSurfaces(projectId);
@@ -510,6 +571,14 @@ export async function updateProject(
   }
 
   revalidatePrismSurfaces(projectId);
+  if (portalEnabled !== null && portalEnabled === "on" && !before.portalEnabled && before.customerAccountId) {
+    await invitePortalContactsForSite({
+      actor,
+      projectId,
+      customerAccountId: before.customerAccountId,
+      portalEnabled: true,
+    });
+  }
   return { ok: true };
 }
 
@@ -538,7 +607,7 @@ export async function addProjectMember(
 
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
-    columns: { customerAccountId: true },
+    columns: { customerAccountId: true, portalEnabled: true },
   });
 
   // A customer contact may only be added to their own account's project.
@@ -564,6 +633,20 @@ export async function addProjectMember(
     entityId: projectId,
     summary: `${target.name ?? userId} added`,
   });
+
+  if (target.role === "CUSTOMER" && project?.customerAccountId && project.portalEnabled) {
+    const account = await db.query.customerAccounts.findFirst({
+      where: eq(customerAccounts.id, project.customerAccountId),
+      columns: { name: true },
+    });
+    if (account) {
+      await sendCustomerInvite({
+        userId: target.id,
+        actor,
+        customerName: account.name,
+      });
+    }
+  }
 
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };
@@ -1064,7 +1147,7 @@ export async function inviteExistingContactToProject(projectId: string, userId: 
   if (!contact || contact.role !== "CUSTOMER") throw new ForbiddenError();
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
-    columns: { customerAccountId: true },
+    columns: { customerAccountId: true, portalEnabled: true },
   });
   if (!project?.customerAccountId || contact.customerAccountId !== project.customerAccountId) {
     throw new ForbiddenError("That contact belongs to a different customer.");
@@ -1073,6 +1156,19 @@ export async function inviteExistingContactToProject(projectId: string, userId: 
     .insert(projectMembers)
     .values({ projectId, userId, role: "CUSTOMER_CONTACT" })
     .onConflictDoNothing();
+  if (project.portalEnabled) {
+    const account = await db.query.customerAccounts.findFirst({
+      where: eq(customerAccounts.id, project.customerAccountId),
+      columns: { name: true },
+    });
+    if (account) {
+      await sendCustomerInvite({
+        userId,
+        actor,
+        customerName: account.name,
+      });
+    }
+  }
   revalidatePath(`/projects/${projectId}`);
 }
 

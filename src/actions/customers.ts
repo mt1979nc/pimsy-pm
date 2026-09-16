@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { customerAccounts, users, projectMembers, projects, passwordResetTokens } from "@/db/schema";
+import { customerAccounts, users } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { isAdmin, ForbiddenError, canCreateCustomers, canDeletePortfolioRecords } from "@/lib/authz";
 import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
@@ -16,14 +16,18 @@ import {
   planCustomerDelete,
 } from "@/lib/delete-records";
 import { audit } from "@/lib/audit";
-import { sendEmail, layout } from "@/lib/email";
-import { env } from "@/lib/env";
-import { generateResetToken, RESET_TOKEN_TTL_MS } from "@/lib/password";
 import type { ActionState } from "./messages";
 import {
   parseExcludeFromAnalytics,
   parseExcludeFromAnalyticsIfPresent,
 } from "@/lib/analytics-exclude";
+import {
+  autoInviteCustomerContact,
+  parseOptionalPortalContact,
+  sendCustomerInvite,
+  STAFF_DOMAIN_CONTACT_ERROR,
+} from "@/lib/customer-invite";
+import { isReservedStaffEmail } from "@/lib/internal-email";
 
 function slugify(s: string) {
   return s
@@ -70,6 +74,9 @@ export async function createCustomer(
   }
   const d = parsed.data;
 
+  const portalContact = parseOptionalPortalContact(formData);
+  if (!portalContact.ok) return { error: portalContact.error };
+
   let slug = slugify(d.name);
   for (let i = 2; i < 100; i++) {
     const clash = await db.query.customerAccounts.findFirst({
@@ -112,6 +119,28 @@ export async function createCustomer(
     entityId: id,
     summary: d.name,
   });
+
+  if (portalContact.contact) {
+    const invited = await autoInviteCustomerContact({
+      customerAccountId: id,
+      email: portalContact.contact.email,
+      name: portalContact.contact.name,
+      title: portalContact.contact.title,
+      actor,
+    });
+    if (!invited.ok) {
+      console.error("createCustomer auto-invite failed", invited.error);
+    } else if (invited.created || invited.inviteUrl) {
+      await audit({
+        actor,
+        action: "customer.contact.invited",
+        entityType: "user",
+        entityId: invited.userId,
+        summary: `${invited.email} → ${d.name}`,
+        metadata: { customerAccountId: id, auto: true, skipped: invited.skipped ?? false },
+      });
+    }
+  }
 
   revalidatePath("/customers");
   redirect(`/customers/${id}`);
@@ -181,7 +210,8 @@ const inviteSchema = z.object({
 /**
  * Provision a customer contact. This is the ONLY path that creates a CUSTOMER
  * user, and it always pins them to exactly one customer account — which is what
- * makes the portal scoping airtight.
+ * makes the portal scoping airtight. Invite email is sent automatically unless
+ * an unused invite is still pending or they have already signed in.
  */
 export async function inviteCustomerContact(
   _prev: ActionState,
@@ -200,103 +230,94 @@ export async function inviteCustomerContact(
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
   }
   const d = parsed.data;
+  if (isReservedStaffEmail(d.email)) return { error: STAFF_DOMAIN_CONTACT_ERROR };
+
+  const force = formData.get("resend") === "1" || formData.get("resend") === "on";
+
+  const result = await autoInviteCustomerContact({
+    customerAccountId: d.customerAccountId,
+    email: d.email,
+    name: d.name,
+    title: d.title,
+    actor,
+    projectId: d.projectId,
+    force,
+  });
+  if (!result.ok) return { error: result.error };
+
+  if (result.refuseReason === "inactive") {
+    return { error: "That contact's access is revoked. Restore access first." };
+  }
+
+  if (result.created || result.inviteUrl) {
+    await audit({
+      actor,
+      action: "customer.contact.invited",
+      entityType: "user",
+      entityId: result.userId,
+      summary: `${d.email} → customer ${d.customerAccountId}`,
+      metadata: {
+        customerAccountId: d.customerAccountId,
+        force,
+        skipped: result.skipped ?? false,
+      },
+    });
+  }
+
+  revalidatePath(`/customers/${d.customerAccountId}`);
+  if (d.projectId) revalidatePath(`/projects/${d.projectId}`);
+  return {
+    ok: true,
+    inviteUrl: result.inviteUrl,
+    emailSkipped: result.emailSkipped ?? true,
+    inviteSkipped: result.skipped ?? false,
+  };
+}
+
+/** Explicit staff resend — mints a new set-password link and emails it. */
+export async function resendCustomerInvite(userId: string): Promise<ActionState> {
+  const actor = await requireStaff();
+  const target = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { id: true, role: true, email: true, name: true, customerAccountId: true, isActive: true },
+  });
+  if (!target || target.role !== "CUSTOMER" || !target.customerAccountId) {
+    return { error: "That contact no longer exists." };
+  }
+  if (!target.isActive) return { error: "Restore access before resending an invite." };
 
   const account = await db.query.customerAccounts.findFirst({
-    where: eq(customerAccounts.id, d.customerAccountId),
-    columns: { id: true, name: true },
+    where: eq(customerAccounts.id, target.customerAccountId),
+    columns: { name: true },
   });
   if (!account) return { error: "That customer account no longer exists." };
 
-  const existing = await db.query.users.findFirst({
-    where: eq(users.email, d.email),
-    columns: { id: true, role: true, customerAccountId: true },
+  const sent = await sendCustomerInvite({
+    userId: target.id,
+    actor,
+    customerName: account.name,
+    force: true,
   });
-
-  if (existing) {
-    if (existing.role !== "CUSTOMER") {
-      return { error: "That address belongs to an internal staff account." };
-    }
-    if (existing.customerAccountId !== d.customerAccountId) {
-      return {
-        error:
-          "That address is already a contact for a different customer. Use a different address.",
-      };
-    }
-  }
-
-  let userId = existing?.id;
-  if (!userId) {
-    const [row] = await db
-      .insert(users)
-      .values({
-        email: d.email,
-        name: d.name,
-        title: d.title || null,
-        role: "CUSTOMER",
-        customerAccountId: d.customerAccountId,
-      })
-      .returning({ id: users.id });
-    userId = row.id;
-  }
-
-  if (d.projectId) {
-    const project = await db.query.projects.findFirst({
-      where: eq(projects.id, d.projectId),
-      columns: { customerAccountId: true },
-    });
-    if (project?.customerAccountId === d.customerAccountId) {
-      await db
-        .insert(projectMembers)
-        .values({ projectId: d.projectId, userId, role: "CUSTOMER_CONTACT" })
-        .onConflictDoNothing();
-    }
+  if (sent.refuseReason) {
+    return { error: sent.refuseReason === "internal_staff_email" ? STAFF_DOMAIN_CONTACT_ERROR : "Could not resend." };
   }
 
   await audit({
     actor,
     action: "customer.contact.invited",
     entityType: "user",
-    entityId: userId,
-    summary: `${d.email} → ${account.name}`,
-    metadata: { customerAccountId: d.customerAccountId },
+    entityId: target.id,
+    summary: `${target.email} → ${account.name} (resend)`,
+    metadata: { customerAccountId: target.customerAccountId, force: true },
   });
 
-  // Always mint a set-password / invite link staff can copy in the UI.
-  // When RESEND_API_KEY is present (env.EMAIL_ENABLED), also email it via Resend.
-  const { raw, hash } = generateResetToken();
-  await db.insert(passwordResetTokens).values({
-    userId,
-    tokenHash: hash,
-    expires: new Date(Date.now() + RESET_TOKEN_TTL_MS),
-  });
-  const inviteUrl = `${env.APP_URL}/reset-password?token=${raw}`;
-
-  let emailSkipped = true;
-  if (env.EMAIL_ENABLED) {
-    try {
-      await sendEmail({
-        to: d.email,
-        subject: `You've been invited to your PIMSY implementation workspace`,
-        html: layout({
-          heading: `Welcome, ${d.name.split(" ")[0]}`,
-          body: `<p style="margin:0 0 12px">${escapeHtml(actor.name ?? actor.email)} has set up a workspace for <strong>${escapeHtml(account.name)}</strong>'s PIMSY implementation.</p>
-                 <p style="margin:0">Use the button below to set a password and open your workspace. You'll find your project timeline, the items we need from you, shared documents, and a direct line to your implementation team.</p>`,
-          cta: { label: "Open your workspace", url: inviteUrl },
-          footer:
-            "This link works once and expires in one hour. This workspace is for implementation logistics only; never post patient information here.",
-        }),
-        replyTo: actor.email,
-      });
-      emailSkipped = false;
-    } catch (err) {
-      console.error("inviteCustomerContact email failed; invite link still valid", err);
-      emailSkipped = true;
-    }
-  }
-
-  revalidatePath(`/customers/${d.customerAccountId}`);
-  if (d.projectId) revalidatePath(`/projects/${d.projectId}`);
-  return { ok: true, inviteUrl, emailSkipped };
+  revalidatePath(`/customers/${target.customerAccountId}`);
+  return {
+    ok: true,
+    inviteUrl: sent.inviteUrl,
+    emailSkipped: sent.emailSkipped,
+    inviteSkipped: false,
+  };
 }
 
 export async function setUserActive(userId: string, isActive: boolean) {
@@ -369,8 +390,4 @@ export async function deleteCustomer(
   revalidatePath("/projects");
   revalidatePath("/admin/customers");
   redirect("/customers");
-}
-
-function escapeHtml(s: string) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

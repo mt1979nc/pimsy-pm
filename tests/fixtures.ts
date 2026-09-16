@@ -35,7 +35,7 @@ export async function resetDb() {
       "notification", "audit_log", "status_update", "risk",
       "task", "phase", "milestone", "project_member", "project",
       "template_task", "template_phase", "template_milestone", "project_template",
-      "session", "account", "verification_token", "user", "customer_account"
+      "password_reset_token", "session", "account", "verification_token", "user", "customer_account"
     RESTART IDENTITY CASCADE
   `);
 }

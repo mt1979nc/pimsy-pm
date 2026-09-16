@@ -10,12 +10,8 @@ import { users, accounts, sessions, verificationTokens } from "@/db/schema";
 import { env } from "@/lib/env";
 import { sendEmail, signInEmail } from "@/lib/email";
 import { writeSignInLink } from "@/lib/signin-link";
+import { isInternalStaffDomain } from "@/lib/internal-email";
 import type { Actor } from "@/lib/authz";
-
-function isInternalEmail(email: string) {
-  const domain = email.split("@")[1]?.toLowerCase();
-  return !!domain && env.INTERNAL_EMAIL_DOMAINS.includes(domain);
-}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db, {
@@ -88,7 +84,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       if (existing) return existing.isActive;
       if (email === env.BOOTSTRAP_OWNER_EMAIL) return true;
-      if (isInternalEmail(email)) return true;
+      if (isInternalStaffDomain(email)) return true;
       return false;
     },
 
@@ -134,7 +130,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         await db.update(users).set({ role: "OWNER" }).where(eq(users.id, user.id));
         return;
       }
-      if (isInternalEmail(email)) {
+      if (isInternalStaffDomain(email)) {
         await db.update(users).set({ role: "SPECIALIST" }).where(eq(users.id, user.id));
       }
     },

@@ -17,7 +17,7 @@ import {
   VisibilityBadge,
 } from "@/components/ui";
 import { ProjectRow, ProjectListHeader } from "@/components/project-row";
-import { PortalContactsPanel, ToggleContactActive } from "./invite-contact-form";
+import { PortalContactsPanel, ToggleContactActive, ResendContactInvite } from "./invite-contact-form";
 import { ConfirmDeleteForm } from "@/components/confirm-delete";
 import { deleteCustomer } from "@/actions/customers";
 import { fmtRelative } from "@/lib/dates";
@@ -124,7 +124,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               {customer.contacts.length === 0 ? (
                 <EmptyState
                   title="No contacts invited"
-                  description="Invite someone at the practice and they get their own portal."
+                  description="Add a portal contact when you create the customer or project — PATH emails the invite automatically. You can still add someone here."
                 />
               ) : (
                 <div className="divide-y divide-border">
@@ -152,7 +152,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                         <div className="text-[11.5px] text-ink-3">
                           {c.lastSeenAt ? `Seen ${fmtRelative(c.lastSeenAt)}` : "Never signed in"}
                         </div>
-                        <ToggleContactActive userId={c.id} isActive={c.isActive} />
+                        <div className="flex flex-col items-end gap-0.5">
+                          {c.isActive ? <ResendContactInvite userId={c.id} /> : null}
+                          <ToggleContactActive userId={c.id} isActive={c.isActive} />
+                        </div>
                       </div>
                     </div>
                   ))}

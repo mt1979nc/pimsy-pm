@@ -221,3 +221,26 @@ export function passwordResetEmail(url: string, hasExistingPassword: boolean) {
     footer: "If you didn't request this, you can safely ignore it — your account is unchanged.",
   });
 }
+
+/**
+ * First-time (or resend) PATH portal invite for a customer contact.
+ * Implementation logistics only — never mention or request patient information.
+ */
+export function customerInviteEmail(opts: {
+  firstName: string;
+  customerName: string;
+  inviterName: string;
+  inviteUrl: string;
+}): string {
+  const first = opts.firstName.trim() || "there";
+  return layout({
+    heading: `Welcome to PATH, ${first}`,
+    paragraphs: [
+      `${opts.inviterName} set up a PATH workspace for ${opts.customerName}'s PIMSY implementation.`,
+      "Use the button below to set a password and open your workspace. You'll find the project timeline, items we need from you, shared documents, and a line to your implementation team.",
+    ],
+    cta: { label: "Open PATH", url: opts.inviteUrl },
+    footer:
+      "This link works once and expires in one hour. PATH is for implementation logistics only — never post patient information here.",
+  });
+}

@@ -5,6 +5,7 @@ import { createCustomer } from "@/actions/customers";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Card, CardHeader, Field, inputClass, LinkButton } from "@/components/ui";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
+import { PortalContactFields } from "@/components/portal-contact-fields";
 
 export function NewCustomerForm() {
   const [state, action] = useActionState(createCustomer, {});
@@ -87,6 +88,16 @@ export function NewCustomerForm() {
           </Field>
 
           <AnalyticsExcludeToggle />
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Portal contact"
+          subtitle="Invited automatically — they can sign in to PATH for this practice"
+        />
+        <div className="space-y-4 p-5">
+          <PortalContactFields />
         </div>
       </Card>
 
