@@ -22,7 +22,9 @@ dates, estimates, risks and milestones. Task boards per project, a personal
 **Task detail** — every task opens to its own page: description, status,
 threaded comments, links, and file/image attachments. Comments and attachments
 carry their own INTERNAL/SHARED marking, and can never be more visible than the
-task holding them.
+task holding them. Training **Confirm users have logged in** adds a staff-only
+EHR login card (PATH contacts + optional `PIMSY_AUDIT_FEED_URL` who/duration).
+PATH portal last-seen is not an EHR login; see `v1.14-PIMSY-LOGIN-AUDIT.md`.
 
 **Named customer owners** — a task can be assigned to a specific contact at the
 practice, not just "the customer". Doing so makes it their action item and
@@ -355,7 +357,8 @@ Director / Pipeline / morning snapshot: `GET /api/prism/snapshot` with
    `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `AUTH_TRUST_HOST=true`,
    `RESEND_API_KEY`, `EMAIL_FROM`, `INTERNAL_EMAIL_DOMAINS`,
    `BOOTSTRAP_OWNER_EMAIL`. Add `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` for
-   staff SSO.
+   staff SSO. Optional: `PIMSY_AUDIT_FEED_URL` / `PIMSY_AUDIT_FEED_TOKEN` for
+   EHR login confirmation (`v1.14-PIMSY-LOGIN-AUDIT.md`).
 4. **Email** — add and verify your sending domain in Resend, then point
    `EMAIL_FROM` at it (e.g. `implementations@pimsyehr.com`). Deliverability to
    customer inboxes depends on this; don't skip the DNS records.
@@ -411,7 +414,7 @@ src/
     threads.ts               Thread access, inbox, participants
     queries.ts               Staff/reporting queries
     guard.ts                 requireStaff / requireCustomer / requireAdmin
-    audit.ts, notify.ts, rollup.ts, email.ts, dates.ts
+    audit.ts, notify.ts, rollup.ts, email.ts, dates.ts, pimsy-audit-feed.ts
   actions/                   Server actions (mutations); every one re-checks authz
   app/
     (app)/                   Internal staff app

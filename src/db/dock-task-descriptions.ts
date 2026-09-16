@@ -25,7 +25,7 @@ const SCHEDULE_TRAINING =
   "Book the session on the specialist’s calendar and put the date/time on this task. The practice completes this item when the slot is confirmed.";
 
 const CONFIRM_LOGINS =
-  "Before the session, confirm the named users have logged into PIMSY. Check this off when they are in; leave a comment if anyone is blocked.";
+  "Before the session, confirm the named users have logged into PIMSY (the EHR), not just this portal. Staff task details list PATH portal contacts and, when PIMSY_AUDIT_FEED_URL is set, live EHR logins (who and how long). PATH last-seen is not an EHR login. Check this off when they are in; leave a comment if anyone is blocked.";
 
 /** Kickoff, configuration, import, training logistics, RCM, go-live gates. */
 export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([

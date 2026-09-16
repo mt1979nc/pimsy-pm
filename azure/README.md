@@ -150,6 +150,11 @@ reads PATH Postgres only. Optional App Setting `PRISM_READ_API_KEY` gates
 `GET /api/prism/snapshot` for Director / Pipeline routines. Dump Prism SQL from
 a firewall-allowed host (`PRISM_SQL_CONNECTION_STRING`) — see `v1.11-PRISM-CUTOVER.md`.
 
+Optional App Settings `PIMSY_AUDIT_FEED_URL` / `PIMSY_AUDIT_FEED_TOKEN` /
+`PIMSY_AUDIT_FEED_WINDOW_DAYS` power the staff “Confirm users have logged in”
+EHR who/duration card. Leave them blank until a real read-only login feed
+exists — PATH will not invent audit rows. See `v1.14-PIMSY-LOGIN-AUDIT.md`.
+
 See `v1.10-REPORT.md` in the repo root.
 
 **v1.9.0** added `0010_playbook_staffing`. To refresh the four standard

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq, ne, asc, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { libraryAssets, phases, tasks, taskComments, taskChecklistItems, users } from "@/db/schema";
+import { libraryAssets, phases, tasks, taskComments, taskChecklistItems, users, projectScopes } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, NotFoundError, ForbiddenError } from "@/lib/authz";
 import { listTaskAttachments } from "@/lib/attachments";
@@ -23,6 +23,7 @@ import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import { TaskChecklist } from "@/components/task-checklist";
 import { TaskCompleteControl } from "@/components/task-complete-control";
 import { AssigneePicker } from "@/components/assignee-picker";
+import { PimsyLoginConfirmationCard } from "@/components/pimsy-login-confirmation";
 import { TaskDetailControls } from "./task-controls";
 import { AddTaskInline } from "../task-forms";
 import { DeleteTaskControl } from "@/components/task-row";
@@ -30,6 +31,7 @@ import { MoveTaskControl } from "@/components/move-task-dialog";
 import { fmtDate, dueLabel, isOverdue, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { resolveTaskDescription } from "@/lib/task-description";
+import { buildPimsyLoginConfirmation, isConfirmUsersLoggedInTitle } from "@/lib/pimsy-audit-feed";
 
 export const dynamic = "force-dynamic";
 
@@ -54,14 +56,24 @@ export default async function TaskDetailPage({
       assignee: { columns: { id: true, name: true, email: true, image: true, role: true, title: true } },
       phase: { columns: { id: true, name: true } },
       project: {
-        columns: { id: true, name: true, code: true, customerAccountId: true },
+        columns: {
+          id: true,
+          name: true,
+          code: true,
+          customerAccountId: true,
+          crmAcronym: true,
+          crmKey: true,
+          prismClientId: true,
+        },
         with: { customerAccount: { columns: { id: true, name: true } } },
       },
     },
   });
   if (!task) notFound();
 
-  const [comments, attachments, staff, contacts, checklist, subtasks, library, projectPhases, projectTasks] =
+  const confirmLogins = isConfirmUsersLoggedInTitle(task.title);
+
+  const [comments, attachments, staff, contacts, checklist, subtasks, library, projectPhases, projectTasks, scope] =
     await Promise.all([
     db.query.taskComments.findMany({
       where: and(eq(taskComments.taskId, taskId), isNull(taskComments.deletedAt)),
@@ -81,7 +93,7 @@ export default async function TaskDetailPage({
             eq(users.role, "CUSTOMER"),
             eq(users.customerAccountId, task.project.customerAccountId),
           ),
-          columns: { id: true, name: true, email: true, image: true, role: true, title: true },
+          columns: { id: true, name: true, email: true, image: true, role: true, title: true, lastSeenAt: true },
           orderBy: [asc(users.name)],
         })
       : Promise.resolve([]),
@@ -120,6 +132,12 @@ export default async function TaskDetailPage({
       orderBy: [asc(tasks.order)],
       columns: { id: true, title: true, phaseId: true, parentTaskId: true },
     }),
+    confirmLogins
+      ? db.query.projectScopes.findFirst({
+          where: eq(projectScopes.projectId, id),
+          columns: { userCount: true },
+        })
+      : Promise.resolve(null),
   ]);
   const attachedLibraryIds = attachments
     .map((a) => a.libraryAssetId)
@@ -140,6 +158,19 @@ export default async function TaskDetailPage({
       isDockFileRequestTitle(task.title) ||
       uploadRequest,
   );
+
+  const loginConfirmation = confirmLogins
+    ? await buildPimsyLoginConfirmation({
+        site: {
+          code: task.project.code,
+          crmAcronym: task.project.crmAcronym,
+          crmKey: task.project.crmKey,
+          prismClientId: task.project.prismClientId,
+        },
+        contacts,
+        expectedUserCount: scope?.userCount ?? null,
+      })
+    : null;
 
   return (
     <div className="mx-auto max-w-[900px]">
@@ -186,6 +217,10 @@ export default async function TaskDetailPage({
 
       <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-5">
+          {loginConfirmation ? (
+            <PimsyLoginConfirmationCard projectId={id} confirmation={loginConfirmation} />
+          ) : null}
+
           {hasFileAction ? (
             <Card>
               <CardHeader

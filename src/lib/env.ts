@@ -100,4 +100,18 @@ export const env = {
   get HUBSPOT_ACCESS_TOKEN() {
     return optional("HUBSPOT_ACCESS_TOKEN");
   },
+  /**
+   * Optional read-only HTTP feed of PIMSY EHR login/session rows for the
+   * “Confirm users have logged in” task. Empty = card shows PATH contacts
+   * only and does not invent EHR sessions. See v1.14-PIMSY-LOGIN-AUDIT.md.
+   */
+  get PIMSY_AUDIT_FEED_URL() {
+    return optional("PIMSY_AUDIT_FEED_URL");
+  },
+  get PIMSY_AUDIT_FEED_TOKEN() {
+    return optional("PIMSY_AUDIT_FEED_TOKEN");
+  },
+  get PIMSY_AUDIT_FEED_WINDOW_DAYS() {
+    return optional("PIMSY_AUDIT_FEED_WINDOW_DAYS", "14");
+  },
 };
