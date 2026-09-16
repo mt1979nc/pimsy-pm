@@ -38,9 +38,17 @@ export function NavLink({
   );
 }
 
-export function SubNavLink({ href, children }: { href: string; children: React.ReactNode }) {
+export function SubNavLink({
+  href,
+  children,
+  match = "exact",
+}: {
+  href: string;
+  children: React.ReactNode;
+  match?: "exact" | "prefix";
+}) {
   const pathname = usePathname();
-  const active = pathname === href;
+  const active = match === "prefix" ? isNavLinkActive(pathname, href) : pathname === href;
   return (
     <Link
       href={href}

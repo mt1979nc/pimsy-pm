@@ -66,11 +66,14 @@ delivered; only email is configurable.
 **Templates** — Dock Implementation Template plus three RCM paths. Playbook
 tasks mirror Dock: descriptions (training areas-to-cover checklists in the
 body) and default attachments (Discovery Wizard LINK, billing sheets).
-Editable in PATH. Duplicate makes a custom copy. File library (`/library`)
-holds uploaded files and staff-pasted Link/Form URLs.
+New workspaces inherit Dock eyelid defaults (Kickoff + Discovery exposed;
+Configuration / Accessing Pimsy / Training hidden until staff expose).
+Canonical path playbooks lock; Duplicate to customize. Re-import:
+`npm run db:seed -- --templates-only`. File library (`/library`) holds
+uploaded files and staff-pasted Link/Form URLs.
 Existing WIP: `npm run db:resync:playbook-from-dock` then `--apply` (progress
-+ timeout; Azure Cloud Shell; no Dock API). New workspaces inherit copy +
-files automatically.
++ timeout; Azure Cloud Shell; no Dock API). Use the task-list eyelid to
+hide/expose tabs on live sites — resync does not rewrite phase visibility.
 
 **Update History** — staff sidebar **What’s new** (`/updates`) lists product
 changes from `RELEASE_NOTES` in `src/lib/version.ts`. Customer portal users

@@ -85,6 +85,7 @@ export default async function TemplatesPage() {
                     <span className="flex flex-wrap items-center gap-2">
                       {t.name}
                       {!t.isActive ? <Badge>Inactive</Badge> : null}
+                      {t.isLocked ? <Badge tone="amber">Locked</Badge> : null}
                       <Badge tone={t.playbookPath ? "violet" : "neutral"}>{pathLabel}</Badge>
                     </span>
                   }
@@ -130,6 +131,7 @@ export default async function TemplatesPage() {
                           <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-ink">
                             {p.name}
                           </span>
+                          <VisibilityBadge visibility={p.visibility} />
                           <span className="shrink-0 text-[12px] text-ink-3">
                             day {p.offsetDays}–{p.offsetDays + p.durationDays}
                           </span>
@@ -211,11 +213,16 @@ export default async function TemplatesPage() {
         existing WIP without deleting staff notes or user uploads (dry-run logs progress and
         stops at 180s unless you pass{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">--timeout-sec 0</code>
-        ). To reset the four standard paths from code, run{" "}
+        ).         Canonical path playbooks are <strong>locked</strong> so “not available”
+        junk is not edited into the live template — Duplicate to customize, or
+        Unlock (owner/admin) if you must edit. To reset the four standard paths
+        from code (and restore Dock expose/hide defaults), run{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
           npm run db:seed -- --templates-only
         </code>
-        .
+        . That replaces playbook rows only; live projects keep their tasks.
+        New workspaces inherit eyelid defaults (Kickoff + Discovery exposed;
+        Configuration / Accessing Pimsy / Training hidden until staff expose).
       </p>
     </>
   );

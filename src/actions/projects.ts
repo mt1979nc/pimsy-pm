@@ -766,6 +766,8 @@ export async function setPhaseVisibility(phaseId: string, visible: boolean) {
   });
 
   revalidatePath(`/projects/${phase.projectId}/settings`);
+  revalidatePath(`/projects/${phase.projectId}/tasks`);
+  revalidatePath(`/projects/${phase.projectId}/customer-view`);
   revalidatePath(`/portal/projects/${phase.projectId}`);
 }
 

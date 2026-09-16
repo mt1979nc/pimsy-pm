@@ -7,6 +7,7 @@ import { TaskListToolbar } from "@/components/task-list-toolbar";
 import { CollapsibleCompleted } from "@/components/collapsible-completed";
 import { AddTaskInline, AddPhaseForm } from "@/app/(app)/projects/[id]/tasks/task-forms";
 import { PhaseNaButton } from "@/app/(app)/projects/[id]/tasks/phase-na-button";
+import { PhaseVisibilityButton } from "@/app/(app)/projects/[id]/tasks/phase-visibility-button";
 import { fmtShort } from "@/lib/dates";
 import {
   excludeCollapsedDescendants,
@@ -204,7 +205,12 @@ export function ProjectTaskBoard({
                   {phase.dueDate ? ` · due ${fmtShort(phase.dueDate)}` : ""}
                 </>
               }
-              action={<PhaseNaButton phaseId={phase.id} notApplicable={phase.notApplicable} />}
+              action={
+                <span className="flex flex-wrap items-center justify-end gap-3">
+                  <PhaseVisibilityButton phaseId={phase.id} visibility={phase.visibility} />
+                  <PhaseNaButton phaseId={phase.id} notApplicable={phase.notApplicable} />
+                </span>
+              }
             />
             {filtered.length === 0 ? (
               <p className="px-5 py-4 text-[13px] text-ink-3">

@@ -86,6 +86,7 @@ export default async function TemplateEditorPage({
           durationDays: row.durationDays,
           isActive: row.isActive,
           playbookPath: row.playbookPath,
+          isLocked: row.isLocked,
           phases,
         }}
         library={library}

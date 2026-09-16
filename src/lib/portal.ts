@@ -10,7 +10,7 @@ import { and, eq, ne, asc, desc, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { projects, tasks, phases, milestones, statusUpdates, fileAssets, taskComments } from "@/db/schema";
 import type { Actor } from "./authz";
-import { portalFacingTaskSql } from "./task-visibility";
+import { isCustomerVisiblePhase, portalFacingTaskSql } from "./task-visibility";
 
 export type CustomerActor = Actor & { customerAccountId: string };
 
@@ -38,7 +38,7 @@ async function portalProjectIds(actor: CustomerActor) {
 export async function portalActionItems(actor: CustomerActor) {
   const ids = await portalProjectIds(actor);
   if (ids.length === 0) return [];
-  return db.query.tasks.findMany({
+  const rows = await db.query.tasks.findMany({
     where: and(
       inArray(tasks.projectId, ids),
       eq(tasks.ownerSide, "CUSTOMER"),
@@ -49,7 +49,7 @@ export async function portalActionItems(actor: CustomerActor) {
     orderBy: [asc(tasks.dueDate)],
     with: {
       project: { columns: { id: true, name: true } },
-      phase: { columns: { id: true, name: true, order: true } },
+      phase: { columns: { id: true, name: true, order: true, visibility: true, notApplicable: true } },
       // Only SHARED comments — INTERNAL notes stay invisible to the portal.
       comments: {
         where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
@@ -57,6 +57,7 @@ export async function portalActionItems(actor: CustomerActor) {
       },
     },
   });
+  return rows.filter((t) => isCustomerVisiblePhase(t.phase));
 }
 
 /** Shared phases with their shared tasks, for one project. */
@@ -200,6 +201,23 @@ export async function portalRecordings(actor: CustomerActor, projectId: string) 
     orderBy: [desc(fileAssets.createdAt)],
     limit: 100,
   });
+}
+
+/** One SHARED task the customer may open. Null if hidden, internal, or other project. */
+export async function portalTask(actor: CustomerActor, projectId: string, taskId: string) {
+  const ids = await portalProjectIds(actor);
+  if (!ids.includes(projectId)) return null;
+
+  const task = await db.query.tasks.findFirst({
+    where: and(eq(tasks.id, taskId), eq(tasks.projectId, projectId), portalFacingTaskSql()),
+    with: {
+      assignee: { columns: { id: true, name: true, email: true, image: true, role: true, title: true } },
+      phase: { columns: { id: true, name: true, visibility: true, notApplicable: true } },
+    },
+  });
+  if (!task) return null;
+  if (!isCustomerVisiblePhase(task.phase)) return null;
+  return task;
 }
 
 /** Portal-safe project fetch. Returns null rather than leaking existence. */

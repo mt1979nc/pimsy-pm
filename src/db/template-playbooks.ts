@@ -6,6 +6,7 @@
  * Dock port in template-implementation.ts stays readable.
  */
 
+import { dockDefaultPhaseVisibility } from "@/lib/dock-phase-visibility";
 import {
   IMPLEMENTATION_PHASES,
   IMPLEMENTATION_MILESTONES,
@@ -131,7 +132,7 @@ const RCM_LITE_PHASES: SeedPhase[] = [
   {
     name: "Plan overview",
     description: "A lite orientation for a practice already live on PIMSY, with no Prism history.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Plan overview"),
     offsetDays: 0,
     durationDays: 7,
     workTrack: "RCM",

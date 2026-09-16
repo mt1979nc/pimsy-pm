@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.7";
+export const APP_VERSION = "1.13.8";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.8",
+    date: "2026-09-16",
+    summary:
+      "Dock-parity template expose/hide: new workspaces hide Configuration, Accessing Pimsy, Training, and later tabs until staff expose them; the customer portal and Customer view only show those tabs and link Discovery copy into real tasks.",
+    highlights: [
+      "Same SHARED / INTERNAL phase column as the portal already used (Dock eyelid). Kickoff + Discovery (and RCM kickoff / payer intake) start customer-visible. Site Configuration, Accessing Pimsy, Training, Billing, import, and later areas start hidden.",
+      "Staff task list: Expose tab / Hide tab on each phase (also still on Settings). Completing a Dock “Expose the Configuration / Access / Training tab” reminder flips that live phase to SHARED.",
+      "Customer portal: area names and Discovery informational copy link into the real tasks. Action items from a hidden tab do not appear. Staff Customer view has the same area nav so you can switch the tabs the customer can see.",
+      "Canonical path playbooks lock after seed/migrate so “not available” junk is not edited into the live template. Duplicate to customize, or Unlock (owner/admin). Re-import: `npm run db:seed -- --templates-only` (replaces playbook rows; live projects keep their tasks). Existing WIP is not auto-hidden — use the eyelid.",
+      "Migration `0015_template_locked` (`is_locked` on project_template; template_phase visibility for Dock defaults). PATH + Prism naming unchanged. Out of scope: wizard spreadsheet deep-links, cross-specialist access, auto invite, Billing/RCM connected tasks, HubSpot, multi booking URLs.",
+    ],
+  },
   {
     version: "1.13.7",
     date: "2026-09-16",

@@ -210,7 +210,7 @@ export default async function ProjectSettingsPage({
         <Card>
           <CardHeader
             title="Customer portal tabs"
-            subtitle="Which phases show up as a tab in their portal"
+            subtitle="Dock eyelid: hide until ready, then expose (same control as the task list). Kickoff and Discovery start visible on a new workspace."
           />
           <PhaseVisibilityList phases={projectPhases} />
         </Card>

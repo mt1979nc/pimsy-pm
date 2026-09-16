@@ -106,6 +106,13 @@
       "when": 1789068000000,
       "tag": "0014_skip_us_federal_holidays",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1789069000000,
+      "tag": "0015_template_locked",
+      "breakpoints": true
     }
   ]
 }

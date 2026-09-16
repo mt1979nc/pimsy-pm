@@ -65,6 +65,7 @@ async function seedTemplate(seed: PlaybookSeed) {
       code: seed.code,
       playbookPath: seed.playbookPath,
       isActive: true,
+      isLocked: true,
     })
     .returning({ id: projectTemplates.id });
 

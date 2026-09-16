@@ -23,6 +23,7 @@ import { audit } from "@/lib/audit";
 import { fmtDate } from "@/lib/dates";
 import { setTaskNotApplicable } from "@/lib/playbook";
 import { isSpecialistSubtask, liveTaskCreateDefaults } from "@/lib/task-visibility";
+import { exposePhaseFromCompletedTask } from "@/lib/expose-phase";
 import type { ActionState } from "./messages";
 
 const optionalDate = z
@@ -170,11 +171,19 @@ async function nextSiblingOrder(
 }
 
 async function loadTaskForActor(actor: Actor, taskId: string) {
-  const task = await db.query.tasks.findFirst({ where: eq(tasks.id, taskId) });
+  const task = await db.query.tasks.findFirst({
+    where: eq(tasks.id, taskId),
+    with: { phase: { columns: { visibility: true, notApplicable: true } } },
+  });
   if (!task) throw new NotFoundError("Task not found.");
   await assertProjectAccess(actor, task.projectId);
-  if (isCustomer(actor) && (task.visibility === "INTERNAL" || isSpecialistSubtask(task))) {
-    throw new NotFoundError("Task not found.");
+  if (isCustomer(actor)) {
+    if (task.visibility === "INTERNAL" || isSpecialistSubtask(task)) {
+      throw new NotFoundError("Task not found.");
+    }
+    if (task.phase && (task.phase.visibility !== "SHARED" || task.phase.notApplicable)) {
+      throw new NotFoundError("Task not found.");
+    }
   }
   return task;
 }
@@ -221,6 +230,17 @@ export async function setTaskStatus(taskId: string, status: string) {
   });
 
   if (next === "DONE") {
+    const exposed = await exposePhaseFromCompletedTask({
+      projectId: task.projectId,
+      taskTitle: task.title,
+    });
+    if (exposed) {
+      revalidatePath(`/projects/${task.projectId}/tasks`);
+      revalidatePath(`/projects/${task.projectId}/settings`);
+      revalidatePath(`/projects/${task.projectId}/customer-view`);
+      revalidatePath(`/portal/projects/${task.projectId}`);
+    }
+
     const project = await db.query.projects.findFirst({
       where: (p, { eq: e }) => e(p.id, task.projectId),
       columns: { id: true, leadId: true, name: true, code: true },

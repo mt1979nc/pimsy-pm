@@ -17,7 +17,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **Forecast (v1.10)** | **Shipped** | Weekly hours + peak week + headroom + hire-now; weights listed; Analysis exclusions (SENSORI/MHC/LECHRIS default). Native Postgres. |
 | **Prism cutover (v1.11)** | **Shipped** (v1.11.0–1.11.3) | PATH is SoT. Import + snapshot API + add-to-roster + Analysis table. v1.11.1 restores Portfolio vs Waiting-on; v1.11.2 fixes blank Headroom + team load cards and typed delete; v1.11.3 replaces Headroom bars with a load-vs-capacity line chart. |
 | **Dock parity (v1.12)** | **Shipped** (v1.12.0–1.12.4) | Active-book prune, nested playbook resync, **task attachments**, training checklists, Learning Center, Forecast+ go-live scenarios. RAC and TANC both stay on the allowlist until Alexander consolidates. Runbook: `v1.12-DOCK-PARITY.md`. |
-| **Template area (v1.13)** | **Shipped** (v1.13.0–1.13.1) | PATH tasks mirror Dock Implementation: PWMI **Click Here** / form / **Upload files** task action buttons, download→complete→upload, descriptions + attachments; hang-free Azure resync backfills existing WIP. Runbook: `v1.13-TEMPLATES.md`. |
+| **Template area (v1.13)** | **Shipped** (v1.13.0–1.13.8) | Dock task buttons, file library Link/Form, **expose/hide tabs** (eyelid) + portal links into tasks. Runbook: `v1.13-TEMPLATES.md`. |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |
