@@ -6,6 +6,7 @@ import { assertProjectAccess } from "@/lib/authz";
 import { ProjectTaskBoard, type ProjectTaskListItem } from "@/components/project-task-list";
 import { orderTasksForNesting } from "@/lib/task-tree";
 import { resolveTaskDescription } from "@/lib/task-description";
+import { connectedKeyOf } from "@/lib/connected-tasks";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
 import type { ChecklistItemView } from "@/components/task-checklist";
 import { loadAssigneesByTaskIds } from "@/lib/task-assignees";
@@ -110,6 +111,19 @@ export default async function ProjectTasksPage({
   function toItems(rows: typeof allTasks): ProjectTaskListItem[] {
     return orderTasksForNesting(rows).map((t) => {
       const checks = checklistByTaskId[t.id] ?? [];
+      const key = connectedKeyOf(t);
+      const peers = key
+        ? allTasks.filter((other) => other.id !== t.id && connectedKeyOf(other) === key)
+        : [];
+      const peerPhases = peers
+        .map((p) => projectPhases.find((ph) => ph.id === p.phaseId)?.name)
+        .filter((n): n is string => Boolean(n));
+      const connectedNote =
+        peerPhases.length > 0
+          ? `Connected · ${[...new Set(peerPhases)].join(", ")}`
+          : key && peers.length > 0
+            ? "Connected"
+            : null;
       return {
         id: t.id,
         projectId: id,
@@ -133,6 +147,8 @@ export default async function ProjectTasksPage({
         depth: t.depth,
         phaseId: t.phaseId,
         reviewRequired: t.reviewRequired,
+        connectKey: t.connectKey,
+        connectedNote,
         order: t.order,
         projectCode: project?.code,
       };

@@ -11,6 +11,7 @@ import {
   updateTemplateTask,
   deleteTemplateTask,
   reorderTemplateTasks,
+  moveTemplateTaskForm,
   addTemplateTaskChecklistItem,
   removeTemplateTaskChecklistItem,
   attachLibraryToTemplateTask,
@@ -57,6 +58,7 @@ type EditorTask = {
   defaultRole: string | null;
   workTrack: WorkTrack;
   overlapKey: string | null;
+  connectKey: string | null;
   checklistItems: Array<{ id: string; label: string; visibility: "INTERNAL" | "SHARED" }>;
   attachments: Array<{
     id: string;
@@ -286,6 +288,10 @@ export function TemplateEditor({
             templateId={template.id}
             extraKeys={extraKeys}
             library={library}
+            otherPhases={orderedPhases
+              .filter((p) => p.id !== phase.id)
+              .map((p) => ({ id: p.id, name: p.name, workTrack: p.workTrack }))}
+            locked={template.isLocked}
             dragging={dragPhase === phase.id}
             onDragStart={() => setDragPhase(phase.id)}
             onDragEnd={() => setDragPhase(null)}
@@ -379,6 +385,8 @@ function PhaseEditor({
   templateId,
   extraKeys,
   library,
+  otherPhases,
+  locked,
   dragging,
   onDragStart,
   onDragEnd,
@@ -387,6 +395,8 @@ function PhaseEditor({
   templateId: string;
   extraKeys: string[];
   library: LibraryOption[];
+  otherPhases: Array<{ id: string; name: string; workTrack: WorkTrack }>;
+  locked: boolean;
   dragging: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -519,6 +529,8 @@ function PhaseEditor({
               siblings={orderedTasks.filter((p) => p.id !== task.id && p.parentTaskId !== task.id)}
               extraKeys={extraKeys}
               library={library}
+              otherPhases={otherPhases}
+              locked={locked}
               dragging={dragTask === task.id}
               onDragStart={() => setDragTask(task.id)}
               onDragEnd={() => setDragTask(null)}
@@ -573,6 +585,8 @@ function TaskEditor({
   siblings,
   extraKeys,
   library,
+  otherPhases,
+  locked,
   dragging,
   onDragStart,
   onDragEnd,
@@ -581,6 +595,8 @@ function TaskEditor({
   siblings: EditorTask[];
   extraKeys: string[];
   library: LibraryOption[];
+  otherPhases: Array<{ id: string; name: string; workTrack: WorkTrack }>;
+  locked: boolean;
   dragging: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -589,6 +605,7 @@ function TaskEditor({
   const [state, action] = useActionState(updateTemplateTask, {});
   const [checkState, checkAction] = useActionState(addTemplateTaskChecklistItem, {});
   const [attState, attAction] = useActionState(attachLibraryToTemplateTask, {});
+  const [moveState, moveAction] = useActionState(moveTemplateTaskForm, {});
   const [pending, start] = useTransition();
   const attachedIds = new Set(task.attachments.map((a) => a.libraryAssetId));
   const attachable = library.filter((l) => !attachedIds.has(l.id));
@@ -613,6 +630,9 @@ function TaskEditor({
             {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
             {task.isOptional ? <Badge tone="amber">Optional</Badge> : null}
             {task.defaultRole ? <Badge>{staffingRoleLabel(task.defaultRole)}</Badge> : null}
+            {task.connectKey || task.overlapKey ? (
+              <Badge tone="green">Connected {task.connectKey ?? task.overlapKey}</Badge>
+            ) : null}
             {task.checklistItems.length > 0 ? (
               <Badge>{task.checklistItems.length} checklist items</Badge>
             ) : null}
@@ -720,6 +740,14 @@ function TaskEditor({
                 <input name="overlapKey" defaultValue={task.overlapKey ?? ""} className={inputClass} />
               </Field>
             </div>
+            <Field label="Connect key">
+              <input
+                name="connectKey"
+                defaultValue={task.connectKey ?? ""}
+                className={inputClass}
+                placeholder="Same key on the copy in Billing Configuration / RCM"
+              />
+            </Field>
             <label className="flex items-center gap-2 text-[13px] text-ink-2">
               <input type="checkbox" name="isOptional" defaultChecked={task.isOptional} />
               Optional
@@ -727,6 +755,30 @@ function TaskEditor({
             <AreaKeyFields idPrefix={`tk-${task.id}`} value={task.areaKey} extraKeys={extraKeys} />
             <SubmitButton size="sm">Save task</SubmitButton>
           </form>
+
+          {otherPhases.length > 0 && !locked ? (
+            <form action={moveAction} className="flex flex-wrap items-end gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+              <input type="hidden" name="taskId" value={task.id} />
+              <Field label="Move to tab">
+                <select name="toPhaseId" required className={inputClass}>
+                  <option value="">Choose a tab…</option>
+                  {otherPhases.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {p.workTrack === "RCM" ? " (RCM)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <SubmitButton size="sm" variant="secondary">
+                Move task
+              </SubmitButton>
+              <FormError error={moveState.error} />
+              {moveState.ok ? (
+                <p className="text-[12px] text-green">Moved. Nested subtasks came along.</p>
+              ) : null}
+            </form>
+          ) : null}
 
           <div className="rounded-lg border border-border bg-surface">
             <div className="border-b border-border px-3 py-2 text-[12px] font-semibold uppercase tracking-wide text-ink-3">

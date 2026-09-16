@@ -88,7 +88,8 @@ delivered; only email is configurable.
 tasks mirror Dock: descriptions (training areas-to-cover checklists in the
 body) and default attachments (Discovery Wizard LINK, billing sheets).
 New workspaces inherit Dock eyelid defaults (Kickoff + Discovery exposed;
-Configuration / Accessing Pimsy / Training hidden until staff expose).
+Configuration / Accessing Pimsy / Training / Billing Configuration hidden until staff expose).
+Billing Configuration is the billing-team tab; Discovery and Configuration copies stay **connected** (complete in one reflects in the other). EHR+RCM moves overlapping payer / ClaimMD / workflow rows to the RCM tab.
 Canonical path playbooks lock; Duplicate to customize. Re-import:
 `npm run db:seed -- --templates-only`. File library (`/library`) holds
 uploaded files and staff-pasted Link/Form URLs.
@@ -350,7 +351,8 @@ live tasks. Drop real Dock binaries in `content/template-attachments/` and
 run `npm run db:upload:template-attachments -- --apply`, or replace them at
 **Templates → File library**. Staff can also add a new file or paste an
 online-form hyperlink there (no invented Dock/Storylane URLs). Runbook:
-`v1.13-TEMPLATES.md`.
+`v1.13-TEMPLATES.md`. Billing Configuration connected tasks / RCM move:
+`v1.14-BILLING-RCM.md` (templates-only seed + resync; HOLD from live).
 
 Prism cutover (Capacity / Forecast / Analysis as source of truth in PATH): see
 `v1.11-PRISM-CUTOVER.md`. Dump standalone Prism SQL (or a JSON file from Cloud Shell), then:

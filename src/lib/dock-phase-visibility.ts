@@ -40,7 +40,8 @@ export function phaseNameToExposeFromTaskTitle(title: string): string | null {
   const t = title.trim().toLowerCase();
   if (!/\bexpose\b/.test(t)) return null;
   if (/parking lot/.test(t)) return null;
-  if (/configuration/.test(t)) return "Site Configuration";
+  if (/configuration/.test(t) && !/billing configuration/.test(t)) return "Site Configuration";
+  if (/billing configuration/.test(t)) return "Billing Configuration";
   if (/\baccess(ing)?\b/.test(t)) return "Accessing Pimsy";
   if (/training/.test(t)) return "Core (Train the Trainer)";
   return null;
@@ -51,7 +52,11 @@ export function phaseMatchesExposeTarget(phaseName: string, target: string): boo
   const b = norm(target);
   if (a === b) return true;
   if (b === "site configuration") {
+    if (a.includes("billing configuration")) return false;
     return a === "configuration" || a.includes("configuration");
+  }
+  if (b === "billing configuration") {
+    return a === "billing configuration" || a.includes("billing configuration");
   }
   if (b === "accessing pimsy") {
     return a === "access" || a.includes("accessing") || a === "accessing pimsy";

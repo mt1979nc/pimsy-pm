@@ -82,6 +82,10 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
     "When Discovery is far enough along, use the eyelid on Site Configuration (or mark this task done) to expose that tab. Do not expose it empty.",
   ],
   [
+    'Expose the "Billing Configuration" tab',
+    "When billing intake is in motion, use the eyelid on Billing Configuration (or mark this task done) to expose the billing-team tab. Completing Discovery or Configuration billing copies still reflects here.",
+  ],
+  [
     "Accessing Pimsy",
     "Bookmark / CRM link, desktop application, practice acronym, and security key. New workspaces fill those fields when they already exist on the project or customer. Hidden from the customer until staff expose this tab.",
   ],

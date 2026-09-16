@@ -31,6 +31,8 @@ import { canonicalStaffingRole } from "@/lib/staffing";
 import { insertTaskAssigneeRows, newTaskAssigneeIds } from "@/lib/task-assignees";
 import { refreshProjectCounters } from "@/lib/rollup";
 import { syncMilestonesFromTaskCompletion } from "@/lib/milestone-rollup";
+import { connectedKeyOf } from "@/lib/connected-tasks";
+import { expandIdsWithConnectedPeers } from "@/lib/connected-task-sync";
 import { copyLibraryAssetToTask, ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
 import {
   PLAYBOOK_PATHS,
@@ -90,6 +92,7 @@ export type LoadedTemplate = {
       defaultRole: ProjectMemberRole | null;
       workTrack: WorkTrack;
       overlapKey: string | null;
+      connectKey: string | null;
     }>;
   }>;
   milestones: Array<{
@@ -307,6 +310,7 @@ export async function materializeTemplatesOnProject(opts: {
             workTrack: opts.forceWorkTrack ?? tt.workTrack ?? "EHR",
             defaultRole: tt.defaultRole,
             overlapKey: tt.overlapKey,
+            connectKey: tt.connectKey,
             areaKey: tt.areaKey,
           })
           .returning({ id: tasks.id });
@@ -481,6 +485,7 @@ export async function addRcmTrackToProject(opts: {
       title: true,
       status: true,
       overlapKey: true,
+      connectKey: true,
       workTrack: true,
       notApplicable: true,
     },
@@ -520,7 +525,7 @@ export async function addRcmTrackToProject(opts: {
 
     const newRcmTasks = await tx.query.tasks.findMany({
       where: and(eq(tasks.projectId, opts.projectId), eq(tasks.workTrack, "RCM")),
-      columns: { id: true, title: true, overlapKey: true, status: true },
+      columns: { id: true, title: true, overlapKey: true, connectKey: true, status: true },
     });
 
     const completeIds = new Set<string>();
@@ -528,8 +533,10 @@ export async function addRcmTrackToProject(opts: {
       const match = existingTasks.find((ehr) => {
         if (ehr.notApplicable) return false;
         if (ehr.workTrack === "RCM") return false;
-        if (rcm.overlapKey && ehr.overlapKey && rcm.overlapKey === ehr.overlapKey) return true;
-        if (rcm.overlapKey && ehr.overlapKey) return false;
+        const rcmKey = connectedKeyOf(rcm);
+        const ehrKey = connectedKeyOf(ehr);
+        if (rcmKey && ehrKey && rcmKey === ehrKey) return true;
+        if (rcmKey && ehrKey) return false;
         return titlesMatch(rcm.title, ehr.title);
       });
       if (!match) continue;
@@ -641,7 +648,14 @@ export async function setPhaseNotApplicable(phaseId: string, notApplicable: bool
 export async function setTaskNotApplicable(taskId: string, notApplicable: boolean) {
   const task = await db.query.tasks.findFirst({
     where: eq(tasks.id, taskId),
-    columns: { id: true, projectId: true, title: true, parentTaskId: true },
+    columns: {
+      id: true,
+      projectId: true,
+      title: true,
+      parentTaskId: true,
+      connectKey: true,
+      overlapKey: true,
+    },
   });
   if (!task) return null;
   const ids = [task.id];
@@ -650,10 +664,11 @@ export async function setTaskNotApplicable(taskId: string, notApplicable: boolea
     columns: { id: true },
   });
   ids.push(...children.map((c) => c.id));
+  const allIds = await expandIdsWithConnectedPeers(task.projectId, ids, task);
   await db
     .update(tasks)
     .set({ notApplicable, updatedAt: new Date() })
-    .where(inArray(tasks.id, ids));
+    .where(inArray(tasks.id, allIds));
   await refreshProjectCounters(task.projectId);
   await syncMilestonesFromTaskCompletion(task.projectId);
   return task;

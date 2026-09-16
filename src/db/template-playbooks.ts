@@ -7,6 +7,7 @@
  */
 
 import { dockDefaultPhaseVisibility } from "@/lib/dock-phase-visibility";
+import { connectKeyForTitle, isRcmMoveKey } from "@/lib/connected-tasks";
 import {
   IMPLEMENTATION_PHASES,
   IMPLEMENTATION_MILESTONES,
@@ -72,7 +73,8 @@ function defaultRoleFor(
   }
   if (
     /billing|claimmd|payer|invoice|authorization|auth training/.test(title) ||
-    phase === "billing"
+    phase === "billing" ||
+    phase.includes("billing configuration")
   ) {
     return "T1_BILLING_SUPPORT";
   }
@@ -86,10 +88,12 @@ function annotateTask(
   inheritedArea?: string,
 ): SeedTask {
   const area = taskArea(task.title, inheritedArea);
+  const connected = task.connectKey ?? connectKeyForTitle(task.title) ?? undefined;
   return {
     ...task,
     workTrack: task.workTrack ?? track,
-    overlapKey: task.overlapKey ?? OVERLAP_BY_TITLE[task.title],
+    overlapKey: task.overlapKey ?? OVERLAP_BY_TITLE[task.title] ?? connected,
+    connectKey: connected,
     isOptional: task.isOptional ?? area.isOptional,
     areaKey: task.areaKey ?? area.areaKey,
     defaultRole: defaultRoleFor(task, track, phaseName),
@@ -97,16 +101,39 @@ function annotateTask(
   };
 }
 
+/** EHR+RCM: overlapping payer / ClaimMD / workflow rows live on the RCM tab. */
+function stripMovedToRcm(task: SeedTask): SeedTask | null {
+  const key = task.connectKey ?? task.overlapKey ?? connectKeyForTitle(task.title);
+  if (key && isRcmMoveKey(key) && (task.workTrack ?? "EHR") !== "RCM") {
+    return null;
+  }
+  if (!task.children?.length) return task;
+  const children = task.children
+    .map(stripMovedToRcm)
+    .filter((c): c is SeedTask => c != null);
+  return { ...task, children };
+}
+
+export function dedupeEhrPhasesMovedToRcm(phases: SeedPhase[]): SeedPhase[] {
+  return phases.map((p) => {
+    if ((p.workTrack ?? "EHR") === "RCM") return p;
+    return {
+      ...p,
+      tasks: p.tasks.map(stripMovedToRcm).filter((t): t is SeedTask => t != null),
+    };
+  });
+}
+
 function annotatePhases(phases: SeedPhase[], track: "EHR" | "RCM" | "SHARED"): SeedPhase[] {
   return phases.map((p) => {
     const areaKey = p.areaKey ?? OPTIONAL_PHASES[p.name];
-    const isOptional = p.isOptional ?? Boolean(areaKey);
+    const isOptional = p.isOptional ?? Boolean(OPTIONAL_PHASES[p.name]);
     return {
       ...p,
       workTrack: p.workTrack ?? track,
       isOptional,
       areaKey,
-      tasks: p.tasks.map((t) => annotateTask(t, track, p.name, areaKey)),
+      tasks: p.tasks.map((t) => annotateTask(t, track, p.name, isOptional ? areaKey : undefined)),
     };
   });
 }
@@ -192,7 +219,10 @@ export const EHR_RCM_PLAYBOOK: PlaybookSeed = {
   durationDays: 120,
   code: "ehr_rcm",
   playbookPath: "EHR_RCM",
-  phases: [...EHR_PHASES, ...annotatePhases(shiftPhases(RCM_PHASES, 56), "RCM")],
+  phases: [
+    ...dedupeEhrPhasesMovedToRcm(EHR_PHASES),
+    ...annotatePhases(shiftPhases(RCM_PHASES, 56), "RCM"),
+  ],
   milestones: [
     ...IMPLEMENTATION_MILESTONES,
     { name: "RCM kickoff complete", offsetDays: 63, visibility: "SHARED" as const, isGoLive: false },

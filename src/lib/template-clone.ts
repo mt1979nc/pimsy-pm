@@ -107,6 +107,7 @@ export async function cloneProjectTemplate(opts: {
             defaultRole: task.defaultRole,
             workTrack: task.workTrack,
             overlapKey: task.overlapKey,
+            connectKey: task.connectKey,
           })
           .returning({ id: templateTasks.id });
         idMap.set(task.id, newTask.id);

@@ -91,6 +91,7 @@ async function seedTemplate(seed: PlaybookSeed) {
       defaultRole: t.defaultRole ?? null,
       workTrack: t.workTrack ?? ("EHR" as const),
       overlapKey: t.overlapKey ?? null,
+      connectKey: t.connectKey ?? t.overlapKey ?? null,
     };
   }
 

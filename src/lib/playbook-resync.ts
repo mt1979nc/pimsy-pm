@@ -22,6 +22,7 @@ import {
 } from "@/db/schema";
 import { loadTemplateById, type LoadedTemplate } from "@/lib/playbook";
 import { findByPlaybookTitle, normalizeOverlapTitle } from "@/lib/playbook-meta";
+import { connectKeyForTitle, connectedKeyOf, isRcmMoveKey } from "@/lib/connected-tasks";
 import { copyLibraryAssetToTask, ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
 import { alreadyHasLibraryCoverage, fileCoversLibraryAsset, libraryDefsForTaskTitle } from "@/db/dock-default-attachments";
 import { dockPlaybookDescriptionForTitle, shouldReplacePlaybookDescription } from "@/db/dock-playbook-copy";
@@ -53,7 +54,16 @@ export type ResyncTaskPlan = {
   projectCode: string;
   phaseName: string;
   title: string;
-  action: "insert" | "relink-parent" | "add-checklist" | "add-attachment" | "set-description" | "skip";
+  action:
+    | "insert"
+    | "insert-phase"
+    | "relink-parent"
+    | "add-checklist"
+    | "add-attachment"
+    | "set-description"
+    | "set-connect-key"
+    | "move"
+    | "skip";
   detail: string;
   librarySlug?: string;
 };
@@ -254,7 +264,28 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
 
     for (const tp of template.phases) {
       const livePhase = phaseByName.get(titleKey(tp.name));
-      if (!livePhase) continue;
+      if (!livePhase) {
+        rows.push({
+          projectId: project.id,
+          projectCode: project.code,
+          phaseName: tp.name,
+          title: tp.name,
+          action: "insert-phase",
+          detail: `${tp.tasks.length} task(s) on new tab`,
+        });
+        for (const tt of tp.tasks) {
+          rows.push({
+            projectId: project.id,
+            projectCode: project.code,
+            phaseName: tp.name,
+            title: tt.title,
+            action: "insert",
+            detail: tt.parentTaskId ? "nested" : "top-level",
+          });
+        }
+        touched.add(project.id);
+        continue;
+      }
 
       const liveByTitle = new Map(livePhase.tasks.map((t) => [titleKey(t.title), t]));
       const ordered = [...tp.tasks].sort((a, b) => a.order - b.order);
@@ -374,6 +405,54 @@ export async function planPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan> 
             title: tt.title,
             action: "set-description",
             detail: "Dock playbook copy",
+          });
+          touched.add(project.id);
+        }
+
+        const wantedKey = tt.connectKey ?? tt.overlapKey ?? connectKeyForTitle(tt.title);
+        if (wantedKey && connectedKeyOf(liveTask) !== wantedKey) {
+          rows.push({
+            projectId: project.id,
+            projectCode: project.code,
+            phaseName: tp.name,
+            title: tt.title,
+            action: "set-connect-key",
+            detail: wantedKey,
+          });
+          touched.add(project.id);
+        }
+      }
+    }
+
+    if (project.playbookPath === "EHR_RCM" || project.playbookPath === "RCM_PRISM") {
+      for (const livePhase of projectPhases) {
+        if (livePhase.workTrack === "RCM") continue;
+        for (const liveTask of livePhase.tasks) {
+          const key = connectedKeyOf(liveTask) ?? connectKeyForTitle(liveTask.title);
+          if (!isRcmMoveKey(key)) continue;
+          const dest = template.phases.find(
+            (p) =>
+              (p.workTrack === "RCM" || /rcm|payer/i.test(p.name)) &&
+              p.tasks.some((t) => (t.connectKey ?? t.overlapKey ?? connectKeyForTitle(t.title)) === key),
+          );
+          if (!dest || titleKey(dest.name) === titleKey(livePhase.name)) continue;
+          if (
+            rows.some(
+              (r) =>
+                r.projectId === project.id &&
+                r.title === liveTask.title &&
+                r.action === "move",
+            )
+          ) {
+            continue;
+          }
+          rows.push({
+            projectId: project.id,
+            projectCode: project.code,
+            phaseName: dest.name,
+            title: liveTask.title,
+            action: "move",
+            detail: `from “${livePhase.name}” → RCM tab`,
           });
           touched.add(project.id);
         }
@@ -551,6 +630,37 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
     });
 
     await db.transaction(async (tx) => {
+      const maxOrder = livePhases.reduce((m, p) => Math.max(m, p.order), -1);
+      let extraOrder = 0;
+      for (const tp of template.phases) {
+        if (phaseByName.has(titleKey(tp.name))) continue;
+        if (!projectRows.some((r) => r.action === "insert-phase" && r.phaseName === tp.name)) continue;
+        const { startDate: phaseStart, dueDate: phaseDue } = scheduleFromOffsets({
+          anchor: project.startDate ?? new Date(),
+          offsetDays: tp.offsetDays,
+          durationDays: tp.durationDays,
+          scaleFactor: scale.scaleFactor,
+        });
+        const [createdPhase] = await tx
+          .insert(phases)
+          .values({
+            projectId: project.id,
+            name: tp.name,
+            description: tp.description,
+            order: maxOrder + 1 + extraOrder,
+            visibility: tp.visibility,
+            startDate: phaseStart,
+            dueDate: phaseDue,
+            workTrack: tp.workTrack ?? "EHR",
+            areaKey: tp.areaKey,
+          })
+          .returning();
+        extraOrder += 1;
+        phaseByName.set(titleKey(tp.name), { ...createdPhase, tasks: [] });
+      }
+
+      const allLiveForConnect = [...phaseByName.values()].flatMap((p) => p.tasks);
+
       for (const tp of template.phases) {
         const livePhase = phaseByName.get(titleKey(tp.name));
         if (!livePhase) continue;
@@ -576,6 +686,10 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
               durationDays: tt.durationDays,
               scaleFactor: scale.scaleFactor,
             });
+            const connectKey = tt.connectKey ?? tt.overlapKey ?? connectKeyForTitle(tt.title);
+            const peer = connectKey
+              ? allLiveForConnect.find((t) => connectedKeyOf(t) === connectKey || connectKeyForTitle(t.title) === connectKey)
+              : null;
             const [created] = await tx
               .insert(tasks)
               .values({
@@ -594,8 +708,12 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
                 createdById: opts.actorId,
                 workTrack: tt.workTrack,
                 defaultRole: tt.defaultRole,
-                overlapKey: tt.overlapKey,
+                overlapKey: tt.overlapKey ?? connectKey,
+                connectKey,
                 areaKey: tt.areaKey,
+                status: peer?.status ?? "TODO",
+                completedAt: peer?.completedAt ?? null,
+                notApplicable: peer?.notApplicable ?? false,
               })
               .returning();
             liveTask = created;
@@ -666,7 +784,40 @@ export async function applyPlaybookResync(opts: ResyncOpts): Promise<ResyncPlan>
               liveTask.description = nextDesc;
             }
           }
+
+          if (actions.some((a) => a.action === "set-connect-key")) {
+            const key = tt.connectKey ?? tt.overlapKey ?? connectKeyForTitle(tt.title);
+            if (key) {
+              await tx
+                .update(tasks)
+                .set({
+                  connectKey: key,
+                  overlapKey: liveTask.overlapKey ?? tt.overlapKey ?? key,
+                  updatedAt: new Date(),
+                })
+                .where(eq(tasks.id, liveTask.id));
+            }
+          }
         }
+      }
+
+      for (const row of projectRows.filter((r) => r.action === "move")) {
+        const dest = phaseByName.get(titleKey(row.phaseName));
+        if (!dest) continue;
+        const refreshed = [...phaseByName.values()].flatMap((p) =>
+          p.tasks.map((t) => ({ task: t, phaseName: p.name, phaseId: p.id })),
+        );
+        const hit = refreshed.find((x) => titleKey(x.task.title) === titleKey(row.title));
+        if (!hit || hit.phaseId === dest.id) continue;
+        await tx
+          .update(tasks)
+          .set({
+            phaseId: dest.id,
+            parentTaskId: null,
+            workTrack: dest.workTrack ?? "RCM",
+            updatedAt: new Date(),
+          })
+          .where(eq(tasks.id, hit.task.id));
       }
 
       // Catalog rows can land on a live task whose phase name drifted from the
