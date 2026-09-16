@@ -69,7 +69,7 @@ import {
   setPhaseNotApplicable,
 } from "@/lib/playbook";
 import { ASSIGNABLE_PROJECT_ROLES } from "@/lib/staffing";
-import { autoAssignForProjectRole } from "@/lib/task-assignees";
+import { autoAssignForProjectRole, notifyDefaultAssigneesForProject } from "@/lib/task-assignees";
 import { isCustomerMemberRole } from "@/lib/task-role-match";
 import {
   parseExcludeFromAnalytics,
@@ -460,6 +460,7 @@ export async function createProject(
   }
 
   await refreshProjectCounters(projectId);
+  await notifyDefaultAssigneesForProject({ projectId, actorId: actor.id });
   await audit({
     actor,
     action: "project.created",

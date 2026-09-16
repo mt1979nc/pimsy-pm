@@ -10,9 +10,10 @@ import {
   phases,
   tasks,
   taskAssignees,
+  notifications,
 } from "@/db/schema";
 import { resetDb } from "./fixtures";
-import { autoAssignForProjectRole, addAssigneesToTask, taskAssigneeIds } from "@/lib/task-assignees";
+import { autoAssignForProjectRole, addAssigneesToTask, taskAssigneeIds, notifyDefaultAssigneesForProject } from "@/lib/task-assignees";
 
 const dbOk = await db
   .execute(sql`select 1`)
@@ -149,18 +150,20 @@ describe.skipIf(!dbOk)("multi-assignee + role auto-assign (postgres)", () => {
     expect(await taskAssigneeIds(logosId)).not.toContain(specialistId);
   });
 
-  it("adds billing support to billing staff tasks without wiping the specialist", async () => {
+  it("adds billing support to billing staff tasks and the customer questionnaire without wiping the specialist", async () => {
     const n = await autoAssignForProjectRole({
       projectId,
       userId: billingId,
       role: "T1_BILLING_SUPPORT",
       notify: false,
     });
-    expect(n).toBe(1);
+    expect(n).toBe(2);
     const claimmd = await taskAssigneeIds(claimmdId);
     expect(claimmd).toContain(specialistId);
     expect(claimmd).toContain(billingId);
     expect(await taskAssigneeIds(kickoffId)).not.toContain(billingId);
+    expect(await taskAssigneeIds(billingQId)).toContain(billingId);
+    expect(await taskAssigneeIds(logosId)).not.toContain(billingId);
   });
 
   it("assigns the customer project lead to all customer-facing tasks", async () => {
@@ -187,6 +190,7 @@ describe.skipIf(!dbOk)("multi-assignee + role auto-assign (postgres)", () => {
     const billing = await taskAssigneeIds(billingQId);
     expect(billing).toContain(leadContactId);
     expect(billing).toContain(billingContactId);
+    expect(billing).toContain(billingId);
     expect(await taskAssigneeIds(logosId)).not.toContain(billingContactId);
   });
 
@@ -224,5 +228,19 @@ describe.skipIf(!dbOk)("multi-assignee + role auto-assign (postgres)", () => {
       where: eq(taskAssignees.taskId, logosId),
     });
     expect(rows.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("sends one TASK_ASSIGNED summary per AUTO_ROLE assignee on the site (P1-G)", async () => {
+    const n = await notifyDefaultAssigneesForProject({ projectId });
+    expect(n).toBeGreaterThanOrEqual(4);
+    const assigned = await db.query.notifications.findMany({
+      where: eq(notifications.type, "TASK_ASSIGNED"),
+    });
+    const people = new Set(assigned.map((r) => r.userId));
+    expect(people.has(specialistId)).toBe(true);
+    expect(people.has(billingId)).toBe(true);
+    expect(people.has(leadContactId)).toBe(true);
+    expect(people.has(billingContactId)).toBe(true);
+    expect(assigned.some((r) => /task/i.test(r.title))).toBe(true);
   });
 });

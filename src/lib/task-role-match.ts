@@ -70,7 +70,9 @@ export function taskMatchesAutoAssign(
   if (!kind) return false;
   if (kind === "STAFF_ALL") return task.ownerSide === "INTERNAL";
   if (kind === "STAFF_BILLING") {
-    return task.ownerSide === "INTERNAL" && isBillingRelatedTask(task, phaseName);
+    // P1-G: billing specialist also lands on customer billing rows
+    // (Billing Questionnaire), not only internal ClaimMD / T1 tasks.
+    return isBillingRelatedTask(task, phaseName);
   }
   if (kind === "CUSTOMER_ALL") return task.ownerSide === "CUSTOMER";
   if (kind === "CUSTOMER_BILLING") {
@@ -114,9 +116,10 @@ export function isCustomerMemberRole(role: string | null | undefined): boolean {
 /**
  * Everyone who should land on a newly materialized task from the create-site
  * roster. Specialist is added to every PIMSY (internal) row; billing support
- * is added on billing-related internal rows; customer lead covers customer
- * action items; a designated customer billing contact is added on customer
- * billing rows without removing the lead.
+ * is added on billing-related rows (staff tasks + customer Billing
+ * Questionnaire / spreadsheet — P1-G); customer lead covers customer action
+ * items; a designated customer billing contact is added on customer billing
+ * rows without removing the lead.
  */
 export function userIdsForNewTask(
   task: RoleMatchTask,
@@ -147,11 +150,11 @@ export function userIdsForNewTask(
 
   if (task.ownerSide === "CUSTOMER") {
     const billing = isBillingRelatedTask(task, phaseName);
-    if (billing && assignments.customerBillingId) {
+    add(assignments.customerLeadId);
+    if (billing) {
       add(assignments.customerBillingId);
-      add(assignments.customerLeadId);
-    } else {
-      add(assignments.customerLeadId);
+      add(assignments.billingSupportId);
+      add(assignments.t2BillingId);
     }
   }
   return ids;

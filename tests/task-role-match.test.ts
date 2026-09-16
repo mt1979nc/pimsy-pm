@@ -90,6 +90,8 @@ describe("billing vs specialist vs customer matching", () => {
     expect(taskMatchesAutoAssign(billingQ, "Discovery", "CUSTOMER_ALL")).toBe(true);
     expect(taskMatchesAutoAssign(logos, "Discovery", "CUSTOMER_BILLING")).toBe(false);
     expect(taskMatchesAutoAssign(billingQ, "Discovery", "CUSTOMER_BILLING")).toBe(true);
+    expect(taskMatchesAutoAssign(billingQ, "Discovery", "STAFF_BILLING")).toBe(true);
+    expect(taskMatchesAutoAssign(logos, "Discovery", "STAFF_BILLING")).toBe(false);
     expect(taskMatchesAutoAssign(kickoff, "Kickoff", "CUSTOMER_ALL")).toBe(false);
   });
 
@@ -114,9 +116,9 @@ describe("billing vs specialist vs customer matching", () => {
     const billing = userIdsForNewTask(
       { title: "Billing Questionnaire", ownerSide: "CUSTOMER" },
       "Discovery",
-      { customerLeadId: "pat", customerBillingId: "lee" },
+      { customerLeadId: "pat", customerBillingId: "lee", billingSupportId: "anna" },
     );
-    expect(billing).toEqual(["lee", "pat"]);
+    expect(billing).toEqual(["pat", "lee", "anna"]);
     const logos = userIdsForNewTask(
       { title: "Upload Company Logo(s)", ownerSide: "CUSTOMER" },
       "Discovery",

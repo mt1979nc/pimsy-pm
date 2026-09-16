@@ -312,6 +312,54 @@ export async function autoAssignFromRoleAssignments(opts: {
   return n;
 }
 
+/**
+ * One TASK_ASSIGNED summary per person who landed on AUTO_ROLE rows when a
+ * site was created from the playbook (P1-G). Avoids one email per cloned task.
+ */
+export async function notifyDefaultAssigneesForProject(opts: {
+  projectId: string;
+  actorId?: string | null;
+}): Promise<number> {
+  const rows = await db
+    .select({
+      userId: taskAssignees.userId,
+      taskId: taskAssignees.taskId,
+    })
+    .from(taskAssignees)
+    .innerJoin(tasks, eq(taskAssignees.taskId, tasks.id))
+    .where(and(eq(tasks.projectId, opts.projectId), eq(taskAssignees.source, "AUTO_ROLE")));
+
+  const byUser = new Map<string, number>();
+  for (const row of rows) {
+    if (row.userId === opts.actorId) continue;
+    byUser.set(row.userId, (byUser.get(row.userId) ?? 0) + 1);
+  }
+  if (byUser.size === 0) return 0;
+
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, opts.projectId),
+    columns: { name: true, code: true },
+  });
+
+  for (const [userId, count] of byUser) {
+    await notify({
+      userIds: [userId],
+      type: "TASK_ASSIGNED",
+      title: `Assigned to ${count} task${count === 1 ? "" : "s"} on ${project?.name ?? "a project"}`,
+      body: "PATH added you from the roles named on this site. Existing assignees were kept.",
+      facts: [
+        { name: "Project", value: `${project?.name ?? "—"} (${project?.code ?? "—"})` },
+        { name: "Tasks", value: String(count) },
+      ],
+      linkUrl: `/projects/${opts.projectId}/tasks`,
+      portalLinkUrl: `/portal/projects/${opts.projectId}`,
+      ctaLabel: "Open the project",
+      email: true,
+    });
+  }
+  return byUser.size;
+}
+
 export function newTaskAssigneeIds(opts: {
   task: RoleMatchTask;
   phaseName?: string | null;
