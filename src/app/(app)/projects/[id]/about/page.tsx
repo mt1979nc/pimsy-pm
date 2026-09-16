@@ -86,7 +86,7 @@ export default async function ProjectAboutPage({
         <Card>
           <CardHeader
             title="Extra fields"
-            subtitle="Keys that duplicate HubSpot, CRM, Zoom, or Prism are not stored."
+            subtitle="Keys that duplicate HubSpot, CRM, Zoom, Prism, or the PIMSY bookmark are not stored."
           />
           <dl className="divide-y divide-border text-[13px]">
             {extras.map((row) => (
@@ -102,7 +102,7 @@ export default async function ProjectAboutPage({
       <Card>
         <CardHeader
           title="Edit site profile"
-          subtitle="Staff only. HubSpot, Prism, and CRM key never appear on the customer portal."
+          subtitle="Staff only. HubSpot, Prism, CRM key, and the PIMSY bookmark copy onto Accessing Pimsy when that task still has the catalog blurb. HubSpot, Prism, and CRM key never appear on the customer portal."
         />
         <ProjectAboutForm
           project={{

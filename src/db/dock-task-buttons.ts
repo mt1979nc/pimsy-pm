@@ -18,8 +18,10 @@
 import {
   DEFAULT_LIBRARY_ASSETS,
   DISCOVERY_WIZARD_URL,
+  PIMSY_DESKTOP_INSTALL_URL,
   libraryDefsForTaskTitle,
 } from "@/db/dock-default-attachments";
+import { ZENDESK_AGENT_SEARCH } from "@/lib/zendesk";
 import { normalizeOverlapTitle } from "@/lib/playbook-meta";
 
 /** Dock PWMI Organization Details Form Action label (capital H). */
@@ -118,6 +120,25 @@ export function isDiscoveryWizardTaskTitle(title: string): boolean {
   return isOrganizationDetailsTitle(title) || isGuidedDiscoveryTitle(title);
 }
 
+export function isZendeskCompanySetupTitle(title: string): boolean {
+  const key = n(title);
+  return key.includes("zendesk") && key.includes("company") && key.includes("setup");
+}
+
+export function isZendeskUsersToOrgTitle(title: string): boolean {
+  const key = n(title);
+  return key.includes("zendesk") && key.includes("users") && key.includes("org");
+}
+
+export function isAccessingPimsyTitle(title: string): boolean {
+  const key = n(title);
+  return key === n("Accessing Pimsy") || key === n("Accessing PIMSY") || key === n("Access Pimsy");
+}
+
+export const DOCK_ZENDESK_OPEN_LABEL = "Open Zendesk";
+export const DOCK_DESKTOP_INSTALL_LABEL = "Install desktop app";
+export const DOCK_BOOKMARK_LABEL = "Open bookmark";
+
 const WIZARD_ACTION: DockTaskActionDef = {
   id: "discovery-wizard",
   kind: "link",
@@ -157,6 +178,38 @@ const UPLOAD_ACTION: DockTaskActionDef = {
   resourceName: "Upload files",
 };
 
+const ZENDESK_ORG_ACTION: DockTaskActionDef = {
+  id: "zendesk-org-setup",
+  kind: "link",
+  label: DOCK_ZENDESK_OPEN_LABEL,
+  resourceName: "Zendesk organization search",
+  url: ZENDESK_AGENT_SEARCH,
+};
+
+const ZENDESK_USERS_ACTION: DockTaskActionDef = {
+  id: "zendesk-users-org",
+  kind: "link",
+  label: DOCK_ZENDESK_OPEN_LABEL,
+  resourceName: "Zendesk user / email search",
+  url: ZENDESK_AGENT_SEARCH,
+};
+
+const DESKTOP_INSTALL_ACTION: DockTaskActionDef = {
+  id: "pimsy-desktop-install",
+  kind: "link",
+  label: DOCK_DESKTOP_INSTALL_LABEL,
+  resourceName: "PIMSY desktop application",
+  url: PIMSY_DESKTOP_INSTALL_URL,
+  librarySlug: "pimsy-desktop-install",
+};
+
+const BOOKMARK_ACTION: DockTaskActionDef = {
+  id: "pimsy-bookmark",
+  kind: "link",
+  label: DOCK_BOOKMARK_LABEL,
+  resourceName: "Bookmark / CRM link",
+};
+
 function downloadAction(slug: string): DockTaskActionDef | null {
   const def = DEFAULT_LIBRARY_ASSETS.find((a) => a.slug === slug);
   if (!def || (def.kind ?? "FILE") === "LINK") return null;
@@ -171,9 +224,19 @@ function downloadAction(slug: string): DockTaskActionDef | null {
 
 /**
  * Dock action buttons for a live or template task title (PWMI Discovery).
- * One primary CTA per task. Review / specialist titles stay download-only.
+ * One primary CTA per most tasks; Accessing Pimsy may also show a bookmark
+ * when that URL exists. Review / specialist titles stay download-only.
  */
 export function dockTaskActionsForTitle(title: string): DockTaskActionDef[] {
+  if (isZendeskCompanySetupTitle(title)) {
+    return [ZENDESK_ORG_ACTION];
+  }
+  if (isZendeskUsersToOrgTitle(title)) {
+    return [ZENDESK_USERS_ACTION];
+  }
+  if (isAccessingPimsyTitle(title)) {
+    return [DESKTOP_INSTALL_ACTION, BOOKMARK_ACTION];
+  }
   if (isDiscoveryWizardTaskTitle(title)) {
     return [WIZARD_ACTION];
   }

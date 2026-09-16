@@ -92,6 +92,11 @@ const RESERVED_CUSTOM_FIELD_KEYS = new Set([
   "notes",
   "aboutnotes",
   "about",
+  "bookmark",
+  "crmlink",
+  "pimsyurl",
+  "pimsybookmark",
+  "crmbookmark",
 ]);
 
 export function normalizeCustomFieldKey(key: string): string {

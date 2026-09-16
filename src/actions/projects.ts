@@ -37,6 +37,8 @@ import {
   planProjectDelete,
 } from "@/lib/delete-records";
 import { refreshProjectCounters } from "@/lib/rollup";
+import { fillWorkspaceAccessTasks, resolveWorkspaceAccess } from "@/lib/workspace-access-fill";
+import { customFieldsWithoutBookmark } from "@/lib/accessing-pimsy";
 import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
 import { completeHistoricalProjectOnTime } from "@/lib/historical-complete";
@@ -156,6 +158,9 @@ const createProjectSchema = z.object({
   scopeJson: z.string().optional(),
   discoveryScenario: z.enum(["OPTIMISTIC", "TYPICAL", "PESSIMISTIC"]).optional(),
   skipUsFederalHolidays: z.string().optional(),
+  crmAcronym: z.string().trim().max(40).optional(),
+  crmKey: z.string().trim().max(120).optional(),
+  bookmarkUrl: z.string().trim().max(500).optional(),
 });
 
 async function nextProjectCode(type: string) {
@@ -216,6 +221,9 @@ export async function createProject(
     scopeJson: formData.get("scopeJson")?.toString() || undefined,
     discoveryScenario: (formData.get("discoveryScenario")?.toString() as never) || undefined,
     skipUsFederalHolidays: formData.get("skipUsFederalHolidays")?.toString() || undefined,
+    crmAcronym: formData.get("crmAcronym")?.toString() || undefined,
+    crmKey: formData.get("crmKey")?.toString() || undefined,
+    bookmarkUrl: formData.get("bookmarkUrl")?.toString() || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
@@ -235,7 +243,6 @@ export async function createProject(
   const dealLink = parseDealLink(d.hubspotDealUrl ?? "");
   if (!dealLink.ok) return { error: dealLink.error };
   const hubspotDealUrl = dealLink.deal?.href ?? null;
-  const crmAcronym = d.crmAcronym?.trim() || null;
 
   const start = d.startDate ? (parseDateInput(d.startDate) ?? new Date()) : new Date();
   const code = await nextProjectCode(d.type);
@@ -352,6 +359,15 @@ export async function createProject(
         ? playbook.goLive
         : null;
 
+  const access = await resolveWorkspaceAccess({
+    customerAccountId: d.type === "INTERNAL" ? null : (d.customerAccountId ?? null),
+    form: {
+      crmAcronym: d.crmAcronym,
+      crmKey: d.crmKey,
+      bookmarkUrl: d.bookmarkUrl,
+    },
+  });
+
   let projectId: string;
   try {
     projectId = await db.transaction(async (tx) => {
@@ -374,7 +390,9 @@ export async function createProject(
           portalEnabled: d.type !== "INTERNAL",
           excludeFromAnalytics: parseExcludeFromAnalytics(formData),
           hubspotDealUrl,
-          crmAcronym,
+          crmAcronym: access.crmAcronym,
+          crmKey: access.crmKey,
+          customFields: access.customFields,
         })
         .returning({ id: projects.id });
 
@@ -427,6 +445,12 @@ export async function createProject(
             .where(eq(projects.id, project.id));
         }
       }
+
+      await fillWorkspaceAccessTasks(tx, {
+        projectId: project.id,
+        actorId: actor.id,
+        access,
+      });
 
       return project.id;
     });
@@ -1100,13 +1124,24 @@ export async function updateProjectAbout(
   const prismClientId = formData.get("prismClientId")?.toString().trim() ?? "";
   const crmAcronym = formData.get("crmAcronym")?.toString().trim() ?? "";
   const crmKey = formData.get("crmKey")?.toString().trim() ?? "";
+  const bookmarkUrl = formData.get("bookmarkUrl")?.toString().trim() ?? "";
   const aboutNotes = formData.get("aboutNotes")?.toString() ?? "";
   const onboarded = formData.get("onboarded") === "on";
   const customFields = parseCustomFieldLines(formData.get("customFields")?.toString() ?? "");
 
-  const project = await db.query.projects.findFirst({
+  const existing = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
-    columns: { customerAccountId: true },
+    columns: { customerAccountId: true, customFields: true },
+  });
+
+  const access = await resolveWorkspaceAccess({
+    customerAccountId: existing?.customerAccountId ?? null,
+    form: { crmAcronym, crmKey, bookmarkUrl },
+    existingCustomFields: customFieldsWithoutBookmark({
+      ...(existing?.customFields ?? {}),
+      ...customFields,
+    }),
+    inheritMissing: false,
   });
 
   await db
@@ -1114,15 +1149,21 @@ export async function updateProjectAbout(
     .set({
       hubspotDealUrl: dealLink.deal?.href ?? null,
       prismClientId: prismClientId || null,
-      crmAcronym: crmAcronym || null,
-      crmKey: crmKey || null,
+      crmAcronym: access.crmAcronym,
+      crmKey: access.crmKey,
       zoomBookingUrl: zoomLink.href,
       aboutNotes: aboutNotes.trim() || null,
       onboarded,
-      customFields,
+      customFields: access.customFields,
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId));
+
+  await fillWorkspaceAccessTasks(db, {
+    projectId,
+    actorId: actor.id,
+    access,
+  });
 
   await audit({
     actor,
@@ -1133,7 +1174,7 @@ export async function updateProjectAbout(
   });
 
   revalidatePath(`/projects/${projectId}`);
-  revalidateAboutSurfaces({ projectId, customerAccountId: project?.customerAccountId });
+  revalidateAboutSurfaces({ projectId, customerAccountId: existing?.customerAccountId });
   revalidatePath("/dashboard");
   revalidatePath("/my-work");
   revalidatePath("/reports");

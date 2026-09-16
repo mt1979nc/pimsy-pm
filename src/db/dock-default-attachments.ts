@@ -11,9 +11,11 @@
  * `content/template-attachments/` (see that folder's README) or replace them
  * from Templates → File library. Do not invent PHI or fake xlsx bytes.
  */
+import { PIMSY_DESKTOP_INSTALL_URL } from "@/lib/accessing-pimsy";
 import { normalizeOverlapTitle } from "@/lib/playbook-meta";
 
 export const DISCOVERY_WIZARD_URL = "https://calm-mud-0fe119810.7.azurestaticapps.net/";
+export { PIMSY_DESKTOP_INSTALL_URL };
 
 export type DefaultLibraryDef = {
   slug: string;
@@ -61,6 +63,23 @@ export const DEFAULT_LIBRARY_ASSETS: DefaultLibraryDef[] = [
       "Schedule: Workflow Guided Discovery",
       "Workflow Guided Discovery",
       "Schedule Workflow Guided Discovery",
+    ],
+  },
+  {
+    slug: "pimsy-desktop-install",
+    name: "PIMSY desktop application",
+    kind: "LINK",
+    url: PIMSY_DESKTOP_INSTALL_URL,
+    isPlaceholder: false,
+    description:
+      "Public installer page for the Windows desktop app (acronym + security key prompted during setup).",
+    adminNotes:
+      "Documented Help Desk URL (How to Install PIMSY on Your Desktop). Same for every site — not a guessed ClickOnce host. Attaches on Accessing Pimsy.",
+    visibility: "SHARED",
+    attachToTitles: [
+      "Accessing Pimsy",
+      "Accessing PIMSY",
+      "Access Pimsy",
     ],
   },
   {

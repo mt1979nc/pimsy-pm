@@ -26,6 +26,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **About / kickoff / CRM contact parity (v1.14.3)** | **This branch** | About matches kickoff logistics and live CRM contacts: implementation-team cards from playbook assignees, practice cards that update when contacts change, and a HubSpot deal link (optional pull). |
 | **business-day dues and Forecast+ section dates (v1.14.3)** | **This branch** | New projects schedule kickoff, Forecast+ section dates, and projected go-live; task due recommendations land on business days only (Saturday bumps Friday or Monday). |
 | **waiting-on-customer grouped by area (v1.14.3)** | **This branch** | Staff waiting-on-customer lists stay in place and now break down outstanding customer actions by Discovery, Configuration, and Training. |
+| **Zendesk deep-link and Accessing Pimsy auto-fill (v1.14.3)** | **This branch** | Zendesk org/email setup checks open the PIMSY Help Desk agent search (no API token), and Accessing Pimsy fills bookmark, desktop app, acronym, and security key on workspace create when those fields already exist. |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |
