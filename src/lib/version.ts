@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.14.3";
+export const APP_VERSION = "1.14.4";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,16 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.14.4",
+    date: "2026-09-16",
+    summary:
+      "Hotfix: Azure image build no longer fails TypeScript on a duplicate crmAcronym field in createProjectSchema after Zendesk/Accessing Pimsy and About/CRM merged.",
+    highlights: [
+      "src/actions/projects.ts createProjectSchema keeps one crmAcronym (About / kickoff CRM) plus crmKey / bookmarkUrl (Accessing Pimsy auto-fill) and hubspotDealUrl. Duplicate members from the #52 + #50 merge are gone.",
+      "No schema migrate. Accessing Pimsy autofill and About/CRM fields unchanged.",
+    ],
+  },
   {
     version: "1.14.3",
     date: "2026-09-16",
