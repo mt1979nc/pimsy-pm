@@ -17,6 +17,7 @@ describe("Dock eyelid defaults", () => {
     expect(dockDefaultPhaseVisibility("Accessing Pimsy")).toBe("INTERNAL");
     expect(dockDefaultPhaseVisibility("Core (Train the Trainer)")).toBe("INTERNAL");
     expect(dockDefaultPhaseVisibility("Billing")).toBe("INTERNAL");
+    expect(dockDefaultPhaseVisibility("Billing Configuration")).toBe("INTERNAL");
     expect(dockDefaultPhaseVisibility("Go-Live Checklist")).toBe("INTERNAL");
     expect(isDockExposedOnCreatePhase("RCM Kickoff")).toBe(true);
     expect(isDockExposedOnCreatePhase("Payer & Enrollment")).toBe(true);
@@ -31,6 +32,10 @@ describe("Dock eyelid defaults", () => {
     expect(byName["Site Configuration"]).toBe("INTERNAL");
     expect(byName["Core (Train the Trainer)"]).toBe("INTERNAL");
     expect(IMPLEMENTATION_PHASES.some((p) => p.name === "Accessing Pimsy")).toBe(true);
+    expect(IMPLEMENTATION_PHASES.some((p) => p.name === "Billing Configuration")).toBe(true);
+    expect(IMPLEMENTATION_PHASES.find((p) => p.name === "Billing Configuration")?.visibility).toBe(
+      "INTERNAL",
+    );
 
     expect(RCM_TEMPLATE.phases.find((p) => p.name === "RCM Kickoff")?.visibility).toBe("SHARED");
     expect(RCM_TEMPLATE.phases.find((p) => p.name === "Workflow & Handoff")?.visibility).toBe("INTERNAL");
@@ -45,8 +50,13 @@ describe("Dock eyelid defaults", () => {
     expect(phaseNameToExposeFromTaskTitle("Expose Training Tab for Booking")).toBe(
       "Core (Train the Trainer)",
     );
+    expect(phaseNameToExposeFromTaskTitle('Expose the "Billing Configuration" tab')).toBe(
+      "Billing Configuration",
+    );
     expect(phaseNameToExposeFromTaskTitle("Expose Parking Lot")).toBeNull();
     expect(phaseMatchesExposeTarget("Site Configuration", "Site Configuration")).toBe(true);
+    expect(phaseMatchesExposeTarget("Billing Configuration", "Site Configuration")).toBe(false);
+    expect(phaseMatchesExposeTarget("Billing Configuration", "Billing Configuration")).toBe(true);
     expect(phaseMatchesExposeTarget("Configuration", "Site Configuration")).toBe(true);
     expect(phaseMatchesExposeTarget("Accessing Pimsy", "Accessing Pimsy")).toBe(true);
   });

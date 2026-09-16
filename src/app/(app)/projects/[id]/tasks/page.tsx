@@ -1,11 +1,18 @@
+import { notFound } from "next/navigation";
 import { and, eq, ne, asc, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { phases, projects, tasks, users, fileAssets, taskChecklistItems } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess } from "@/lib/authz";
 import { ProjectTaskBoard, type ProjectTaskListItem } from "@/components/project-task-list";
+import {
+  addRcmEligibility,
+  billingRcmAssignmentsFromMembers,
+  isHandoffComplete,
+} from "@/lib/add-rcm";
 import { orderTasksForNesting } from "@/lib/task-tree";
 import { resolveTaskDescription } from "@/lib/task-description";
+import { connectedKeyOf } from "@/lib/connected-tasks";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
 import type { ChecklistItemView } from "@/components/task-checklist";
 import { loadAssigneesByTaskIds } from "@/lib/task-assignees";
@@ -27,7 +34,23 @@ export default async function ProjectTasksPage({
   const actor = await requireStaff();
   await assertProjectAccess(actor, id);
 
-  const [projectPhases, allTasks, staff, project] = await Promise.all([
+  const [project, projectPhases, allTasks, staff] = await Promise.all([
+    db.query.projects.findFirst({
+      where: eq(projects.id, id),
+      columns: {
+        id: true,
+        code: true,
+        type: true,
+        status: true,
+        onboarded: true,
+        archivedAt: true,
+        playbookPath: true,
+        rcmTaskCountTotal: true,
+      },
+      with: {
+        members: { columns: { userId: true, role: true } },
+      },
+    }),
     db.query.phases.findMany({
       where: eq(phases.projectId, id),
       orderBy: [asc(phases.order)],
@@ -42,11 +65,8 @@ export default async function ProjectTasksPage({
       columns: { id: true, name: true },
       orderBy: [asc(users.name)],
     }),
-    db.query.projects.findFirst({
-      where: eq(projects.id, id),
-      columns: { id: true, code: true },
-    }),
   ]);
+  if (!project) notFound();
 
   const taskIds = allTasks.map((t) => t.id);
   const [attachmentRows, checklistRows, assigneesByTask] = await Promise.all([
@@ -110,6 +130,19 @@ export default async function ProjectTasksPage({
   function toItems(rows: typeof allTasks): ProjectTaskListItem[] {
     return orderTasksForNesting(rows).map((t) => {
       const checks = checklistByTaskId[t.id] ?? [];
+      const key = connectedKeyOf(t);
+      const peers = key
+        ? allTasks.filter((other) => other.id !== t.id && connectedKeyOf(other) === key)
+        : [];
+      const peerPhases = peers
+        .map((p) => projectPhases.find((ph) => ph.id === p.phaseId)?.name)
+        .filter((n): n is string => Boolean(n));
+      const connectedNote =
+        peerPhases.length > 0
+          ? `Connected · ${[...new Set(peerPhases)].join(", ")}`
+          : key && peers.length > 0
+            ? "Connected"
+            : null;
       return {
         id: t.id,
         projectId: id,
@@ -133,6 +166,8 @@ export default async function ProjectTasksPage({
         depth: t.depth,
         phaseId: t.phaseId,
         reviewRequired: t.reviewRequired,
+        connectKey: t.connectKey,
+        connectedNote,
         order: t.order,
         projectCode: project?.code,
       };
@@ -149,6 +184,27 @@ export default async function ProjectTasksPage({
     tasks: toItems(byPhase.get(phase.id) ?? []),
   }));
 
+  const addRcm = addRcmEligibility({
+    type: project.type,
+    status: project.status,
+    onboarded: project.onboarded,
+    archivedAt: project.archivedAt,
+    playbookPath: project.playbookPath,
+    rcmTaskCountTotal: project.rcmTaskCountTotal,
+    hasRcmWorkTrack: allTasks.some((t) => t.workTrack === "RCM"),
+    handoffComplete: isHandoffComplete(
+      projectPhases.map((p) => ({
+        name: p.name,
+        status: p.status,
+        notApplicable: p.notApplicable,
+        tasks: (byPhase.get(p.id) ?? []).map((t) => ({
+          status: t.status,
+          notApplicable: t.notApplicable,
+        })),
+      })),
+    ),
+  });
+
   return (
     <ProjectTaskBoard
       projectId={id}
@@ -159,6 +215,13 @@ export default async function ProjectTasksPage({
       unphased={toItems(byPhase.get(null) ?? [])}
       assetsByTaskId={assetsByTaskId}
       checklistByTaskId={checklistByTaskId}
+      addRcm={
+        addRcm.ok
+          ? {
+              defaultAssignments: billingRcmAssignmentsFromMembers(project.members),
+            }
+          : null
+      }
     />
   );
 }

@@ -447,6 +447,8 @@ export const templateTasks = pgTable(
     workTrack: workTrackEnum("work_track").notNull().default("EHR"),
     /** Shared key used to auto-complete overlapping EHR/RCM work. */
     overlapKey: text("overlap_key"),
+    /** Dock-style connected duplicate (complete in one area reflects in the other). */
+    connectKey: text("connect_key"),
   },
   (t) => [index("template_task_order_idx").on(t.phaseId, t.order)],
 );
@@ -750,6 +752,8 @@ export const tasks = pgTable(
     workTrack: workTrackEnum("work_track").notNull().default("EHR"),
     defaultRole: projectMemberRoleEnum("default_role"),
     overlapKey: text("overlap_key"),
+    /** Dock-style connected duplicate — same key as the copy in another area. */
+    connectKey: text("connect_key"),
     areaKey: text("area_key"),
     /**
      * Specialist flag: this task needs a human review (typically a Configuration
@@ -769,6 +773,7 @@ export const tasks = pgTable(
     index("task_visibility_idx").on(t.visibility),
     index("task_owner_side_idx").on(t.ownerSide, t.status),
     index("task_review_required_idx").on(t.projectId, t.reviewRequired, t.status),
+    index("task_project_connect_idx").on(t.projectId, t.connectKey),
   ],
 );
 

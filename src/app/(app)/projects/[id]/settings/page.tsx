@@ -20,8 +20,13 @@ import { ProjectContacts } from "./contacts";
 import { SlipHistoryList } from "@/components/slip-history";
 import { RecordSlipForm } from "@/components/record-slip-form";
 import { staffingRoleLabel } from "@/lib/staffing";
-import { AddRcmTrackForm } from "./add-rcm-track-form";
+import { AddRcmAlreadyOnNote, AddRcmTrackForm } from "./add-rcm-track-form";
 import { assessHistoricalComplete, loadOpenHistoricalTasks } from "@/lib/historical-complete";
+import {
+  addRcmEligibility,
+  billingRcmAssignmentsFromMembers,
+  isHandoffComplete,
+} from "@/lib/add-rcm";
 
 export const dynamic = "force-dynamic";
 
@@ -98,7 +103,7 @@ export default async function ProjectSettingsPage({
 
   const projectPhases = await db.query.phases.findMany({
     where: eq(phases.projectId, id),
-    columns: { id: true, name: true, visibility: true },
+    columns: { id: true, name: true, visibility: true, status: true, notApplicable: true },
     orderBy: [asc(phases.order)],
   });
 
@@ -115,6 +120,27 @@ export default async function ProjectSettingsPage({
 
   const historicalEligibility = assessHistoricalComplete(project);
   const openHistoricalTasks = historicalEligibility.ok ? await loadOpenHistoricalTasks(id) : [];
+
+  const addRcm = addRcmEligibility({
+    type: project.type,
+    status: project.status,
+    onboarded: project.onboarded,
+    archivedAt: project.archivedAt,
+    playbookPath: project.playbookPath,
+    rcmTaskCountTotal: project.rcmTaskCountTotal,
+    hasRcmWorkTrack: project.rcmTaskCountTotal > 0,
+    handoffComplete: isHandoffComplete(
+      projectPhases.map((p) => ({
+        name: p.name,
+        status: p.status,
+        notApplicable: p.notApplicable,
+      })),
+    ),
+  });
+  const showAddRcm = addRcm.ok || (!addRcm.ok && addRcm.reason === "already-on");
+  const rcmAssignments = billingRcmAssignmentsFromMembers(
+    project.members.filter((m) => m.user.role !== "CUSTOMER"),
+  );
 
   return (
     <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.3fr_1fr]">
@@ -208,13 +234,21 @@ export default async function ProjectSettingsPage({
           <AddMemberForm projectId={id} candidates={candidates} />
         </Card>
 
-        {project.rcmTaskCountTotal === 0 ? (
-          <Card>
+        {showAddRcm ? (
+          <Card id="add-rcm">
             <CardHeader
-              title="Add RCM track"
-              subtitle="Path 4 — existing EHR + RCM with Prism data. Does not rewrite EHR dates."
+              title="Add RCM"
+              subtitle={
+                addRcm.ok
+                  ? "Enable the RCM area on this live Implementation WIP. Does not rewrite EHR dates."
+                  : "RCM area"
+              }
             />
-            <AddRcmTrackForm projectId={id} staff={staff} />
+            {addRcm.ok ? (
+              <AddRcmTrackForm projectId={id} staff={staff} defaultAssignments={rcmAssignments} />
+            ) : (
+              <AddRcmAlreadyOnNote />
+            )}
           </Card>
         ) : null}
 

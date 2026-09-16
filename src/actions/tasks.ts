@@ -35,6 +35,7 @@ import {
 } from "@/lib/task-assignees";
 import { applySupportHandoffOnComplete } from "@/lib/support-handoff";
 import { isHandOffToSupportTask } from "@/lib/support-handoff-meta";
+import { syncConnectedTaskStatus } from "@/lib/connected-task-sync";
 import type { ActionState } from "./messages";
 
 const optionalDate = z
@@ -273,14 +274,25 @@ export async function setTaskStatus(taskId: string, status: string) {
   }
 
   const next = parsed.data;
+  const completedAt = next === "DONE" ? new Date() : null;
   await db
     .update(tasks)
     .set({
       status: next,
-      completedAt: next === "DONE" ? new Date() : null,
+      completedAt,
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, taskId));
+
+  const syncedIds = await syncConnectedTaskStatus({
+    projectId: task.projectId,
+    taskId,
+    connectKey: task.connectKey,
+    overlapKey: task.overlapKey,
+    title: task.title,
+    status: next,
+    completedAt,
+  });
 
   await refreshProjectCounters(task.projectId);
   await syncMilestonesFromTaskCompletion(task.projectId);
@@ -290,7 +302,12 @@ export async function setTaskStatus(taskId: string, status: string) {
     entityType: "task",
     entityId: taskId,
     summary: `${task.title}: ${task.status} → ${next}`,
-    metadata: { projectId: task.projectId, from: task.status, to: next },
+    metadata: {
+      projectId: task.projectId,
+      from: task.status,
+      to: next,
+      connectedTaskIds: syncedIds,
+    },
   });
 
   if (next === "DONE") {

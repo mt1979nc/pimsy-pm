@@ -39,6 +39,8 @@ export type TaskRowData = {
   depth?: number;
   phaseId?: string | null;
   reviewRequired?: boolean;
+  connectKey?: string | null;
+  connectedNote?: string | null;
 };
 
 type StaffOption = { id: string; name: string | null };
@@ -203,6 +205,7 @@ export function TaskRow({
             {task.status === "BLOCKED" ? <Badge tone="red">Blocked</Badge> : null}
             {na ? <Badge tone="amber">N/A</Badge> : null}
             {task.workTrack === "RCM" ? <Badge tone="violet">RCM</Badge> : null}
+            {task.connectedNote ? <Badge tone="green">{task.connectedNote}</Badge> : null}
           </div>
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-3">

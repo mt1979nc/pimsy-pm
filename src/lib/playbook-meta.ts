@@ -54,6 +54,10 @@ export const OPTIONAL_AREA_CATALOG: Record<string, { label: string; hint: string
     label: "Payroll",
     hint: "Payroll training track.",
   },
+  billing_configuration: {
+    label: "Billing configuration",
+    hint: "Billing team tab — Discovery intake and site billing config, connected. Not skipped on create.",
+  },
 };
 
 export function optionalAreaLabel(key: string): string {

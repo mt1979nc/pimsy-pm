@@ -204,7 +204,9 @@ export default async function TemplatesPage() {
         <strong>Open form</strong>), download → complete → upload copy on
         customer file requests, and training descriptions.
         Duplicate makes a custom copy so the four site-creation paths stay put. New workspaces
-        inherit that copy automatically.
+        inherit that copy automatically. Billing Configuration is a billing-team
+        tab with connected Discovery/Configuration copies; Move to tab can send
+        overlapping work onto an RCM section.
         Live projects are not rewritten when the template changes — run{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
           npm run db:resync:playbook-from-dock -- --apply

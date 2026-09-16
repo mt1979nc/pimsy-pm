@@ -277,6 +277,7 @@ export async function createTemplateTask(
     defaultRole,
     workTrack: formData.get("workTrack") === "RCM" ? "RCM" : "EHR",
     overlapKey: formData.get("overlapKey")?.toString().trim() || null,
+    connectKey: formData.get("connectKey")?.toString().trim() || null,
   });
 
   revalidatePath(`/templates/${phase.templateId}`);
@@ -330,6 +331,7 @@ export async function updateTemplateTask(
       defaultRole,
       workTrack: formData.get("workTrack") === "RCM" ? "RCM" : formData.get("workTrack") === "SHARED" ? "SHARED" : "EHR",
       overlapKey: formData.get("overlapKey")?.toString().trim() || null,
+      connectKey: formData.get("connectKey")?.toString().trim() || null,
     })
     .where(eq(templateTasks.id, taskId));
 
@@ -384,32 +386,80 @@ export async function moveTemplateTask(taskId: string, toPhaseId: string, before
   await requireTemplateAdmin();
   const task = await db.query.templateTasks.findFirst({
     where: eq(templateTasks.id, taskId),
-    with: { phase: { columns: { templateId: true } } },
+    with: { phase: { columns: { templateId: true, workTrack: true } } },
   });
   if (!task) throw new NotFoundError("Task not found.");
   await assertUnlocked(task.phase.templateId);
   const dest = await db.query.templatePhases.findFirst({
     where: and(eq(templatePhases.id, toPhaseId), eq(templatePhases.templateId, task.phase.templateId)),
-    columns: { id: true, templateId: true },
+    columns: { id: true, templateId: true, workTrack: true },
   });
   if (!dest) throw new NotFoundError("Phase not found.");
+
+  const allOnTemplate = await db.query.templatePhases.findMany({
+    where: eq(templatePhases.templateId, task.phase.templateId),
+    columns: { id: true },
+    with: { tasks: { columns: { id: true, parentTaskId: true, phaseId: true } } },
+  });
+  const everyTask = allOnTemplate.flatMap((p) => p.tasks);
+  const descendants = new Set<string>();
+  function walk(id: string) {
+    descendants.add(id);
+    for (const row of everyTask) {
+      if (row.parentTaskId === id && !descendants.has(row.id)) walk(row.id);
+    }
+  }
+  walk(taskId);
 
   const siblings = await db.query.templateTasks.findMany({
     where: eq(templateTasks.phaseId, toPhaseId),
     columns: { id: true, order: true },
     orderBy: (t, { asc }) => [asc(t.order)],
   });
-  const without = siblings.filter((s) => s.id !== taskId).map((s) => s.id);
+  const moving = new Set(descendants);
+  const without = siblings.filter((s) => !moving.has(s.id)).map((s) => s.id);
   const idx = beforeTaskId ? without.indexOf(beforeTaskId) : -1;
   const next = idx >= 0 ? [...without.slice(0, idx), taskId, ...without.slice(idx)] : [...without, taskId];
 
+  const parentStays =
+    task.parentTaskId && everyTask.some((t) => t.id === task.parentTaskId && t.phaseId === toPhaseId);
+
   await db.transaction(async (tx) => {
-    await tx.update(templateTasks).set({ phaseId: toPhaseId }).where(eq(templateTasks.id, taskId));
+    await tx
+      .update(templateTasks)
+      .set({
+        phaseId: toPhaseId,
+        parentTaskId: parentStays ? task.parentTaskId : null,
+        workTrack: dest.workTrack,
+      })
+      .where(eq(templateTasks.id, taskId));
+    for (const id of descendants) {
+      if (id === taskId) continue;
+      await tx
+        .update(templateTasks)
+        .set({ phaseId: toPhaseId, workTrack: dest.workTrack })
+        .where(eq(templateTasks.id, id));
+    }
     for (let i = 0; i < next.length; i++) {
       await tx.update(templateTasks).set({ order: i, phaseId: toPhaseId }).where(eq(templateTasks.id, next[i]));
     }
   });
   revalidatePath(`/templates/${dest.templateId}`);
+}
+
+export async function moveTemplateTaskForm(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const taskId = String(formData.get("taskId") ?? "");
+  const toPhaseId = String(formData.get("toPhaseId") ?? "");
+  if (!taskId || !toPhaseId) return { error: "Pick a destination tab." };
+  try {
+    await moveTemplateTask(taskId, toPhaseId);
+    return { ok: true };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not move that task." };
+  }
 }
 
 export async function duplicateTemplate(formData: FormData): Promise<void> {

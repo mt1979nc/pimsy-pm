@@ -52,6 +52,8 @@ export type SeedTask = {
     | "RCM_MANAGER";
   workTrack?: "EHR" | "RCM" | "SHARED";
   overlapKey?: string;
+  /** Dock-style connected duplicate — complete in one area reflects in the other. */
+  connectKey?: string;
 };
 
 /** Section/header task with nested subtasks (Dock checklist groups). */
@@ -188,6 +190,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
         I("Billing Code Setup", { offsetDays: 11, durationDays: 3 }),
         I("Payer Setup", { offsetDays: 12, durationDays: 3 }),
       ]),
+      I('Expose the "Billing Configuration" tab', { offsetDays: 8 }),
 
       I("Review Clinical Workflow Data Sheet", { offsetDays: 9 }),
       G(S("Forms", { offsetDays: 12, durationDays: 8 }), [
@@ -199,6 +202,30 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
         S("Forms: Public Docs/Word Merge", { offsetDays: 16, durationDays: 6 }),
       ]),
       I("Expose Training Tab for Booking", { offsetDays: 22 }),
+    ],
+  },
+  {
+    name: "Billing Configuration",
+    description:
+      "Billing team area: Discovery billing intake and site billing config. Connected copies — complete in Discovery or Configuration and it reflects here (and the other way around).",
+    visibility: dockDefaultPhaseVisibility("Billing Configuration"),
+    offsetDays: 14,
+    durationDays: 28,
+    areaKey: "billing_configuration",
+    isOptional: false,
+    tasks: [
+      I("Billing Questionnaire", { priority: "HIGH", durationDays: 7 }),
+      I("Complete & Upload Billing Spreadsheet — Accepted Payers, Modifiers", {
+        priority: "HIGH",
+        durationDays: 10,
+      }),
+      G(S("Billing Config", { offsetDays: 8, durationDays: 8 }), [
+        I("Schedule Billing Workflow Discovery Meeting", { offsetDays: 8, priority: "HIGH" }),
+        I("Billing Workflow Discovery Meeting Notes & Recording", { offsetDays: 10 }),
+        I("Review Billing Questionnaire Data Sheet", { offsetDays: 10 }),
+        I("Billing Code Setup", { offsetDays: 11, durationDays: 3 }),
+        I("Payer Setup", { offsetDays: 12, durationDays: 3 }),
+      ]),
     ],
   },
   {

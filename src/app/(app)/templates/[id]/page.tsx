@@ -71,7 +71,7 @@ export default async function TemplateEditorPage({
     <>
       <PageHeader
         title={row.name}
-        subtitle="Dock-style editor: descriptions, nested tasks, training checklists, default files, and optional areas. Live projects are not rewritten."
+        subtitle="Dock-style editor: descriptions, nested tasks, connected keys, move to another tab, training checklists, default files, and optional areas. Live projects are not rewritten."
         breadcrumb={
           <LinkButton href="/templates" variant="ghost" size="sm" className="-ml-2.5">
             ← Templates

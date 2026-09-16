@@ -33,6 +33,7 @@ import { cn } from "@/lib/cn";
 import { resolveTaskDescription } from "@/lib/task-description";
 import { buildPimsyLoginConfirmation, isConfirmUsersLoggedInTitle } from "@/lib/pimsy-audit-feed";
 import { showReviewRequiredBadge } from "@/lib/discovery-config-review";
+import { listConnectedPeers } from "@/lib/connected-task-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -77,8 +78,19 @@ export default async function TaskDetailPage({
 
   const confirmLogins = isConfirmUsersLoggedInTitle(task.title);
 
-  const [comments, attachments, staff, contacts, checklist, subtasks, library, projectPhases, projectTasks, scope] =
-    await Promise.all([
+  const [
+    comments,
+    attachments,
+    staff,
+    contacts,
+    checklist,
+    subtasks,
+    library,
+    projectPhases,
+    projectTasks,
+    scope,
+    connectedPeers,
+  ] = await Promise.all([
     db.query.taskComments.findMany({
       where: and(eq(taskComments.taskId, taskId), isNull(taskComments.deletedAt)),
       orderBy: [asc(taskComments.createdAt)],
@@ -142,6 +154,13 @@ export default async function TaskDetailPage({
           columns: { userCount: true },
         })
       : Promise.resolve(null),
+    listConnectedPeers({
+      projectId: id,
+      taskId,
+      connectKey: task.connectKey,
+      overlapKey: task.overlapKey,
+      title: task.title,
+    }),
   ]);
   const attachedLibraryIds = attachments
     .map((a) => a.libraryAssetId)
@@ -193,6 +212,7 @@ export default async function TaskDetailPage({
           {showReviewRequiredBadge(task) ? <ReviewRequiredBadge /> : null}
           {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer action</Badge> : null}
           {task.phase ? <Badge>{task.phase.name}</Badge> : null}
+          {connectedPeers.length > 0 ? <Badge tone="green">Connected</Badge> : null}
         </div>
         <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">
           {task.title}
@@ -218,6 +238,23 @@ export default async function TaskDetailPage({
         ) : (
           <p className="mt-1.5 text-[13.5px] text-ink-3">No due date</p>
         )}
+        {connectedPeers.length > 0 ? (
+          <p className="mt-2 text-[13px] text-ink-2">
+            Connected — complete here and it reflects on{" "}
+            {connectedPeers.map((peer, i) => (
+              <span key={peer.id}>
+                {i > 0 ? ", " : null}
+                <Link
+                  href={`/projects/${id}/tasks/${peer.id}`}
+                  className="font-medium text-brand hover:underline"
+                >
+                  {peer.phaseName ? `${peer.phaseName}: ${peer.title}` : peer.title}
+                </Link>
+              </span>
+            ))}
+            .
+          </p>
+        ) : null}
       </div>
 
       <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.5fr_1fr]">
