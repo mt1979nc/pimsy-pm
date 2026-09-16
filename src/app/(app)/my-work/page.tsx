@@ -2,8 +2,9 @@ import { requireStaff } from "@/lib/guard";
 import { myTasks, waitingOnCustomer, hoursLoggedThisWeek } from "@/lib/queries";
 import { PageHeader, Card, CardHeader, EmptyState, Stat, Badge } from "@/components/ui";
 import { TaskRow } from "@/components/task-row";
-import { isOverdue, dueLabel } from "@/lib/dates";
-import Link from "next/link";
+import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
+import { isOverdue } from "@/lib/dates";
+import { formatWaitingOnAreaHint, countWaitingOnByArea } from "@/lib/waiting-on-area";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "My work" };
@@ -68,13 +69,14 @@ export default async function MyWorkPage() {
   const actor = await requireStaff();
   const [tasks, chase, hours] = await Promise.all([
     myTasks(actor),
-    waitingOnCustomer(actor, 30),
+    waitingOnCustomer(actor, 80),
     hoursLoggedThisWeek(actor),
   ]);
 
   const overdue = tasks.filter((t) => isOverdue(t.dueDate));
   const committed = tasks.reduce((n, t) => n + (t.estimateHours ?? 0), 0);
   const groups = groupByCustomerThenPhase(tasks);
+  const chaseHint = formatWaitingOnAreaHint(countWaitingOnByArea(chase));
 
   return (
     <>
@@ -142,35 +144,9 @@ export default async function MyWorkPage() {
         <Card>
           <CardHeader
             title="Chase list"
-            subtitle="Open action items sitting with customers"
+            subtitle={chaseHint ?? "Open action items sitting with customers"}
           />
-          {chase.length === 0 ? (
-            <EmptyState title="Nothing outstanding" />
-          ) : (
-            <div className="divide-y divide-border">
-              {chase.map((t) => (
-                <div key={t.id} className="px-4 py-2.5">
-                  <div className="text-[13px] text-ink">{t.title}</div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">
-                    <Link
-                      href={`/projects/${t.project.id}/messages`}
-                      className="font-medium text-ink-2 hover:text-brand"
-                    >
-                      {t.project.customerAccount?.name ?? t.project.name}
-                    </Link>
-                    {t.dueDate ? (
-                      <>
-                        <span>·</span>
-                        <span className={isOverdue(t.dueDate) ? "font-medium text-red" : ""}>
-                          {dueLabel(t.dueDate)}
-                        </span>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <WaitingOnCustomerList tasks={chase} emptyTitle="Nothing outstanding" />
         </Card>
       </div>
     </>

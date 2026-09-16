@@ -8,6 +8,7 @@ import {
   cycleTimeStats,
   upcomingMilestones,
   waitingOnThreadRollup,
+  waitingOnCustomer,
 } from "@/lib/queries";
 import {
   PageHeader,
@@ -25,6 +26,8 @@ import {
 import { fmtDate, daysUntil } from "@/lib/dates";
 import { pctComplete } from "@/lib/pct-complete";
 import { cn } from "@/lib/cn";
+import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
+import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Portfolio" };
@@ -32,7 +35,7 @@ export const metadata = { title: "Portfolio" };
 export default async function ReportsPage() {
   const actor = await requirePortfolioAccess();
 
-  const [summary, attention, all, risks, cycle, milestones, waiting] = await Promise.all([
+  const [summary, attention, all, risks, cycle, milestones, waiting, chase] = await Promise.all([
     portfolioSummary(actor),
     attentionProjects(actor, 20),
     listProjects(actor, { skipAnalyticsExcluded: true }),
@@ -40,9 +43,11 @@ export default async function ReportsPage() {
     cycleTimeStats(),
     upcomingMilestones(actor, 60, 40),
     waitingOnThreadRollup(actor),
+    waitingOnCustomer(actor, 60),
   ]);
   const waitingPimsy = waiting.reduce((n, r) => n + r.pimsyCount, 0);
   const waitingCustomer = waiting.reduce((n, r) => n + r.customerCount, 0);
+  const chaseHint = formatWaitingOnAreaHint(countWaitingOnByArea(chase));
 
   const active = all.filter((p) =>
     ["NOT_STARTED", "IN_PROGRESS", "ON_HOLD", "BLOCKED"].includes(p.status),
@@ -163,7 +168,7 @@ export default async function ReportsPage() {
         <Stat
           label="Open customer actions"
           value={summary.openCustomerActions}
-          hint="waiting on practices"
+          hint={chaseHint ?? "waiting on practices"}
         />
       </div>
 
@@ -260,6 +265,23 @@ export default async function ReportsPage() {
         </div>
 
         <div className="space-y-5">
+          <Card>
+            <CardHeader
+              title="Waiting on customers"
+              subtitle="Outstanding actions by Discovery, Configuration, and Training"
+              action={
+                <Link href="/my-work" className="text-[12.5px] font-medium text-brand hover:underline">
+                  Chase list →
+                </Link>
+              }
+            />
+            <WaitingOnCustomerList
+              tasks={chase}
+              emptyTitle="Nothing outstanding"
+              emptyDescription="No customer action items are open."
+            />
+          </Card>
+
           <Card>
             <CardHeader
               title="Waiting on"
