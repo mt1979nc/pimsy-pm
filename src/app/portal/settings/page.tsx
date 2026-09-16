@@ -42,7 +42,7 @@ export default async function PortalSettingsPage() {
             types={typesFor("customer")}
             prefs={prefs}
             usingDefaults={!me.notificationPrefs}
-            audienceNote="Only about your own implementation."
+            audienceNote="Only about your own implementation. Due-soon, overdue, and messages from the PIMSY team are grouped into one summary email when several land close together — you still see each item separately here."
           />
         </Card>
 

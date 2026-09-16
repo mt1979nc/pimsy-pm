@@ -30,7 +30,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **PIMSY EHR login confirmation on the training task (v1.14.3)** | **This branch** | Staff “Confirm users have logged in” task details show PATH portal contacts plus live PIMSY EHR who/duration when an audit feed is configured — never invented PHI or sample sessions. |
 | **kickoff extras, contact cards, and Project updates purpose (v1.14.3)** | **This branch** | About/kickoff shows kickoff date, go-live, specialist, Zoom booking, and notes already stored on the project (no HubSpot on the customer tab); contact cards share one layout; Project updates say when to use them. |
 | **thread open/resolved, unread, and mark resolved (v1.14.3)** | **This branch** | Threads organize open vs resolved, unread follows the last-read cursor reliably, and staff or portal can mark a topic resolved. |
-| **Assign (Wave B)** | **This branch (hold from live)** | Multi-assignee join + auto-assign specialist / billing / customer lead / customer billing. P1-G: Billing Questionnaire → project lead + billing specialist; due-soon/overdue pings to every assignee (digest mail stays PR #39). Migration `0017_task_assignees`. |
+| **Assign (Wave B)** | **This branch (hold from live)** | Multi-assignee join + auto-assign specialist / billing / customer lead / customer billing. P1-G: Billing Questionnaire → project lead + billing specialist; due-soon/overdue pings to every assignee (digest mail is this PR). Migration `0017_task_assignees`. |
 | **Hand off to Support (Wave B)** | **This PR (hold from live)** | Completing the post go-live **Hand off to Support** task emails Kori Hale (`kori@pimsyehr.com`) with outstanding items from the task description and marks the site **COMPLETED**. Migration `0018_support_handoff`. |
 | **Discovery → Configuration review (Wave B)** | **This PR (hold from live)** | Discovery uploads spawn Configuration review tasks (`reviewRequired`) and wizard Excel fans out to Configuration consumers. Migration `0019_review_required`. |
 | **Billing / RCM connected (Wave B)** | **This branch (HOLD from live)** | Billing Configuration team tab; connected Discovery/Configuration copies; EHR+RCM move to RCM tab; **Add RCM on existing Implementation WIP**. Migration `0020_connected_tasks`. Runbook: `v1.14-BILLING-RCM.md`. |
@@ -38,6 +38,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
 | **Training calendar / recordings / agenda (Wave B)** | **This branch (HOLD from live)** | Book Training N → `session_at` on the session task; Zoom recording mirrors Recordings tab + training task; agenda checkboxes carry incomplete items to the next session. Migration `0022_training_session`. |
+| **Customer email digest (Wave C)** | **This PR (hold from live)** | One PATH summary email when several due-soon / overdue tasks or PIMSY-staff messages pile up; in-app still per item; portal deep links. Cron: `POST /api/cron/customer-digest` with Bearer `CRON_SECRET`. Logic App every 15 minutes. No migrate. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |
 
 ## Milestone: Retire standalone Prism
@@ -62,7 +63,7 @@ Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shi
 | Status updates feed | **Shipped** (v1.14) — in-app purpose copy; composer still the weekly snapshot |
 | Zoom recordings sync | **Partial (Wave B)** | Manual paste still; one link now lands on Recordings **and** the Training N task. No Zoom API pull. |
 | Template reseed | Planned — `--templates-only` still the ops path; v1.13 duplicate is an in-app copy, not a live Dock pull |
-| Mentions / notify | Partial (exists; polish remaining) |
+| Mentions / notify | Partial — customer due-soon / overdue / staff-message **email** is batched; in-app stays per item |
 | File library by area | **Shipped** (v1.12) | Reusable library + Learning Center topic groups; placeholders until Dock binaries are uploaded. |
 
 ## Ops

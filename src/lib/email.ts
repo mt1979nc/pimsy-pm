@@ -79,6 +79,10 @@ export function escapeHtml(s: string) {
 /** Label/value rows — "Project", "Assigned by", "Due". */
 export type Fact = { name: string; value: string };
 
+export type LayoutItem = { title: string; url: string; detail?: string };
+
+export type LayoutSection = { heading: string; items: LayoutItem[] };
+
 export type LayoutOpts = {
   heading: string;
   /** Raw HTML, already escaped by the caller. Prefer `paragraphs`. */
@@ -88,6 +92,12 @@ export type LayoutOpts = {
   facts?: Fact[];
   /** A quoted excerpt — a message body or comment. Rendered set apart. */
   quote?: { author: string; text: string };
+  /**
+   * Linked rows — used by the customer digest so each due task or staff
+   * message has its own portal deep link (Outlook-safe table, not a bullet
+   * list Outlook collapses).
+   */
+  sections?: LayoutSection[];
   cta?: { label: string; url: string };
   footer?: string;
 };
@@ -102,6 +112,30 @@ function factTable(facts: Fact[]) {
     )
     .join("");
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:20px 0 0;border-top:1px solid #eef0f3;padding-top:4px;">${rows}</table>`;
+}
+
+function sectionTables(sections: LayoutSection[]) {
+  return sections
+    .map((section) => {
+      const rows = section.items
+        .map((item, i) => {
+          const safe = escapeHtml(item.url);
+          const top = i === 0 ? "8px" : "10px";
+          const detail = item.detail
+            ? `<div style="margin:2px 0 0;font-size:13px;line-height:20px;color:#8b939c;">${escapeHtml(item.detail)}</div>`
+            : "";
+          return `<tr>
+            <td style="padding:${top} 0 10px;border-bottom:1px solid #eef0f3;">
+              <a href="${safe}" style="font-family:${FONTS};font-size:15px;line-height:22px;font-weight:600;color:${BRAND};text-decoration:none;">${escapeHtml(item.title)}</a>
+              ${detail}
+            </td>
+          </tr>`;
+        })
+        .join("");
+      return `<p style="margin:22px 0 0;font-size:12px;line-height:18px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#8b939c;">${escapeHtml(section.heading)}</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">${rows}</table>`;
+    })
+    .join("");
 }
 
 function button(label: string, url: string) {
@@ -157,6 +191,7 @@ export function layout(opts: LayoutOpts) {
             <h1 style="margin:0 0 14px;font-size:20px;line-height:28px;font-weight:600;mso-line-height-rule:exactly;">${escapeHtml(opts.heading)}</h1>
             <div style="font-size:15px;line-height:24px;color:#3d444d;">${paras}${opts.body ?? ""}</div>
             ${quote}
+            ${opts.sections?.length ? sectionTables(opts.sections) : ""}
             ${opts.facts?.length ? factTable(opts.facts) : ""}
             ${opts.cta ? button(opts.cta.label, opts.cta.url) : ""}
             ${
@@ -190,6 +225,14 @@ export function plainText(opts: LayoutOpts): string {
   }
   for (const f of opts.facts ?? []) out.push(`${f.name}: ${f.value}`);
   if (opts.facts?.length) out.push("");
+  for (const section of opts.sections ?? []) {
+    out.push(section.heading.toUpperCase(), "");
+    for (const item of section.items) {
+      out.push(item.title);
+      if (item.detail) out.push(`  ${item.detail}`);
+      out.push(`  ${item.url}`, "");
+    }
+  }
   if (opts.cta) out.push(`${opts.cta.label}: ${opts.cta.url}`, "");
   out.push("—", opts.footer ?? "Contains no patient information.");
   return out.join("\n");

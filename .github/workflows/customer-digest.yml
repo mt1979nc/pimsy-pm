@@ -1,0 +1,32 @@
+name: Customer email digest
+
+# Optional fallback if Azure Logic App is not wired yet.
+# Prefer the Logic App in azure/README.md so the job is not tied to GitHub's
+# delayed cron. No-ops when PATH_APP_URL or PATH_CRON_SECRET are unset.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: customer-digest
+  cancel-in-progress: true
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /api/cron/customer-digest
+        env:
+          PATH_APP_URL: ${{ secrets.PATH_APP_URL }}
+          PATH_CRON_SECRET: ${{ secrets.PATH_CRON_SECRET }}
+        run: |
+          if [ -z "$PATH_APP_URL" ] || [ -z "$PATH_CRON_SECRET" ]; then
+            echo "PATH_APP_URL / PATH_CRON_SECRET not set — skip (wire Azure Logic App instead)."
+            exit 0
+          fi
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${PATH_CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            "${PATH_APP_URL%/}/api/cron/customer-digest"

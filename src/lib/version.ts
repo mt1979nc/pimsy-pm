@@ -31,6 +31,11 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     highlights: [
       "src/actions/projects.ts createProjectSchema keeps one crmAcronym (About / kickoff CRM) plus crmKey / bookmarkUrl (Accessing Pimsy auto-fill) and hubspotDealUrl. Duplicate members from the #52 + #50 merge are gone.",
       "No schema migrate. Accessing Pimsy autofill and About/CRM fields unchanged.",
+      "Customer email for due soon, overdue, and new messages from the PIMSY team is held in `notify()` and sent as one digest. Staff email for the same events stays immediate.",
+      "Each digest row links to the exact portal task (`/portal/projects/…/tasks/…`) or conversation (`/portal/projects/…/messages/…`) — never staff `/projects/…`. Inbox / in-app notifications remain one row per task or message.",
+      "Due-soon window is today and tomorrow on America/New_York (date-only “due within 24 hours”). Opt-outs by type still apply. No invented PHI.",
+      "Job: POST/GET `/api/cron/customer-digest` with Bearer `CRON_SECRET`. Azure: Logic App (or Timer) every 15 minutes against the Web App. Optional GitHub Actions workflow if `PATH_APP_URL` + `PATH_CRON_SECRET` are set.",
+      "No playbook resync. Hold from live until Alexander ships the major batch.",
     ],
   },
   {

@@ -9,6 +9,7 @@
     "bootstrapOwnerEmail": { "value": "alexander@pimsyehr.com" },
     "internalEmailDomains": { "value": "pimsyehr.com" },
     "resendApiKey": { "value": "" },
+    "cronSecret": { "value": "" },
     "appServicePlanSku": { "value": "B1" },
     "postgresSku": { "value": "Standard_B1ms" }
   }

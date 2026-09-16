@@ -109,6 +109,22 @@ describe("staff Update History source", () => {
     expect(RELEASE_NOTES.find((n) => n.version === "1.14.3")).toBeTruthy();
   });
 
+  it("documents customer email digest (batched, portal deep links) on 1.14.4 notes", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.14.4");
+    expect(note?.highlights?.some((h) => /notify\(\)/.test(h) && /digest/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /\/portal\/projects/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /\/projects\/…/.test(h) || /staff `\/projects/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /CRON_SECRET|customer-digest/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Logic App|15 minutes/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No playbook resync/.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/\bPHI\b/.test(h) || /no invented PHI|No invented PHI/i.test(h))).toBe(
+      true,
+    );
+  });
+
   it("documents the v1.14.3 ActionState inviteUrl hotfix", () => {
     const note = RELEASE_NOTES.find((n) => n.version === "1.14.3");
     expect(note?.summary).toMatch(/Hotfix/i);
