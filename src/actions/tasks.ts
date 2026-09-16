@@ -25,6 +25,7 @@ import { setTaskNotApplicable } from "@/lib/playbook";
 import { isSpecialistSubtask, liveTaskCreateDefaults } from "@/lib/task-visibility";
 import { exposePhaseFromCompletedTask } from "@/lib/expose-phase";
 import { applyTaskMove } from "@/lib/task-relink";
+import { syncMilestonesFromTaskCompletion } from "@/lib/milestone-rollup";
 import type { ActionState } from "./messages";
 
 const optionalDate = z
@@ -123,6 +124,7 @@ export async function createTask(
       .returning({ id: tasks.id });
 
     await refreshProjectCounters(d.projectId);
+    await syncMilestonesFromTaskCompletion(d.projectId);
     await audit({
       actor,
       action: "task.created",
@@ -221,6 +223,7 @@ export async function setTaskStatus(taskId: string, status: string) {
     .where(eq(tasks.id, taskId));
 
   await refreshProjectCounters(task.projectId);
+  await syncMilestonesFromTaskCompletion(task.projectId);
   await audit({
     actor,
     action: "task.status.changed",
@@ -461,6 +464,7 @@ export async function deleteTask(taskId: string) {
 
   await db.delete(tasks).where(eq(tasks.id, taskId));
   await refreshProjectCounters(task.projectId);
+  await syncMilestonesFromTaskCompletion(task.projectId);
   await audit({
     actor,
     action: "task.deleted",

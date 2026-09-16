@@ -5,7 +5,7 @@ import { createProject } from "@/actions/projects";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Field, inputClass, Card, CardHeader, Badge } from "@/components/ui";
 import { LinkButton } from "@/components/ui";
-import { fmtDate } from "@/lib/dates";
+import { addDays, fmtDate } from "@/lib/dates";
 import {
   DEFAULT_SCOPE,
   DEFAULT_SKIP_US_FEDERAL_HOLIDAYS,
@@ -95,6 +95,18 @@ export function NewProjectForm({
   }, [scope, startDate, skipUsFederalHolidays]);
 
   const chosen = forecast.scenarios.find((s) => s.scenario === scenario) ?? forecast.scenarios[1];
+
+  const sectionDates = useMemo(() => {
+    if (!chosen || !startDate) return [];
+    const kickoff = new Date(`${startDate}T12:00:00.000Z`);
+    let cursor = kickoff;
+    return chosen.phases.map((p) => {
+      const start = cursor;
+      const end = addDays(cursor, p.calendarDays);
+      cursor = end;
+      return { name: p.name, start, end, days: p.calendarDays };
+    });
+  }, [chosen, startDate]);
 
   function toggleServiceLine(key: string) {
     setScope((s) => ({
@@ -193,10 +205,10 @@ export function NewProjectForm({
               htmlFor="targetGoLiveDate"
               hint={
                 scoped
-                  ? "Computed from the scope below — phase/task dates scale to kickoff → go-live."
+                  ? "Computed from the scope below — Discovery / Config / Training dates follow Forecast+. Task dues land on business days."
                   : selected
-                    ? `Kickoff + go-live scale the playbook (blank = template's ${selected.durationDays} days).`
-                    : "Kickoff + go-live drive the schedule when a template is applied."
+                    ? `Kickoff + go-live scale the playbook (blank = template's ${selected.durationDays} days, stretched by complexity when known). Task dues skip Saturday.`
+                    : "Kickoff + go-live drive the schedule when a template is applied. Task dues land on business days."
               }
             >
               <input
@@ -209,8 +221,10 @@ export function NewProjectForm({
             </Field>
 
             <p className="text-[12px] text-ink-3">
-              Kickoff and go-live set the implementation window; template phase and task dates
-              auto-populate scaled to that span.
+              Kickoff is scheduled on create. Forecast+ (when scoped) sets section dates and
+              projected go-live; task due recommendations follow that timeline, complexity, and
+              services. Dues land on business days only — Saturday bumps to Friday, Sunday to
+              Monday. Observed US federal holidays are skipped when the toggle below is on.
             </p>
 
             <Field label="Description" htmlFor="description">
@@ -456,7 +470,22 @@ export function NewProjectForm({
             </div>
             {chosen ? (
               <div className="border-t border-border px-4 py-3 text-[12px] text-ink-3">
-                {chosen.phases.map((p) => p.name).join(" → ")}
+                <p className="font-medium text-ink">Forecast+ section dates</p>
+                <ul className="mt-1.5 space-y-0.5">
+                  {sectionDates.map((row) => (
+                    <li key={row.name}>
+                      {row.name}: {fmtDate(row.start)} → {fmtDate(row.end)} ({row.days}d)
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2">
+                  Task dues snap off Saturday (Friday or Monday). {forecast.complexityTier.toLowerCase()}{" "}
+                  complexity
+                  {scope.serviceLines.length > 1
+                    ? ` · ${scope.serviceLines.length} service lines`
+                    : ""}
+                  .
+                </p>
               </div>
             ) : null}
           </Card>

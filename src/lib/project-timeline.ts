@@ -13,12 +13,22 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { milestones, phases, projectTemplates, tasks } from "@/db/schema";
+import { milestones, phases, projectScopes, projectTemplates, tasks } from "@/db/schema";
+import type { ComplexityTier } from "@/db/schema";
+import { snapStartAndDue, toBusinessDay } from "@/lib/business-days";
 import { addDays, differenceInCalendarDays, utcCalendarDaysBetween, utcDayKey } from "@/lib/dates";
 
 const MS_PER_DAY = 86_400_000;
 
 export type TimelineScaleSource = "forecast" | "target" | "template";
+
+/** Stretches the template window when there is no Forecast+ model. */
+export const COMPLEXITY_WINDOW_MULTIPLIER: Record<ComplexityTier, number> = {
+  STANDARD: 1,
+  MODERATE: 1.1,
+  HIGH: 1.2,
+  ENTERPRISE: 1.35,
+};
 
 export type ResolvedPlaybookScale = {
   kickoff: Date;
@@ -28,6 +38,19 @@ export type ResolvedPlaybookScale = {
   scaleFactor: number;
   source: TimelineScaleSource;
 };
+
+export type ForecastSectionInput = {
+  goLiveDate: Date;
+  phases: Array<{ name: string; calendarDays: number }>;
+};
+
+export type PhaseScheduleInput = {
+  name: string;
+  offsetDays: number;
+  durationDays: number;
+};
+
+export type ForecastSectionBucket = "kickoff" | "discovery" | "config" | "training" | "post" | "scaled";
 
 /** Calendar span from kickoff to go-live (date-fns calendar days). */
 export function calendarDaysBetween(start: Date, end: Date): number {
@@ -55,14 +78,16 @@ export function scaleDays(days: number, scaleFactor: number): number {
 
 /**
  * Resolve kickoff→go-live window length and the scale to apply to template
- * offsets. Priority: forecast scenario days → explicit target → template default
- * (scaleFactor 1).
+ * offsets. Priority: forecast scenario days → explicit target → template
+ * default. When the template default is used, complexity (if known) stretches
+ * the window so higher-tier sites get more calendar room.
  */
 export function resolvePlaybookScale(opts: {
   kickoff: Date;
   templateDurationDays: number;
   forecastCalendarDays?: number | null;
   targetGoLive?: Date | null;
+  complexityTier?: ComplexityTier | null;
 }): ResolvedPlaybookScale {
   const { kickoff, templateDurationDays } = opts;
 
@@ -88,26 +113,200 @@ export function resolvePlaybookScale(opts: {
     };
   }
 
-  const days = Math.max(templateDurationDays, 1);
+  const multiplier = opts.complexityTier
+    ? (COMPLEXITY_WINDOW_MULTIPLIER[opts.complexityTier] ?? 1)
+    : 1;
+  const days = Math.max(Math.round(templateDurationDays * multiplier), 1);
   return {
     kickoff,
     goLive: addDays(kickoff, days),
     calendarDays: days,
-    scaleFactor: 1,
+    scaleFactor: computeScaleFactor(days, templateDurationDays),
     source: "template",
   };
 }
 
-/** Start/due from a phase- or task-relative offset, after scaling. */
-export function scheduleFromOffsets(opts: {
+export type ScheduleFromOffsetsOpts = {
   anchor: Date;
   offsetDays: number;
   durationDays: number;
   scaleFactor: number;
-}): { startDate: Date; dueDate: Date } {
-  const startDate = addDays(opts.anchor, scaleDays(opts.offsetDays, opts.scaleFactor));
-  const dueDate = addDays(startDate, scaleDays(opts.durationDays, opts.scaleFactor));
-  return { startDate, dueDate };
+  /** Default true — recommended dues land on weekdays. */
+  businessDays?: boolean;
+  skipUsFederalHolidays?: boolean;
+  /** Do not start before this day (typically project kickoff). */
+  minDate?: Date | null;
+};
+
+/** Start/due from a phase- or task-relative offset, after scaling. */
+export function scheduleFromOffsets(opts: ScheduleFromOffsetsOpts): { startDate: Date; dueDate: Date } {
+  const rawStart = addDays(opts.anchor, scaleDays(opts.offsetDays, opts.scaleFactor));
+  const rawDue = addDays(rawStart, scaleDays(opts.durationDays, opts.scaleFactor));
+  if (opts.businessDays === false) {
+    return { startDate: rawStart, dueDate: rawDue };
+  }
+  const snapped = snapStartAndDue(rawStart, rawDue, {
+    skipUsFederalHolidays: opts.skipUsFederalHolidays,
+  });
+  if (opts.minDate && utcDayKey(snapped.startDate) < utcDayKey(opts.minDate)) {
+    const startDate = toBusinessDay(opts.minDate, {
+      skipUsFederalHolidays: opts.skipUsFederalHolidays,
+      role: "start",
+    });
+    const dueDate = utcDayKey(snapped.dueDate) < utcDayKey(startDate) ? startDate : snapped.dueDate;
+    return { startDate, dueDate };
+  }
+  return snapped;
+}
+
+/** Playbook section → Forecast+ Discovery / Config / Training window. */
+export function forecastBucketForPhase(name: string): ForecastSectionBucket {
+  const n = name.trim().toLowerCase();
+  if (/\bpost go-live\b/.test(n) || /\bsurvey\b/.test(n)) return "post";
+  if (/^rcm kickoff$/.test(n) || /^kickoff$/.test(n)) return "kickoff";
+  if (n === "discovery" || /^discovery\b/.test(n)) return "discovery";
+  if (
+    n.includes("configuration") ||
+    n.includes("accessing pimsy") ||
+    n.includes("demographic import") ||
+    n.includes("eprescribe") ||
+    n.includes("inpatient") ||
+    n.includes("payer")
+  ) {
+    return "config";
+  }
+  if (
+    n.includes("train") ||
+    n.includes("go-live checklist") ||
+    n === "billing" ||
+    n.includes("end-user") ||
+    n.includes("workflow")
+  ) {
+    return "training";
+  }
+  return "scaled";
+}
+
+export function forecastWindowsFromProjection(
+  kickoff: Date,
+  forecast: ForecastSectionInput,
+): {
+  discovery: { start: Date; end: Date };
+  config: { start: Date; end: Date };
+  training: { start: Date; end: Date };
+  goLive: Date;
+} {
+  const byName = (label: string) =>
+    forecast.phases.find((p) => p.name.toLowerCase() === label.toLowerCase());
+  const discoveryEnd = addDays(kickoff, byName("Discovery")?.calendarDays ?? 14);
+  const configEnd = addDays(discoveryEnd, byName("Config")?.calendarDays ?? 21);
+  return {
+    discovery: { start: kickoff, end: discoveryEnd },
+    config: { start: discoveryEnd, end: configEnd },
+    training: { start: configEnd, end: forecast.goLiveDate },
+    goLive: forecast.goLiveDate,
+  };
+}
+
+function placePhasesInWindow(
+  group: PhaseScheduleInput[],
+  windowStart: Date,
+  windowEnd: Date,
+  skipUsFederalHolidays: boolean,
+): Map<string, { startDate: Date; dueDate: Date }> {
+  const out = new Map<string, { startDate: Date; dueDate: Date }>();
+  if (group.length === 0) return out;
+  const minOff = Math.min(...group.map((p) => p.offsetDays));
+  const maxEnd = Math.max(...group.map((p) => p.offsetDays + Math.max(p.durationDays, 1)));
+  const span = Math.max(maxEnd - minOff, 1);
+  const windowDays = Math.max(utcCalendarDaysBetween(windowStart, windowEnd), 1);
+  for (const p of group) {
+    const startRatio = (p.offsetDays - minOff) / span;
+    const endRatio = (p.offsetDays + Math.max(p.durationDays, 1) - minOff) / span;
+    const rawStart = addDays(windowStart, Math.round(startRatio * windowDays));
+    const rawDue = addDays(windowStart, Math.round(endRatio * windowDays));
+    out.set(p.name, snapStartAndDue(rawStart, rawDue, { skipUsFederalHolidays }));
+  }
+  return out;
+}
+
+/**
+ * Recommended section (phase) start/due dates.
+ *
+ * When a Forecast+ projection exists, Kickoff / Discovery / Config-like /
+ * Training-like sections map onto the model windows; remaining sections keep
+ * scaled template offsets. All recommended dates snap to business days.
+ */
+export function recommendPhaseSchedule(opts: {
+  phases: PhaseScheduleInput[];
+  kickoff: Date;
+  scaleFactor: number;
+  forecast?: ForecastSectionInput | null;
+  skipUsFederalHolidays?: boolean;
+}): Map<string, { startDate: Date; dueDate: Date }> {
+  const skip = opts.skipUsFederalHolidays ?? true;
+  const out = new Map<string, { startDate: Date; dueDate: Date }>();
+  const fallback = (phase: PhaseScheduleInput) =>
+    scheduleFromOffsets({
+      anchor: opts.kickoff,
+      offsetDays: phase.offsetDays,
+      durationDays: phase.durationDays,
+      scaleFactor: opts.scaleFactor,
+      skipUsFederalHolidays: skip,
+      minDate: opts.kickoff,
+    });
+
+  if (!opts.forecast) {
+    for (const phase of opts.phases) out.set(phase.name, fallback(phase));
+    return out;
+  }
+
+  const windows = forecastWindowsFromProjection(opts.kickoff, opts.forecast);
+  const buckets = new Map<ForecastSectionBucket, PhaseScheduleInput[]>();
+  for (const phase of opts.phases) {
+    const bucket = forecastBucketForPhase(phase.name);
+    const list = buckets.get(bucket) ?? [];
+    list.push(phase);
+    buckets.set(bucket, list);
+  }
+
+  for (const phase of buckets.get("kickoff") ?? []) {
+    const scaledDue = addDays(opts.kickoff, scaleDays(Math.max(phase.durationDays, 1), opts.scaleFactor));
+    const rawDue =
+      utcDayKey(scaledDue) <= utcDayKey(windows.discovery.end) ? scaledDue : windows.discovery.end;
+    out.set(phase.name, snapStartAndDue(opts.kickoff, rawDue, { skipUsFederalHolidays: skip }));
+  }
+
+  for (const phase of buckets.get("discovery") ?? []) {
+    out.set(
+      phase.name,
+      snapStartAndDue(windows.discovery.start, windows.discovery.end, { skipUsFederalHolidays: skip }),
+    );
+  }
+
+  for (const [name, dates] of placePhasesInWindow(
+    buckets.get("config") ?? [],
+    windows.config.start,
+    windows.config.end,
+    skip,
+  )) {
+    out.set(name, dates);
+  }
+
+  for (const [name, dates] of placePhasesInWindow(
+    buckets.get("training") ?? [],
+    windows.training.start,
+    windows.training.end,
+    skip,
+  )) {
+    out.set(name, dates);
+  }
+
+  for (const phase of [...(buckets.get("post") ?? []), ...(buckets.get("scaled") ?? [])]) {
+    out.set(phase.name, fallback(phase));
+  }
+
+  return out;
 }
 
 export function isOpenTaskStatus(status: string): boolean {
@@ -349,11 +548,13 @@ export async function cascadeRescheduleProject(opts: {
   previous: CascadeWindow | null;
   next: CascadeWindow;
 }): Promise<CascadeRescheduleResult> {
+  const skipUsFederalHolidays = await projectSkipsHolidays(opts.projectId);
   if (opts.previous) {
     return proportionalCascade({
       projectId: opts.projectId,
       previous: opts.previous,
       next: opts.next,
+      skipUsFederalHolidays,
     });
   }
 
@@ -362,18 +563,44 @@ export async function cascadeRescheduleProject(opts: {
       projectId: opts.projectId,
       templateId: opts.templateId,
       next: opts.next,
+      skipUsFederalHolidays,
     });
   }
 
   return { phasesUpdated: 0, tasksUpdated: 0, milestonesUpdated: 0, mode: "none" };
 }
 
+async function projectSkipsHolidays(projectId: string): Promise<boolean> {
+  const row = await db.query.projectScopes.findFirst({
+    where: eq(projectScopes.projectId, projectId),
+    columns: { skipUsFederalHolidays: true },
+  });
+  return row?.skipUsFederalHolidays ?? true;
+}
+
+function snapMappedDates(
+  start: Date | null,
+  due: Date | null,
+  skipUsFederalHolidays: boolean,
+): { startDate: Date | null; dueDate: Date | null } {
+  if (!start && !due) return { startDate: null, dueDate: null };
+  if (start && due) {
+    const snapped = snapStartAndDue(start, due, { skipUsFederalHolidays });
+    return { startDate: snapped.startDate, dueDate: snapped.dueDate };
+  }
+  return {
+    startDate: start ? toBusinessDay(start, { skipUsFederalHolidays, role: "start" }) : null,
+    dueDate: due ? toBusinessDay(due, { skipUsFederalHolidays, role: "due" }) : null,
+  };
+}
+
 async function proportionalCascade(opts: {
   projectId: string;
   previous: CascadeWindow;
   next: CascadeWindow;
+  skipUsFederalHolidays: boolean;
 }): Promise<CascadeRescheduleResult> {
-  const { projectId, previous, next } = opts;
+  const { projectId, previous, next, skipUsFederalHolidays } = opts;
   let phasesUpdated = 0;
   let tasksUpdated = 0;
   let milestonesUpdated = 0;
@@ -383,20 +610,21 @@ async function proportionalCascade(opts: {
   });
   for (const phase of projectPhases) {
     if (!isOpenPhaseStatus(phase.status)) continue;
-    const startDate = mapDateAcrossWindows(
+    const mappedStart = mapDateAcrossWindows(
       phase.startDate,
       previous.kickoff,
       previous.calendarDays,
       next.kickoff,
       next.calendarDays,
     );
-    const dueDate = mapDateAcrossWindows(
+    const mappedDue = mapDateAcrossWindows(
       phase.dueDate,
       previous.kickoff,
       previous.calendarDays,
       next.kickoff,
       next.calendarDays,
     );
+    const { startDate, dueDate } = snapMappedDates(mappedStart, mappedDue, skipUsFederalHolidays);
     if (!startDate && !dueDate) continue;
     await db
       .update(phases)
@@ -414,20 +642,21 @@ async function proportionalCascade(opts: {
   });
   for (const task of projectTasks) {
     if (!isOpenTaskStatus(task.status) || task.notApplicable) continue;
-    const startDate = mapDateAcrossWindows(
+    const mappedStart = mapDateAcrossWindows(
       task.startDate,
       previous.kickoff,
       previous.calendarDays,
       next.kickoff,
       next.calendarDays,
     );
-    const dueDate = mapDateAcrossWindows(
+    const mappedDue = mapDateAcrossWindows(
       task.dueDate,
       previous.kickoff,
       previous.calendarDays,
       next.kickoff,
       next.calendarDays,
     );
+    const { startDate, dueDate } = snapMappedDates(mappedStart, mappedDue, skipUsFederalHolidays);
     if (!startDate && !dueDate) continue;
     await db
       .update(tasks)
@@ -447,13 +676,18 @@ async function proportionalCascade(opts: {
     if (ms.completedAt) continue;
     const dueDate = ms.isGoLive
       ? next.goLive
-      : mapDateAcrossWindows(
-          ms.dueDate,
-          previous.kickoff,
-          previous.calendarDays,
-          next.kickoff,
-          next.calendarDays,
-        );
+      : (() => {
+          const mapped = mapDateAcrossWindows(
+            ms.dueDate,
+            previous.kickoff,
+            previous.calendarDays,
+            next.kickoff,
+            next.calendarDays,
+          );
+          return mapped
+            ? toBusinessDay(mapped, { skipUsFederalHolidays, role: "due" })
+            : mapped;
+        })();
     if (!dueDate) continue;
     await db
       .update(milestones)
@@ -469,6 +703,7 @@ async function templateCascade(opts: {
   projectId: string;
   templateId: string;
   next: CascadeWindow;
+  skipUsFederalHolidays: boolean;
 }): Promise<CascadeRescheduleResult> {
   const template = await db.query.projectTemplates.findFirst({
     where: eq(projectTemplates.id, opts.templateId),
@@ -503,6 +738,8 @@ async function templateCascade(opts: {
       offsetDays: tp.offsetDays,
       durationDays: tp.durationDays,
       scaleFactor,
+      skipUsFederalHolidays: opts.skipUsFederalHolidays,
+      minDate: opts.next.kickoff,
     });
 
     if (isOpenPhaseStatus(live.status)) {
@@ -525,6 +762,8 @@ async function templateCascade(opts: {
         offsetDays: tt.offsetDays,
         durationDays: tt.durationDays,
         scaleFactor,
+        skipUsFederalHolidays: opts.skipUsFederalHolidays,
+        minDate: opts.next.kickoff,
       });
       await db
         .update(tasks)
@@ -547,7 +786,10 @@ async function templateCascade(opts: {
     const dueDate =
       (live.isGoLive || tm.isGoLive) && opts.next.goLive
         ? opts.next.goLive
-        : addDays(opts.next.kickoff, scaleDays(tm.offsetDays, scaleFactor));
+        : toBusinessDay(addDays(opts.next.kickoff, scaleDays(tm.offsetDays, scaleFactor)), {
+            skipUsFederalHolidays: opts.skipUsFederalHolidays,
+            role: "due",
+          });
     await db
       .update(milestones)
       .set({ dueDate, updatedAt: new Date() })

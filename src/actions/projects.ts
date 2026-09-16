@@ -286,6 +286,7 @@ export async function createProject(
         rcmStart,
         rcmTargetGoLive: rcmPlaybook.goLive,
         scaleFactor: rcmPlaybook.scaleFactor,
+        skipUsFederalHolidays: parseSkipUsFederalHolidays(d.skipUsFederalHolidays),
       });
     } catch (err) {
       console.error("addRcmTrackToProject failed", err);
@@ -339,6 +340,7 @@ export async function createProject(
         templateDurationDays: Math.max(...loadedTemplates.map((t) => t.durationDays)),
         forecastCalendarDays: scenarioProjection?.calendarDays ?? null,
         targetGoLive: d.targetGoLiveDate ? parseDateInput(d.targetGoLiveDate) : null,
+        complexityTier: forecast?.complexityTier ?? null,
       })
     : null;
   const scaleFactor = playbook?.scaleFactor ?? 1;
@@ -411,6 +413,9 @@ export async function createProject(
           excludedAreaKeys,
           roleAssignments,
           defaultInternalAssigneeId: d.leadId || actor.id,
+          skipUsFederalHolidays,
+          forecastProjection: scenarioProjection ?? null,
+          goLive: targetGoLive,
         });
         if (playbookPath === "EHR_RCM" || playbookPath === "RCM_LEGACY" || playbookPath === "RCM_PRISM") {
           await tx
