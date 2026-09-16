@@ -21,6 +21,7 @@ export default async function ManagementLayout({ children }: { children: React.R
       <div className="mb-5 flex flex-wrap items-center gap-5 border-b border-border">
         <SubNavLink href="/management">Overview</SubNavLink>
         <SubNavLink href="/management/forecast">Forecast</SubNavLink>
+        <SubNavLink href="/management/weekly">Weekly meeting</SubNavLink>
         <SubNavLink href="/management/team">Team</SubNavLink>
         <SubNavLink href="/management/engagements">Engagements</SubNavLink>
         <SubNavLink href="/reports/analysis">Analysis</SubNavLink>

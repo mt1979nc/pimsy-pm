@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.14.1";
+export const APP_VERSION = "1.14.2";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+      version: "1.14.2",
+      date: "2026-09-16",
+      summary:
+        "Specialists can record a go-live slip that actually saves, with a dedicated Record slip control and confirmation. Management gets a weekly-meeting roster of every active Implementation site with inline slip recording.",
+      highlights: [
+        "Project settings: Record slip is its own form (date and/or +N days, cause, optional note) with a confirmation banner. General Save no longer pretends a slip was recorded when only name/status/health changed. Moving target go-live on Save still writes a slip_event when the calendar day changes.",
+        "Record slip uses `assertProjectWrite`. Covering SPECIALIST can record a slip on any unarchived site (v1.14.0 any-specialist). MEMBER still needs to be the lead or a non-observer member. Cause/note alone is still rejected. Open phase/task dates rescale on a real push.",
+        "Prism → Weekly meeting (`/management/weekly`): standup list of open Implementation sites (site, lead, go-live, health, status, progress, days to go-live, last slip) with Record slip on each row. Analytics-excluded test/E2E rows are hidden unless toggled on. Weekly meeting stays OWNER/ADMIN/MANAGER.",
+        "No schema migrate. PATH + Prism naming unchanged. Out of scope: wizard deep-links, real xlsx binaries.",
+      ],
+    },
   {
     version: "1.14.1",
     date: "2026-09-16",

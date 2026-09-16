@@ -306,6 +306,29 @@ describe.skipIf(!dbOk)("staff access", () => {
     expect(customerIds).not.toContain(f.projects.a);
     expect(customerIds).not.toContain(f.projects.internal);
   });
+
+  it("a specialist who leads a project can write (record slips, settings)", async () => {
+    await expect(assertProjectWrite(f.actors.specialist, f.projects.a)).resolves.toBeTruthy();
+  });
+
+  it("a covering SPECIALIST can write a site they do not lead (any-specialist + slip save)", async () => {
+    await expect(
+      assertProjectWrite(f.actors.specialist, f.projects.managerOnly),
+    ).resolves.toBeTruthy();
+    await expect(
+      assertProjectWrite(f.actors.otherSpecialist, f.projects.a),
+    ).resolves.toBeTruthy();
+  });
+
+  it("a MEMBER without membership cannot write", async () => {
+    await expect(assertProjectWrite(f.actors.member, f.projects.a)).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
+  });
+
+  it("a manager can write any project in the portfolio", async () => {
+    await expect(assertProjectWrite(f.actors.manager, f.projects.managerOnly)).resolves.toBeTruthy();
+  });
 });
 
 // ===========================================================================

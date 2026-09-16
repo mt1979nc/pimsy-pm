@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { updateEngagement } from "@/actions/management-engagements";
-import { SubmitButton, FormError } from "@/components/submit-button";
+import { SubmitButton, FormError, FormSuccess } from "@/components/submit-button";
 import { Field, inputClass } from "@/components/ui";
 import { SlipHistoryList } from "@/components/slip-history";
 import { GoLiveScenarioPicker, GoLiveSourceBadge } from "@/components/go-live-scenario-picker";
@@ -145,9 +145,9 @@ export function EngagementEditForm({
     <form action={action} className="space-y-6 p-5">
       <input type="hidden" name="projectId" value={projectId} />
       <FormError error={state.error} />
-      {state.ok ? (
-        <p className="rounded-lg bg-green-soft px-3 py-2 text-[12.5px] text-green">Saved.</p>
-      ) : null}
+      <FormSuccess
+        message={state.ok ? (state.message ?? (state.slipped ? "Slip recorded." : "Saved.")) : undefined}
+      />
 
       <div className="flex flex-wrap items-baseline gap-2">
         <h2 className="text-[15px] font-semibold text-ink">{code}</h2>

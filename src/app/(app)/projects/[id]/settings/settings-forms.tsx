@@ -15,7 +15,7 @@ import {
   setAttachmentVisibility,
   deleteAttachment,
 } from "@/actions/attachments";
-import { SubmitButton, FormError } from "@/components/submit-button";
+import { SubmitButton, FormError, FormSuccess } from "@/components/submit-button";
 import { Button, Field, inputClass, VisibilityBadge } from "@/components/ui";
 import { ConfirmDeleteForm } from "@/components/confirm-delete";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
@@ -43,13 +43,21 @@ export function ProjectSettingsForm({
   const [state, action] = useActionState(updateProject, {});
   const [goLive, setGoLive] = useState(project.targetGoLiveDate ?? "");
 
+  useEffect(() => {
+    setGoLive(project.targetGoLiveDate ?? "");
+  }, [project.targetGoLiveDate]);
+
+  useEffect(() => {
+    if (state.targetGoLiveDate) setGoLive(state.targetGoLiveDate);
+  }, [state.targetGoLiveDate]);
+
   return (
     <form action={action} className="space-y-4 p-5">
       <input type="hidden" name="projectId" value={project.id} />
       <FormError error={state.error} />
-      {state.ok ? (
-        <p className="rounded-lg bg-green-soft px-3 py-2 text-[12.5px] text-green">Saved.</p>
-      ) : null}
+      <FormSuccess
+        message={state.ok ? (state.message ?? (state.slipped ? "Slip recorded." : "Saved.")) : undefined}
+      />
 
       <Field label="Project name" htmlFor="name">
         <input id="name" name="name" defaultValue={project.name} className={inputClass} />
@@ -86,7 +94,7 @@ export function ProjectSettingsForm({
         <Field
           label="Target go-live"
           htmlFor="targetGoLiveDate"
-          hint="Kickoff → go-live drives the schedule; slips must push this date."
+          hint="Kickoff → go-live drives the schedule. Use Record slip below to push this date with a cause."
         >
           <input
             id="targetGoLiveDate"
@@ -98,28 +106,6 @@ export function ProjectSettingsForm({
           />
         </Field>
       </div>
-
-      <div className="rounded-xl border border-transparent bg-amber-soft p-4">
-          <p className="mb-2 text-[12.5px] font-medium text-ink">
-            Recording a slip pushes go-live and rescales open phase/task dates. Move the date
-            above, or enter slip days (+N). Cause/note alone is not enough.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Slip days (+N)" htmlFor="slipDays" hint="Optional if the date above already moved.">
-              <input id="slipDays" name="slipDays" type="number" step={1} placeholder="e.g. 7" className={inputClass} />
-            </Field>
-            <Field label="Cause" htmlFor="slipCause">
-              <select id="slipCause" name="slipCause" defaultValue="" className={inputClass}>
-                <option value="">— Untagged —</option>
-                <option value="CUSTOMER">Customer</option>
-                <option value="PIMSY">PIMSY</option>
-              </select>
-            </Field>
-            <Field label="Note (optional)" htmlFor="slipNote">
-              <input id="slipNote" name="slipNote" className={inputClass} />
-            </Field>
-          </div>
-        </div>
 
       <Field label="Implementation lead" htmlFor="leadId">
         <select

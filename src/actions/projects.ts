@@ -40,7 +40,7 @@ import { refreshProjectCounters } from "@/lib/rollup";
 import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
 import { completeHistoricalProjectOnTime } from "@/lib/historical-complete";
-import { addDays, parseDateInput } from "@/lib/dates";
+import { parseDateInput, toDateInput } from "@/lib/dates";
 import { forecastImplementation, parseSkipUsFederalHolidays, type ImplementationScope } from "@/lib/estimator";
 import {
   cascadeRescheduleProject,
@@ -48,6 +48,12 @@ import {
   resolveSlipPush,
   shouldCascadeReschedule,
 } from "@/lib/project-timeline";
+import {
+  applyRequiredProjectSlip,
+  commitGoLiveSlip,
+  formatSlipRecordedMessage,
+  slipFieldsFromForm,
+} from "@/lib/project-slip";
 import {
   addRcmTrackToProject,
   applyRoleMemberships,
@@ -448,7 +454,15 @@ export async function updateProject(
   const projectId = String(formData.get("projectId") ?? "");
   if (!projectId) return { error: "Missing project." };
 
-  const before = await assertProjectWrite(actor, projectId);
+  let before;
+  try {
+    before = await assertProjectWrite(actor, projectId);
+  } catch (err) {
+    if (err instanceof ForbiddenError || err instanceof NotFoundError) {
+      return { error: err.message };
+    }
+    throw err;
+  }
 
   const status = formData.get("status")?.toString();
   const health = formData.get("health")?.toString();
@@ -509,22 +523,20 @@ export async function updateProject(
     .where(eq(projects.id, projectId));
 
   if (slip.slipped) {
-    await db.insert(slipEvents).values({
-      projectId,
-      fromDate: slip.fromDate,
-      toDate: slip.nextGoLive,
-      days: slip.days,
-      cause: slip.cause,
-      note: slip.note,
-      createdById: actor.id,
-    });
-    await audit({
+    await commitGoLiveSlip({
       actor,
-      action: "project.go_live.slipped",
-      entityType: "project",
-      entityId: projectId,
-      summary: `${before.code}: go-live moved ${slip.days > 0 ? "+" : ""}${slip.days}d`,
-      metadata: { days: slip.days, cause: slip.cause, source: "settings" },
+      project: {
+        id: projectId,
+        code: before.code,
+      },
+      slip: {
+        nextGoLive: slip.nextGoLive,
+        fromDate: slip.fromDate,
+        days: slip.days,
+        cause: slip.cause,
+        note: slip.note,
+      },
+      source: "settings",
     });
   }
 
@@ -579,7 +591,58 @@ export async function updateProject(
       portalEnabled: true,
     });
   }
-  return { ok: true };
+  if (slip.slipped) {
+    return {
+      ok: true,
+      slipped: true,
+      message: formatSlipRecordedMessage(slip.days, slip.fromDate, slip.nextGoLive),
+      targetGoLiveDate: toDateInput(slip.nextGoLive),
+    };
+  }
+  return { ok: true, message: "Saved." };
+}
+
+/**
+ * Dedicated Record-slip action for specialists and managers. Requires a real
+ * date move or +N days; cause/note alone is rejected. Same write gate as
+ * project settings (`assertProjectWrite`: covering SPECIALIST can save a slip
+ * on any unarchived site; MEMBER needs lead or non-observer membership).
+ */
+export async function recordProjectSlip(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const projectId = String(formData.get("projectId") ?? "");
+  if (!projectId) return { error: "Missing project." };
+
+  try {
+    await assertProjectWrite(actor, projectId);
+  } catch (err) {
+    if (err instanceof ForbiddenError || err instanceof NotFoundError) {
+      return { error: err.message };
+    }
+    throw err;
+  }
+
+  const sourceRaw = formData.get("slipSource")?.toString();
+  const source = sourceRaw === "weekly" || sourceRaw === "management" ? sourceRaw : "settings";
+  const fields = slipFieldsFromForm(formData);
+  const result = await applyRequiredProjectSlip({
+    actor,
+    projectId,
+    ...fields,
+    source,
+  });
+  if (!result.ok) return { error: result.error };
+
+  revalidatePrismSurfaces(projectId);
+  return {
+    ok: true,
+    slipped: true,
+    message: result.message,
+    targetGoLiveDate: result.targetGoLiveDate,
+  };
 }
 
 export async function addProjectMember(

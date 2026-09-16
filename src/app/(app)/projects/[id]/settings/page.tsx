@@ -18,6 +18,7 @@ import {
 } from "./settings-forms";
 import { ProjectContacts } from "./contacts";
 import { SlipHistoryList } from "@/components/slip-history";
+import { RecordSlipForm } from "@/components/record-slip-form";
 import { staffingRoleLabel } from "@/lib/staffing";
 import { AddRcmTrackForm } from "./add-rcm-track-form";
 import { assessHistoricalComplete, loadOpenHistoricalTasks } from "@/lib/historical-complete";
@@ -130,11 +131,28 @@ export default async function ProjectSettingsPage({
           }}
           staff={staff}
         />
+        <div className="border-t border-border px-5 py-4">
+          <div className="rounded-xl border border-transparent bg-amber-soft p-4">
+            <h3 className="mb-2 text-[13px] font-semibold text-ink">Record a slip</h3>
+            <RecordSlipForm
+              projectId={project.id}
+              currentGoLive={
+                project.targetGoLiveDate ? toDateInput(project.targetGoLiveDate) : ""
+              }
+              source="settings"
+              variant="settings"
+            />
+          </div>
+        </div>
         {projectSlips.length > 0 ? (
           <div className="border-t border-border px-5 py-4">
             <SlipHistoryList slips={projectSlips} />
           </div>
-        ) : null}
+        ) : (
+          <p className="border-t border-border px-5 py-3 text-[12.5px] text-ink-3">
+            No slips recorded yet. Record slip saves the event and confirmation here.
+          </p>
+        )}
       </Card>
 
       <div className="space-y-5">

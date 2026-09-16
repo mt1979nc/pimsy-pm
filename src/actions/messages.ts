@@ -35,7 +35,13 @@ export type ActionState = {
   ok?: boolean;
   inviteUrl?: string;
   emailSkipped?: boolean;
+  inviteUrl?: string;
+  emailSkipped?: boolean;
   inviteSkipped?: boolean;
+  /** Staff-facing confirmation (e.g. slip recorded). */
+  message?: string;
+  slipped?: boolean;
+  targetGoLiveDate?: string;
 };
 
 export async function createThread(
