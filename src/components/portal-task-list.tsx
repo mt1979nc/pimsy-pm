@@ -13,6 +13,7 @@ import {
   type TaskListView,
 } from "@/lib/task-list-filter";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
+import type { BookingUrlMap } from "@/lib/booking-urls";
 import { cn } from "@/lib/cn";
 import { PortalAreaIntro } from "@/components/portal-area-intro";
 
@@ -47,6 +48,7 @@ export function PortalPhaseTaskList({
   phaseDescription,
   tasks,
   assetsByTaskId,
+  bookingUrls,
 }: {
   projectId: string;
   projectCode?: string | null;
@@ -54,6 +56,7 @@ export function PortalPhaseTaskList({
   phaseDescription: string | null;
   tasks: PortalListTask[];
   assetsByTaskId: Record<string, TaskActionAsset[]>;
+  bookingUrls?: BookingUrlMap | null;
 }) {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<TaskListView>("all");
@@ -86,6 +89,7 @@ export function PortalPhaseTaskList({
             commentCount: t.commentCount,
           }}
           assets={assetsByTaskId[t.id]}
+          bookingUrls={bookingUrls}
           canUpload={t.ownerSide === "CUSTOMER"}
         />
         {parents.has(t.id) ? (

@@ -18,7 +18,13 @@ const ZONES = [
 export function ProfileForm({
   defaults,
 }: {
-  defaults: { name: string; title: string; timeZone: string; capacityHoursPerWeek: number };
+  defaults: {
+    name: string;
+    title: string;
+    timeZone: string;
+    capacityHoursPerWeek: number;
+    zoomBookingUrl: string;
+  };
 }) {
   const [state, action] = useActionState(updateOwnProfile, {});
 
@@ -75,6 +81,21 @@ export function ProfileForm({
           />
         </Field>
       </div>
+
+      <Field
+        label="Kickoff booking URL"
+        htmlFor="zoomBookingUrl"
+        hint="Used for kickoff on sites you lead, unless the project About has its own kickoff link. Workflow discovery, billing discovery, and training 1–3 stay on About."
+      >
+        <input
+          id="zoomBookingUrl"
+          name="zoomBookingUrl"
+          type="url"
+          defaultValue={defaults.zoomBookingUrl}
+          placeholder="https://…"
+          className={inputClass}
+        />
+      </Field>
 
       <div className="flex justify-end">
         <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>

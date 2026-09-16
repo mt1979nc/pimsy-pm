@@ -17,6 +17,7 @@ import { descriptionSnippet } from "@/lib/task-description";
 import { cn } from "@/lib/cn";
 import type { Priority, TaskStatus, Visibility, OwnerSide } from "@/db/schema";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
+import { resolveProjectBookingUrls, type BookingUrlMap } from "@/lib/booking-urls";
 
 export type TaskRowData = {
   id: string;
@@ -31,7 +32,14 @@ export type TaskRowData = {
   completedAt: Date | string | null;
   assignee?: { id: string; name: string | null; image?: string | null } | null;
   assignees?: Array<{ id: string; name: string | null; image?: string | null }>;
-  project?: { id: string; name: string; code: string } | null;
+  project?: {
+    id: string;
+    name: string;
+    code: string;
+    bookingUrls?: unknown;
+    zoomBookingUrl?: string | null;
+    lead?: { zoomBookingUrl?: string | null } | null;
+  } | null;
   projectCode?: string | null;
   notApplicable?: boolean;
   workTrack?: "EHR" | "RCM" | "SHARED";
@@ -54,6 +62,7 @@ export function TaskRow({
   staff = [],
   defaultAssigneeId,
   assets,
+  bookingUrls,
   checklist = [],
   hasChildren = false,
   childrenCollapsed = false,
@@ -70,6 +79,7 @@ export function TaskRow({
   staff?: StaffOption[];
   defaultAssigneeId?: string;
   assets?: TaskActionAsset[];
+  bookingUrls?: BookingUrlMap | null;
   checklist?: ChecklistItemView[];
   hasChildren?: boolean;
   childrenCollapsed?: boolean;
@@ -85,6 +95,7 @@ export function TaskRow({
   const [moveOpen, setMoveOpen] = useState(false);
   const projectId = task.projectId ?? task.project?.id;
   const href = projectId ? `/projects/${projectId}/tasks/${task.id}` : null;
+  const resolvedBookingUrls = bookingUrls ?? resolveProjectBookingUrls(task.project ?? {});
   const done = task.status === "DONE";
   const na = Boolean(task.notApplicable);
   const completedAt = done && task.completedAt ? new Date(task.completedAt) : null;
@@ -375,6 +386,7 @@ export function TaskRow({
           assets={assets}
           taskHref={href}
           projectCode={task.projectCode ?? task.project?.code}
+          bookingUrls={resolvedBookingUrls}
           compact
           className="mt-0.5"
           onUpload={() => setUploadOpen((v) => !v)}

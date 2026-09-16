@@ -39,6 +39,7 @@ export default async function SettingsPage() {
               title: me.title ?? "",
               timeZone: me.timeZone,
               capacityHoursPerWeek: me.capacityHoursPerWeek,
+              zoomBookingUrl: me.zoomBookingUrl ?? "",
             }}
           />
         </Card>

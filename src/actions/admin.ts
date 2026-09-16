@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { requireAdmin, requireStaff } from "@/lib/guard";
+import { parseOptionalStaffBookingUrl } from "@/lib/booking-urls";
 import { audit } from "@/lib/audit";
 import { sendEmail, layout } from "@/lib/email";
 import { env } from "@/lib/env";
@@ -121,6 +122,8 @@ export async function updateOwnProfile(
   const title = formData.get("title")?.toString().trim();
   const timeZone = formData.get("timeZone")?.toString().trim();
   const capacity = formData.get("capacityHoursPerWeek")?.toString();
+  const booking = parseOptionalStaffBookingUrl(formData.get("zoomBookingUrl")?.toString());
+  if (!booking.ok) return { error: booking.error };
 
   await db
     .update(users)
@@ -129,6 +132,7 @@ export async function updateOwnProfile(
       ...(title !== undefined ? { title: title || null } : {}),
       ...(timeZone ? { timeZone } : {}),
       ...(capacity ? { capacityHoursPerWeek: Number(capacity) } : {}),
+      zoomBookingUrl: booking.url,
       updatedAt: new Date(),
     })
     .where(eq(users.id, actor.id));

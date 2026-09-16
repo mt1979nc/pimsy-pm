@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Badge } from "@/components/ui";
 import { fmtDate } from "@/lib/dates";
 import type { KickoffSnapshot } from "@/lib/about-profile";
+import { AboutBookingLinks } from "@/components/about-booking-links";
+import { resolveProjectBookingUrls, type BookingUrlMap } from "@/lib/booking-urls";
 
 const STATUS_LABEL: Record<string, string> = {
   TODO: "Not started",
@@ -20,6 +22,8 @@ export function AboutKickoffPanel({
   kickoff,
   projectId,
   staffLinks,
+  bookingUrls,
+  specialistName,
 }: {
   kickoffDate: Date | string | null;
   goLiveDate: Date | string | null;
@@ -28,7 +32,13 @@ export function AboutKickoffPanel({
   kickoff: KickoffSnapshot;
   projectId: string;
   staffLinks: boolean;
+  bookingUrls?: BookingUrlMap | unknown;
+  specialistName?: string | null;
 }) {
+  const urls = resolveProjectBookingUrls({
+    bookingUrls,
+    zoomBookingUrl,
+  });
   return (
     <div className="space-y-4 p-5">
       <dl className="grid gap-4 sm:grid-cols-2">
@@ -46,22 +56,9 @@ export function AboutKickoffPanel({
             <dd className="mt-0.5 text-[14px] font-medium text-ink">{crmAcronym}</dd>
           </div>
         ) : null}
-        {zoomBookingUrl ? (
-          <div>
-            <dt className="text-[11.5px] uppercase tracking-wide text-ink-3">Book a call</dt>
-            <dd className="mt-0.5">
-              <a
-                href={zoomBookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[14px] font-medium text-brand hover:underline"
-              >
-                Open booking page
-              </a>
-            </dd>
-          </div>
-        ) : null}
       </dl>
+
+      <AboutBookingLinks urls={urls} specialistName={specialistName} />
 
       {kickoff.items.length > 0 ? (
         <div>

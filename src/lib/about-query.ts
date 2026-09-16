@@ -25,8 +25,9 @@ const PERSON_COLUMNS = {
   image: true,
   isActive: true,
   role: true,
-  staffingRole: true,
+    staffingRole: true,
   customerAccountId: true,
+  zoomBookingUrl: true,
 } as const;
 
 export async function loadProjectAbout(projectId: string) {

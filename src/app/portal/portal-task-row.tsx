@@ -9,11 +9,13 @@ import { CommentCountBadge } from "@/components/comment-count-badge";
 import { dueLabel, isOverdue } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
+import type { BookingUrlMap } from "@/lib/booking-urls";
 
 export function PortalTaskRow({
   task,
   showActions = true,
   assets,
+  bookingUrls,
   canUpload = false,
 }: {
   task: {
@@ -30,6 +32,7 @@ export function PortalTaskRow({
   };
   showActions?: boolean;
   assets?: TaskActionAsset[];
+  bookingUrls?: BookingUrlMap | null;
   canUpload?: boolean;
 }) {
   const [pending, start] = useTransition();
@@ -100,6 +103,7 @@ export function PortalTaskRow({
               assets={assets}
               taskHref={taskHref}
               projectCode={task.projectCode}
+              bookingUrls={bookingUrls}
               compact
               onUpload={canUpload ? () => setUploadOpen((v) => !v) : undefined}
             />

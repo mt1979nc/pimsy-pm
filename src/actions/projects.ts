@@ -95,6 +95,7 @@ import { revalidateAboutSurfaces } from "@/lib/about-revalidate";
 import { parseCustomFieldLines } from "@/lib/about-profile";
 import { parseDealLink } from "@/lib/hubspot";
 import { parseOptionalHttpUrl } from "@/lib/http-url";
+import { parseBookingUrlsFromForm } from "@/lib/booking-urls";
 import type { ActionState } from "./messages";
 
 const scopeSchema = z.object({
@@ -1312,6 +1313,9 @@ export async function updateProjectAbout(
   const crmAcronym = formData.get("crmAcronym")?.toString().trim() ?? "";
   const crmKey = formData.get("crmKey")?.toString().trim() ?? "";
   const bookmarkUrl = formData.get("bookmarkUrl")?.toString().trim() ?? "";
+  const parsedBookings = parseBookingUrlsFromForm(formData);
+  if (!parsedBookings.ok) return { error: parsedBookings.error };
+  const bookingUrls = parsedBookings.urls;
   const aboutNotes = formData.get("aboutNotes")?.toString() ?? "";
   const onboarded = formData.get("onboarded") === "on";
   const customFields = parseCustomFieldLines(formData.get("customFields")?.toString() ?? "");
@@ -1338,7 +1342,8 @@ export async function updateProjectAbout(
       prismClientId: prismClientId || null,
       crmAcronym: access.crmAcronym,
       crmKey: access.crmKey,
-      zoomBookingUrl: zoomLink.href,
+      bookingUrls,
+      zoomBookingUrl: bookingUrls.kickoff ?? zoomLink.href,
       aboutNotes: aboutNotes.trim() || null,
       onboarded,
       customFields: access.customFields,

@@ -34,6 +34,7 @@ import { resolveTaskDescription } from "@/lib/task-description";
 import { buildPimsyLoginConfirmation, isConfirmUsersLoggedInTitle } from "@/lib/pimsy-audit-feed";
 import { showReviewRequiredBadge } from "@/lib/discovery-config-review";
 import { listConnectedPeers } from "@/lib/connected-task-sync";
+import { resolveProjectBookingUrls } from "@/lib/booking-urls";
 
 export const dynamic = "force-dynamic";
 
@@ -69,8 +70,13 @@ export default async function TaskDetailPage({
           crmAcronym: true,
           crmKey: true,
           prismClientId: true,
+          bookingUrls: true,
+          zoomBookingUrl: true,
         },
-        with: { customerAccount: { columns: { id: true, name: true } } },
+        with: {
+          customerAccount: { columns: { id: true, name: true } },
+          lead: { columns: { zoomBookingUrl: true } },
+        },
       },
     },
   });
@@ -229,6 +235,7 @@ export default async function TaskDetailPage({
             assets={attachments}
             taskHref={`/projects/${id}/tasks/${taskId}`}
             projectCode={task.project.code}
+            bookingUrls={resolveProjectBookingUrls(task.project)}
           />
         </div>
         {task.dueDate ? (

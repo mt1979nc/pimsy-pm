@@ -9,6 +9,7 @@ import { resolveTaskDescription } from "@/lib/task-description";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
 import { orderTasksForNesting } from "@/lib/task-tree";
 import { loadAssigneesByTaskIds } from "@/lib/task-assignees";
+import { resolveProjectBookingUrls } from "@/lib/booking-urls";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,7 @@ export default async function PortalPhasePage({
       phaseName={phase.name}
       phaseDescription={phase.description}
       assetsByTaskId={assetsByTaskId}
+      bookingUrls={resolveProjectBookingUrls(project ?? {})}
       tasks={nested.map((t) => ({
         id: t.id,
         title: t.title,

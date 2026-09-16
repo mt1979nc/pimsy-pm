@@ -267,8 +267,11 @@ export async function myTasks(actor: Actor) {
     with: {
       phase: { columns: { id: true, name: true, order: true } },
       project: {
-        columns: { id: true, name: true, code: true },
-        with: { customerAccount: { columns: { id: true, name: true } } },
+        columns: { id: true, name: true, code: true, bookingUrls: true, zoomBookingUrl: true },
+        with: {
+          customerAccount: { columns: { id: true, name: true } },
+          lead: { columns: { zoomBookingUrl: true } },
+        },
       },
     },
   });

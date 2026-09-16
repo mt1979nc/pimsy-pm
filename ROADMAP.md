@@ -34,6 +34,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **Hand off to Support (Wave B)** | **This PR (hold from live)** | Completing the post go-live **Hand off to Support** task emails Kori Hale (`kori@pimsyehr.com`) with outstanding items from the task description and marks the site **COMPLETED**. Migration `0018_support_handoff`. |
 | **Discovery → Configuration review (Wave B)** | **This PR (hold from live)** | Discovery uploads spawn Configuration review tasks (`reviewRequired`) and wizard Excel fans out to Configuration consumers. Migration `0019_review_required`. |
 | **Billing / RCM connected (Wave B)** | **This branch (HOLD from live)** | Billing Configuration team tab; connected Discovery/Configuration copies; EHR+RCM move to RCM tab; **Add RCM on existing Implementation WIP**. Migration `0020_connected_tasks`. Runbook: `v1.14-BILLING-RCM.md`. |
+| **Per-meeting booking URLs (Wave B)** | **This PR (hold from live)** | About, portal, and Schedule tasks carry per-meeting-type booking pages. Migration `0021_booking_urls`. |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |

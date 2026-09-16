@@ -20,6 +20,7 @@ import {
 } from "@/lib/task-list-filter";
 import type { ChecklistItemView } from "@/components/task-checklist";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
+import type { BookingUrlMap } from "@/lib/booking-urls";
 
 export type ProjectTaskListItem = TaskRowData & {
   assigneeId?: string | null;
@@ -55,6 +56,7 @@ function PhaseTaskRows({
   staff,
   defaultAssigneeId,
   assetsByTaskId,
+  bookingUrls,
   checklistByTaskId,
   allowStructureEdit,
   movePhases,
@@ -65,6 +67,7 @@ function PhaseTaskRows({
   staff: StaffOption[];
   defaultAssigneeId?: string;
   assetsByTaskId: Record<string, TaskActionAsset[]>;
+  bookingUrls?: BookingUrlMap | null;
   checklistByTaskId: Record<string, ChecklistItemView[]>;
   allowStructureEdit: boolean;
   movePhases: MoveTaskPhaseOption[];
@@ -84,6 +87,7 @@ function PhaseTaskRows({
           staff={staff}
           defaultAssigneeId={defaultAssigneeId}
           assets={assetsByTaskId[t.id]}
+          bookingUrls={bookingUrls}
           checklist={checklistByTaskId[t.id] ?? []}
           hasChildren={parentsWithChildren.has(t.id)}
           childrenCollapsed={collapsed.has(t.id)}
@@ -114,6 +118,7 @@ export function ProjectTaskBoard({
   phases,
   unphased,
   assetsByTaskId,
+  bookingUrls,
   checklistByTaskId,
   addRcm,
 }: {
@@ -124,6 +129,7 @@ export function ProjectTaskBoard({
   phases: PhaseBlock[];
   unphased: ProjectTaskListItem[];
   assetsByTaskId: Record<string, TaskActionAsset[]>;
+  bookingUrls?: BookingUrlMap | null;
   checklistByTaskId: Record<string, ChecklistItemView[]>;
   addRcm?: { defaultAssignments: Record<string, string> } | null;
 }) {
@@ -271,6 +277,7 @@ export function ProjectTaskBoard({
                   staff={staff}
                   defaultAssigneeId={defaultAssigneeId}
                   assetsByTaskId={assetsByTaskId}
+                  bookingUrls={bookingUrls}
                   checklistByTaskId={checklistByTaskId}
                   allowStructureEdit
                   movePhases={movePhases}
@@ -285,6 +292,7 @@ export function ProjectTaskBoard({
                 staff={staff}
                 defaultAssigneeId={defaultAssigneeId}
                 assetsByTaskId={assetsByTaskId}
+                bookingUrls={bookingUrls}
                 checklistByTaskId={checklistByTaskId}
                 allowStructureEdit
                 movePhases={movePhases}
@@ -318,6 +326,7 @@ export function ProjectTaskBoard({
                 staff={staff}
                 defaultAssigneeId={defaultAssigneeId}
                 assetsByTaskId={assetsByTaskId}
+                bookingUrls={bookingUrls}
                 checklistByTaskId={checklistByTaskId}
                 allowStructureEdit
                 movePhases={movePhases}
@@ -332,6 +341,7 @@ export function ProjectTaskBoard({
               staff={staff}
               defaultAssigneeId={defaultAssigneeId}
               assetsByTaskId={assetsByTaskId}
+              bookingUrls={bookingUrls}
               checklistByTaskId={checklistByTaskId}
               allowStructureEdit
               movePhases={movePhases}

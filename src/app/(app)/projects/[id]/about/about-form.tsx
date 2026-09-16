@@ -6,6 +6,24 @@ import { SubmitButton, FormError } from "@/components/submit-button";
 import { Field, inputClass } from "@/components/ui";
 import { customFieldsAsLines } from "@/lib/about-profile";
 import { bookmarkFromCustomFields, customFieldsWithoutBookmark } from "@/lib/accessing-pimsy";
+import {
+  BOOKING_FORM_FIELD,
+  BOOKING_MEETING_LABELS,
+  BOOKING_MEETING_TYPES,
+  migrateLegacyZoomBooking,
+  normalizeBookingUrls,
+  type BookingMeetingType,
+  type BookingUrlMap,
+} from "@/lib/booking-urls";
+
+const BOOKING_HINTS: Record<BookingMeetingType, string> = {
+  kickoff: "Leave blank to use the assigned specialist’s booking page from Settings.",
+  workflowDiscovery: "Inbed (or Zoom) page for Workflow Guided Discovery.",
+  billingDiscovery: "Inbed (or Zoom) page for Billing Workflow Discovery.",
+  training1: "Booking page the practice uses for Training 1.",
+  training2: "Booking page the practice uses for Training 2.",
+  training3: "Booking page the practice uses for Training 3.",
+};
 
 export function ProjectAboutForm({
   project,
@@ -17,13 +35,20 @@ export function ProjectAboutForm({
     crmAcronym: string | null;
     crmKey: string | null;
     zoomBookingUrl: string | null;
+    bookingUrls?: BookingUrlMap;
     aboutNotes: string | null;
     customFields: Record<string, string>;
     onboarded: boolean;
+    specialistName?: string | null;
+    specialistBookingUrl?: string | null;
   };
 }) {
   const [state, action] = useActionState(updateProjectAbout, {});
   const bookmarkUrl = bookmarkFromCustomFields(project.customFields);
+  const bookingUrls = migrateLegacyZoomBooking(
+    project.zoomBookingUrl,
+    normalizeBookingUrls(project.bookingUrls),
+  );
   const customLines = customFieldsAsLines(customFieldsWithoutBookmark(project.customFields ?? {}));
 
   return (
@@ -121,20 +146,44 @@ export function ProjectAboutForm({
             className={inputClass}
           />
         </Field>
-        <Field
-          label="Zoom / Inbed booking URL"
-          htmlFor="zoomBookingUrl"
-          hint="Same booking page Kickoff → Inbed Bookings should record. Shown on portal About."
-        >
-          <input
-            id="zoomBookingUrl"
-            name="zoomBookingUrl"
-            type="url"
-            defaultValue={project.zoomBookingUrl ?? ""}
-            placeholder="https://…"
-            className={inputClass}
-          />
-        </Field>
+      </div>
+
+      <div className="space-y-3 rounded-xl border border-border p-4">
+        <div>
+          <h3 className="text-[13.5px] font-medium text-ink">Booking links</h3>
+          <p className="mt-0.5 text-[12.5px] text-ink-3">
+            One URL per meeting type. Schedule tasks and the customer portal open the matching
+            page. Kickoff uses the assigned specialist’s Settings URL when this kickoff field is
+            blank
+            {project.specialistName ? ` (${project.specialistName})` : ""}.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {BOOKING_MEETING_TYPES.map((type) => {
+            const field = BOOKING_FORM_FIELD[type];
+            return (
+              <Field
+                key={type}
+                label={BOOKING_MEETING_LABELS[type]}
+                htmlFor={field}
+                hint={
+                  type === "kickoff" && project.specialistBookingUrl && !bookingUrls.kickoff
+                    ? `Currently ${project.specialistName ?? "the assigned specialist"}’s booking page.`
+                    : BOOKING_HINTS[type]
+                }
+              >
+                <input
+                  id={field}
+                  name={field}
+                  type="url"
+                  defaultValue={bookingUrls[type] ?? ""}
+                  placeholder="https://…"
+                  className={inputClass}
+                />
+              </Field>
+            );
+          })}
+        </div>
       </div>
 
       <Field label="About notes" htmlFor="aboutNotes" hint="Shared with the customer portal.">
