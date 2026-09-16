@@ -17,6 +17,7 @@ import {
 import type { DurationSample } from "@/lib/go-live-recommendation";
 import { listCompletedForAnalysis } from "@/lib/queries";
 import { inferPrismStatus } from "@/lib/prism-status";
+import { includedInAnalytics } from "@/lib/analytics-scope";
 
 export async function loadForecastExclusions(): Promise<string[]> {
   const org = await db.query.orgSettings.findFirst({
@@ -51,6 +52,7 @@ export async function loadForecastEngagements(): Promise<ForecastEngagement[]> {
       eq(projects.type, "IMPLEMENTATION"),
       ne(projects.status, "CANCELLED"),
       ne(projects.status, "COMPLETED"),
+      includedInAnalytics(),
     ),
     columns: {
       id: true,

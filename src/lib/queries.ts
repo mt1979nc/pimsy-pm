@@ -23,6 +23,8 @@ import {
   DEFAULT_ANALYSIS_EXCLUSION_CODES,
   summarizeForecastAccuracy,
 } from "@/lib/forecast";
+import { includedInAnalytics, analyticsExcludedProjectIds, notInExcludedProjects } from "@/lib/analytics-scope";
+import { isExcludedFromAnalytics, keepAnalyticsByProject } from "@/lib/analytics-exclude";
 
 const OPEN_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "ON_HOLD", "BLOCKED"] as const;
 
@@ -32,7 +34,9 @@ async function dueOverviewProjectIds(accessibleIds: string[]): Promise<string[]>
   const rows = await db
     .select({ id: projects.id })
     .from(projects)
-    .where(and(inArray(projects.id, accessibleIds), eq(projects.onboarded, false)));
+    .where(
+      and(inArray(projects.id, accessibleIds), eq(projects.onboarded, false), includedInAnalytics()),
+    );
   return rows.map((r) => r.id);
 }
 
@@ -49,13 +53,21 @@ async function onboardedProjectIds(): Promise<string[] | null> {
 /** Projects visible to the actor, with the joins the list views need. */
 export async function listProjects(
   actor: Actor,
-  opts: { includeArchived?: boolean; status?: string; health?: string; customerId?: string } = {},
+  opts: {
+    includeArchived?: boolean;
+    status?: string;
+    health?: string;
+    customerId?: string;
+    /** Portfolio / reporting lists skip E2E flags. Delivery lists leave this off. */
+    skipAnalyticsExcluded?: boolean;
+  } = {},
 ) {
   const ids = await accessibleProjectIds(actor);
   if (ids.length === 0) return [];
 
   const conditions = [inArray(projects.id, ids)];
   if (!opts.includeArchived) conditions.push(isNull(projects.archivedAt));
+  if (opts.skipAnalyticsExcluded) conditions.push(includedInAnalytics());
   if (opts.status) conditions.push(eq(projects.status, opts.status as never));
   if (opts.health) conditions.push(eq(projects.health, opts.health as never));
   if (opts.customerId) conditions.push(eq(projects.customerAccountId, opts.customerId));
@@ -91,20 +103,22 @@ export async function portfolioSummary(actor: Actor) {
   quarterStart.setMonth(Math.floor(quarterStart.getMonth() / 3) * 3, 1);
   quarterStart.setHours(0, 0, 0, 0);
 
+  const inAnalytics = includedInAnalytics();
+
   const [active] = await db
     .select({ n: count() })
     .from(projects)
-    .where(and(scope, isNull(projects.archivedAt), inArray(projects.status, [...OPEN_STATUSES])));
+    .where(and(scope, isNull(projects.archivedAt), inAnalytics, inArray(projects.status, [...OPEN_STATUSES])));
 
   const [atRisk] = await db
     .select({ n: count() })
     .from(projects)
-    .where(and(scope, isNull(projects.archivedAt), eq(projects.health, "RED")));
+    .where(and(scope, isNull(projects.archivedAt), inAnalytics, eq(projects.health, "RED")));
 
   const [needsAttention] = await db
     .select({ n: count() })
     .from(projects)
-    .where(and(scope, isNull(projects.archivedAt), eq(projects.health, "YELLOW")));
+    .where(and(scope, isNull(projects.archivedAt), inAnalytics, eq(projects.health, "YELLOW")));
 
   const [goLives] = await db
     .select({ n: count() })
@@ -113,6 +127,7 @@ export async function portfolioSummary(actor: Actor) {
       and(
         scope,
         isNull(projects.archivedAt),
+        inAnalytics,
         inArray(projects.status, [...OPEN_STATUSES]),
         gte(projects.targetGoLiveDate, startOfDay(new Date())),
         lte(projects.targetGoLiveDate, in30),
@@ -136,12 +151,14 @@ export async function portfolioSummary(actor: Actor) {
             ),
           );
 
+  const excludedIds = await analyticsExcludedProjectIds();
   const [customerActions] = await db
     .select({ n: count() })
     .from(tasks)
     .where(
       and(
         inArray(tasks.projectId, ids),
+        notInExcludedProjects(tasks.projectId, excludedIds),
         eq(tasks.ownerSide, "CUSTOMER"),
         ne(tasks.status, "DONE"),
         ne(tasks.status, "CANCELLED"),
@@ -152,7 +169,14 @@ export async function portfolioSummary(actor: Actor) {
   const [completed] = await db
     .select({ n: count() })
     .from(projects)
-    .where(and(scope, eq(projects.status, "COMPLETED"), gte(projects.actualGoLiveDate, quarterStart)));
+    .where(
+      and(
+        scope,
+        inAnalytics,
+        eq(projects.status, "COMPLETED"),
+        gte(projects.actualGoLiveDate, quarterStart),
+      ),
+    );
 
   return {
     active: active?.n ?? 0,
@@ -175,6 +199,7 @@ export async function attentionProjects(actor: Actor, limit = 12) {
       inArray(projects.id, ids),
       isNull(projects.archivedAt),
       eq(projects.onboarded, false),
+      includedInAnalytics(),
       inArray(projects.status, [...OPEN_STATUSES]),
     ),
     with: {
@@ -259,9 +284,11 @@ export async function waitingOnCustomer(actor: Actor, limit = 50) {
 export async function upcomingMilestones(actor: Actor, days = 45, limit = 25) {
   const ids = await accessibleProjectIds(actor);
   if (ids.length === 0) return [];
+  const excludedIds = await analyticsExcludedProjectIds();
   return db.query.milestones.findMany({
     where: and(
       inArray(milestones.projectId, ids),
+      notInExcludedProjects(milestones.projectId, excludedIds),
       isNull(milestones.completedAt),
       lte(milestones.dueDate, addDays(new Date(), days)),
     ),
@@ -279,8 +306,13 @@ export async function upcomingMilestones(actor: Actor, days = 45, limit = 25) {
 export async function openRisks(actor: Actor, limit = 25) {
   const ids = await accessibleProjectIds(actor);
   if (ids.length === 0) return [];
+  const excludedIds = await analyticsExcludedProjectIds();
   return db.query.risks.findMany({
-    where: and(inArray(risks.projectId, ids), inArray(risks.status, ["OPEN", "MITIGATING"])),
+    where: and(
+      inArray(risks.projectId, ids),
+      notInExcludedProjects(risks.projectId, excludedIds),
+      inArray(risks.status, ["OPEN", "MITIGATING"]),
+    ),
     orderBy: [desc(risks.severity), asc(risks.dueDate)],
     limit,
     with: {
@@ -301,6 +333,7 @@ export async function teamCapacity() {
     orderBy: [asc(users.name)],
   });
 
+  const excludedIds = await analyticsExcludedProjectIds();
   const workload = await db
     .select({
       assigneeId: tasks.assigneeId,
@@ -309,13 +342,26 @@ export async function teamCapacity() {
       overdue: sql<number>`count(*) filter (where ${tasks.dueDate} < now() and ${tasks.status} not in ('DONE','CANCELLED'))::int`,
     })
     .from(tasks)
-    .where(and(ne(tasks.status, "DONE"), ne(tasks.status, "CANCELLED"), eq(tasks.notApplicable, false)))
+    .where(
+      and(
+        ne(tasks.status, "DONE"),
+        ne(tasks.status, "CANCELLED"),
+        eq(tasks.notApplicable, false),
+        notInExcludedProjects(tasks.projectId, excludedIds),
+      ),
+    )
     .groupBy(tasks.assigneeId);
 
   const leads = await db
     .select({ leadId: projects.leadId, n: count() })
     .from(projects)
-    .where(and(isNull(projects.archivedAt), inArray(projects.status, [...OPEN_STATUSES])))
+    .where(
+      and(
+        isNull(projects.archivedAt),
+        includedInAnalytics(),
+        inArray(projects.status, [...OPEN_STATUSES]),
+      ),
+    )
     .groupBy(projects.leadId);
 
   const byUser = new Map(workload.map((w) => [w.assigneeId, w]));
@@ -343,6 +389,7 @@ export async function cycleTimeStats() {
     where: and(
       eq(projects.status, "COMPLETED"),
       eq(projects.type, "IMPLEMENTATION"),
+      includedInAnalytics(),
     ),
     columns: { startDate: true, actualGoLiveDate: true, targetGoLiveDate: true },
     limit: 500,
@@ -450,7 +497,12 @@ export async function weeklyCapacityForecast(weeksAhead = 12) {
   });
 
   const active = await db.query.projects.findMany({
-    where: and(isNull(projects.archivedAt), inArray(projects.status, [...OPEN_STATUSES]), isNotNull(projects.leadId)),
+    where: and(
+      isNull(projects.archivedAt),
+      includedInAnalytics(),
+      inArray(projects.status, [...OPEN_STATUSES]),
+      isNotNull(projects.leadId),
+    ),
     columns: { id: true, leadId: true, startDate: true, targetGoLiveDate: true, estimatedHours: true },
   });
 
@@ -505,7 +557,11 @@ export type CompletedImplementationRow = CompletedForAnalysis & {
 /** Completed implementations with forecast vs actual — Analysis table + accuracy. */
 export async function listCompletedForAnalysis(): Promise<CompletedImplementationRow[]> {
   const rows = await db.query.projects.findMany({
-    where: and(eq(projects.status, "COMPLETED"), eq(projects.type, "IMPLEMENTATION")),
+    where: and(
+      eq(projects.status, "COMPLETED"),
+      eq(projects.type, "IMPLEMENTATION"),
+      includedInAnalytics(),
+    ),
     columns: {
       id: true,
       code: true,
@@ -646,15 +702,20 @@ export async function onTimeByComplexityTier(
  * than the tagging discipline behind it actually is.
  */
 export async function slipAttribution() {
-  const rows = await db.query.slipEvents.findMany({
-    with: {
-      project: {
-        columns: { id: true, code: true, leadId: true },
-        with: { lead: { columns: { id: true, name: true } } },
+  const rows = keepAnalyticsByProject(
+    await db.query.slipEvents.findMany({
+      with: {
+        project: {
+          columns: { id: true, code: true, leadId: true, excludeFromAnalytics: true },
+          with: {
+            lead: { columns: { id: true, name: true } },
+            customerAccount: { columns: { excludeFromAnalytics: true } },
+          },
+        },
       },
-    },
-    orderBy: [desc(slipEvents.createdAt)],
-  });
+      orderBy: [desc(slipEvents.createdAt)],
+    }),
+  );
 
   let customerDays = 0;
   let pimsyDays = 0;
@@ -715,9 +776,9 @@ export async function waitingOnThreadRollup(actor: Actor) {
     orderBy: [asc(messageThreads.waitingOnSince)],
     with: {
       project: {
-        columns: { id: true, name: true, code: true, health: true, status: true },
+        columns: { id: true, name: true, code: true, health: true, status: true, excludeFromAnalytics: true },
         with: {
-          customerAccount: { columns: { id: true, name: true } },
+          customerAccount: { columns: { id: true, name: true, excludeFromAnalytics: true } },
           lead: { columns: { id: true, name: true, image: true } },
         },
       },
@@ -743,6 +804,7 @@ export async function waitingOnThreadRollup(actor: Actor) {
   const byProject = new Map<string, Row>();
   for (const t of threads) {
     if (!t.projectId || !t.project) continue;
+    if (isExcludedFromAnalytics(t.project)) continue;
     let row = byProject.get(t.projectId);
     if (!row) {
       row = {

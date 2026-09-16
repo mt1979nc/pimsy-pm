@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { createCustomer } from "@/actions/customers";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Card, CardHeader, Field, inputClass, LinkButton } from "@/components/ui";
+import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
 
 export function NewCustomerForm() {
   const [state, action] = useActionState(createCustomer, {});
@@ -84,6 +85,8 @@ export function NewCustomerForm() {
               className={inputClass}
             />
           </Field>
+
+          <AnalyticsExcludeToggle />
         </div>
       </Card>
 

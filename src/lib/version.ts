@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.8";
+export const APP_VERSION = "1.13.9";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.9",
+    date: "2026-09-16",
+    summary:
+      "Staff can exclude a test/E2E customer or project from Prism, portfolio, capacity, and go-live analytics without archiving, so stress-test data does not skew metrics.",
+    highlights: [
+      "Setting name: `excludeFromAnalytics` (Postgres `exclude_from_analytics`) on `customer_account` and `project`. Default false. A project is skipped when its own flag is on or its customer account is on.",
+      "Staff toggle (label: Exclude from Prism / portfolio / capacity analytics) on New customer, the customer Reporting card, New project, project Settings, Add to roster, and Edit engagement.",
+      "Reports that skip flagged rows the same way they skip `archivedAt`: Portfolio (`/reports`) counts and go-lives, dashboard portfolio stats, team capacity, weekly capacity forecast, Forecast+ load, Prism snapshot, Analysis completed sites / on-time / slips, go-live next-30, roster aggregates (`listEngagements`).",
+      "Projects list, task hub, My Work, customer portal, and Customer view still show the site so E2E delivery works.",
+      "Migration `0016_exclude_from_analytics`. No playbook resync. PATH + Prism naming unchanged.",
+    ],
+  },
   {
     version: "1.13.8",
     date: "2026-09-16",

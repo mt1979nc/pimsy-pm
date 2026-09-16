@@ -33,7 +33,7 @@ export default async function ProjectLayout({
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, id),
     with: {
-      customerAccount: { columns: { id: true, name: true, status: true } },
+      customerAccount: { columns: { id: true, name: true, status: true, excludeFromAnalytics: true } },
       lead: { columns: { id: true, name: true, image: true } },
     },
   });
@@ -76,6 +76,9 @@ export default async function ProjectLayout({
               <ProjectStatusBadge status={project.status} />
               {!project.portalEnabled ? <Badge tone="amber">Portal off</Badge> : null}
               {project.onboarded ? <Badge tone="green">Onboarded</Badge> : null}
+              {project.excludeFromAnalytics || project.customerAccount?.excludeFromAnalytics ? (
+                <Badge tone="amber">Off analytics</Badge>
+              ) : null}
               {project.archivedAt ? <Badge>Archived</Badge> : null}
             </div>
           </div>

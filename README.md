@@ -42,7 +42,10 @@ Nothing else.
 
 **Leadership reporting** — portfolio health, at-risk projects, go-live
 schedule, median cycle time, on-time rate, risk register, and per-specialist
-capacity against declared weekly hours.
+capacity against declared weekly hours. Customers and projects flagged
+`excludeFromAnalytics` (staff toggle: Exclude from Prism / portfolio /
+capacity analytics) are omitted from those reports and from Prism Forecast /
+roster load — they stay on the projects list, task hub, and portal.
 
 **Forecast** (`/management/forecast`) — Prism, Management-only (OWNER / ADMIN /
 MANAGER) weekly-hours forecast: team load, department headroom, peak week,

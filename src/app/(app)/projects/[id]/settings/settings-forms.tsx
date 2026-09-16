@@ -18,6 +18,7 @@ import {
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Button, Field, inputClass, VisibilityBadge } from "@/components/ui";
 import { ConfirmDeleteForm } from "@/components/confirm-delete";
+import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
 
 type Option = { id: string; name: string | null };
 
@@ -35,6 +36,7 @@ export function ProjectSettingsForm({
     targetGoLiveDate: string | null;
     portalEnabled: boolean;
     portalWelcomeMessage: string | null;
+    excludeFromAnalytics: boolean;
   };
   staff: Option[];
 }) {
@@ -167,6 +169,8 @@ export function ProjectSettingsForm({
           </Field>
         </div>
       </div>
+
+      <AnalyticsExcludeToggle defaultChecked={project.excludeFromAnalytics} />
 
       <div className="flex justify-end">
         <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>

@@ -60,6 +60,10 @@ import {
   setPhaseNotApplicable,
 } from "@/lib/playbook";
 import { ASSIGNABLE_PROJECT_ROLES } from "@/lib/staffing";
+import {
+  parseExcludeFromAnalytics,
+  parseExcludeFromAnalyticsIfPresent,
+} from "@/lib/analytics-exclude";
 import type { ActionState } from "./messages";
 
 const scopeSchema = z.object({
@@ -293,6 +297,7 @@ export async function createProject(
           templateId: template?.id ?? null,
           playbookPath,
           portalEnabled: d.type !== "INTERNAL",
+          excludeFromAnalytics: parseExcludeFromAnalytics(formData),
         })
         .returning({ id: projects.id });
 
@@ -395,6 +400,7 @@ export async function updateProject(
   const slipDaysRaw = formData.get("slipDays")?.toString();
   const portalEnabled = formData.get("portalEnabled");
   const portalWelcomeMessage = formData.get("portalWelcomeMessage")?.toString();
+  const excludeFromAnalytics = parseExcludeFromAnalyticsIfPresent(formData);
 
   // Slip = schedule push. Accept a new target date and/or +slipDays; reject
   // cause/note-only metadata that would not move go-live.
@@ -433,6 +439,7 @@ export async function updateProject(
       ...(portalWelcomeMessage !== undefined
         ? { portalWelcomeMessage: portalWelcomeMessage || null }
         : {}),
+      ...(excludeFromAnalytics !== undefined ? { excludeFromAnalytics } : {}),
       ...(status === "COMPLETED" && !before.actualGoLiveDate
         ? { actualGoLiveDate: new Date() }
         : {}),

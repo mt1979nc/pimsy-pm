@@ -22,6 +22,7 @@ import { ConfirmDeleteForm } from "@/components/confirm-delete";
 import { deleteCustomer } from "@/actions/customers";
 import { fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { CustomerAnalyticsForm } from "./customer-analytics-form";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +70,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         actions={
           <>
             <CustomerStatusBadge status={customer.status} />
+            {customer.excludeFromAnalytics ? <Badge tone="amber">Off analytics</Badge> : null}
             {activeProjects[0] ? (
               <LinkButton href={`/projects/${activeProjects[0].id}/customer-view`} variant="secondary">
                 Customer view
@@ -184,6 +186,17 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   </div>
                 ))}
             </dl>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Reporting"
+              subtitle="E2E / stress-test accounts stay off Prism metrics"
+            />
+            <CustomerAnalyticsForm
+              customerId={customer.id}
+              excludeFromAnalytics={customer.excludeFromAnalytics}
+            />
           </Card>
 
           {customer.internalNotes ? (

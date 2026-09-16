@@ -44,6 +44,8 @@ import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
 import { acronymKey } from "@/lib/prism-dump";
 import { sumSlipDays } from "@/lib/engagement-roster";
 import type { ActionState } from "@/actions/messages";
+import { includedInAnalytics } from "@/lib/analytics-scope";
+import { parseExcludeFromAnalytics, parseExcludeFromAnalyticsIfPresent } from "@/lib/analytics-exclude";
 
 export async function listEngagements() {
   await requirePortfolioAccess();
@@ -53,6 +55,7 @@ export async function listEngagements() {
       isNull(projects.archivedAt),
       eq(projects.type, "IMPLEMENTATION"),
       ne(projects.status, "CANCELLED"),
+      includedInAnalytics(),
     ),
     with: {
       customerAccount: { columns: { id: true, name: true, status: true } },
@@ -216,6 +219,7 @@ export async function updateEngagement(
     scopeInput;
 
   const mapped = mapPrismStatusToEnums(prismStatus);
+  const excludeFromAnalytics = parseExcludeFromAnalyticsIfPresent(formData);
 
   const nextForecastDays = plan.chosen.calendarDays;
   const previousForecastDays = before.scope
@@ -270,6 +274,7 @@ export async function updateEngagement(
       estimatedHours: Math.round(estimatedHours),
       crmAcronym: before.crmAcronym || before.code,
       prismClientId: before.prismClientId || before.code,
+      ...(excludeFromAnalytics !== undefined ? { excludeFromAnalytics } : {}),
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId));
@@ -539,6 +544,7 @@ export async function createEngagement(
       portalEnabled: prismStatus !== "pipeline",
       prismClientId: acronym,
       crmAcronym: acronym,
+      excludeFromAnalytics: parseExcludeFromAnalytics(formData),
       description: "Added to the Prism roster in PATH. Playbook can be attached later from New project.",
     })
     .returning({ id: projects.id });

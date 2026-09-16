@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.13.8");
+    expect(APP_VERSION).toBe("1.13.9");
     expect(APP_VERSION).toMatch(/^1\.13\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,20 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.13.9 analytics-exclude for test/E2E customers and projects", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.13.9");
+    expect(note?.summary).toMatch(/exclude/i);
+    expect(note?.summary).toMatch(/Prism|analytics/i);
+    expect(note?.highlights?.some((h) => /excludeFromAnalytics/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /exclude_from_analytics/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /New customer|Reporting|Settings/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Portfolio|capacity|Forecast/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /portal|Projects list|My Work/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /0016_exclude_from_analytics/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No playbook resync/i.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.13.8")).toBeTruthy();
   });
 
   it("documents v1.13.8 template expose/hide and portal task links", () => {

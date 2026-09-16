@@ -126,6 +126,7 @@ export default async function ProjectSettingsPage({
               : null,
             portalEnabled: project.portalEnabled,
             portalWelcomeMessage: project.portalWelcomeMessage,
+            excludeFromAnalytics: project.excludeFromAnalytics,
           }}
           staff={staff}
         />

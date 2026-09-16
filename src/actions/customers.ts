@@ -20,6 +20,10 @@ import { sendEmail, layout } from "@/lib/email";
 import { env } from "@/lib/env";
 import { generateResetToken, RESET_TOKEN_TTL_MS } from "@/lib/password";
 import type { ActionState } from "./messages";
+import {
+  parseExcludeFromAnalytics,
+  parseExcludeFromAnalyticsIfPresent,
+} from "@/lib/analytics-exclude";
 
 function slugify(s: string) {
   return s
@@ -92,6 +96,7 @@ export async function createCustomer(
         city: d.city || null,
         state: d.state || null,
         internalNotes: d.internalNotes || null,
+        excludeFromAnalytics: parseExcludeFromAnalytics(formData),
       })
       .returning({ id: customerAccounts.id });
     id = row.id;
@@ -121,6 +126,7 @@ export async function updateCustomer(
   if (!id) return { error: "Missing customer." };
 
   const status = formData.get("status")?.toString();
+  const excludeFromAnalytics = parseExcludeFromAnalyticsIfPresent(formData);
   await db
     .update(customerAccounts)
     .set({
@@ -142,6 +148,7 @@ export async function updateCustomer(
       ...(formData.get("internalNotes") !== null
         ? { internalNotes: formData.get("internalNotes")?.toString() || null }
         : {}),
+      ...(excludeFromAnalytics !== undefined ? { excludeFromAnalytics } : {}),
       updatedAt: new Date(),
     })
     .where(eq(customerAccounts.id, id));
@@ -153,7 +160,9 @@ export async function updateCustomer(
     entityId: id,
   });
 
+  revalidatePath("/customers");
   revalidatePath(`/customers/${id}`);
+  revalidatePrismSurfaces();
   return { ok: true };
 }
 

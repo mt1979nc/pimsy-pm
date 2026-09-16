@@ -17,6 +17,7 @@ import type { ComplexityTier, DiscoveryScenario, PlaybookPath } from "@/db/schem
 import { PLAYBOOK_PATHS, PLAYBOOK_PATH_META } from "@/lib/playbook-meta";
 import { STAFFING_ROLES, STAFFING_ROLE_LABELS, MANAGER_OVERVIEW_ROLES } from "@/lib/staffing";
 import { UsFederalHolidayToggle } from "@/components/us-federal-holiday-toggle";
+import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
 
 type Option = { id: string; name: string | null; staffingRole?: string | null };
 type ExistingProject = { id: string; name: string; code: string; customerAccountId: string | null };
@@ -220,6 +221,8 @@ export function NewProjectForm({
                 className={inputClass}
               />
             </Field>
+
+            <AnalyticsExcludeToggle />
           </div>
         </Card>
 

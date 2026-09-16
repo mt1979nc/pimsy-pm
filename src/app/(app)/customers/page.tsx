@@ -77,6 +77,7 @@ export default async function CustomersPage() {
                       {contacts.length} contact{contacts.length === 1 ? "" : "s"}
                     </Badge>
                     {c.priorSystem ? <Badge>from {c.priorSystem}</Badge> : null}
+                    {c.excludeFromAnalytics ? <Badge tone="amber">Off analytics</Badge> : null}
                   </div>
                 </Link>
 
