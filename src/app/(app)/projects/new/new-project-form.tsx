@@ -223,6 +223,30 @@ export function NewProjectForm({
               />
             </Field>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="HubSpot deal URL"
+                htmlFor="hubspotDealUrl"
+                hint="Optional. Shown as a clear outbound link on About. Portal never sees it."
+              >
+                <input
+                  id="hubspotDealUrl"
+                  name="hubspotDealUrl"
+                  type="url"
+                  placeholder="https://app.hubspot.com/contacts/…/record/0-3/…"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="CRM acronym" htmlFor="crmAcronym" hint="Optional. Shown on portal About.">
+                <input
+                  id="crmAcronym"
+                  name="crmAcronym"
+                  placeholder="e.g. ACME"
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+
             <AnalyticsExcludeToggle />
           </div>
         </Card>

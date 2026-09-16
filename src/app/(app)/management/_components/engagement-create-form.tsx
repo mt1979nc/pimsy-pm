@@ -112,6 +112,19 @@ export function EngagementCreateForm({
               <input id="accountName" name="accountName" required placeholder="CEDAR Health" className={inputClass} />
             </Field>
           </div>
+          <Field
+            label="HubSpot deal URL"
+            htmlFor="hubspotDealUrl"
+            hint="Optional. PATH stores a clear outbound link on About. Pull needs HUBSPOT_ACCESS_TOKEN."
+          >
+            <input
+              id="hubspotDealUrl"
+              name="hubspotDealUrl"
+              type="url"
+              placeholder="https://app.hubspot.com/contacts/…/record/0-3/…"
+              className={inputClass}
+            />
+          </Field>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Primary owner" htmlFor="leadId">
               <select id="leadId" name="leadId" defaultValue={defaultLeadId} className={inputClass}>

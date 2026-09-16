@@ -45,6 +45,7 @@ describe("client components stay off the Postgres client", () => {
       "src/components/move-task-dialog.tsx",
       "src/app/(app)/templates/[id]/template-editor.tsx",
       "src/app/(app)/library/library-form.tsx",
+      "src/app/(app)/projects/[id]/about/about-form.tsx",
     ]));
     expect(files.length).toBeGreaterThan(20);
   });

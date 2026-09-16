@@ -30,3 +30,14 @@ export function defaultLinkLabel(url: URL, name?: string | null): string {
   if (trimmed) return trimmed.slice(0, 200);
   return (url.hostname + url.pathname.replace(/\/$/, "")).slice(0, 200);
 }
+
+/** Empty is allowed (clear the field). Non-empty must be http(s). */
+export function parseOptionalHttpUrl(
+  raw: string,
+): { ok: true; href: string | null } | { ok: false; error: string } {
+  const trimmed = raw.trim();
+  if (!trimmed) return { ok: true, href: null };
+  const parsed = parseHttpUrl(trimmed);
+  if (!parsed.ok) return parsed;
+  return { ok: true, href: parsed.url.toString() };
+}

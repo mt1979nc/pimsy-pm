@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { updateProjectAbout } from "@/actions/projects";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Field, inputClass } from "@/components/ui";
+import { customFieldsAsLines } from "@/lib/about-profile";
 
 export function ProjectAboutForm({
   project,
@@ -21,9 +22,7 @@ export function ProjectAboutForm({
   };
 }) {
   const [state, action] = useActionState(updateProjectAbout, {});
-  const customLines = Object.entries(project.customFields ?? {})
-    .map(([k, v]) => `${k}=${v}`)
-    .join("\n");
+  const customLines = customFieldsAsLines(project.customFields);
 
   return (
     <form action={action} className="space-y-4 p-5">
@@ -45,14 +44,15 @@ export function ProjectAboutForm({
             <span className="block text-[13.5px] font-medium text-ink">Onboarded</span>
             <span className="block text-[12.5px] text-ink-3">
               When checked, overdue and upcoming-due tasks for this site leave the dashboard, My
-              Work, and Portfolio rollups. They stay on this project hub.
+              Work, and Portfolio rollups. They stay on this project hub. Staff only — not shown
+              on the portal.
             </span>
           </span>
         </label>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="CRM acronym" htmlFor="crmAcronym">
+        <Field label="CRM acronym" htmlFor="crmAcronym" hint="Shown on portal About as the account code.">
           <input
             id="crmAcronym"
             name="crmAcronym"
@@ -61,7 +61,11 @@ export function ProjectAboutForm({
             className={inputClass}
           />
         </Field>
-        <Field label="CRM key" htmlFor="crmKey">
+        <Field
+          label="CRM key"
+          htmlFor="crmKey"
+          hint="Internal security key. Staff only — never on the portal."
+        >
           <input
             id="crmKey"
             name="crmKey"
@@ -72,19 +76,27 @@ export function ProjectAboutForm({
         </Field>
       </div>
 
-      <Field label="HubSpot deal URL" htmlFor="hubspotDealUrl">
+      <Field
+        label="HubSpot deal URL"
+        htmlFor="hubspotDealUrl"
+        hint="Paste the HubSpot deal record. PATH stores a clear outbound link and pulls the deal name when HUBSPOT_ACCESS_TOKEN is set. Leave blank to clear."
+      >
         <input
           id="hubspotDealUrl"
           name="hubspotDealUrl"
           type="url"
           defaultValue={project.hubspotDealUrl ?? ""}
-          placeholder="https://app.hubspot.com/contacts/…"
+          placeholder="https://app.hubspot.com/contacts/…/record/0-3/…"
           className={inputClass}
         />
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Prism client ID" htmlFor="prismClientId">
+        <Field
+          label="Prism client ID"
+          htmlFor="prismClientId"
+          hint="Staff/analytics identifier. Not shown on the portal."
+        >
           <input
             id="prismClientId"
             name="prismClientId"
@@ -92,7 +104,11 @@ export function ProjectAboutForm({
             className={inputClass}
           />
         </Field>
-        <Field label="Zoom booking URL" htmlFor="zoomBookingUrl">
+        <Field
+          label="Zoom / Inbed booking URL"
+          htmlFor="zoomBookingUrl"
+          hint="Same booking page Kickoff → Inbed Bookings should record. Shown on portal About."
+        >
           <input
             id="zoomBookingUrl"
             name="zoomBookingUrl"
@@ -104,26 +120,26 @@ export function ProjectAboutForm({
         </Field>
       </div>
 
-      <Field label="About notes" htmlFor="aboutNotes">
+      <Field label="About notes" htmlFor="aboutNotes" hint="Shared with the customer portal.">
         <textarea
           id="aboutNotes"
           name="aboutNotes"
           rows={5}
           defaultValue={project.aboutNotes ?? ""}
-          placeholder="Site profile notes the team (and optionally the customer) should see…"
+          placeholder="Site profile notes the team (and the customer) should see…"
           className={inputClass}
         />
       </Field>
 
       <Field
-        label="Custom fields"
+        label="Extra fields"
         htmlFor="customFields"
-        hint="One per line as key=value. Shown to staff; portal shows notes + booking + acronym only."
+        hint="Optional leftovers that are not HubSpot, CRM, Zoom, or Prism (those have fields above). One per line as key=value. Staff only. Empty keys are dropped."
       >
         <textarea
           id="customFields"
           name="customFields"
-          rows={4}
+          rows={3}
           defaultValue={customLines}
           placeholder={"timezone=America/Chicago\npreferredContact=Jane"}
           className={inputClass}

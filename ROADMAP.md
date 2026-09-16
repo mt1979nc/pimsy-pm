@@ -10,7 +10,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 
 | Epic | Status | Notes |
 |------|--------|-------|
-| **About / site profile** | **Shipped** (v1.7) | HubSpot deal, Prism client id, CRM acronym/key, Zoom booking, notes, custom fields. Staff edit + portal read-only. |
+| **About / site profile** | **Shipped** (v1.7) + **v1.14.2 HOLD** | Kickoff dates/booking/CRM acronym + impl-team/practice contact cards. HubSpot deal link (optional pull). |
 | **Waiting-on threads** | **Shipped** (v1.7) | `waitingOn`: PIMSY / CUSTOMER / UNKNOWN + aging. Staff badge/set; portfolio rollup of open SHARED threads; portal read-only badge. |
 | **Prism Management (v1.8)** | **Shipped** (v1.8.0–1.8.4) | Team roster flags + billable hrs + engagement roster/edit in PATH. OWNER/ADMIN/MANAGER only. Native Postgres (no Prism Azure SQL dual-write). |
 | **Playbook / staffing (v1.9)** | **Shipped** (v1.9.0–1.9.1) | Editable templates, four site paths, optional areas, per-project N/A, staffing roles + auto-assign + manager overview, staff-only Update History. |
@@ -23,6 +23,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **specialist slip save and weekly-meeting roster (v1.14.2)** | **This branch** | Specialists can record a go-live slip that actually saves, with a dedicated Record slip control and confirmation. |
 | **PATH staff Move… across section and parent (v1.14.3)** | **This branch** | PATH staff can Move… a live task or sub-task to another section (Configuration, Discovery, …) or under a different parent — Dock’s drag-and-drop stays parent-bound; this is the cross-parent / cross-section path. |
 | **wizard /go deep-links into portal vs staff PATH routes (v1.14.3)** | **This branch** | Discovery Wizard and related flows deep-link into real PATH portal or staff destinations instead of a generic wizard URL with no site. |
+| **About / kickoff / CRM contact parity (v1.14.3)** | **This branch** | About matches kickoff logistics and live CRM contacts: implementation-team cards from playbook assignees, practice cards that update when contacts change, and a HubSpot deal link (optional pull). |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |
@@ -40,7 +41,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | 5. Write cutover | **v1.11** | **Done in PATH** | Writes already land only in PATH. Standalone Prism stays human-writable until Alexander darks it. |
 | 6. **Retire standalone Prism** | After go/no-go | **Ready to dark** | Archive / shut down nice-rock after the checklist in `v1.11-PRISM-CUTOVER.md`. |
 
-Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shipped)** → **v1.9 playbook/staffing (shipped)** → **v1.10 Forecast (shipped)** → **v1.11 Prism cutover (this branch)** → **Milestone: dark standalone Prism** (Alexander confirms). Contacts / HubSpot-on-create wait.
+Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shipped)** → **v1.9 playbook/staffing (shipped)** → **v1.10 Forecast (shipped)** → **v1.11 Prism cutover (shipped)** → **Milestone: dark standalone Prism** (Alexander confirms). **v1.14.x About/kickoff/CRM (this PR, HOLD)** waits for Alexander to ship the major batch.
 
 ## Demo polish
 
