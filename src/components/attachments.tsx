@@ -12,7 +12,7 @@ import { SubmitButton, FormError } from "@/components/submit-button";
 import { Button, inputClass, VisibilityBadge } from "@/components/ui";
 import { fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
-import { fileAssetOpenHref, libraryKindLabel } from "@/lib/library";
+import { fileAssetOpenHref, libraryKindLabel } from "@/lib/library-meta";
 import {
   DOWNLOAD_COMPLETE_UPLOAD_HINT,
   isPlaybookResourceAsset,

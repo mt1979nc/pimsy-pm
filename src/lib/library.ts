@@ -6,7 +6,8 @@ import { and, asc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { libraryAssets, templateTaskAttachments } from "@/db/schema";
-import { defaultLinkLabel, parseHttpUrl } from "@/lib/http-url";
+import { parseHttpUrl } from "@/lib/http-url";
+import { slugifyLibraryName } from "@/lib/library-meta";
 import { copyLibraryAssetToTask, propagateLibraryFileToCopies } from "@/lib/template-attachments";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
@@ -14,20 +15,7 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
 export type LibraryKind = "FILE" | "IMAGE" | "LINK";
 export type LibraryVisibility = "INTERNAL" | "SHARED";
 
-export function libraryKindLabel(kind: string | null | undefined): "Link/Form" | "File" | "Image" {
-  if (kind === "LINK") return "Link/Form";
-  if (kind === "IMAGE") return "Image";
-  return "File";
-}
-
-export function slugifyLibraryName(name: string): string {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 60);
-  return slug || "library-item";
-}
+export { slugifyLibraryName } from "@/lib/library-meta";
 
 export async function uniqueLibrarySlug(tx: Tx, name: string): Promise<string> {
   const base = slugifyLibraryName(name);
@@ -212,23 +200,3 @@ export async function attachLibraryToLiveTask(
   if (result.skipped) return { error: "That library item is already on this task." } as const;
   return { ok: true as const, attached: result.attached };
 }
-
-export function libraryAssetOpenHref(asset: {
-  id: string;
-  kind: string;
-  url?: string | null;
-}): string | null {
-  if (asset.kind === "LINK") return asset.url?.trim() || null;
-  return `/api/library/${asset.id}`;
-}
-
-export function fileAssetOpenHref(asset: {
-  id: string;
-  kind: string;
-  url?: string | null;
-}): string {
-  if (asset.kind === "LINK") return asset.url?.trim() || "#";
-  return `/api/files/${asset.id}`;
-}
-
-export { defaultLinkLabel, parseHttpUrl };

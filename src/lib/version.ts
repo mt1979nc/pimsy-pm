@@ -33,7 +33,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       "Attach either type to a playbook task (Templates → Edit task) or a live task (Links & files → Attach from library). New workspaces clone both kinds.",
       "Links open the URL in a new tab (and the existing wizard-style popup when the task CTA is a form). Files download or open as before. Portal Links & files no longer treat a form URL as a broken file download.",
       "If a Clinical / Billing / Documentation form CTA has a staff-pasted library LINK, the blue button opens that URL instead of the placeholder sheet. Discovery Wizard is unchanged.",
-      "No schema migrate (library_asset / file_asset already have kind FILE | LINK). No playbook resync. Out of scope: live Dock API scrape of form URLs; bulk xlsx ingest.",
+      "No schema migrate (library_asset / file_asset already have kind FILE | LINK). No playbook resync. Client attachment UI imports labels/hrefs from a client-safe module — not `@/db` or the library server module (same class of webpack/Postgres bug as v1.13.6). Out of scope: live Dock API scrape of form URLs; bulk xlsx ingest.",
     ],
   },
   {

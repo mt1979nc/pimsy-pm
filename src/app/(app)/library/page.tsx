@@ -2,7 +2,7 @@ import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { libraryAssets } from "@/db/schema";
 import { requireAdmin } from "@/lib/guard";
-import { libraryKindLabel } from "@/lib/library";
+import { libraryKindLabel } from "@/lib/library-meta";
 import { PageHeader, Card, CardHeader, Badge, LinkButton } from "@/components/ui";
 import { TemplateHubNav } from "@/components/template-hub-nav";
 import { AddLibraryItemForms, LibraryLinkEditForm, LibraryUploadForm } from "./library-form";

@@ -107,6 +107,9 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /Attach from library|playbook/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /No playbook resync/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /client-safe|webpack/i.test(h) && /Postgres|@\/db/i.test(h))).toBe(
+      true,
+    );
     expect(note?.highlights?.every((h) => !/storylane\.com/i.test(h))).toBe(true);
     expect(RELEASE_NOTES.find((n) => n.version === "1.13.6")).toBeTruthy();
   });

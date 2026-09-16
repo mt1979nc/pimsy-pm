@@ -28,7 +28,7 @@ import {
   optionalAreaLabel,
 } from "@/lib/playbook-meta";
 import type { PlaybookPath, WorkTrack } from "@/db/schema";
-import { libraryKindLabel } from "@/lib/library";
+import { libraryKindLabel } from "@/lib/library-meta";
 import { playbookResourceButtonLabel } from "@/lib/playbook-resources";
 
 type LibraryOption = {

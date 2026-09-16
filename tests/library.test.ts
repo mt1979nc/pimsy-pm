@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DISCOVERY_WIZARD_URL } from "@/db/dock-default-attachments";
 import { parseHttpUrl, defaultLinkLabel } from "@/lib/http-url";
@@ -6,7 +8,7 @@ import {
   libraryAssetOpenHref,
   libraryKindLabel,
   slugifyLibraryName,
-} from "@/lib/library";
+} from "@/lib/library-meta";
 import { resolveTaskActionButtons } from "@/lib/playbook-resources";
 
 describe("file library kinds and URLs", () => {
@@ -96,6 +98,22 @@ describe("file library kinds and URLs", () => {
     });
     expect(buttons[0]?.href).not.toBe("/api/files/sheet-1");
     expect(buttons[0]?.href).not.toBe(DISCOVERY_WIZARD_URL);
+  });
+
+  it("keeps client attachment UI off the Postgres client", () => {
+    const files = [
+      "src/components/attachments.tsx",
+      "src/app/(app)/templates/[id]/template-editor.tsx",
+      "src/lib/library-meta.ts",
+      "src/lib/http-url.ts",
+    ];
+    for (const rel of files) {
+      const src = readFileSync(resolve(process.cwd(), rel), "utf8");
+      expect(src, rel).not.toMatch(/from ["']@\/lib\/library["']/);
+      expect(src, rel).not.toMatch(/from ["']@\/lib\/rollup["']/);
+      expect(src, rel).not.toMatch(/from ["']@\/db["']/);
+      expect(src, rel).not.toMatch(/postgres-js|from ["']postgres["']/);
+    }
   });
 
   it("does not invent Storylane or Inbed URLs", () => {
