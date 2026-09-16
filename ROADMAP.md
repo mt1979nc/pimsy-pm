@@ -12,8 +12,6 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 |------|--------|-------|
 | **About / site profile** | **Shipped** (v1.7) + **v1.14.2 HOLD** | Kickoff dates/booking/CRM acronym + impl-team/practice contact cards. HubSpot deal link (optional pull). |
 | **Waiting-on threads** | **Shipped** (v1.7) | `waitingOn`: PIMSY / CUSTOMER / UNKNOWN + aging. Staff badge/set; portfolio rollup of open SHARED threads; portal read-only badge. |
-| **About / site profile** | **Shipped** (v1.7) | HubSpot deal, Prism client id, CRM acronym/key, Zoom booking, notes, custom fields. Staff edit + portal read-only. |
-| **Waiting-on threads** | **Shipped** (v1.7, **v1.14.2** organize) | `waitingOn`: PIMSY / CUSTOMER / UNKNOWN + aging. Open vs resolved lists; reliable unread; staff + portal mark resolved. One topic per conversation for SLA. Portfolio rollup of open SHARED threads. |
 | **Prism Management (v1.8)** | **Shipped** (v1.8.0–1.8.4) | Team roster flags + billable hrs + engagement roster/edit in PATH. OWNER/ADMIN/MANAGER only. Native Postgres (no Prism Azure SQL dual-write). |
 | **Playbook / staffing (v1.9)** | **Shipped** (v1.9.0–1.9.1) | Editable templates, four site paths, optional areas, per-project N/A, staffing roles + auto-assign + manager overview, staff-only Update History. |
 | **Forecast (v1.10)** | **Shipped** | Weekly hours + peak week + headroom + hire-now; weights listed; Analysis exclusions (SENSORI/MHC/LECHRIS default). Native Postgres. |
