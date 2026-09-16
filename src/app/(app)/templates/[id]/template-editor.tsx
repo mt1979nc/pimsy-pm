@@ -28,6 +28,7 @@ import {
   optionalAreaLabel,
 } from "@/lib/playbook-meta";
 import type { PlaybookPath, WorkTrack } from "@/db/schema";
+import { libraryKindLabel } from "@/lib/library-meta";
 import { playbookResourceButtonLabel } from "@/lib/playbook-resources";
 
 type LibraryOption = {
@@ -600,7 +601,8 @@ function TaskEditor({
             ) : null}
             {task.attachments.map((att) => (
               <Badge key={att.id} tone={att.kind === "LINK" ? "green" : "neutral"}>
-                {att.kind === "LINK" ? "Link" : att.isPlaceholder ? "Placeholder" : "File"}: {att.name}
+                {libraryKindLabel(att.kind)}
+                {att.isPlaceholder ? " (placeholder)" : ""}: {att.name}
               </Badge>
             ))}
           </div>
@@ -760,8 +762,8 @@ function TaskEditor({
             </div>
             {task.attachments.length === 0 ? (
               <p className="px-3 py-2 text-[12.5px] text-ink-3">
-                No library files on this task. Attach Discovery Wizard, billing sheets, or other
-                library rows — new workspaces clone them.
+                No library files or Link/Form items on this task. Attach Discovery Wizard, billing
+                sheets, or other library rows — new workspaces clone them.
               </p>
             ) : (
               <ul className="divide-y divide-border">
@@ -770,7 +772,8 @@ function TaskEditor({
                     <span className="min-w-0 flex-1 text-[13px] text-ink">
                       {att.name}
                       <span className="ml-2 text-[11.5px] text-ink-3">
-                        {att.kind === "LINK" ? "Link" : att.isPlaceholder ? "Placeholder" : "File"}
+                        {libraryKindLabel(att.kind)}
+                        {att.isPlaceholder ? " · placeholder" : ""}
                       </span>
                     </span>
                     {att.kind === "LINK" && att.url ? (
@@ -801,10 +804,11 @@ function TaskEditor({
               <form action={attAction} className="flex flex-wrap items-end gap-2 border-t border-border px-3 py-2">
                 <input type="hidden" name="taskId" value={task.id} />
                 <select name="libraryAssetId" required className={`${inputClass} min-w-[220px] flex-1`}>
-                  <option value="">Attach a library file…</option>
+                  <option value="">Attach a library file or Link/Form…</option>
                   {attachable.map((l) => (
                     <option key={l.id} value={l.id}>
-                      {l.name} ({l.kind === "LINK" ? "link" : l.isPlaceholder ? "placeholder" : "file"})
+                      {l.name} ({libraryKindLabel(l.kind)}
+                      {l.isPlaceholder ? ", placeholder" : ""})
                     </option>
                   ))}
                 </select>
@@ -813,8 +817,8 @@ function TaskEditor({
               </form>
             ) : (
               <p className="border-t border-border px-3 py-2 text-[12px] text-ink-3">
-                Every library file is already on this task, or the library is empty. Replace binaries
-                at File library.
+                Every library item is already on this task, or the library is empty. Add files or
+                Link/Form URLs at File library.
               </p>
             )}
           </div>

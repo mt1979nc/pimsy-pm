@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq, ne, asc, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { tasks, taskComments, taskChecklistItems, users } from "@/db/schema";
+import { libraryAssets, tasks, taskComments, taskChecklistItems, users } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, NotFoundError, ForbiddenError } from "@/lib/authz";
 import { listTaskAttachments } from "@/lib/attachments";
@@ -60,7 +60,7 @@ export default async function TaskDetailPage({
   });
   if (!task) notFound();
 
-  const [comments, attachments, staff, contacts, checklist, subtasks] = await Promise.all([
+  const [comments, attachments, staff, contacts, checklist, subtasks, library] = await Promise.all([
     db.query.taskComments.findMany({
       where: and(eq(taskComments.taskId, taskId), isNull(taskComments.deletedAt)),
       orderBy: [asc(taskComments.createdAt)],
@@ -104,7 +104,14 @@ export default async function TaskDetailPage({
         phaseId: true,
       },
     }),
+    db.query.libraryAssets.findMany({
+      orderBy: [asc(libraryAssets.name)],
+      columns: { id: true, name: true, kind: true, isPlaceholder: true },
+    }),
   ]);
+  const attachedLibraryIds = attachments
+    .map((a) => a.libraryAssetId)
+    .filter((id): id is string => Boolean(id));
 
   // A stale completedAt from an earlier "done" must not read as complete once
   // the task is reopened — the status is the source of truth.
@@ -193,6 +200,8 @@ export default async function TaskDetailPage({
                   defaultVisibility={task.visibility === "INTERNAL" ? "INTERNAL" : "SHARED"}
                   taskIsInternal={task.visibility === "INTERNAL"}
                   uploadRequest={uploadRequest}
+                  library={library}
+                  attachedLibraryIds={attachedLibraryIds}
                 />
               </div>
             </Card>
@@ -301,6 +310,8 @@ export default async function TaskDetailPage({
                   defaultVisibility={task.visibility === "INTERNAL" ? "INTERNAL" : "SHARED"}
                   taskIsInternal={task.visibility === "INTERNAL"}
                   uploadRequest={uploadRequest}
+                  library={library}
+                  attachedLibraryIds={attachedLibraryIds}
                 />
               </div>
             </Card>

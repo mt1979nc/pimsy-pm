@@ -7,7 +7,6 @@ import { z } from "zod";
 
 import { db } from "@/db";
 import {
-  libraryAssets,
   projectTemplates,
   templatePhases,
   templateTaskAttachments,
@@ -19,6 +18,7 @@ import { canManageTemplates, ForbiddenError, NotFoundError } from "@/lib/authz";
 import { audit } from "@/lib/audit";
 import { ASSIGNABLE_PROJECT_ROLES } from "@/lib/staffing";
 import { normalizeAreaKey } from "@/lib/playbook-meta";
+import { attachLibraryToTemplateTask as attachLibraryItem } from "@/lib/library";
 import { cloneProjectTemplate } from "@/lib/template-clone";
 import type { ActionState } from "./messages";
 
@@ -429,29 +429,18 @@ export async function attachLibraryToTemplateTask(
   await requireTemplateAdmin();
   const taskId = String(formData.get("taskId") ?? "");
   const libraryAssetId = String(formData.get("libraryAssetId") ?? "");
-  if (!taskId || !libraryAssetId) return { error: "Pick a library file." };
+  if (!taskId || !libraryAssetId) return { error: "Pick a library item." };
 
   const task = await db.query.templateTasks.findFirst({
     where: eq(templateTasks.id, taskId),
     with: { phase: { columns: { templateId: true } } },
   });
   if (!task) return { error: "Task not found." };
-  const lib = await db.query.libraryAssets.findFirst({
-    where: eq(libraryAssets.id, libraryAssetId),
-    columns: { id: true },
+  const result = await attachLibraryItem(db, {
+    templateTaskId: taskId,
+    libraryAssetId,
   });
-  if (!lib) return { error: "Library file not found." };
-
-  const already = await db.query.templateTaskAttachments.findFirst({
-    where: and(
-      eq(templateTaskAttachments.templateTaskId, taskId),
-      eq(templateTaskAttachments.libraryAssetId, libraryAssetId),
-    ),
-    columns: { id: true },
-  });
-  if (already) return { error: "That file is already on this task." };
-
-  await db.insert(templateTaskAttachments).values({ templateTaskId: taskId, libraryAssetId });
+  if ("error" in result) return { error: result.error };
   revalidateTemplate(task.phase.templateId);
   return { ok: true };
 }

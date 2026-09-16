@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.13.6");
+    expect(APP_VERSION).toBe("1.13.7");
     expect(APP_VERSION).toMatch(/^1\.13\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,21 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.13.7 file library Link/Form hyperlinks", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.13.7");
+    expect(note?.summary).toMatch(/File library/i);
+    expect(note?.summary).toMatch(/hyperlink|online form/i);
+    expect(note?.highlights?.some((h) => /Link\/Form/i.test(h) && /URL/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Attach from library|playbook/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No playbook resync/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /client-safe|webpack/i.test(h) && /Postgres|@\/db/i.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.every((h) => !/storylane\.com/i.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.13.6")).toBeTruthy();
   });
 
   it("documents the v1.13.6 portal webpack Postgres hotfix", () => {

@@ -66,7 +66,8 @@ delivered; only email is configurable.
 **Templates** — Dock Implementation Template plus three RCM paths. Playbook
 tasks mirror Dock: descriptions (training areas-to-cover checklists in the
 body) and default attachments (Discovery Wizard LINK, billing sheets).
-Editable in PATH. Duplicate makes a custom copy. File library is `/library`.
+Editable in PATH. Duplicate makes a custom copy. File library (`/library`)
+holds uploaded files and staff-pasted Link/Form URLs.
 Existing WIP: `npm run db:resync:playbook-from-dock` then `--apply` (progress
 + timeout; Azure Cloud Shell; no Dock API). New workspaces inherit copy +
 files automatically.
@@ -315,7 +316,9 @@ That backfills blank/stale Dock playbook copy, missing area-to-cover
 checklists, Discovery Wizard LINKs, and billing-sheet defaults onto matching
 live tasks. Drop real Dock binaries in `content/template-attachments/` and
 run `npm run db:upload:template-attachments -- --apply`, or replace them at
-**Templates → File library**. Runbook: `v1.13-TEMPLATES.md`.
+**Templates → File library**. Staff can also add a new file or paste an
+online-form hyperlink there (no invented Dock/Storylane URLs). Runbook:
+`v1.13-TEMPLATES.md`.
 
 Prism cutover (Capacity / Forecast / Analysis as source of truth in PATH): see
 `v1.11-PRISM-CUTOVER.md`. Dump standalone Prism SQL (or a JSON file from Cloud Shell), then:

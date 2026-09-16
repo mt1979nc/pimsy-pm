@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.6";
+export const APP_VERSION = "1.13.7";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.7",
+    date: "2026-09-16",
+    summary:
+      "File library accepts uploaded files and staff-pasted hyperlinks to online forms; both attach to playbook rows and live tasks, and open correctly on staff and portal surfaces.",
+    highlights: [
+      "Templates → File library: Add Link/Form (paste the real Dock / wizard / questionnaire URL) or Add file. Existing rows stay File vs Link/Form. No invented Storylane or Inbed URLs.",
+      "Attach either type to a playbook task (Templates → Edit task) or a live task (Links & files → Attach from library). New workspaces clone both kinds.",
+      "Links open the URL in a new tab (and the existing wizard-style popup when the task CTA is a form). Files download or open as before. Portal Links & files no longer treat a form URL as a broken file download.",
+      "If a Clinical / Billing / Documentation form CTA has a staff-pasted library LINK, the blue button opens that URL instead of the placeholder sheet. Discovery Wizard is unchanged.",
+      "No schema migrate (library_asset / file_asset already have kind FILE | LINK). No playbook resync. Client attachment UI imports labels/hrefs from a client-safe module — not `@/db` or the library server module (same class of webpack/Postgres bug as v1.13.6). Out of scope: live Dock API scrape of form URLs; bulk xlsx ingest.",
+    ],
+  },
   {
     version: "1.13.6",
     date: "2026-09-16",

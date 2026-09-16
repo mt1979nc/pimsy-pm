@@ -129,6 +129,18 @@ function matchingDownloadAsset(assets: TaskActionAsset[] | undefined): TaskActio
   );
 }
 
+/** Staff-pasted online form (not the Discovery Wizard, not a file download). */
+function matchingFormLink(assets: TaskActionAsset[] | undefined): TaskActionAsset | undefined {
+  if (!assets?.length) return undefined;
+  return assets.find(
+    (a) =>
+      a.kind === "LINK" &&
+      Boolean(a.url?.trim()) &&
+      isHttpUrl(a.url!.trim()) &&
+      !isDiscoveryWizardResource(a),
+  );
+}
+
 function wizardHref(assets: TaskActionAsset[] | undefined): string {
   const link = assets?.find((a) => a.kind === "LINK" && isDiscoveryWizardResource(a));
   return (link?.url && link.url.trim()) || DISCOVERY_WIZARD_URL;
@@ -170,16 +182,37 @@ export function resolveTaskActionButtons(opts: {
       continue;
     }
     if (action.kind === "form") {
+      if (action.url && isHttpUrl(action.url)) {
+        out.push({
+          id: action.id,
+          kind: "form",
+          label: action.label,
+          resourceName: action.resourceName,
+          href: action.url,
+          popup: true,
+        });
+        continue;
+      }
+      const formLink = matchingFormLink(opts.assets);
+      if (formLink?.url) {
+        out.push({
+          id: action.id,
+          kind: "form",
+          label: action.label,
+          resourceName: formLink.name || action.resourceName,
+          href: formLink.url,
+          popup: true,
+        });
+        continue;
+      }
       const asset = matchingDownloadAsset(opts.assets);
-      const href =
-        action.url || (asset ? fileHref(asset.id) : filesHref(taskHref));
       out.push({
         id: action.id,
         kind: "form",
         label: action.label,
         resourceName: action.resourceName,
-        href,
-        popup: Boolean(action.url && isHttpUrl(action.url)),
+        href: asset ? fileHref(asset.id) : filesHref(taskHref),
+        popup: false,
       });
       continue;
     }

@@ -157,7 +157,7 @@ export default async function TemplatesPage() {
                                   key={att.id}
                                   tone={att.libraryAsset?.kind === "LINK" ? "green" : "neutral"}
                                 >
-                                  {att.libraryAsset?.kind === "LINK" ? "Link" : "File"}:{" "}
+                                  {att.libraryAsset?.kind === "LINK" ? "Link/Form" : "File"}:{" "}
                                   {att.libraryAsset?.name ?? "attachment"}
                                 </Badge>
                               ))}
