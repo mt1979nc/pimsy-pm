@@ -19,6 +19,7 @@ import {
 import { PRISM_STATUSES, PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
 import { toDateInput } from "@/lib/dates";
 import type { DiscoveryScenario } from "@/db/schema";
+import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
 
 type LeadOption = {
   id: string;
@@ -296,6 +297,8 @@ export function EngagementCreateForm({
             </label>
           </div>
         </section>
+
+        <AnalyticsExcludeToggle />
 
         <SubmitButton>Add to roster</SubmitButton>
       </div>

@@ -35,7 +35,7 @@ export default async function ReportsPage() {
   const [summary, attention, all, risks, cycle, milestones, waiting] = await Promise.all([
     portfolioSummary(actor),
     attentionProjects(actor, 20),
-    listProjects(actor, {}),
+    listProjects(actor, { skipAnalyticsExcluded: true }),
     openRisks(actor, 15),
     cycleTimeStats(),
     upcomingMilestones(actor, 60, 40),

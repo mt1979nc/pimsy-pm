@@ -15,6 +15,7 @@ import {
 import { PRISM_STATUSES, PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
 import { toDateInput } from "@/lib/dates";
 import type { DiscoveryScenario } from "@/db/schema";
+import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
 
 type LeadOption = {
   id: string;
@@ -54,6 +55,7 @@ export function EngagementEditForm({
   slips,
   durationSamples,
   exclusions,
+  excludeFromAnalytics,
 }: {
   projectId: string;
   code: string;
@@ -84,6 +86,7 @@ export function EngagementEditForm({
   slips: Slip[];
   durationSamples: DurationSample[];
   exclusions: string[];
+  excludeFromAnalytics: boolean;
 }) {
   const [state, action] = useActionState(updateEngagement, {});
   const initialLocked = !!initialGoLiveDate;
@@ -469,6 +472,8 @@ export function EngagementEditForm({
           <SlipHistoryList slips={slips} />
         </section>
       ) : null}
+
+      <AnalyticsExcludeToggle defaultChecked={excludeFromAnalytics} />
 
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <SubmitButton pendingLabel="Saving…">Save engagement</SubmitButton>

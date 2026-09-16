@@ -10,6 +10,7 @@ import { canManagePrismCapacity, ForbiddenError } from "@/lib/authz";
 import { audit } from "@/lib/audit";
 import { loadCapacityForecast, loadForecastExclusions, saveForecastExclusions } from "@/lib/forecast-data";
 import { normalizeForecastCode, parseExclusionCodes } from "@/lib/forecast";
+import { includedInAnalytics } from "@/lib/analytics-scope";
 import type { ActionState } from "@/actions/messages";
 
 export async function getManagementForecast(weeksAhead = 12) {
@@ -26,7 +27,11 @@ export async function listImplementationCodes(): Promise<string[]> {
   const rows = await db.query.projects.findMany({
     // Include archived completed implementations (Prism history sets archivedAt)
     // so SENSORI-style outliers appear on the exclusions checklist.
-    where: and(eq(projects.type, "IMPLEMENTATION"), ne(projects.status, "CANCELLED")),
+    where: and(
+      eq(projects.type, "IMPLEMENTATION"),
+      ne(projects.status, "CANCELLED"),
+      includedInAnalytics(),
+    ),
     columns: { code: true, crmAcronym: true, prismClientId: true },
     orderBy: [asc(projects.code)],
   });

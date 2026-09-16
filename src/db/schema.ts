@@ -196,6 +196,13 @@ export const customerAccounts = pgTable(
     postalCode: text("postal_code"),
     /** Internal-only. Never exposed via the portal. */
     internalNotes: text("internal_notes"),
+    /**
+     * Staff flag for E2E / stress-test accounts. When true, every project
+     * under this customer drops out of Prism / portfolio / capacity / go-live
+     * analytics. Delivery UI and the portal still show the account.
+     * Default false.
+     */
+    excludeFromAnalytics: boolean("exclude_from_analytics").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -203,6 +210,7 @@ export const customerAccounts = pgTable(
   (t) => [
     uniqueIndex("customer_account_slug_idx").on(t.slug),
     index("customer_account_status_idx").on(t.status),
+    index("customer_account_exclude_analytics_idx").on(t.excludeFromAnalytics),
   ],
 );
 
@@ -566,6 +574,13 @@ export const projects = pgTable(
      * stay visible on the project hub. Default false (not onboarded).
      */
     onboarded: boolean("onboarded").notNull().default(false),
+    /**
+     * Staff flag for E2E / stress-test workspaces. When true (or when the
+     * parent customer is flagged), Prism Forecast, portfolio, capacity, and
+     * go-live reporting skip this project. The projects list, task hub, and
+     * portal still show it. Default false.
+     */
+    excludeFromAnalytics: boolean("exclude_from_analytics").notNull().default(false),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -581,6 +596,7 @@ export const projects = pgTable(
     index("project_health_idx").on(t.health),
     index("project_go_live_idx").on(t.targetGoLiveDate),
     index("project_onboarded_idx").on(t.onboarded),
+    index("project_exclude_analytics_idx").on(t.excludeFromAnalytics),
   ],
 );
 

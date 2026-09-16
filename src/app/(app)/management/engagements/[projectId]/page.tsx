@@ -79,6 +79,7 @@ export default async function ManagementEngagementEditPage({
           slips={project.slipEvents}
           durationSamples={goLive.samples}
           exclusions={goLive.exclusions}
+          excludeFromAnalytics={project.excludeFromAnalytics}
         />
       </Card>
     </div>
