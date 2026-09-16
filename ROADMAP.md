@@ -21,6 +21,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **Any-specialist access (v1.14)** | **This branch** (v1.14.0) | Specialists can open/edit any active implementation site, not only the named primary assignee. MEMBER stays membership-scoped. Customer portal unchanged. **Hold from live** until Alexander ships the v1.14 batch. |
 | **Auto customer invite (v1.14)** | **This branch** (v1.14.1) | PATH emails a portal invite when a site is set up or a contact is added; idempotent; staff Resend; INTERNAL_EMAIL_DOMAINS stay staff. Hold from live until Alexander ships. Runbook: `v1.14-AUTO-INVITE.md`. |
 | **specialist slip save and weekly-meeting roster (v1.14.2)** | **This branch** | Specialists can record a go-live slip that actually saves, with a dedicated Record slip control and confirmation. |
+| **PATH staff Move… across section and parent (v1.14.3)** | **This branch** | PATH staff can Move… a live task or sub-task to another section (Configuration, Discovery, …) or under a different parent — Dock’s drag-and-drop stays parent-bound; this is the cross-parent / cross-section path. |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |

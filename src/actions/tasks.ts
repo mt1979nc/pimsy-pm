@@ -24,6 +24,7 @@ import { fmtDate } from "@/lib/dates";
 import { setTaskNotApplicable } from "@/lib/playbook";
 import { isSpecialistSubtask, liveTaskCreateDefaults } from "@/lib/task-visibility";
 import { exposePhaseFromCompletedTask } from "@/lib/expose-phase";
+import { applyTaskMove } from "@/lib/task-relink";
 import type { ActionState } from "./messages";
 
 const optionalDate = z
@@ -394,6 +395,62 @@ export async function setTaskVisibility(taskId: string, visibility: "INTERNAL" |
 
   revalidatePath(`/projects/${task.projectId}/tasks`);
   revalidatePath(`/portal/projects/${task.projectId}`);
+}
+
+/**
+ * Staff-only: move a live task (or sub-task) to another section and/or parent.
+ * Nested children stay under the moved item and follow its destination phase.
+ * Customers cannot reorder or reparent — Dock-style portal lists stay as-is.
+ */
+export async function moveTask(
+  taskId: string,
+  toPhaseId: string | null,
+  toParentTaskId: string | null,
+) {
+  const actor = await requireUser();
+  if (isCustomer(actor)) {
+    throw new ForbiddenError("Only your implementation team can move tasks.");
+  }
+  const task = await loadTaskForActor(actor, taskId);
+  await assertProjectWrite(actor, task.projectId);
+
+  const result = await applyTaskMove({
+    taskId,
+    toPhaseId: toPhaseId || null,
+    toParentTaskId: toParentTaskId || null,
+  });
+
+  if (!result.unchanged) {
+    await audit({
+      actor,
+      action: "task.moved",
+      entityType: "task",
+      entityId: taskId,
+      summary: `${result.title}: ${
+        result.toParentTaskId ? "moved under another parent" : "moved to top-level in a section"
+      }`,
+      metadata: {
+        projectId: result.projectId,
+        fromPhaseId: result.fromPhaseId,
+        fromParentTaskId: result.fromParentTaskId,
+        toPhaseId: result.toPhaseId,
+        toParentTaskId: result.toParentTaskId,
+        movedCount: result.movedCount,
+      },
+    });
+  }
+
+  revalidatePath(`/projects/${result.projectId}`);
+  revalidatePath(`/projects/${result.projectId}/tasks`);
+  revalidatePath(`/projects/${result.projectId}/tasks/${taskId}`);
+  if (result.fromParentTaskId) {
+    revalidatePath(`/projects/${result.projectId}/tasks/${result.fromParentTaskId}`);
+  }
+  if (result.toParentTaskId) {
+    revalidatePath(`/projects/${result.projectId}/tasks/${result.toParentTaskId}`);
+  }
+  revalidatePath(`/portal/projects/${result.projectId}`);
+  revalidatePath("/my-work");
 }
 
 export async function deleteTask(taskId: string) {

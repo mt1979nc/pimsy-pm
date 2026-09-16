@@ -8,6 +8,8 @@ import { CollapsibleCompleted } from "@/components/collapsible-completed";
 import { AddTaskInline, AddPhaseForm } from "@/app/(app)/projects/[id]/tasks/task-forms";
 import { PhaseNaButton } from "@/app/(app)/projects/[id]/tasks/phase-na-button";
 import { PhaseVisibilityButton } from "@/app/(app)/projects/[id]/tasks/phase-visibility-button";
+import type { MoveTaskPhaseOption } from "@/components/move-task-dialog";
+import type { MoveTaskNode } from "@/lib/task-move";
 import { fmtShort } from "@/lib/dates";
 import {
   excludeCollapsedDescendants,
@@ -53,6 +55,8 @@ function PhaseTaskRows({
   assetsByTaskId,
   checklistByTaskId,
   allowStructureEdit,
+  movePhases,
+  moveTasks,
 }: {
   projectId: string;
   tasks: ProjectTaskListItem[];
@@ -61,6 +65,8 @@ function PhaseTaskRows({
   assetsByTaskId: Record<string, TaskActionAsset[]>;
   checklistByTaskId: Record<string, ChecklistItemView[]>;
   allowStructureEdit: boolean;
+  movePhases: MoveTaskPhaseOption[];
+  moveTasks: MoveTaskNode[];
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const parentsWithChildren = childIdsOf(tasks);
@@ -79,6 +85,8 @@ function PhaseTaskRows({
           checklist={checklistByTaskId[t.id] ?? []}
           hasChildren={parentsWithChildren.has(t.id)}
           childrenCollapsed={collapsed.has(t.id)}
+          movePhases={movePhases}
+          moveTasks={moveTasks}
           onToggleChildren={
             parentsWithChildren.has(t.id)
               ? () =>
@@ -121,6 +129,20 @@ export function ProjectTaskBoard({
   const allTasks = useMemo(
     () => [...phases.flatMap((p) => p.tasks), ...unphased],
     [phases, unphased],
+  );
+  const movePhases = useMemo<MoveTaskPhaseOption[]>(
+    () => phases.map((p) => ({ id: p.id, name: p.name })),
+    [phases],
+  );
+  const moveTasks = useMemo<MoveTaskNode[]>(
+    () =>
+      allTasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        phaseId: t.phaseId ?? null,
+        parentTaskId: t.parentTaskId,
+      })),
+    [allTasks],
   );
 
   const filteredPhases = useMemo(() => {
@@ -226,6 +248,8 @@ export function ProjectTaskBoard({
                   assetsByTaskId={assetsByTaskId}
                   checklistByTaskId={checklistByTaskId}
                   allowStructureEdit
+                  movePhases={movePhases}
+                  moveTasks={moveTasks}
                 />
               </div>
             )}
@@ -238,6 +262,8 @@ export function ProjectTaskBoard({
                 assetsByTaskId={assetsByTaskId}
                 checklistByTaskId={checklistByTaskId}
                 allowStructureEdit
+                movePhases={movePhases}
+                moveTasks={moveTasks}
               />
             </CollapsibleCompleted>
             <div className="border-t border-border">
@@ -269,6 +295,8 @@ export function ProjectTaskBoard({
                 assetsByTaskId={assetsByTaskId}
                 checklistByTaskId={checklistByTaskId}
                 allowStructureEdit
+                movePhases={movePhases}
+                moveTasks={moveTasks}
               />
             </div>
           )}
@@ -281,6 +309,8 @@ export function ProjectTaskBoard({
               assetsByTaskId={assetsByTaskId}
               checklistByTaskId={checklistByTaskId}
               allowStructureEdit
+              movePhases={movePhases}
+              moveTasks={moveTasks}
             />
           </CollapsibleCompleted>
           <div className="border-t border-border">
@@ -291,10 +321,10 @@ export function ProjectTaskBoard({
 
       <p className="text-[12.5px] leading-relaxed text-ink-3">
         Check a box to complete — you do not have to open the task. Upload files and Click Here run
-        from this list. Finished groups collapse under Completed. Add or remove tasks here; that
-        does not change the playbook. Nested specialist work stays on this staff list. The customer
-        portal shows parent status plus customer-owned items. Playbook authoring is Templates
-        (owner/admin).
+        from this list. Finished groups collapse under Completed. Add, remove, or Move… a task to
+        another section (Configuration, Discovery, …) or under another parent; that does not change
+        the playbook. Nested specialist work stays on this staff list. The customer portal shows
+        parent status plus customer-owned items. Playbook authoring is Templates (owner/admin).
       </p>
     </div>
   );

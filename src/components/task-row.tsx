@@ -8,7 +8,9 @@ import { Badge, PriorityBadge, VisibilityBadge, Avatar } from "@/components/ui";
 import { TaskActionButtons } from "@/components/task-action-buttons";
 import { AddAttachment } from "@/components/attachments";
 import { TaskChecklist, type ChecklistItemView } from "@/components/task-checklist";
+import { MoveTaskDialog, type MoveTaskPhaseOption } from "@/components/move-task-dialog";
 import { AddTaskInline } from "@/app/(app)/projects/[id]/tasks/task-forms";
+import type { MoveTaskNode } from "@/lib/task-move";
 import { dueLabel, isOverdue } from "@/lib/dates";
 import { descriptionSnippet } from "@/lib/task-description";
 import { cn } from "@/lib/cn";
@@ -50,6 +52,8 @@ export function TaskRow({
   hasChildren = false,
   childrenCollapsed = false,
   onToggleChildren,
+  movePhases,
+  moveTasks,
 }: {
   task: TaskRowData;
   showProject?: boolean;
@@ -64,11 +68,15 @@ export function TaskRow({
   hasChildren?: boolean;
   childrenCollapsed?: boolean;
   onToggleChildren?: () => void;
+  /** Staff Move… catalog (sections + parents). Omitted on My Work / dashboard. */
+  movePhases?: MoveTaskPhaseOption[];
+  moveTasks?: MoveTaskNode[];
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
   const projectId = task.projectId ?? task.project?.id;
   const href = projectId ? `/projects/${projectId}/tasks/${task.id}` : null;
   const done = task.status === "DONE";
@@ -247,6 +255,23 @@ export function TaskRow({
                 />
               </span>
             ) : null}
+            {allowStructureEdit && canEdit && movePhases && moveTasks ? (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  setMoveOpen((open) => !open);
+                  setConfirmRemove(false);
+                }}
+                className={cn(
+                  "hover:text-ink hover:underline focus:opacity-100",
+                  moveOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+                )}
+                title="Move to another section or parent task"
+              >
+                {moveOpen ? "Cancel move" : "Move…"}
+              </button>
+            ) : null}
             {allowStructureEdit ? (
               confirmRemove ? (
                 <span className="inline-flex items-center gap-2">
@@ -304,6 +329,19 @@ export function TaskRow({
                 compact
               />
             </div>
+          ) : null}
+
+          {moveOpen && movePhases && moveTasks ? (
+            <MoveTaskDialog
+              taskId={task.id}
+              title={task.title}
+              currentPhaseId={task.phaseId ?? null}
+              currentParentTaskId={task.parentTaskId ?? null}
+              phases={movePhases}
+              tasks={moveTasks}
+              compact
+              onClose={() => setMoveOpen(false)}
+            />
           ) : null}
 
           {uploadOpen && projectId ? (
