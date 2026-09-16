@@ -18,6 +18,14 @@ import {
   type DigestItem,
 } from "@/lib/customer-digest";
 
+function hrefs(html: string): string[] {
+  return [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]!);
+}
+
+function staffProjectHrefs(html: string): string[] {
+  return hrefs(html).filter((u) => /\/projects\//.test(u) && !/\/portal\//.test(u));
+}
+
 const APP = "https://path.pimsyehr.com";
 
 function fiveDueSoon(): DigestItem[] {
@@ -80,9 +88,8 @@ describe("customer email digest composition", () => {
       expect(html).toContain(`${APP}/portal/projects/proj-acme/tasks/task-${n}`);
       expect(text).toContain(`${APP}/portal/projects/proj-acme/tasks/task-${n}`);
     }
-    expect(html).not.toMatch(/https?:\/\/[^"]+\/projects\/proj-acme\/tasks/);
-    expect(html).not.toMatch(/\/projects\/proj-acme\/tasks\/task-1"/);
-    expect(text).not.toContain("/projects/proj-acme/tasks/task-1");
+    expect(staffProjectHrefs(html)).toEqual([]);
+    expect(text).not.toMatch(/(?<!\/portal)\/projects\/proj-acme\//);
     expect(html).toContain(`${APP}/portal`);
   });
 
@@ -115,7 +122,7 @@ describe("customer email digest composition", () => {
     expect(html).toContain(`${APP}/portal/projects/proj-acme/messages/thread-1`);
     expect(html).toContain(`${APP}/portal/projects/proj-acme/tasks/task-org`);
     expect(html).toContain(`${APP}/portal/projects/proj-acme/tasks/task-trn`);
-    expect(html).not.toContain("/projects/proj-acme/messages/");
+    expect(staffProjectHrefs(html)).toEqual([]);
     expect(plainText(composed!.opts)).toContain("Please upload the org details form this week.");
   });
 

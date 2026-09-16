@@ -117,7 +117,10 @@ describe.skipIf(!dbOk)("customer email digest (postgres)", () => {
     for (const row of extras) {
       expect(customerMail[0]!.html).toContain(portalTaskPath(f.projects.a, row.id));
     }
-    expect(customerMail[0]!.html).not.toMatch(/href="[^"]*\/projects\/[^"]+\/tasks\//);
+    const staffHrefs = [...customerMail[0]!.html.matchAll(/href="([^"]+)"/g)]
+      .map((m) => m[1]!)
+      .filter((u) => /\/projects\//.test(u) && !/\/portal\//.test(u));
+    expect(staffHrefs).toEqual([]);
     expect(customerMail[0]!.text).toContain("/portal/projects/");
 
     const emailed = dueFlags.filter((n) => n.emailedAt);
@@ -213,7 +216,10 @@ describe.skipIf(!dbOk)("customer email digest (postgres)", () => {
     expect(customerMail[0]!.html).toContain("Kickoff follow-ups");
     expect(customerMail[0]!.html).toContain("Billing spreadsheet");
     expect(customerMail[0]!.html).toContain(portalMessagePath(f.projects.a, f.threads.shared));
-    expect(customerMail[0]!.html).not.toContain(`/projects/${f.projects.a}/messages/`);
+    const staffHrefs = [...customerMail[0]!.html.matchAll(/href="([^"]+)"/g)]
+      .map((m) => m[1]!)
+      .filter((u) => /\/projects\//.test(u) && !/\/portal\//.test(u));
+    expect(staffHrefs).toEqual([]);
 
     const pendingAfter = await db.query.notifications.findMany({
       where: and(
