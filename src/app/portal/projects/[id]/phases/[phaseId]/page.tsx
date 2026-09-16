@@ -40,6 +40,7 @@ export default async function PortalPhasePage({
           name: true,
           url: true,
           libraryAssetId: true,
+          storageKey: true,
         },
         orderBy: [asc(fileAssets.createdAt)],
       })
@@ -55,6 +56,7 @@ export default async function PortalPhasePage({
       name: a.name,
       url: a.url,
       libraryAssetId: a.libraryAssetId,
+      hasBlob: Boolean(a.storageKey),
     });
     assetsByTaskId[a.taskId] = list;
   }

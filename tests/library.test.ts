@@ -45,7 +45,10 @@ describe("file library kinds and URLs", () => {
         url: "https://example.com/forms/intake",
       }),
     ).toBe("https://example.com/forms/intake");
-    expect(libraryAssetOpenHref({ id: "lib-2", kind: "FILE", url: null })).toBe("/api/library/lib-2");
+    expect(libraryAssetOpenHref({ id: "lib-2", kind: "FILE", url: null, storageKey: "lib/q.xlsx" })).toBe(
+      "/api/library/lib-2",
+    );
+    expect(libraryAssetOpenHref({ id: "lib-missing", kind: "FILE", url: null })).toBeNull();
     expect(
       fileAssetOpenHref({
         id: "fa-1",
@@ -53,7 +56,15 @@ describe("file library kinds and URLs", () => {
         url: "https://example.com/forms/intake",
       }),
     ).toBe("https://example.com/forms/intake");
-    expect(fileAssetOpenHref({ id: "fa-2", kind: "FILE", url: null })).toBe("/api/files/fa-2");
+    expect(
+      fileAssetOpenHref({
+        id: "fa-2",
+        kind: "FILE",
+        url: null,
+        storageKey: "2026-09/q.xlsx",
+      }),
+    ).toBe("/api/files/fa-2");
+    expect(fileAssetOpenHref({ id: "fa-missing", kind: "FILE", url: null })).toBeNull();
   });
 
   it("uses a hostname fallback label when staff skip the name", () => {
@@ -75,6 +86,7 @@ describe("file library kinds and URLs", () => {
           kind: "FILE",
           name: "Clinical workflows data sheet",
           libraryAssetId: "lib-file",
+          hasBlob: true,
         },
         {
           id: "form-1",
@@ -106,6 +118,8 @@ describe("file library kinds and URLs", () => {
       "src/app/(app)/templates/[id]/template-editor.tsx",
       "src/lib/library-meta.ts",
       "src/lib/http-url.ts",
+      "src/lib/comment-visibility.ts",
+      "src/components/comment-count-badge.tsx",
     ];
     for (const rel of files) {
       const src = readFileSync(resolve(process.cwd(), rel), "utf8");

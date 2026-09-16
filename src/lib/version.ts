@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.9";
+export const APP_VERSION = "1.13.10";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.10",
+    date: "2026-09-16",
+    summary:
+      "Customer view shows the same shared task comments the portal does, and template FILE downloads no longer 404 when the library blob is missing.",
+    highlights: [
+      "Staff Customer view / portal preview lists shared (non-internal) task comments the same way the customer portal does. Internal comments stay staff-only. Comment flags on Customer view lists match the portal.",
+      "FILE attachments without a stored blob are not presented as downloads. Billing Questionnaire (and similar) hide the Click Here CTA until a library FILE with storage or a Link/Form URL is attached. Links & files, File library, and Templates show a missing-file state instead of a broken download.",
+      "Staff note: upload the real Dock file from Templates → File library. Customers see that the file is not available yet. No invented xlsx or PHI binaries.",
+      "No schema migrate. No playbook resync. Templates-only seed is not required for this slice (optional later if library placeholders need a refresh). Client comment/file helpers stay off the Postgres client. Out of scope: bulk Dock xlsx ingest, wizard deep-links, cross-specialist access, auto invite.",
+    ],
+  },
   {
     version: "1.13.9",
     date: "2026-09-16",

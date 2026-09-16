@@ -55,6 +55,7 @@ export default async function ProjectTasksPage({
             name: true,
             url: true,
             libraryAssetId: true,
+            storageKey: true,
           },
         })
       : Promise.resolve([]),
@@ -76,6 +77,7 @@ export default async function ProjectTasksPage({
       name: a.name,
       url: a.url,
       libraryAssetId: a.libraryAssetId,
+      hasBlob: Boolean(a.storageKey),
     });
     assetsByTaskId[a.taskId] = list;
   }

@@ -3,15 +3,17 @@
  *
  * Buttons come from the in-repo Dock catalog by **title**, so existing WIP
  * shows the PWMI blue CTA even before a resync clones library attachments.
- * Form hrefs use a cloned playbook sheet when present (Dock native forms have
- * no public URL here); otherwise they land on Links & files. The Discovery
- * Wizard URL is the known calm-mud SWA — never a guessed Storylane address.
+ * Form hrefs use a staff-pasted library LINK when present, else a cloned
+ * playbook FILE that actually has a blob. Missing storage is never a download
+ * CTA (no 404). Discovery Wizard URL is the known calm-mud SWA — never a
+ * guessed Storylane address.
  */
 import {
   DISCOVERY_WIZARD_URL,
   libraryDefsForTaskTitle,
   normalizeAttachmentUrl,
 } from "@/db/dock-default-attachments";
+import { assetHasDownloadableBlob } from "@/lib/library-meta";
 import {
   DOCK_BILLING_QUESTIONNAIRE_LABEL,
   DOCK_CLINICAL_FORM_LABEL,
@@ -105,6 +107,8 @@ export type TaskActionAsset = {
   name: string;
   url?: string | null;
   libraryAssetId?: string | null;
+  storageKey?: string | null;
+  hasBlob?: boolean;
 };
 
 export type ResolvedTaskActionButton = {
@@ -123,10 +127,8 @@ function fileHref(assetId: string): string {
 
 function matchingDownloadAsset(assets: TaskActionAsset[] | undefined): TaskActionAsset | undefined {
   if (!assets?.length) return undefined;
-  return (
-    assets.find((a) => a.kind !== "LINK" && a.libraryAssetId) ??
-    assets.find((a) => a.kind !== "LINK")
-  );
+  const downloadable = assets.filter((a) => a.kind !== "LINK" && assetHasDownloadableBlob(a));
+  return downloadable.find((a) => a.libraryAssetId) ?? downloadable[0];
 }
 
 /** Staff-pasted online form (not the Discovery Wizard, not a file download). */
@@ -146,17 +148,14 @@ function wizardHref(assets: TaskActionAsset[] | undefined): string {
   return (link?.url && link.url.trim()) || DISCOVERY_WIZARD_URL;
 }
 
-function filesHref(taskHref: string): string {
-  return taskHref ? `${taskHref}#files` : "#files";
-}
-
 function isHttpUrl(href: string): boolean {
   return /^https?:\/\//i.test(href);
 }
 
 /**
  * Resolve Dock-style task action buttons. Title catalog is the source of
- * truth (PWMI labels). Assets fill form/download file URLs — never the
+ * truth (PWMI labels). Assets fill form/download file URLs when a FILE blob or
+ * Link/Form is actually attached — never a 404 download, and never the
  * Discovery Wizard for Clinical / Billing form CTAs.
  */
 export function resolveTaskActionButtons(opts: {
@@ -206,24 +205,27 @@ export function resolveTaskActionButtons(opts: {
         continue;
       }
       const asset = matchingDownloadAsset(opts.assets);
+      // No LINK and no stored FILE blob — do not present a 404 download.
+      if (!asset) continue;
       out.push({
         id: action.id,
         kind: "form",
         label: action.label,
         resourceName: action.resourceName,
-        href: asset ? fileHref(asset.id) : filesHref(taskHref),
+        href: fileHref(asset.id),
         popup: false,
       });
       continue;
     }
     if (action.kind === "download") {
       const asset = matchingDownloadAsset(opts.assets);
+      if (!asset) continue;
       out.push({
         id: action.id,
         kind: "download",
         label: action.label,
         resourceName: action.resourceName,
-        href: asset ? fileHref(asset.id) : filesHref(taskHref),
+        href: fileHref(asset.id),
         popup: false,
       });
       continue;

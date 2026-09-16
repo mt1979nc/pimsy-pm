@@ -2,7 +2,7 @@ import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { libraryAssets } from "@/db/schema";
 import { requireAdmin } from "@/lib/guard";
-import { libraryKindLabel } from "@/lib/library-meta";
+import { libraryKindLabel, MISSING_LIBRARY_FILE_STAFF_NOTE } from "@/lib/library-meta";
 import { PageHeader, Card, CardHeader, Badge, LinkButton } from "@/components/ui";
 import { TemplateHubNav } from "@/components/template-hub-nav";
 import { AddLibraryItemForms, LibraryLinkEditForm, LibraryUploadForm } from "./library-form";
@@ -68,6 +68,9 @@ export default async function LibraryPage() {
               }
             />
             <div className="space-y-3 px-5 py-4">
+              {asset.kind !== "LINK" && !asset.storageKey ? (
+                <p className="text-[13px] leading-relaxed text-ink-2">{MISSING_LIBRARY_FILE_STAFF_NOTE}</p>
+              ) : null}
               {asset.adminNotes ? (
                 <p className="text-[13px] leading-relaxed text-ink-2">{asset.adminNotes}</p>
               ) : null}

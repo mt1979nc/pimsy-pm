@@ -23,6 +23,7 @@ import { fmtShort, fmtRelative, fmtDate, daysUntil } from "@/lib/dates";
 import { pctComplete } from "@/lib/pct-complete";
 import { cn } from "@/lib/cn";
 import { orderTasksForNesting } from "@/lib/task-tree";
+import { CommentCountBadge } from "@/components/comment-count-badge";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Customer view" };
@@ -231,6 +232,10 @@ export default async function CustomerViewPreviewPage({
                           {t.ownerSide === "CUSTOMER" ? (
                             <Badge tone="violet">Customer action</Badge>
                           ) : null}
+                          <CommentCountBadge
+                            count={t.comments?.length ?? 0}
+                            href={`/projects/${id}/customer-view/tasks/${t.id}`}
+                          />
                         </div>
                         <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[12px] text-ink-3">
                           {t.assignee?.name ? (
@@ -272,6 +277,10 @@ export default async function CustomerViewPreviewPage({
                       >
                         {t.title}
                       </Link>
+                      <CommentCountBadge
+                        count={t.comments?.length ?? 0}
+                        href={`/projects/${id}/customer-view/tasks/${t.id}`}
+                      />
                       {t.assignee?.name ? (
                         <span className="ml-auto text-[12px] text-ink-3">{t.assignee.name}</span>
                       ) : null}
@@ -315,15 +324,26 @@ export default async function CustomerViewPreviewPage({
             <EmptyState title="No files shared" />
           ) : (
             <div className="divide-y divide-border">
-              {files.map((f) => (
+              {files.map((f) => {
+              const href = attachmentHref(f);
+              if (!href) {
+                return (
+                  <div key={f.id} className="px-4 py-2.5 text-[13px] text-ink-2">
+                    <span className="text-ink">{f.name}</span>
+                    <span className="mt-0.5 block text-[12px] text-ink-3">File not available yet</span>
+                  </div>
+                );
+              }
+              return (
                 <Link
                   key={f.id}
-                  href={attachmentHref(f)}
+                  href={href}
                   className="block px-4 py-2.5 text-[13px] text-ink hover:bg-surface-2"
                 >
                   {f.name}
                 </Link>
-              ))}
+              );
+            })}
             </div>
           )}
         </Card>

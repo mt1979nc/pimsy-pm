@@ -9,6 +9,7 @@ import { resolveTaskDescription } from "@/lib/task-description";
 import { orderTasksForNesting } from "@/lib/task-tree";
 import { fmtShort } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { CommentCountBadge } from "@/components/comment-count-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +73,10 @@ export default async function CustomerViewPhasePage({
                     {t.status === "DONE" ? "Complete" : t.status === "IN_PROGRESS" ? "In progress" : "Not started"}
                   </span>
                   {t.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer action</Badge> : null}
+                  <CommentCountBadge
+                    count={t.comments?.length ?? 0}
+                    href={`/projects/${id}/customer-view/tasks/${t.id}`}
+                  />
                 </div>
                 {resolveTaskDescription(t.title, t.description) ? (
                   <p className="mt-1 line-clamp-2 text-[12.5px] text-ink-2">

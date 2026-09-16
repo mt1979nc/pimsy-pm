@@ -159,3 +159,25 @@ export async function previewPortalTask(projectId: string, taskId: string) {
   if (!isCustomerVisiblePhase(task.phase)) return null;
   return task;
 }
+
+/** SHARED comments the customer (and Customer view) may read on a portal-facing task. */
+export async function previewPortalTaskComments(taskId: string) {
+  return db.query.taskComments.findMany({
+    where: and(
+      eq(taskComments.taskId, taskId),
+      eq(taskComments.visibility, "SHARED"),
+      isNull(taskComments.deletedAt),
+    ),
+    orderBy: [asc(taskComments.createdAt)],
+    with: { author: { columns: { id: true, name: true, image: true, role: true } } },
+  });
+}
+
+/** SHARED files/links on a portal-facing task (Customer view / portal preview). */
+export async function previewPortalTaskAttachments(taskId: string) {
+  return db.query.fileAssets.findMany({
+    where: and(eq(fileAssets.taskId, taskId), eq(fileAssets.visibility, "SHARED")),
+    orderBy: [desc(fileAssets.createdAt)],
+    with: { uploadedBy: { columns: { id: true, name: true, image: true } } },
+  });
+}

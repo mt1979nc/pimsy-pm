@@ -32,10 +32,20 @@ export default async function CustomerViewRecordingsPage({
         <EmptyState title="No recordings shared" />
       ) : (
         <div className="divide-y divide-border">
-          {recordings.map((f) => (
+          {recordings.map((f) => {
+            const href = attachmentHref(f);
+            if (!href) {
+              return (
+                <div key={f.id} className="px-4 py-2.5">
+                  <div className="truncate text-[13px] text-ink">{f.name}</div>
+                  <div className="text-[12px] text-ink-3">File not available yet</div>
+                </div>
+              );
+            }
+            return (
             <a
               key={f.id}
-              href={attachmentHref(f)}
+              href={href}
               target="_blank"
               rel="noopener noreferrer"
               className="block px-4 py-2.5 hover:bg-surface-2"
@@ -43,7 +53,8 @@ export default async function CustomerViewRecordingsPage({
               <div className="truncate text-[13px] text-ink">{f.name}</div>
               <div className="text-[12px] text-ink-3">{fmtShort(f.createdAt)}</div>
             </a>
-          ))}
+            );
+          })}
         </div>
       )}
     </Card>

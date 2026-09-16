@@ -97,6 +97,13 @@ export async function assertAttachmentAccess(actor: Actor, assetId: string) {
 }
 
 /** A safe href for rendering: links go direct, uploads stream through the API. */
-export function attachmentHref(asset: { id: string; kind: string; url: string | null }) {
-  return asset.kind === "LINK" ? (asset.url ?? "#") : `/api/files/${asset.id}`;
+export function attachmentHref(asset: {
+  id: string;
+  kind: string;
+  url: string | null;
+  storageKey?: string | null;
+}): string | null {
+  if (asset.kind === "LINK") return asset.url?.trim() || null;
+  if (!asset.storageKey?.trim()) return null;
+  return `/api/files/${asset.id}`;
 }

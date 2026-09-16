@@ -30,7 +30,7 @@ import {
   optionalAreaLabel,
 } from "@/lib/playbook-meta";
 import type { PlaybookPath, WorkTrack } from "@/db/schema";
-import { libraryKindLabel } from "@/lib/library-meta";
+import { libraryKindLabel, libraryAssetOpenHref, MISSING_LIBRARY_FILE_STAFF_NOTE } from "@/lib/library-meta";
 import { playbookResourceButtonLabel } from "@/lib/playbook-resources";
 
 type LibraryOption = {
@@ -65,6 +65,7 @@ type EditorTask = {
     isPlaceholder: boolean;
     libraryAssetId: string;
     url: string | null;
+    storageKey: string | null;
   }>;
 };
 
@@ -783,7 +784,14 @@ function TaskEditor({
               </p>
             ) : (
               <ul className="divide-y divide-border">
-                {task.attachments.map((att) => (
+                {task.attachments.map((att) => {
+                  const openHref = libraryAssetOpenHref({
+                    id: att.libraryAssetId,
+                    kind: att.kind,
+                    url: att.url,
+                    storageKey: att.storageKey,
+                  });
+                  return (
                   <li key={att.id} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
                     <span className="min-w-0 flex-1 text-[13px] text-ink">
                       {att.name}
@@ -800,10 +808,14 @@ function TaskEditor({
                           url: att.url,
                         })}
                       </LinkButton>
-                    ) : (
-                      <LinkButton href={`/api/library/${att.libraryAssetId}`} size="sm">
+                    ) : openHref ? (
+                      <LinkButton href={openHref} size="sm">
                         {playbookResourceButtonLabel({ kind: att.kind, name: att.name })}
                       </LinkButton>
+                    ) : (
+                      <span className="max-w-[18rem] text-[12px] leading-snug text-ink-3">
+                        {MISSING_LIBRARY_FILE_STAFF_NOTE}
+                      </span>
                     )}
                     <button
                       type="button"
@@ -813,7 +825,8 @@ function TaskEditor({
                       Detach
                     </button>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
             {attachable.length > 0 ? (
