@@ -147,7 +147,10 @@ npm run db:migrate
 
 No Prism Azure SQL connection string is required on the Web App. v1.11 cutover
 reads PATH Postgres only. Optional App Setting `PRISM_READ_API_KEY` gates
-`GET /api/prism/snapshot` for Director / Pipeline routines. Dump Prism SQL from
+`GET /api/prism/snapshot` for Director / Pipeline routines. Optional
+`DISCOVERY_WIZARD_WEBHOOK_SECRET` (falls back to `PRISM_READ_API_KEY`) gates
+`POST /api/discovery-wizard/workbook` so Power Automate can deliver the
+Discovery Wizard Excel onto Configuration consumer tasks. Dump Prism SQL from
 a firewall-allowed host (`PRISM_SQL_CONNECTION_STRING`) — see `v1.11-PRISM-CUTOVER.md`.
 
 Optional App Settings `PIMSY_AUDIT_FEED_URL` / `PIMSY_AUDIT_FEED_TOKEN` /
@@ -213,7 +216,7 @@ delete. Do not auto-rename.
 
 ```bash
 export DATABASE_URL='postgresql://…'   # from App Settings; keep quotes
-npm run db:migrate                     # includes 0018_support_handoff (Hand off to Support stamp)
+npm run db:migrate                     # includes 0018_support_handoff and 0019_review_required
 npm run db:cleanup:non-dock            # dry-run against the shipped fixture
 npm run db:cleanup:non-dock -- --apply # delete active non-Dock WIP only
 ```

@@ -13,6 +13,7 @@ import {
   VisibilityBadge,
   TaskStatusBadge,
   PriorityBadge,
+  ReviewRequiredBadge,
 } from "@/components/ui";
 import { TaskComments } from "@/components/task-comments";
 import { AttachmentList, AddAttachment } from "@/components/attachments";
@@ -31,6 +32,7 @@ import { fmtDate, dueLabel, isOverdue, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { resolveTaskDescription } from "@/lib/task-description";
 import { buildPimsyLoginConfirmation, isConfirmUsersLoggedInTitle } from "@/lib/pimsy-audit-feed";
+import { showReviewRequiredBadge } from "@/lib/discovery-config-review";
 
 export const dynamic = "force-dynamic";
 
@@ -188,6 +190,7 @@ export default async function TaskDetailPage({
           <TaskStatusBadge status={task.status} />
           <PriorityBadge priority={task.priority} />
           <VisibilityBadge visibility={task.visibility} />
+          {showReviewRequiredBadge(task) ? <ReviewRequiredBadge /> : null}
           {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer action</Badge> : null}
           {task.phase ? <Badge>{task.phase.name}</Badge> : null}
         </div>

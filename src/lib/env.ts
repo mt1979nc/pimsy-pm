@@ -122,4 +122,11 @@ export const env = {
   get CRON_SECRET() {
     return optional("CRON_SECRET");
   },
+  /**
+   * Bearer token for POST /api/discovery-wizard/workbook (Power Automate
+   * delivering the wizard Excel). Falls back to PRISM_READ_API_KEY when unset.
+   */
+  get DISCOVERY_WIZARD_WEBHOOK_SECRET() {
+    return optional("DISCOVERY_WIZARD_WEBHOOK_SECRET");
+  },
 };

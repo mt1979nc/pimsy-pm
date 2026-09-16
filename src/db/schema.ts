@@ -751,6 +751,12 @@ export const tasks = pgTable(
     defaultRole: projectMemberRoleEnum("default_role"),
     overlapKey: text("overlap_key"),
     areaKey: text("area_key"),
+    /**
+     * Specialist flag: this task needs a human review (typically a Configuration
+     * row spawned from a customer Discovery file upload). Distinct from status
+     * IN_REVIEW so completing the work can flip status without losing the tag.
+     */
+    reviewRequired: boolean("review_required").notNull().default(false),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -762,6 +768,7 @@ export const tasks = pgTable(
     index("task_phase_order_idx").on(t.phaseId, t.order),
     index("task_visibility_idx").on(t.visibility),
     index("task_owner_side_idx").on(t.ownerSide, t.status),
+    index("task_review_required_idx").on(t.projectId, t.reviewRequired, t.status),
   ],
 );
 
@@ -1091,6 +1098,8 @@ export const fileAssets = pgTable(
     description: text("description"),
     mimeType: text("mime_type"),
     sizeBytes: integer("size_bytes"),
+    /** SHA-256 hex of the uploaded bytes. Null for LINKs and pre-v1.13.11 rows. */
+    contentHash: text("content_hash"),
     visibility: visibilityEnum("visibility").notNull().default("INTERNAL"),
     /** When this row was copied from a reusable library file. */
     libraryAssetId: text("library_asset_id").references(() => libraryAssets.id, {
@@ -1118,6 +1127,7 @@ export const fileAssets = pgTable(
     index("file_customer_idx").on(t.customerAccountId),
     index("file_message_idx").on(t.messageId),
     index("file_task_idx").on(t.taskId, t.visibility),
+    index("file_content_hash_idx").on(t.projectId, t.contentHash),
   ],
 );
 

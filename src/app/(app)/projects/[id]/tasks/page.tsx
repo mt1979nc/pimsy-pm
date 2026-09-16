@@ -132,6 +132,7 @@ export default async function ProjectTasksPage({
         parentTaskId: t.parentTaskId,
         depth: t.depth,
         phaseId: t.phaseId,
+        reviewRequired: t.reviewRequired,
         order: t.order,
         projectCode: project?.code,
       };
