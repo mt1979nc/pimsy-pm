@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { inArray, eq, and, asc } from "drizzle-orm";
 import { requireCustomer } from "@/lib/guard";
-import { portalPhase } from "@/lib/portal";
+import { portalPhase, portalProject } from "@/lib/portal";
 import { PortalPhaseTaskList } from "@/components/portal-task-list";
 import { db } from "@/db";
 import { fileAssets } from "@/db/schema";
@@ -25,7 +25,10 @@ export default async function PortalPhasePage({
   const { id, phaseId } = await params;
   const actor = await requireCustomer();
 
-  const phase = await portalPhase(actor, id, phaseId);
+  const [phase, project] = await Promise.all([
+    portalPhase(actor, id, phaseId),
+    portalProject(actor, id),
+  ]);
   if (!phase) notFound();
 
   const nested = orderTasksForNesting(phase.tasks);
@@ -64,6 +67,7 @@ export default async function PortalPhasePage({
   return (
     <PortalPhaseTaskList
       projectId={id}
+      projectCode={project?.code}
       phaseName={phase.name}
       phaseDescription={phase.description}
       assetsByTaskId={assetsByTaskId}

@@ -126,6 +126,10 @@ export default async function CustomerViewTaskPage({
             canDelete={false}
             uploadRequest={uploadRequest}
             staffPreview
+            wizardLaunch={{
+              title: task.title,
+              taskHref: `/projects/${id}/customer-view/tasks/${task.id}`,
+            }}
           />
         </Card>
       ) : null}

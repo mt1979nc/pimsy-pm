@@ -6,12 +6,13 @@ import { signInWithPassword } from "@/actions/auth";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Field, inputClass } from "@/components/ui";
 
-export function PasswordSignInForm() {
+export function PasswordSignInForm({ callbackUrl }: { callbackUrl?: string | null }) {
   const [state, action] = useActionState(signInWithPassword, {});
 
   return (
     <form action={action} className="space-y-3">
       <FormError error={state.error} />
+      {callbackUrl ? <input type="hidden" name="callbackUrl" value={callbackUrl} /> : null}
       <Field label="Email" htmlFor="password-email">
         <input
           id="password-email"

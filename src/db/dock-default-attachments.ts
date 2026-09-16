@@ -211,15 +211,26 @@ export function normalizeAttachmentUrl(url: string): string {
   }
 }
 
+/** Host + path only — wizard launch query params are not a different resource. */
+export function attachmentUrlIdentity(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/+$/, "") || "/";
+    return `${u.protocol}//${u.host.toLowerCase()}${path}`;
+  } catch {
+    return url.trim().replace(/\/+$/, "").toLowerCase();
+  }
+}
+
 export function fileCoversLibraryAsset(
   files: Array<{ libraryAssetId: string | null; kind: string; url: string | null }>,
   lib: { id: string; kind: string; url: string | null },
 ): boolean {
   if (files.some((f) => f.libraryAssetId === lib.id)) return true;
   if (lib.kind === "LINK" && lib.url) {
-    const want = normalizeAttachmentUrl(lib.url);
+    const want = attachmentUrlIdentity(lib.url);
     return files.some(
-      (f) => f.kind === "LINK" && f.url && normalizeAttachmentUrl(f.url) === want,
+      (f) => f.kind === "LINK" && f.url && attachmentUrlIdentity(f.url) === want,
     );
   }
   return false;
@@ -234,9 +245,9 @@ export function alreadyHasLibraryCoverage(
   if (lib && fileCoversLibraryAsset(files, lib)) return true;
   const url = def.url ?? lib?.url ?? null;
   if ((def.kind ?? lib?.kind) === "LINK" && url) {
-    const want = normalizeAttachmentUrl(url);
+    const want = attachmentUrlIdentity(url);
     return files.some(
-      (f) => f.kind === "LINK" && f.url && normalizeAttachmentUrl(f.url) === want,
+      (f) => f.kind === "LINK" && f.url && attachmentUrlIdentity(f.url) === want,
     );
   }
   return false;

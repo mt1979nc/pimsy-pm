@@ -26,6 +26,7 @@ const FORBIDDEN = [
   /from ["']@\/lib\/analytics-scope["']/,
   /from ["']@\/lib\/weekly-meeting["']/,
   /from ["']@\/lib\/project-slip["']/,
+  /from ["']@\/lib\/path-deep-link-resolve["']/,
   /from ["']postgres["']/,
   /postgres-js/,
 ];

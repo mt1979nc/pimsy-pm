@@ -115,6 +115,7 @@ export default async function PortalTaskPage({
             title={task.title}
             assets={attachments}
             taskHref={`/portal/projects/${id}/tasks/${taskId}`}
+            projectCode={project.code}
           />
         </div>
         {task.dueDate ? (
@@ -146,6 +147,11 @@ export default async function PortalTaskPage({
                   currentUserId={actor.id}
                   canManageVisibility={false}
                   uploadRequest={uploadRequest}
+                  wizardLaunch={{
+                    title: task.title,
+                    taskHref: `/portal/projects/${id}/tasks/${taskId}`,
+                    projectCode: project.code,
+                  }}
                 />
                 <AddAttachment
                   taskId={task.id}
@@ -199,6 +205,11 @@ export default async function PortalTaskPage({
                   currentUserId={actor.id}
                   canManageVisibility={false}
                   uploadRequest={uploadRequest}
+                  wizardLaunch={{
+                    title: task.title,
+                    taskHref: `/portal/projects/${id}/tasks/${taskId}`,
+                    projectCode: project.code,
+                  }}
                 />
                 <AddAttachment
                   taskId={task.id}

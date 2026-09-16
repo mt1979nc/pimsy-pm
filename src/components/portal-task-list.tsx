@@ -40,12 +40,14 @@ function childParentIds(tasks: PortalListTask[]): Set<string> {
 
 export function PortalPhaseTaskList({
   projectId,
+  projectCode,
   phaseName,
   phaseDescription,
   tasks,
   assetsByTaskId,
 }: {
   projectId: string;
+  projectCode?: string | null;
   phaseName: string;
   phaseDescription: string | null;
   tasks: PortalListTask[];
@@ -78,6 +80,7 @@ export function PortalPhaseTaskList({
             status: t.status,
             dueDate: t.dueDate,
             projectId,
+            projectCode,
             commentCount: t.commentCount,
           }}
           assets={assetsByTaskId[t.id]}

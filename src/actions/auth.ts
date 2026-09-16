@@ -20,6 +20,7 @@ import { createDatabaseSession } from "@/lib/session";
 import { sendEmail, passwordResetEmail } from "@/lib/email";
 import { writePasswordResetLink } from "@/lib/reset-link";
 import { audit } from "@/lib/audit";
+import { safeAppPath } from "@/lib/path-deep-links";
 
 export type ActionState = { error?: string; ok?: boolean };
 
@@ -73,7 +74,8 @@ export async function signInWithPassword(
   await db.update(users).set({ lastSeenAt: new Date() }).where(eq(users.id, user.id));
 
   if (user.mustChangePassword) redirect("/change-password");
-  redirect(landingPathFor(user.role));
+  const next = safeAppPath(formData.get("callbackUrl")?.toString());
+  redirect(next ?? landingPathFor(user.role));
 }
 
 // ---------------------------------------------------------------------------

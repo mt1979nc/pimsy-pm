@@ -30,6 +30,7 @@ export type TaskRowData = {
   completedAt: Date | string | null;
   assignee?: { id: string; name: string | null; image?: string | null } | null;
   project?: { id: string; name: string; code: string } | null;
+  projectCode?: string | null;
   notApplicable?: boolean;
   workTrack?: "EHR" | "RCM" | "SHARED";
   parentTaskId?: string | null;
@@ -366,6 +367,7 @@ export function TaskRow({
           title={task.title}
           assets={assets}
           taskHref={href}
+          projectCode={task.projectCode ?? task.project?.code}
           compact
           className="mt-0.5"
           onUpload={() => setUploadOpen((v) => !v)}

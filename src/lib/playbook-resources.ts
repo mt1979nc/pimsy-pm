@@ -5,15 +5,15 @@
  * shows the PWMI blue CTA even before a resync clones library attachments.
  * Form hrefs use a staff-pasted library LINK when present, else a cloned
  * playbook FILE that actually has a blob. Missing storage is never a download
- * CTA (no 404). Discovery Wizard URL is the known calm-mud SWA — never a
- * guessed Storylane address.
+ * CTA (no 404). Discovery Wizard URL is the known calm-mud SWA stamped with
+ * PATH project/task/`/go` return context — never a guessed Storylane address.
  */
 import {
   DISCOVERY_WIZARD_URL,
   libraryDefsForTaskTitle,
-  normalizeAttachmentUrl,
 } from "@/db/dock-default-attachments";
 import { assetHasDownloadableBlob } from "@/lib/library-meta";
+import { isDiscoveryWizardUrl, wizardLaunchFromTaskHref } from "@/lib/path-deep-links";
 import {
   DOCK_BILLING_QUESTIONNAIRE_LABEL,
   DOCK_CLINICAL_FORM_LABEL,
@@ -42,15 +42,7 @@ export function isDiscoveryWizardResource(asset: {
   name?: string | null;
   url?: string | null;
 }): boolean {
-  if (asset.url) {
-    try {
-      if (normalizeAttachmentUrl(asset.url) === normalizeAttachmentUrl(DISCOVERY_WIZARD_URL)) {
-        return true;
-      }
-    } catch {
-      /* ignore */
-    }
-  }
+  if (asset.url && isDiscoveryWizardUrl(asset.url)) return true;
   return /discovery wizard/i.test(asset.name ?? "");
 }
 
@@ -162,6 +154,8 @@ export function resolveTaskActionButtons(opts: {
   title: string;
   assets?: TaskActionAsset[];
   taskHref?: string | null;
+  projectCode?: string | null;
+  appOrigin?: string | null;
 }): ResolvedTaskActionButton[] {
   const actions = dockTaskActionsForTitle(opts.title);
   const taskHref = opts.taskHref ?? "";
@@ -169,7 +163,13 @@ export function resolveTaskActionButtons(opts: {
 
   for (const action of actions) {
     if (action.kind === "link") {
-      const href = action.url || wizardHref(opts.assets);
+      const raw = action.url || wizardHref(opts.assets);
+      const href = wizardLaunchFromTaskHref(raw, {
+        title: opts.title,
+        taskHref: opts.taskHref,
+        projectCode: opts.projectCode,
+        appOrigin: opts.appOrigin,
+      });
       out.push({
         id: action.id,
         kind: "link",
