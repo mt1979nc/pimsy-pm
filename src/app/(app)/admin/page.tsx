@@ -25,7 +25,7 @@ import {
   LinkButton,
 } from "@/components/ui";
 import { siteAcronym } from "@/components/project-row";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 import { fmtRelative, daysUntil, addDays } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 

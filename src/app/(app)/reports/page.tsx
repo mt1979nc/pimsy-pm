@@ -23,7 +23,7 @@ import {
   LinkButton,
 } from "@/components/ui";
 import { fmtDate, daysUntil } from "@/lib/dates";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 import { cn } from "@/lib/cn";
 
 export const dynamic = "force-dynamic";

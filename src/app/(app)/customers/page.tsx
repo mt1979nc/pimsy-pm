@@ -12,7 +12,7 @@ import {
   Badge,
 } from "@/components/ui";
 import { fmtDate } from "@/lib/dates";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Customers" };

@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.5";
+export const APP_VERSION = "1.13.6";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.13.6",
+    date: "2026-09-16",
+    summary:
+      "Hotfix: Azure production build no longer fails webpack by bundling Postgres (node:fs / net / tls) into the customer portal task list.",
+    highlights: [
+      "v1.13.5 portal task list imported pctComplete from the server rollup module, which pulled the Postgres client into the browser bundle. Deploy skipped; live PATH stayed on the previous image.",
+      "Percentage helper lives in a client-safe module. The DB client and project-counter refresh stay server-only.",
+      "No WIP resync. Task list UX from v1.13.5 is unchanged.",
+    ],
+  },
   {
     version: "1.13.5",
     date: "2026-09-15",

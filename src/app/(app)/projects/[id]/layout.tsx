@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, NotFoundError, ForbiddenError } from "@/lib/authz";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate, daysUntil } from "@/lib/dates";
 import { SubNavLink } from "@/components/nav-link";
 import { HealthBadge, ProjectStatusBadge, ProgressBar, Avatar, Badge } from "@/components/ui";

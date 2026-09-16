@@ -5,7 +5,7 @@ import { listInboxThreads, isUnread } from "@/lib/threads";
 import { Card, CardHeader, EmptyState, Badge, ProgressBar, Avatar } from "@/components/ui";
 import { PortalTaskRow } from "./portal-task-row";
 import { PortalMessageBox } from "./portal-message-box";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate, daysUntil, isOverdue, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { resolveTaskDescription } from "@/lib/task-description";

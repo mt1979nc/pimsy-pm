@@ -1,6 +1,10 @@
+import "server-only";
+
 import { and, eq, count, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { projects, tasks } from "@/db/schema";
+
+export { pctComplete } from "@/lib/pct-complete";
 
 function countable(projectId: string) {
   return and(
@@ -61,8 +65,3 @@ export async function refreshProjectCounters(projectId: string) {
     .where(eq(projects.id, projectId));
 }
 
-/** Percentage complete, safe against divide-by-zero. */
-export function pctComplete(done: number, total: number) {
-  if (total <= 0) return 0;
-  return Math.round((done / total) * 100);
-}

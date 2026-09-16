@@ -6,7 +6,7 @@ import {
   ProgressBar,
   Avatar,
 } from "@/components/ui";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate, daysUntil } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 

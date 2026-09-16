@@ -5,7 +5,7 @@ import { Card, CardHeader, EmptyState, ProgressBar } from "@/components/ui";
 import { TaskListToolbar } from "@/components/task-list-toolbar";
 import { CollapsibleCompleted } from "@/components/collapsible-completed";
 import { PortalTaskRow } from "@/app/portal/portal-task-row";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 import {
   excludeCollapsedDescendants,
   filterNestedTasks,

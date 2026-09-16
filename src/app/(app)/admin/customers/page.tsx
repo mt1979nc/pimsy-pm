@@ -11,7 +11,7 @@ import {
   ProgressBar,
   LinkButton,
 } from "@/components/ui";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";

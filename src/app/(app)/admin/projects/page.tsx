@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requirePortfolioAccess } from "@/lib/guard";
 import { listProjects } from "@/lib/queries";
 import { Card, EmptyState, Badge, HealthBadge, ProjectStatusBadge, ProgressBar, Avatar } from "@/components/ui";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate, daysUntil } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 

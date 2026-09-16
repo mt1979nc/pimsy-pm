@@ -21,7 +21,7 @@ import {
 } from "@/components/ui";
 import { attachmentHref } from "@/lib/attachments";
 import { fmtShort, fmtRelative, fmtDate, daysUntil } from "@/lib/dates";
-import { pctComplete } from "@/lib/rollup";
+import { pctComplete } from "@/lib/pct-complete";
 import { cn } from "@/lib/cn";
 import { orderTasksForNesting } from "@/lib/task-tree";
 
