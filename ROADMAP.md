@@ -32,6 +32,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **PIMSY EHR login confirmation on the training task (v1.14.3)** | **This branch** | Staff “Confirm users have logged in” task details show PATH portal contacts plus live PIMSY EHR who/duration when an audit feed is configured — never invented PHI or sample sessions. |
 | **kickoff extras, contact cards, and Project updates purpose (v1.14.3)** | **This branch** | About/kickoff shows kickoff date, go-live, specialist, Zoom booking, and notes already stored on the project (no HubSpot on the customer tab); contact cards share one layout; Project updates say when to use them. |
 | **thread open/resolved, unread, and mark resolved (v1.14.3)** | **This branch** | Threads organize open vs resolved, unread follows the last-read cursor reliably, and staff or portal can mark a topic resolved. |
+| **thread open/resolved, unread, and mark resolved (v1.14.3)** | **This branch** | Threads organize open vs resolved, unread follows the last-read cursor reliably, and staff or portal can mark a topic resolved. |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |
