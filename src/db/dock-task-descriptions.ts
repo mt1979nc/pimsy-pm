@@ -78,7 +78,11 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ],
   [
     'Expose the "Configuration" tab',
-    "When Discovery is far enough along, expose the Configuration area for the customer. Do not expose it empty.",
+    "When Discovery is far enough along, use the eyelid on Site Configuration (or mark this task done) to expose that tab. Do not expose it empty.",
+  ],
+  [
+    "Accessing Pimsy",
+    "Bookmark / CRM link, desktop application, practice acronym, and security key. Hidden from the customer until staff expose this tab.",
   ],
   ["Organization Setup", PARENT],
   [
@@ -103,7 +107,7 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ["Supervision Setup", "Configure supervision relationships from the Discovery output (who supervises whom)."],
   [
     'Expose "Access" tab',
-    "Expose Access / Accessing PIMSY for the customer when logins, desktop app, and security key are ready — not before.",
+    "Use the eyelid on Accessing Pimsy (or mark this task done) when logins, desktop app, and security key are ready — not before.",
   ],
   [
     "Add Zendesk Users to Org",

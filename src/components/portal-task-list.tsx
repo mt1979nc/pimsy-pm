@@ -14,6 +14,7 @@ import {
 } from "@/lib/task-list-filter";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
 import { cn } from "@/lib/cn";
+import { PortalAreaIntro } from "@/components/portal-area-intro";
 
 export type PortalListTask = {
   id: string;
@@ -118,6 +119,12 @@ export function PortalPhaseTaskList({
             </span>
           ) : undefined
         }
+      />
+      <PortalAreaIntro
+        phaseName={phaseName}
+        description={null}
+        tasks={tasks.map((t) => ({ id: t.id, title: t.title }))}
+        taskHref={(taskId) => `/portal/projects/${projectId}/tasks/${taskId}`}
       />
       {tasks.length > 0 ? (
         <div className="space-y-3 px-5 pt-4">

@@ -13,7 +13,7 @@ import {
   fileAssets,
   taskComments,
 } from "@/db/schema";
-import { portalFacingTaskSql } from "./task-visibility";
+import { isCustomerVisiblePhase, portalFacingTaskSql } from "./task-visibility";
 
 export async function previewPortalProject(projectId: string) {
   return (
@@ -97,10 +97,65 @@ export async function previewPortalFiles(projectId: string) {
   });
 }
 
+export async function previewPortalRecordings(projectId: string) {
+  return db.query.fileAssets.findMany({
+    where: and(
+      eq(fileAssets.projectId, projectId),
+      eq(fileAssets.visibility, "SHARED"),
+      eq(fileAssets.isRecording, true),
+    ),
+    orderBy: [desc(fileAssets.createdAt)],
+    limit: 100,
+  });
+}
+
 export async function previewPortalPhaseTabs(projectId: string) {
   return db.query.phases.findMany({
-    where: and(eq(phases.projectId, projectId), eq(phases.visibility, "SHARED")),
+    where: and(
+      eq(phases.projectId, projectId),
+      eq(phases.visibility, "SHARED"),
+      eq(phases.notApplicable, false),
+    ),
     orderBy: [asc(phases.order)],
     columns: { id: true, name: true, order: true },
   });
+}
+
+export async function previewPortalPhase(projectId: string, phaseId: string) {
+  return (
+    (await db.query.phases.findFirst({
+      where: and(
+        eq(phases.id, phaseId),
+        eq(phases.projectId, projectId),
+        eq(phases.visibility, "SHARED"),
+        eq(phases.notApplicable, false),
+      ),
+      with: {
+        tasks: {
+          where: portalFacingTaskSql(),
+          orderBy: [asc(tasks.order)],
+          with: {
+            assignee: { columns: { id: true, name: true, image: true, title: true } },
+            comments: {
+              where: and(eq(taskComments.visibility, "SHARED"), isNull(taskComments.deletedAt)),
+              columns: { id: true },
+            },
+          },
+        },
+      },
+    })) ?? null
+  );
+}
+
+export async function previewPortalTask(projectId: string, taskId: string) {
+  const task = await db.query.tasks.findFirst({
+    where: and(eq(tasks.id, taskId), eq(tasks.projectId, projectId), portalFacingTaskSql()),
+    with: {
+      assignee: { columns: { id: true, name: true, image: true, title: true } },
+      phase: { columns: { id: true, name: true, visibility: true, notApplicable: true } },
+    },
+  });
+  if (!task) return null;
+  if (!isCustomerVisiblePhase(task.phase)) return null;
+  return task;
 }

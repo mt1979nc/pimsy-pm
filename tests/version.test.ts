@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.13.7");
+    expect(APP_VERSION).toBe("1.13.8");
     expect(APP_VERSION).toMatch(/^1\.13\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,20 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.13.8 template expose/hide and portal task links", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.13.8");
+    expect(note?.summary).toMatch(/expose\/hide|eyelid|Accessing Pimsy/i);
+    expect(note?.summary).toMatch(/portal|Customer view/i);
+    expect(note?.highlights?.some((h) => /SHARED|INTERNAL|eyelid/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Expose tab|Hide tab/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Discovery/i.test(h) && /link/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /0015_template_locked/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /db:seed -- --templates-only/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/storylane\.com/i.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.13.7")).toBeTruthy();
   });
 
   it("documents v1.13.7 file library Link/Form hyperlinks", () => {

@@ -60,7 +60,8 @@ export default async function PortalHome() {
         <Link href="/portal/learn" className="block px-5 py-4 hover:bg-surface-2">
           <div className="text-[15px] font-semibold text-ink">Learning Center</div>
           <p className="mt-0.5 text-[13px] text-ink-2">
-            Guides and worksheets grouped by Discovery, Training, Billing, and Go-live — not a flat file list.
+            Guides and worksheets. Discovery action items are on your project — open the Discovery
+            area from a workspace to work the real tasks.
           </p>
         </Link>
       </Card>
@@ -154,7 +155,16 @@ export default async function PortalHome() {
                 {openGroups.map((g) => (
                   <div key={g.label + g.items[0]?.id} className="border-b border-border last:border-b-0">
                     <div className="bg-surface-2/60 px-4 py-2 text-[12.5px] font-semibold text-ink">
-                      {g.label}
+                      {g.items[0]?.phase?.id && g.items[0]?.projectId ? (
+                        <Link
+                          href={`/portal/projects/${g.items[0].projectId}/phases/${g.items[0].phase.id}`}
+                          className="hover:text-brand hover:underline"
+                        >
+                          {g.label}
+                        </Link>
+                      ) : (
+                        g.label
+                      )}
                       {projects.length > 1 && g.items[0]?.project?.name ? (
                         <span className="ml-2 font-normal text-ink-3">· {g.items[0].project.name}</span>
                       ) : null}
@@ -199,7 +209,16 @@ export default async function PortalHome() {
                 {doneGroups.map((g) => (
                   <div key={"done-" + g.label + g.items[0]?.id} className="border-b border-border last:border-b-0">
                     <div className="bg-surface-2/60 px-4 py-2 text-[12.5px] font-semibold text-ink">
-                      {g.label}
+                      {g.items[0]?.phase?.id && g.items[0]?.projectId ? (
+                        <Link
+                          href={`/portal/projects/${g.items[0].projectId}/phases/${g.items[0].phase.id}`}
+                          className="hover:text-brand hover:underline"
+                        >
+                          {g.label}
+                        </Link>
+                      ) : (
+                        g.label
+                      )}
                     </div>
                     <div className="divide-y divide-border">
                       {g.items.map((t) => (

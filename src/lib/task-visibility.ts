@@ -14,6 +14,9 @@
 
 import { and, eq, ne, or, isNull, type SQL } from "drizzle-orm";
 import { tasks } from "@/db/schema";
+import { isCustomerVisiblePhase } from "@/lib/dock-phase-visibility";
+
+export { isCustomerVisiblePhase };
 
 export function isSpecialistSubtask(task: {
   parentTaskId?: string | null;

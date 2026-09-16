@@ -18,7 +18,13 @@
  * either CUSTOMER-owned action items (things the practice must do) or
  * INTERNAL-owned but SHARED tasks (things we do that they should be able to
  * watch, e.g. scheduling a training session).
+ *
+ * Phase `visibility` is the Dock eyelid: Kickoff + Discovery start SHARED;
+ * Configuration / Accessing Pimsy / Training and later tabs start INTERNAL
+ * until staff expose them. See `dockDefaultPhaseVisibility`.
  */
+
+import { dockDefaultPhaseVisibility } from "@/lib/dock-phase-visibility";
 
 export type SeedTask = {
   title: string;
@@ -92,7 +98,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "Kickoff",
     description: "Account setup, kickoff call, and confirming the data import path.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Kickoff"),
     offsetDays: 0,
     durationDays: 7,
     tasks: [
@@ -116,7 +122,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "Discovery",
     description: "Everything we need from the practice before configuration can start.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Discovery"),
     offsetDays: 5,
     durationDays: 14,
     tasks: [
@@ -134,9 +140,23 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
     ],
   },
   {
+    name: "Accessing Pimsy",
+    description:
+      "Bookmark / CRM link, desktop application, practice acronym, and security key. Hidden until logins are ready — staff expose this tab (Dock eyelid).",
+    visibility: dockDefaultPhaseVisibility("Accessing Pimsy"),
+    offsetDays: 14,
+    durationDays: 7,
+    tasks: [
+      S("Accessing Pimsy", {
+        description:
+          "Bookmark the live site, install the desktop app, and keep the practice acronym and security key handy. Your specialist adds the details here when accounts are ready.",
+      }),
+    ],
+  },
+  {
     name: "Site Configuration",
     description: "Org, users, billing rules and forms built out in PIMSY.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Site Configuration"),
     offsetDays: 14,
     durationDays: 28,
     tasks: [
@@ -183,7 +203,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "Demographic Import",
     description: "Client data migrated from the prior system, validated with the practice.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Demographic Import"),
     offsetDays: 21,
     durationDays: 28,
     tasks: [
@@ -204,7 +224,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "Core (Train the Trainer)",
     description: "The five core training sessions for the practice's trainers.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Core (Train the Trainer)"),
     offsetDays: 42,
     durationDays: 21,
     tasks: [
@@ -240,7 +260,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "ePrescribe",
     description: "DrFirst site account, prescriber ID proofing, EPCS and PDMP.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("ePrescribe"),
     offsetDays: 35,
     durationDays: 30,
     tasks: [
@@ -270,7 +290,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "Inpatient / MAT",
     description: "Bed management, eMAR, inventory, messaging, eFax, labs and EVV.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Inpatient / MAT"),
     offsetDays: 49,
     durationDays: 21,
     tasks: [
@@ -294,7 +314,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "End-User Training Prep",
     description: "Getting the practice ready to train its own staff.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("End-User Training Prep"),
     offsetDays: 63,
     durationDays: 10,
     tasks: [
@@ -305,7 +325,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "Billing",
     description: "ClaimMD enrollment plus the billing and payroll training track.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Billing"),
     offsetDays: 56,
     durationDays: 28,
     tasks: [
@@ -324,7 +344,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "Go-Live Checklist",
     description: "The gate. Every line must be true before the practice goes live.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Go-Live Checklist"),
     offsetDays: 82,
     durationDays: 7,
     tasks: [
@@ -348,7 +368,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "Post Go-Live (Tier 2)",
     description: "Second-tier billing, payroll and payment training after go-live.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Post Go-Live (Tier 2)"),
     offsetDays: 90,
     durationDays: 30,
     tasks: [
@@ -365,7 +385,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "Post Go-Live Survey",
     description: "Closing the loop on the engagement.",
-    visibility: "SHARED",
+    visibility: dockDefaultPhaseVisibility("Post Go-Live Survey"),
     offsetDays: 97,
     durationDays: 14,
     tasks: [C("Please complete this post go-live survey")],
@@ -416,7 +436,7 @@ export const RCM_TEMPLATE = {
   phases: [
     {
       name: "RCM Kickoff",
-      visibility: "SHARED" as const,
+      visibility: dockDefaultPhaseVisibility("RCM Kickoff"),
       offsetDays: 0,
       durationDays: 7,
       tasks: [
@@ -427,7 +447,7 @@ export const RCM_TEMPLATE = {
     },
     {
       name: "Payer & Enrollment",
-      visibility: "SHARED" as const,
+      visibility: dockDefaultPhaseVisibility("Payer & Enrollment"),
       offsetDays: 7,
       durationDays: 21,
       tasks: [
@@ -439,7 +459,7 @@ export const RCM_TEMPLATE = {
     },
     {
       name: "Workflow & Handoff",
-      visibility: "SHARED" as const,
+      visibility: dockDefaultPhaseVisibility("Workflow & Handoff"),
       offsetDays: 28,
       durationDays: 17,
       tasks: [

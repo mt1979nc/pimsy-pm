@@ -376,6 +376,8 @@ export const projectTemplates = pgTable(
     /** Stable key for the four playbook paths, e.g. ehr / ehr_rcm / rcm_legacy / rcm_prism. */
     code: text("code"),
     playbookPath: playbookPathEnum("playbook_path"),
+    /** Canonical Dock path playbooks: refuse in-app structural edits until unlocked. */
+    isLocked: boolean("is_locked").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

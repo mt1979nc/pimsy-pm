@@ -18,6 +18,8 @@ import {
   bulkSetTemplateArea,
 } from "@/actions/templates";
 import { DuplicateTemplateButton } from "../duplicate-template-button";
+import { TemplateLockButton } from "../template-lock-button";
+import { TEMPLATE_LOCKED_MESSAGE } from "@/lib/template-lock";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Badge, Button, Card, CardHeader, Field, LinkButton, VisibilityBadge, inputClass } from "@/components/ui";
 import { STAFFING_ROLES, STAFFING_ROLE_LABELS, staffingRoleLabel } from "@/lib/staffing";
@@ -135,6 +137,7 @@ export function TemplateEditor({
     durationDays: number;
     isActive: boolean;
     playbookPath: PlaybookPath | null;
+    isLocked: boolean;
     phases: EditorPhase[];
   };
   library: LibraryOption[];
@@ -159,6 +162,7 @@ export function TemplateEditor({
   const areaRows = collectTemplateAreaRows(template.phases);
 
   function onDropPhase(targetId: string) {
+    if (template.isLocked) return;
     if (!dragPhase || dragPhase === targetId) return;
     const next = nextPhaseOrder.filter((id) => id !== dragPhase);
     const idx = next.indexOf(targetId);
@@ -178,11 +182,23 @@ export function TemplateEditor({
 
   return (
     <div className="space-y-5">
+      {template.isLocked ? (
+        <Card className="border-amber/40 bg-amber-soft">
+          <p className="px-5 py-4 text-[13px] leading-relaxed text-ink">
+            <span className="font-semibold">Locked Dock playbook.</span> {TEMPLATE_LOCKED_MESSAGE}
+          </p>
+        </Card>
+      ) : null}
       <Card>
         <CardHeader
           title="Playbook"
           subtitle="Used when creating a new workspace. Rename here. Duplicate makes a custom copy so the four site-creation paths stay unique. Changes here do not rewrite live projects."
-          action={<DuplicateTemplateButton templateId={template.id} name={template.name} />}
+          action={
+            <span className="flex flex-wrap items-center gap-3">
+              <TemplateLockButton templateId={template.id} locked={template.isLocked} />
+              <DuplicateTemplateButton templateId={template.id} name={template.name} />
+            </span>
+          }
         />
         <form action={metaAction} className="space-y-4 p-5">
           <input type="hidden" name="templateId" value={template.id} />

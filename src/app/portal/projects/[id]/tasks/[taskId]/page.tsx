@@ -42,11 +42,12 @@ export default async function PortalTaskPage({
     ),
     with: {
       assignee: { columns: { id: true, name: true, email: true, image: true, role: true, title: true } },
-      phase: { columns: { id: true, name: true } },
+      phase: { columns: { id: true, name: true, visibility: true, notApplicable: true } },
     },
   });
   if (!task) notFound();
   if (isSpecialistSubtask(task)) notFound();
+  if (task.phase && (task.phase.visibility !== "SHARED" || task.phase.notApplicable)) notFound();
 
   const [comments, attachments, checklist] = await Promise.all([
     db.query.taskComments.findMany({

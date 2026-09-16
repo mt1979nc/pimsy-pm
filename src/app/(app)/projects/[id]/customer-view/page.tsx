@@ -8,7 +8,6 @@ import {
   previewPortalMilestones,
   previewPortalStatusUpdates,
   previewPortalFiles,
-  previewPortalPhaseTabs,
 } from "@/lib/portal-preview";
 import {
   Card,
@@ -45,12 +44,11 @@ export default async function CustomerViewPreviewPage({
   const project = await previewPortalProject(id);
   if (!project) notFound();
 
-  const [{ phases, looseTasks }, milestones, updates, files, phaseTabs] = await Promise.all([
+  const [{ phases, looseTasks }, milestones, updates, files] = await Promise.all([
     previewPortalPlan(id),
     previewPortalMilestones(id),
     previewPortalStatusUpdates(id),
     previewPortalFiles(id),
-    previewPortalPhaseTabs(id),
   ]);
 
   const areaGroups = phases
@@ -127,14 +125,9 @@ export default async function CustomerViewPreviewPage({
             <ProgressBar value={project.taskCountDone} total={project.taskCountTotal} className="mt-1.5" />
           </div>
         </div>
-        {phaseTabs.length > 0 ? (
-          <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
-            <Badge tone="brand">Overview</Badge>
-            {phaseTabs.map((p) => (
-              <Badge key={p.id}>{p.name}</Badge>
-            ))}
-          </div>
-        ) : null}
+        <p className="mt-3 border-t border-border pt-3 text-[12.5px] text-ink-2">
+          Use Areas on the left to open the same tabs the customer can see.
+        </p>
       </div>
 
       {project.portalWelcomeMessage ? (
@@ -196,7 +189,9 @@ export default async function CustomerViewPreviewPage({
             {areaGroups.map(({ phase, tasks: phaseTasks }) => (
               <div key={phase.id} className="px-4 py-3">
                 <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
-                  {phase.name}
+                  <Link href={`/projects/${id}/customer-view/phases/${phase.id}`} className="hover:text-brand">
+                    {phase.name}
+                  </Link>
                 </div>
                 <ul className="space-y-2">
                   {orderTasksForNesting(phaseTasks).map((t) => (
@@ -217,9 +212,15 @@ export default async function CustomerViewPreviewPage({
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className={cn(t.status === "DONE" && "text-ink-3 line-through")}>
+                          <Link
+                            href={`/projects/${id}/customer-view/tasks/${t.id}`}
+                            className={cn(
+                              "hover:text-brand hover:underline",
+                              t.status === "DONE" && "text-ink-3 line-through",
+                            )}
+                          >
                             {t.title}
-                          </span>
+                          </Link>
                           <span className="text-[11.5px] text-ink-3">
                             {t.status === "DONE"
                               ? "Complete"
@@ -262,9 +263,15 @@ export default async function CustomerViewPreviewPage({
                           t.status === "DONE" ? "bg-green" : "bg-brand",
                         )}
                       />
-                      <span className={cn(t.status === "DONE" && "text-ink-3 line-through")}>
+                      <Link
+                        href={`/projects/${id}/customer-view/tasks/${t.id}`}
+                        className={cn(
+                          "hover:text-brand hover:underline",
+                          t.status === "DONE" && "text-ink-3 line-through",
+                        )}
+                      >
                         {t.title}
-                      </span>
+                      </Link>
                       {t.assignee?.name ? (
                         <span className="ml-auto text-[12px] text-ink-3">{t.assignee.name}</span>
                       ) : null}

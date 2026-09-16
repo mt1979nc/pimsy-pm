@@ -198,7 +198,7 @@ delete. Do not auto-rename.
 
 ```bash
 export DATABASE_URL='postgresql://…'   # from App Settings; keep quotes
-npm run db:migrate                     # includes 0012_dock_parity
+npm run db:migrate                     # includes 0015_template_locked (eyelid defaults + lock)
 npm run db:cleanup:non-dock            # dry-run against the shipped fixture
 npm run db:cleanup:non-dock -- --apply # delete active non-Dock WIP only
 ```

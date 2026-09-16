@@ -64,6 +64,7 @@ export async function cloneProjectTemplate(opts: {
         durationDays: source.durationDays,
         code,
         playbookPath: null,
+        isLocked: false,
       })
       .returning({ id: projectTemplates.id });
 

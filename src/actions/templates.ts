@@ -20,6 +20,7 @@ import { ASSIGNABLE_PROJECT_ROLES } from "@/lib/staffing";
 import { normalizeAreaKey } from "@/lib/playbook-meta";
 import { attachLibraryToTemplateTask as attachLibraryItem } from "@/lib/library";
 import { cloneProjectTemplate } from "@/lib/template-clone";
+import { TEMPLATE_LOCKED_MESSAGE } from "@/lib/template-lock";
 import type { ActionState } from "./messages";
 
 async function requireTemplateAdmin() {
@@ -41,6 +42,46 @@ function parseAreaKey(formData: FormData): string | null {
 function revalidateTemplate(id: string) {
   revalidatePath("/templates");
   revalidatePath(`/templates/${id}`);
+}
+
+async function templateLockState(templateId: string) {
+  const row = await db.query.projectTemplates.findFirst({
+    where: eq(projectTemplates.id, templateId),
+    columns: { id: true, isLocked: true, name: true },
+  });
+  return row ?? null;
+}
+
+async function refuseIfLocked(templateId: string): Promise<ActionState | null> {
+  const row = await templateLockState(templateId);
+  if (!row) return { error: "Template not found." };
+  if (row.isLocked) return { error: TEMPLATE_LOCKED_MESSAGE };
+  return null;
+}
+
+async function assertUnlocked(templateId: string) {
+  const row = await templateLockState(templateId);
+  if (!row) throw new NotFoundError("Template not found.");
+  if (row.isLocked) throw new ForbiddenError(TEMPLATE_LOCKED_MESSAGE);
+}
+
+export async function setTemplateLocked(templateId: string, locked: boolean) {
+  const actor = await requireTemplateAdmin();
+  const row = await templateLockState(templateId);
+  if (!row) throw new NotFoundError("Template not found.");
+  if (row.isLocked === locked) return;
+  await db
+    .update(projectTemplates)
+    .set({ isLocked: locked, updatedAt: new Date() })
+    .where(eq(projectTemplates.id, templateId));
+  await audit({
+    actor,
+    action: locked ? "template.locked" : "template.unlocked",
+    entityType: "template",
+    entityId: templateId,
+    summary: `${row.name}: ${locked ? "locked" : "unlocked"}`,
+  });
+  revalidateTemplate(templateId);
 }
 
 export async function updateTemplateMeta(
@@ -94,6 +135,8 @@ export async function createTemplatePhase(
   const templateId = String(formData.get("templateId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   if (!templateId || !name) return { error: "Phase needs a name." };
+  const locked = await refuseIfLocked(templateId);
+  if (locked) return locked;
 
   const existing = await db.query.templatePhases.findMany({
     where: eq(templatePhases.templateId, templateId),
@@ -132,6 +175,8 @@ export async function updateTemplatePhase(
     columns: { id: true, templateId: true },
   });
   if (!phase) return { error: "Phase not found." };
+  const locked = await refuseIfLocked(phase.templateId);
+  if (locked) return locked;
 
   await db
     .update(templatePhases)
@@ -158,6 +203,7 @@ export async function deleteTemplatePhase(phaseId: string) {
     columns: { id: true, templateId: true, name: true },
   });
   if (!phase) throw new NotFoundError("Phase not found.");
+  await assertUnlocked(phase.templateId);
   await db.delete(templatePhases).where(eq(templatePhases.id, phaseId));
   await audit({
     actor,
@@ -172,6 +218,7 @@ export async function deleteTemplatePhase(phaseId: string) {
 
 export async function reorderTemplatePhases(templateId: string, orderedIds: string[]) {
   await requireTemplateAdmin();
+  await assertUnlocked(templateId);
   const existing = await db.query.templatePhases.findMany({
     where: eq(templatePhases.templateId, templateId),
     columns: { id: true },
@@ -202,6 +249,8 @@ export async function createTemplateTask(
     columns: { id: true, templateId: true },
   });
   if (!phase) return { error: "Phase not found." };
+  const locked = await refuseIfLocked(phase.templateId);
+  if (locked) return locked;
 
   const existing = await db.query.templateTasks.findMany({
     where: eq(templateTasks.phaseId, phaseId),
@@ -248,6 +297,8 @@ export async function updateTemplateTask(
     with: { phase: { columns: { templateId: true } } },
   });
   if (!task) return { error: "Task not found." };
+  const locked = await refuseIfLocked(task.phase.templateId);
+  if (locked) return locked;
 
   const ownerSide = formData.get("ownerSide") === "CUSTOMER" ? "CUSTOMER" : "INTERNAL";
   const roleRaw = formData.get("defaultRole")?.toString() || "";
@@ -293,6 +344,7 @@ export async function deleteTemplateTask(taskId: string) {
     with: { phase: { columns: { templateId: true } } },
   });
   if (!task) throw new NotFoundError("Task not found.");
+  await assertUnlocked(task.phase.templateId);
   await db.delete(templateTasks).where(eq(templateTasks.id, taskId));
   await audit({
     actor,
@@ -312,6 +364,7 @@ export async function reorderTemplateTasks(phaseId: string, orderedIds: string[]
     columns: { id: true, templateId: true },
   });
   if (!phase) throw new NotFoundError("Phase not found.");
+  await assertUnlocked(phase.templateId);
 
   const existing = await db.query.templateTasks.findMany({
     where: eq(templateTasks.phaseId, phaseId),
@@ -334,6 +387,7 @@ export async function moveTemplateTask(taskId: string, toPhaseId: string, before
     with: { phase: { columns: { templateId: true } } },
   });
   if (!task) throw new NotFoundError("Task not found.");
+  await assertUnlocked(task.phase.templateId);
   const dest = await db.query.templatePhases.findFirst({
     where: and(eq(templatePhases.id, toPhaseId), eq(templatePhases.templateId, task.phase.templateId)),
     columns: { id: true, templateId: true },
@@ -393,6 +447,8 @@ export async function addTemplateTaskChecklistItem(
     with: { phase: { columns: { templateId: true } } },
   });
   if (!task) return { error: "Task not found." };
+  const locked = await refuseIfLocked(task.phase.templateId);
+  if (locked) return locked;
 
   const existing = await db.query.templateTaskChecklistItems.findMany({
     where: eq(templateTaskChecklistItems.templateTaskId, taskId),
@@ -418,6 +474,7 @@ export async function removeTemplateTaskChecklistItem(itemId: string) {
     with: { templateTask: { with: { phase: { columns: { templateId: true } } } } },
   });
   if (!item) throw new NotFoundError("Checklist item not found.");
+  await assertUnlocked(item.templateTask.phase.templateId);
   await db.delete(templateTaskChecklistItems).where(eq(templateTaskChecklistItems.id, itemId));
   revalidateTemplate(item.templateTask.phase.templateId);
 }
@@ -436,6 +493,8 @@ export async function attachLibraryToTemplateTask(
     with: { phase: { columns: { templateId: true } } },
   });
   if (!task) return { error: "Task not found." };
+  const locked = await refuseIfLocked(task.phase.templateId);
+  if (locked) return locked;
   const result = await attachLibraryItem(db, {
     templateTaskId: taskId,
     libraryAssetId,
@@ -452,6 +511,7 @@ export async function detachLibraryFromTemplateTask(attachmentId: string) {
     with: { templateTask: { with: { phase: { columns: { templateId: true } } } } },
   });
   if (!row) throw new NotFoundError("Attachment not found.");
+  await assertUnlocked(row.templateTask.phase.templateId);
   await db.delete(templateTaskAttachments).where(eq(templateTaskAttachments.id, attachmentId));
   revalidateTemplate(row.templateTask.phase.templateId);
 }
@@ -465,6 +525,8 @@ export async function bulkSetTemplateArea(
   const areaKey = normalizeAreaKey(String(formData.get("areaKey") ?? ""));
   const mode = String(formData.get("mode") ?? "");
   if (!templateId || !areaKey) return { error: "Pick an area." };
+  const locked = await refuseIfLocked(templateId);
+  if (locked) return locked;
   if (mode !== "mark-optional" && mode !== "clear-optional") {
     return { error: "Unknown area action." };
   }
