@@ -38,7 +38,7 @@ export const TRAINING_STORYLANE_DESCRIPTION =
   "Storylane walkthrough: attach this session’s Storylane link as a LINK on the task (Links & files). Use the URL your specialist shares for this cohort — do not guess or paste a placeholder Storylane address.";
 
 export const TRAINING_SESSION_DESCRIPTION =
-  "Areas to cover in this session. Check each item off as you train it. Visible to the practice on this shared task.";
+  "Areas to cover in this session. Check each item off as you train it. Incomplete items carry to the next session when this one is completed. Visible to the practice on this shared task.";
 
 export function trainingDescriptionForTitle(title: string): string | null {
   const items = checklistForTaskTitle(title);

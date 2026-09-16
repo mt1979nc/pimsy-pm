@@ -88,6 +88,43 @@ export function toDateInput(d: Date | string | null | undefined): string {
   return utcDayKey(dt);
 }
 
+/** Local `YYYY-MM-DD` for `<input type="date">` from a stored instant. */
+export function toLocalDateInput(d: Date | string | null | undefined): string {
+  if (!d) return "";
+  const dt = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(dt.getTime())) return "";
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, "0");
+  const day = String(dt.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Local `HH:mm` for `<input type="time">`. */
+export function toLocalTimeInput(d: Date | string | null | undefined): string {
+  if (!d) return "";
+  const dt = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(dt.getTime())) return "";
+  const h = String(dt.getHours()).padStart(2, "0");
+  const min = String(dt.getMinutes()).padStart(2, "0");
+  return `${h}:${min}`;
+}
+
+/**
+ * Booked training slot. Date-only → UTC noon (same as other date fields).
+ * Date + time → local timezone instant.
+ */
+export function parseSessionDateTime(date: string | undefined | null, time?: string | null): Date | null {
+  if (!date) return null;
+  const d = date.trim();
+  if (!d) return null;
+  const t = time?.trim();
+  if (!t) return parseDateInput(d);
+  if (d.includes("T")) return parseDateInput(d);
+  const hm = t.length === 5 ? `${t}:00` : t;
+  const local = new Date(`${d}T${hm}`);
+  return Number.isNaN(local.getTime()) ? null : local;
+}
+
 /** Signed calendar-day delta in UTC (to − from). */
 export function utcCalendarDaysBetween(from: Date, to: Date): number {
   const a = Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate());

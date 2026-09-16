@@ -15,6 +15,7 @@ import type { MoveTaskNode } from "@/lib/task-move";
 import { dueLabel, isOverdue } from "@/lib/dates";
 import { descriptionSnippet } from "@/lib/task-description";
 import { cn } from "@/lib/cn";
+import { scheduledSessionLabel } from "@/lib/training-session";
 import type { Priority, TaskStatus, Visibility, OwnerSide } from "@/db/schema";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
 import { resolveProjectBookingUrls, type BookingUrlMap } from "@/lib/booking-urls";
@@ -29,6 +30,7 @@ export type TaskRowData = {
   visibility: Visibility;
   ownerSide: OwnerSide;
   dueDate: Date | string | null;
+  sessionAt?: Date | string | null;
   completedAt: Date | string | null;
   assignee?: { id: string; name: string | null; image?: string | null } | null;
   assignees?: Array<{ id: string; name: string | null; image?: string | null }>;
@@ -228,7 +230,9 @@ export function TaskRow({
                 {task.project.name}
               </Link>
             ) : null}
-            {task.dueDate ? (
+            {task.sessionAt ? (
+              <span className="font-medium text-ink-2">{scheduledSessionLabel(task.sessionAt)}</span>
+            ) : task.dueDate ? (
               <span className={cn(overdue && !done && "font-medium text-red")}>
                 {dueLabel(task.dueDate, completedAt)}
               </span>

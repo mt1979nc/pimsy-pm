@@ -20,7 +20,7 @@ import {
 import { refreshProjectCounters } from "@/lib/rollup";
 import { notify } from "@/lib/notify";
 import { audit } from "@/lib/audit";
-import { fmtDate } from "@/lib/dates";
+import { fmtDate, parseSessionDateTime } from "@/lib/dates";
 import { setTaskNotApplicable } from "@/lib/playbook";
 import { isSpecialistSubtask, liveTaskCreateDefaults } from "@/lib/task-visibility";
 import { customerMayChangeAssignee } from "@/lib/task-role-match";
@@ -36,6 +36,8 @@ import {
 import { applySupportHandoffOnComplete } from "@/lib/support-handoff";
 import { isHandOffToSupportTask } from "@/lib/support-handoff-meta";
 import { syncConnectedTaskStatus } from "@/lib/connected-task-sync";
+import { applyTrainingBooking, applyTrainingStatusSideEffects } from "@/lib/training-ops";
+import { canBookTrainingSession } from "@/lib/training-session";
 import type { ActionState } from "./messages";
 
 const optionalDate = z
@@ -380,9 +382,28 @@ export async function setTaskStatus(taskId: string, status: string) {
     }
   }
 
+  await applyTrainingStatusSideEffects({
+    task: {
+      id: task.id,
+      projectId: task.projectId,
+      title: task.title,
+      status: next,
+      parentTaskId: task.parentTaskId,
+      sessionAt: task.sessionAt,
+      dueDate: task.dueDate,
+      notApplicable: task.notApplicable,
+    },
+    nextStatus: next,
+  });
+
   revalidatePath(`/projects/${task.projectId}`);
   revalidatePath(`/projects/${task.projectId}/tasks`);
+  revalidatePath(`/projects/${task.projectId}/tasks/${taskId}`);
+  revalidatePath(`/projects/${task.projectId}/settings`);
+  revalidatePath(`/projects/${task.projectId}/customer-view`);
   revalidatePath(`/portal/projects/${task.projectId}`);
+  revalidatePath(`/portal/projects/${task.projectId}/tasks/${taskId}`);
+  revalidatePath(`/portal/projects/${task.projectId}/recordings`);
   revalidatePath("/portal");
   revalidatePath("/my-work");
 }
@@ -460,6 +481,59 @@ export async function updateTask(
   }
 
   revalidatePath(`/projects/${task.projectId}/tasks`);
+  revalidatePath(`/projects/${task.projectId}/tasks/${d.taskId}`);
+  revalidatePath("/my-work");
+  return { ok: true };
+}
+
+/**
+ * Staff records the Outlook/calendar slot on Schedule Training N or the
+ * Training N parent. Copies `session_at` onto the session task.
+ */
+export async function bookTrainingSession(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireUser();
+  if (isCustomer(actor)) {
+    return { error: "Your implementation team records the session date and time." };
+  }
+
+  const taskId = String(formData.get("taskId") ?? "");
+  const date = String(formData.get("sessionDate") ?? "");
+  const time = String(formData.get("sessionTime") ?? "");
+  if (!taskId) return { error: "Missing task." };
+  const sessionAt = parseSessionDateTime(date, time || null);
+  if (!sessionAt) return { error: "Pick a session date." };
+
+  const task = await loadTaskForActor(actor, taskId);
+  await assertProjectWrite(actor, task.projectId);
+  if (!canBookTrainingSession(task.title)) {
+    return { error: "This item is not a training session or schedule task." };
+  }
+
+  const result = await applyTrainingBooking({
+    sourceTaskId: task.id,
+    projectId: task.projectId,
+    sessionAt,
+  });
+
+  await audit({
+    actor,
+    action: "training.session.booked",
+    entityType: "task",
+    entityId: result.sessionTaskId ?? task.id,
+    summary: task.title,
+    metadata: { projectId: task.projectId, sessionAt: sessionAt.toISOString() },
+  });
+
+  revalidatePath(`/projects/${task.projectId}`);
+  revalidatePath(`/projects/${task.projectId}/tasks`);
+  revalidatePath(`/projects/${task.projectId}/tasks/${task.id}`);
+  if (result.sessionTaskId && result.sessionTaskId !== task.id) {
+    revalidatePath(`/projects/${task.projectId}/tasks/${result.sessionTaskId}`);
+  }
+  revalidatePath(`/portal/projects/${task.projectId}`);
   revalidatePath("/my-work");
   return { ok: true };
 }

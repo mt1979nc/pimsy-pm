@@ -477,9 +477,10 @@ Honest list of what isn't built yet:
   feed needs an Azure AD app registration and admin consent, which is a real IT
   ask; the webhook needs neither. If per-specialist DMs turn out to matter, that
   is the upgrade path.
-- **No calendar invites yet.** Training sessions and go-live dates are dates in
-  the app, not `.ics` attachments that drop into someone's Outlook calendar.
-  This is probably the highest-value thing left on the notification side.
+- **No .ics calendar invites yet.** Staff record the Outlook/calendar slot on
+  Schedule Training N or the Training N task (`session_at`). PATH copies that
+  time onto the training task and shows it on the list. It does not drop a
+  meeting into Outlook.
 - **Email fires per event.** No daily digest, so a busy project can be chatty.
   Per-person alert settings are the current mitigation.
 

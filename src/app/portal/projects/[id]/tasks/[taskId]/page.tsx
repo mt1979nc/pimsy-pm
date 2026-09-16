@@ -21,6 +21,10 @@ import { TaskCompleteControl } from "@/components/task-complete-control";
 import { CustomerAssigneePicker } from "@/components/customer-assignee-picker";
 import { listCustomerProjectTeam, assigneesOf } from "@/lib/task-assignees";
 import { resolveProjectBookingUrls } from "@/lib/booking-urls";
+import {
+  isTrainingSessionParent,
+  scheduledSessionLabel,
+} from "@/lib/training-session";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +87,8 @@ export default async function PortalTaskPage({
   const displayDescription = resolveTaskDescription(task.title, task.description, {
     stripChecklist: checklist.length > 0,
   });
+  const sessionLabel = scheduledSessionLabel(task.sessionAt);
+  const agendaTask = isTrainingSessionParent(task.title);
   const hasFileAction =
     attachments.some((a) => a.kind !== "LINK") ||
     isDockFileRequestTitle(task.title) ||
@@ -127,6 +133,9 @@ export default async function PortalTaskPage({
             bookingUrls={resolveProjectBookingUrls(project)}
           />
         </div>
+        {sessionLabel ? (
+          <p className="mt-1.5 text-[13.5px] font-medium text-ink">{sessionLabel}</p>
+        ) : null}
         {task.dueDate ? (
           <p className={cn("mt-1.5 text-[13.5px]", overdue && task.status !== "DONE" ? "font-medium text-red" : "text-ink-2")}>
             Due {fmtDate(task.dueDate)}
@@ -185,8 +194,12 @@ export default async function PortalTaskPage({
           {checklist.length > 0 ? (
             <Card>
               <CardHeader
-                title="Checklist"
-                subtitle="What this session includes — your specialist checks these off as you go"
+                title={agendaTask ? "Training agenda" : "Checklist"}
+                subtitle={
+                  agendaTask
+                    ? "What this session includes — leftover items carry to the next session"
+                    : "What this session includes — your specialist checks these off as you go"
+                }
               />
               <TaskChecklist
                 taskId={task.id}

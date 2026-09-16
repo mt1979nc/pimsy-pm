@@ -14,6 +14,7 @@ import { AttachmentList } from "@/components/attachments";
 import { TaskActionButtons } from "@/components/task-action-buttons";
 import { resolveTaskDescription } from "@/lib/task-description";
 import { fmtDate } from "@/lib/dates";
+import { scheduledSessionLabel } from "@/lib/training-session";
 import { hasPlaybookFileResource, isCustomerUploadRequestTitle } from "@/lib/playbook-resources";
 import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import { commentsForCustomerSurface } from "@/lib/comment-visibility";
@@ -114,6 +115,9 @@ export default async function CustomerViewTaskPage({
             ) : (
               <span>Unassigned</span>
             )}
+            {scheduledSessionLabel(task.sessionAt) ? (
+              <span>{scheduledSessionLabel(task.sessionAt)}</span>
+            ) : null}
             {task.dueDate ? <span>Due {fmtDate(task.dueDate)}</span> : null}
           </div>
         </div>

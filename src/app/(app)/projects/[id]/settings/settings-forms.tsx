@@ -279,14 +279,23 @@ type RecordingRowData = {
   name: string;
   description: string | null;
   visibility: "INTERNAL" | "SHARED";
+  taskId?: string | null;
+};
+
+type TrainingSessionOption = {
+  id: string;
+  title: string;
+  label: string;
 };
 
 export function RecordingsManager({
   projectId,
   recordings,
+  sessions = [],
 }: {
   projectId: string;
   recordings: RecordingRowData[];
+  sessions?: TrainingSessionOption[];
 }) {
   const [state, action] = useActionState(addProjectRecording, {});
   const [items, setItems] = useState(recordings);
@@ -311,6 +320,7 @@ export function RecordingsManager({
             <RecordingRow
               key={r.id}
               recording={r}
+              sessionLabel={sessions.find((s) => s.id === r.taskId)?.label ?? null}
               onRemoved={() => setItems((prev) => prev.filter((i) => i.id !== r.id))}
             />
           ))
@@ -337,6 +347,23 @@ export function RecordingsManager({
         <Field label="Note (optional)" htmlFor="recDescription">
           <input id="recDescription" name="description" className={inputClass} />
         </Field>
+        {sessions.length > 0 ? (
+          <Field
+            label="Training task"
+            htmlFor="recTaskId"
+            hint="Mirrors this link onto the session task. Name like “Training 2” also matches automatically."
+          >
+            <select id="recTaskId" name="taskId" defaultValue="" className={inputClass}>
+              <option value="">Match from the name, or Recordings tab only</option>
+              {sessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                  {s.label !== s.title ? ` — ${s.title}` : ""}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
         <label className="flex items-center gap-2 text-[12.5px] text-ink-2">
           <input type="checkbox" name="visibility" value="SHARED" />
           Visible to customer right away
@@ -353,9 +380,11 @@ export function RecordingsManager({
 
 function RecordingRow({
   recording,
+  sessionLabel,
   onRemoved,
 }: {
   recording: RecordingRowData;
+  sessionLabel?: string | null;
   onRemoved: () => void;
 }) {
   const [visible, setVisible] = useState(recording.visibility === "SHARED");
@@ -365,6 +394,9 @@ function RecordingRow({
     <div className="flex items-center gap-3 px-4 py-2.5">
       <div className="min-w-0 flex-1">
         <div className="truncate text-[13px] text-ink">{recording.name}</div>
+        {sessionLabel ? (
+          <div className="truncate text-[12px] text-ink-3">On {sessionLabel}</div>
+        ) : null}
         {recording.description ? (
           <div className="truncate text-[12px] text-ink-3">{recording.description}</div>
         ) : null}

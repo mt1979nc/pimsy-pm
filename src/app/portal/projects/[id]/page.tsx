@@ -167,6 +167,7 @@ export default async function PortalProjectPage({
                               description: resolveTaskDescription(t.title, t.description),
                               status: t.status,
                               dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+                              sessionAt: t.sessionAt ? new Date(t.sessionAt).toISOString() : null,
                               projectId: id,
                               commentCount: t.comments?.length ?? 0,
                             }}
@@ -194,6 +195,7 @@ export default async function PortalProjectPage({
                             description: resolveTaskDescription(t.title, t.description),
                             status: t.status,
                             dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+                            sessionAt: t.sessionAt ? new Date(t.sessionAt).toISOString() : null,
                             projectId: id,
                             commentCount: t.comments?.length ?? 0,
                           }}
@@ -227,6 +229,7 @@ export default async function PortalProjectPage({
                               description: resolveTaskDescription(t.title, t.description),
                               status: t.status,
                               dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+                              sessionAt: t.sessionAt ? new Date(t.sessionAt).toISOString() : null,
                               projectId: id,
                               commentCount: t.comments?.length ?? 0,
                             }}
@@ -252,6 +255,7 @@ export default async function PortalProjectPage({
                             description: resolveTaskDescription(t.title, t.description),
                             status: t.status,
                             dueDate: t.dueDate ? new Date(t.dueDate).toISOString() : null,
+                            sessionAt: t.sessionAt ? new Date(t.sessionAt).toISOString() : null,
                             projectId: id,
                             commentCount: t.comments?.length ?? 0,
                           }}

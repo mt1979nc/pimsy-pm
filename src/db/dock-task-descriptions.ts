@@ -20,10 +20,10 @@ const PARENT =
   "Work the nested items on this list. Check each one off as you go — you do not need to open a separate screen for every line. The customer sees this parent’s status, not the specialist checklist.";
 
 const RECORDING =
-  "After the session, attach the Zoom (or other) recording URL on this task so the practice can rewatch it. Same link may also go on the Recordings tab.";
+  "After the session, attach the Zoom recording URL on this task (or Settings → Recordings). PATH posts it on the Recordings tab and on the Training N task.";
 
 const SCHEDULE_TRAINING =
-  "Book the session from the matching Training 1 / 2 / 3 booking page on About (Book Training on this task when the URL is set). The practice completes this item when the slot is confirmed.";
+  "Book the session from the matching Training 1 / 2 / 3 booking page on About (Book Training on this task when the URL is set). Save the Outlook date/time on this task so PATH copies that slot onto the Training N parent. The practice completes this item when the slot is confirmed.";
 
 const CONFIRM_LOGINS =
   "Before the session, confirm the named users have logged into PIMSY (the EHR), not just this portal. Staff task details list PATH portal contacts and, when PIMSY_AUDIT_FEED_URL is set, live EHR logins (who and how long). PATH last-seen is not an EHR login. Check this off when they are in; leave a comment if anyone is blocked.";
@@ -195,7 +195,7 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ["Schedule ePrescribe training", SCHEDULE_TRAINING],
   [
     "Add Date to Training Task Title",
-    "Put the confirmed Training 1 date/time in the Training 1 task title so the list shows when it is.",
+    "Put the confirmed Training 1 date/time on the Training 1 task (Session time). Saving the calendar slot on Schedule Training 1 completes this item.",
   ],
   ["Expose Parking Lot", "Expose the parking-lot / follow-up list for items that did not fit in Training 1."],
   ["Confirm users have logged in (prior to training)", CONFIRM_LOGINS],

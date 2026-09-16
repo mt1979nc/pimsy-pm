@@ -37,6 +37,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **Per-meeting booking URLs (Wave B)** | **This PR (hold from live)** | About, portal, and Schedule tasks carry per-meeting-type booking pages. Migration `0021_booking_urls`. |
 | Contacts + Zoom booking | Planned (after v1.8) | Contact roles, booking links wired into About + invite flows. |
 | HubSpot on create | Planned (after v1.8) | Capture deal URL / deal id when creating a project from a win. |
+| **Training calendar / recordings / agenda (Wave B)** | **This branch (HOLD from live)** | Book Training N → `session_at` on the session task; Zoom recording mirrors Recordings tab + training task; agenda checkboxes carry incomplete items to the next session. Migration `0022_training_session`. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |
 
 ## Milestone: Retire standalone Prism
@@ -59,7 +60,7 @@ Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shi
 | Epic | Status |
 |------|--------|
 | Status updates feed | **Shipped** (v1.14) — in-app purpose copy; composer still the weekly snapshot |
-| Zoom recordings sync | Planned |
+| Zoom recordings sync | **Partial (Wave B)** | Manual paste still; one link now lands on Recordings **and** the Training N task. No Zoom API pull. |
 | Template reseed | Planned — `--templates-only` still the ops path; v1.13 duplicate is an in-app copy, not a live Dock pull |
 | Mentions / notify | Partial (exists; polish remaining) |
 | File library by area | **Shipped** (v1.12) | Reusable library + Learning Center topic groups; placeholders until Dock binaries are uploaded. |

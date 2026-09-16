@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { and, eq, ne, asc, desc } from "drizzle-orm";
 import { db } from "@/db";
-import { projects, users, customerAccounts, phases, fileAssets, slipEvents } from "@/db/schema";
+import { projects, users, customerAccounts, phases, fileAssets, slipEvents, tasks } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, canDeletePortfolioRecords } from "@/lib/authz";
 import { toDateInput } from "@/lib/dates";
+import { trainingSessionsFromTasks } from "@/lib/training-session";
 import { Card, CardHeader, Badge, Avatar, VisibilityBadge } from "@/components/ui";
 import {
   ProjectSettingsForm,
@@ -109,9 +110,19 @@ export default async function ProjectSettingsPage({
 
   const recordings = await db.query.fileAssets.findMany({
     where: and(eq(fileAssets.projectId, id), eq(fileAssets.isRecording, true)),
-    columns: { id: true, name: true, description: true, visibility: true },
+    columns: { id: true, name: true, description: true, visibility: true, taskId: true },
     orderBy: [desc(fileAssets.createdAt)],
   });
+
+  const trainingRows = await db.query.tasks.findMany({
+    where: eq(tasks.projectId, id),
+    columns: { id: true, title: true },
+  });
+  const trainingSessions = trainingSessionsFromTasks(trainingRows).map((t) => ({
+    id: t.id,
+    title: t.title,
+    label: t.ref.sessionLabel,
+  }));
 
   const projectSlips = await db.query.slipEvents.findMany({
     where: eq(slipEvents.projectId, id),
@@ -277,9 +288,9 @@ export default async function ProjectSettingsPage({
         <Card>
           <CardHeader
             title="Recordings"
-            subtitle="Training session links shown in the portal's Recordings tab"
+            subtitle="Shown on the portal Recordings tab and mirrored onto the matching training task"
           />
-          <RecordingsManager projectId={id} recordings={recordings} />
+          <RecordingsManager projectId={id} recordings={recordings} sessions={trainingSessions} />
         </Card>
 
         <Card>

@@ -11,6 +11,7 @@ export type ChecklistItemView = {
   label: string;
   done: boolean;
   visibility: "INTERNAL" | "SHARED";
+  carriedFromLabel?: string | null;
 };
 
 export function TaskChecklist({
@@ -80,6 +81,9 @@ export function TaskChecklist({
                 <span className={cn("text-[13.5px]", item.done ? "text-ink-3 line-through" : "text-ink")}>
                   {item.label}
                 </span>
+                {item.carriedFromLabel ? (
+                  <span className="ml-2 text-[11px] text-ink-3">Carried from {item.carriedFromLabel}</span>
+                ) : null}
                 {item.visibility === "INTERNAL" ? (
                   <span className="ml-2 text-[11px] uppercase tracking-wide text-ink-3">Team only</span>
                 ) : null}
