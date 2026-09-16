@@ -25,9 +25,11 @@ import {
   type WorkTrack,
 } from "@/db/schema";
 import { dockPlaybookDescriptionForTitle } from "@/db/dock-playbook-copy";
-import { scheduleFromOffsets } from "@/lib/project-timeline";
+import { recommendPhaseSchedule, scheduleFromOffsets } from "@/lib/project-timeline";
+import type { ForecastSectionInput } from "@/lib/project-timeline";
 import { resolveAssigneeForRole, canonicalStaffingRole } from "@/lib/staffing";
 import { refreshProjectCounters } from "@/lib/rollup";
+import { syncMilestonesFromTaskCompletion } from "@/lib/milestone-rollup";
 import { copyLibraryAssetToTask, ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
 import {
   PLAYBOOK_PATHS,
@@ -191,8 +193,13 @@ export async function materializeTemplatesOnProject(opts: {
   /** When adding an RCM track onto an existing site, start phase order after current max. */
   orderOffset?: number;
   forceWorkTrack?: WorkTrack;
+  skipUsFederalHolidays?: boolean;
+  forecastProjection?: ForecastSectionInput | null;
+  /** Holiday-aware projected go-live; used for the isGoLive milestone. */
+  goLive?: Date | null;
 }): Promise<{ phaseCount: number; taskCount: number; skipped: number }> {
   const excluded = opts.excludedAreaKeys;
+  const skipUsFederalHolidays = opts.skipUsFederalHolidays ?? true;
   let phaseCount = 0;
   let taskCount = 0;
   let skipped = 0;
@@ -200,6 +207,18 @@ export async function materializeTemplatesOnProject(opts: {
 
   for (const template of opts.templates) {
     const orderedPhases = [...template.phases].sort((a, b) => a.order - b.order);
+    const includedPhaseRows = orderedPhases.filter((tp) => shouldIncludeByArea(tp, excluded));
+    const phaseDates = recommendPhaseSchedule({
+      phases: includedPhaseRows.map((tp) => ({
+        name: tp.name,
+        offsetDays: tp.offsetDays,
+        durationDays: tp.durationDays,
+      })),
+      kickoff: opts.start,
+      scaleFactor: opts.scaleFactor,
+      forecast: opts.forecastProjection ?? null,
+      skipUsFederalHolidays,
+    });
     for (const tp of orderedPhases) {
       if (!shouldIncludeByArea(tp, excluded)) {
         skipped += tp.tasks.length;
@@ -215,12 +234,16 @@ export async function materializeTemplatesOnProject(opts: {
           return true;
         });
 
-      const { startDate: phaseStart, dueDate: phaseDue } = scheduleFromOffsets({
+      const scheduled = phaseDates.get(tp.name) ?? scheduleFromOffsets({
         anchor: opts.start,
         offsetDays: tp.offsetDays,
         durationDays: tp.durationDays,
         scaleFactor: opts.scaleFactor,
+        skipUsFederalHolidays,
+        minDate: opts.start,
       });
+      const phaseStart = scheduled.startDate;
+      const phaseDue = scheduled.dueDate;
       const [phase] = await opts.tx
         .insert(phases)
         .values({
@@ -246,6 +269,8 @@ export async function materializeTemplatesOnProject(opts: {
           offsetDays: tt.offsetDays,
           durationDays: tt.durationDays,
           scaleFactor: opts.scaleFactor,
+          skipUsFederalHolidays,
+          minDate: opts.start,
         });
         const parentLiveId = tt.parentTaskId ? (templateIdToTaskId.get(tt.parentTaskId) ?? null) : null;
         const assigneeId = resolveAssigneeForRole(
@@ -330,6 +355,8 @@ export async function materializeTemplatesOnProject(opts: {
             offsetDays: tm.offsetDays,
             durationDays: 0,
             scaleFactor: opts.scaleFactor,
+            skipUsFederalHolidays,
+            minDate: opts.start,
           });
           return {
             projectId: opts.projectId,
@@ -338,7 +365,7 @@ export async function materializeTemplatesOnProject(opts: {
             order: msOffset + (tm.order ?? i),
             visibility: tm.visibility,
             isGoLive: tm.isGoLive,
-            dueDate: msDue,
+            dueDate: tm.isGoLive && opts.goLive ? opts.goLive : msDue,
           };
         }),
       );
@@ -409,6 +436,7 @@ export async function addRcmTrackToProject(opts: {
   rcmStart: Date;
   rcmTargetGoLive: Date | null;
   scaleFactor: number;
+  skipUsFederalHolidays?: boolean;
 }): Promise<{ addedTasks: number; autoCompleted: number }> {
   const existing = await db.query.projects.findFirst({
     where: eq(projects.id, opts.projectId),
@@ -463,6 +491,8 @@ export async function addRcmTrackToProject(opts: {
         ?? null,
       orderOffset,
       forceWorkTrack: "RCM",
+      skipUsFederalHolidays: opts.skipUsFederalHolidays,
+      goLive: opts.rcmTargetGoLive,
     });
 
     await applyRoleMemberships({
@@ -526,6 +556,7 @@ export async function addRcmTrackToProject(opts: {
   });
 
   await refreshProjectCounters(opts.projectId);
+  await syncMilestonesFromTaskCompletion(opts.projectId);
   return { addedTasks: result.taskCount, autoCompleted };
 }
 
@@ -587,6 +618,7 @@ export async function setPhaseNotApplicable(phaseId: string, notApplicable: bool
       .where(eq(tasks.phaseId, phaseId));
   });
   await refreshProjectCounters(phase.projectId);
+  await syncMilestonesFromTaskCompletion(phase.projectId);
   return phase;
 }
 
@@ -607,6 +639,7 @@ export async function setTaskNotApplicable(taskId: string, notApplicable: boolea
     .set({ notApplicable, updatedAt: new Date() })
     .where(inArray(tasks.id, ids));
   await refreshProjectCounters(task.projectId);
+  await syncMilestonesFromTaskCompletion(task.projectId);
   return task;
 }
 
