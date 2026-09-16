@@ -95,12 +95,12 @@ export default async function ProjectOverviewPage({
           <CardHeader
             title="Project updates"
             subtitle="Weekly snapshot for the practice — not a chat"
-            action={<StatusUpdateForm projectId={id} currentHealth={project.health} />}
           />
           <p className="border-b border-border px-5 py-2.5 text-[12.5px] leading-relaxed text-ink-3">
             {PROJECT_UPDATES_PURPOSE} {PROJECT_UPDATES_WHEN} Shared publishes to the portal and can
             email contacts; Internal is staff-only.
           </p>
+          <StatusUpdateForm projectId={id} currentHealth={project.health} />
           {updates.length === 0 ? (
             <EmptyState
               title="No updates posted yet"

@@ -24,14 +24,16 @@ export function StatusUpdateForm({
 
   if (!open) {
     return (
-      <Button size="sm" onClick={() => setOpen(true)}>
-        Post an update
-      </Button>
+      <div className="flex justify-end border-b border-border px-5 py-2.5">
+        <Button size="sm" onClick={() => setOpen(true)}>
+          Post an update
+        </Button>
+      </div>
     );
   }
 
   return (
-    <form action={action} className="space-y-3 border-t border-border p-4">
+    <form action={action} className="space-y-3 border-b border-border p-4">
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="visibility" value={visibility} />
       <FormError error={state.error} />
