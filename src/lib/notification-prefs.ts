@@ -91,7 +91,7 @@ export const ALERT_TYPES: {
   {
     type: "STATUS_UPDATE_PUBLISHED",
     label: "Project updates",
-    description: "A new status update is published on your project.",
+    description: "A weekly project snapshot is published (not a chat — that’s Messages).",
     audience: "both",
     staffDefault: false,
     customerDefault: true,

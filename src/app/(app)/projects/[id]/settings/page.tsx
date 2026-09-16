@@ -64,6 +64,7 @@ export default async function ProjectSettingsPage({
           email: true,
           role: true,
           title: true,
+          phone: true,
           image: true,
           isActive: true,
           lastSeenAt: true,

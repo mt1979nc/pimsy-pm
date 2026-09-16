@@ -35,6 +35,11 @@ export function StatusUpdateForm({
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="visibility" value={visibility} />
       <FormError error={state.error} />
+      <p className="text-[12.5px] leading-relaxed text-ink-3">
+        A dated health snapshot — not a chat. Shared publishes to the customer portal and can email
+        contacts. Internal is a staff note; customers never see it. Use Messages for conversation
+        and a task comment for one action item.
+      </p>
 
       <Field label="Summary" htmlFor="summary">
         <textarea

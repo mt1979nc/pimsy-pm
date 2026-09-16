@@ -295,7 +295,10 @@ export default async function CustomerViewPreviewPage({
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Status updates" subtitle="Shared with the customer" />
+          <CardHeader
+            title="Project updates"
+            subtitle="Shared weekly snapshots — not Messages, not a task comment"
+          />
           {updates.length === 0 ? (
             <EmptyState title="No updates yet" />
           ) : (

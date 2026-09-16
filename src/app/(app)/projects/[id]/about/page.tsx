@@ -1,4 +1,7 @@
 import { notFound } from "next/navigation";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { fileAssets } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess } from "@/lib/authz";
 import { Card, CardHeader } from "@/components/ui";
@@ -9,6 +12,8 @@ import { loadHubSpotDealSummary } from "@/lib/hubspot-deal";
 import { AboutKickoffPanel } from "@/components/about-kickoff-panel";
 import { AboutHubSpotPanel } from "@/components/about-hubspot-panel";
 import { AboutContactCardGrid } from "@/components/about-contact-card";
+import { KickoffFacts } from "@/components/kickoff-facts";
+import { extraKickoffFacts } from "@/lib/kickoff-about";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "About" };
@@ -27,6 +32,23 @@ export default async function ProjectAboutPage({
   const { project, kickoff, implementationTeam, customerContacts } = loaded;
   const extras = extraCustomFields(project.customFields ?? {});
   const hubspot = await loadHubSpotDealSummary(project.hubspotDealUrl);
+  const recordings = await db.query.fileAssets.findMany({
+    where: and(eq(fileAssets.projectId, id), eq(fileAssets.isRecording, true)),
+    columns: { name: true, url: true, visibility: true },
+  });
+  const extraFacts = extraKickoffFacts(
+    {
+      startDate: project.startDate,
+      targetGoLiveDate: project.targetGoLiveDate,
+      zoomBookingUrl: project.zoomBookingUrl,
+      crmAcronym: project.crmAcronym,
+      leadName: project.lead?.name,
+      leadTitle: project.lead?.title,
+      customFields: project.customFields ?? {},
+      recordings,
+    },
+    "staff",
+  );
 
   return (
     <div className="space-y-5">
@@ -44,6 +66,11 @@ export default async function ProjectAboutPage({
           projectId={project.id}
           staffLinks
         />
+        {extraFacts.length > 0 ? (
+          <div className="border-t border-border px-5 py-4">
+            <KickoffFacts facts={extraFacts} />
+          </div>
+        ) : null}
       </Card>
 
       <Card>

@@ -35,11 +35,20 @@ export type SnapshotEngagement = {
 };
 
 export type SnapshotGoLive = {
+  id: string;
   acronym: string;
   name: string;
   goLive: string;
   daysUntil: number;
   weeklyHours: number;
+};
+
+export type SnapshotKickoff = {
+  id: string;
+  acronym: string;
+  name: string;
+  kickoff: string;
+  daysUntil: number;
 };
 
 export type DirectorSnapshot = {
@@ -59,6 +68,7 @@ export type DirectorSnapshot = {
   slippedCount: number;
   analysisExclusions: string[];
   goLivesNext14: SnapshotGoLive[];
+  kickoffsNext14: SnapshotKickoff[];
   pipeline: SnapshotEngagement[];
   slipped: SnapshotEngagement[];
   engagements: SnapshotEngagement[];
@@ -122,19 +132,37 @@ export function buildDirectorSnapshot(input: {
   const loadById = new Map(memberLoads.map((m) => [m.id, m]));
 
   const goLivesNext14: SnapshotGoLive[] = [];
+  const kickoffsNext14: SnapshotKickoff[] = [];
   for (const e of input.forecast.engagements) {
-    if (!e.countsTowardLoad || !e.targetGoLiveDate) continue;
-    const gl = startOfDay(e.targetGoLiveDate);
-    if (gl < asOf || gl > horizon) continue;
-    goLivesNext14.push({
-      acronym: e.acronym,
-      name: e.name,
-      goLive: utcDayKey(e.targetGoLiveDate),
-      daysUntil: Math.round((gl.getTime() - asOf.getTime()) / 86_400_000),
-      weeklyHours: e.weeklyHours,
-    });
+    if (!e.countsTowardLoad) continue;
+    if (e.targetGoLiveDate) {
+      const gl = startOfDay(e.targetGoLiveDate);
+      if (gl >= asOf && gl <= horizon) {
+        goLivesNext14.push({
+          id: e.id,
+          acronym: e.acronym,
+          name: e.name,
+          goLive: utcDayKey(e.targetGoLiveDate),
+          daysUntil: Math.round((gl.getTime() - asOf.getTime()) / 86_400_000),
+          weeklyHours: e.weeklyHours,
+        });
+      }
+    }
+    if (e.startDate) {
+      const ko = startOfDay(e.startDate);
+      if (ko >= asOf && ko <= horizon) {
+        kickoffsNext14.push({
+          id: e.id,
+          acronym: e.acronym,
+          name: e.name,
+          kickoff: utcDayKey(e.startDate),
+          daysUntil: Math.round((ko.getTime() - asOf.getTime()) / 86_400_000),
+        });
+      }
+    }
   }
   goLivesNext14.sort((a, b) => a.daysUntil - b.daysUntil);
+  kickoffsNext14.sort((a, b) => a.daysUntil - b.daysUntil);
 
   return {
     source: "pimsy-pm",
@@ -153,6 +181,7 @@ export function buildDirectorSnapshot(input: {
     slippedCount: slipped.length,
     analysisExclusions: input.exclusions ?? [...DEFAULT_ANALYSIS_EXCLUSION_CODES],
     goLivesNext14,
+    kickoffsNext14,
     pipeline,
     slipped,
     engagements,

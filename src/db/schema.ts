@@ -557,9 +557,10 @@ export const projects = pgTable(
     ehrTaskCountDone: integer("ehr_task_count_done").notNull().default(0),
 
     /**
-     * Site / About profile — Dock-replacement fields for HubSpot, Prism, CRM
-     * keys, Zoom booking, and free-form notes. Shown read-only in the portal
-     * (customer-safe subset) and editable by staff with project write access.
+     * Site / About profile — kickoff dates live on the project row; Zoom booking,
+     * notes, and custom fields are edited on About. HubSpot / Prism / CRM key
+     * are staff-only. The customer About tab shows kickoff, go-live, specialist,
+     * booking, notes, and a small set of custom-field keys — never HubSpot.
      */
     hubspotDealUrl: text("hubspot_deal_url"),
     prismClientId: text("prism_client_id"),

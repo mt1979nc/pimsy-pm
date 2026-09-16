@@ -6,6 +6,7 @@ import { Card, CardHeader, Badge, Avatar, EmptyState } from "@/components/ui";
 import { InviteStaffForm, RoleSelect, ActiveToggle } from "./user-controls";
 import { fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { ContactCard } from "@/components/contact-card";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "People" };
@@ -36,12 +37,12 @@ export default async function AdminUsersPage() {
           <div className="divide-y divide-border">
             {staff.map((u) => (
               <div key={u.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                <Avatar name={u.name} image={u.image} size={30} />
+                <Avatar name={u.name} image={u.image} size={28} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "truncate text-[13.5px] font-medium",
+                        "truncate text-[13px] font-medium",
                         u.isActive ? "text-ink" : "text-ink-3 line-through",
                       )}
                     >
@@ -49,14 +50,13 @@ export default async function AdminUsersPage() {
                     </span>
                     {u.id === actor.id ? <Badge>You</Badge> : null}
                     {!u.isActive ? <Badge tone="red">Inactive</Badge> : null}
+                    {u.isActive && !u.lastSeenAt ? <Badge tone="amber">Never signed in</Badge> : null}
                   </div>
                   <div className="truncate text-[12px] text-ink-3">
                     {u.email}
                     {u.title ? ` · ${u.title}` : ""}
+                    {u.lastSeenAt ? ` · seen ${fmtRelative(u.lastSeenAt)}` : ""}
                   </div>
-                </div>
-                <div className="text-right text-[11.5px] text-ink-3">
-                  {u.lastSeenAt ? `Seen ${fmtRelative(u.lastSeenAt)}` : "Never signed in"}
                 </div>
                 <RoleSelect
                   userId={u.id}
@@ -82,25 +82,12 @@ export default async function AdminUsersPage() {
           ) : (
             <div className="divide-y divide-border">
               {contacts.map((u) => (
-                <div key={u.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
-                  <Avatar name={u.name} image={u.image} size={26} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "truncate text-[13px]",
-                          u.isActive ? "text-ink" : "text-ink-3 line-through",
-                        )}
-                      >
-                        {u.name ?? u.email}
-                      </span>
-                      {!u.isActive ? <Badge>Revoked</Badge> : null}
-                    </div>
-                    <div className="truncate text-[12px] text-ink-3">{u.email}</div>
-                  </div>
-                  <Badge tone="violet">{u.customerAccount?.name ?? "No account"}</Badge>
-                  <ActiveToggle userId={u.id} isActive={u.isActive} />
-                </div>
+                <ContactCard
+                  key={u.id}
+                  person={u}
+                  badges={<Badge tone="violet">{u.customerAccount?.name ?? "No account"}</Badge>}
+                  actions={<ActiveToggle userId={u.id} isActive={u.isActive} />}
+                />
               ))}
             </div>
           )}
