@@ -39,13 +39,17 @@ import {
   resolveSlipPush,
   shouldCascadeReschedule,
 } from "@/lib/project-timeline";
-import { parseDateInput } from "@/lib/dates";
+import { parseDateInput, toDateInput } from "@/lib/dates";
 import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
 import { acronymKey } from "@/lib/prism-dump";
 import { sumSlipDays } from "@/lib/engagement-roster";
 import type { ActionState } from "@/actions/messages";
 import { includedInAnalytics } from "@/lib/analytics-scope";
 import { parseExcludeFromAnalytics, parseExcludeFromAnalyticsIfPresent } from "@/lib/analytics-exclude";
+import {
+  commitGoLiveSlip,
+  formatSlipRecordedMessage,
+} from "@/lib/project-slip";
 
 export async function listEngagements() {
   await requirePortfolioAccess();
@@ -316,22 +320,20 @@ export async function updateEngagement(
   }
 
   if (slip.slipped) {
-    await db.insert(slipEvents).values({
-      projectId,
-      fromDate: slip.fromDate,
-      toDate: slip.nextGoLive,
-      days: slip.days,
-      cause: slip.cause,
-      note: slip.note,
-      createdById: actor.id,
-    });
-    await audit({
+    await commitGoLiveSlip({
       actor,
-      action: "project.go_live.slipped",
-      entityType: "project",
-      entityId: projectId,
-      summary: `${before.code}: go-live moved ${slip.days > 0 ? "+" : ""}${slip.days}d`,
-      metadata: { days: slip.days, cause: slip.cause, source: "management" },
+      project: {
+        id: projectId,
+        code: before.code,
+      },
+      slip: {
+        nextGoLive: slip.nextGoLive,
+        fromDate: slip.fromDate,
+        days: slip.days,
+        cause: slip.cause,
+        note: slip.note,
+      },
+      source: "management",
     });
   }
 
@@ -368,7 +370,15 @@ export async function updateEngagement(
   });
 
   revalidatePrismSurfaces(projectId);
-  return { ok: true };
+  if (slip.slipped) {
+    return {
+      ok: true,
+      slipped: true,
+      message: formatSlipRecordedMessage(slip.days, slip.fromDate, slip.nextGoLive),
+      targetGoLiveDate: toDateInput(slip.nextGoLive),
+    };
+  }
+  return { ok: true, message: "Saved." };
 }
 
 export async function listLeadOptions() {

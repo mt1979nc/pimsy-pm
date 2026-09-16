@@ -32,3 +32,12 @@ export function FormError({ error }: { error?: string }) {
     </p>
   );
 }
+
+export function FormSuccess({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="rounded-lg bg-green-soft px-3 py-2 text-[12.5px] text-green" role="status">
+      {message}
+    </p>
+  );
+}

@@ -159,7 +159,13 @@ export default async function ManagementHubPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader title="Weekly meeting" subtitle="Active implementation sites and inline slips." />
+          <div className="px-4 pb-4">
+            <LinkButton href="/management/weekly">Open weekly meeting</LinkButton>
+          </div>
+        </Card>
         <Card>
           <CardHeader title="Forecast" subtitle="Weekly hours, peak, hire-now." />
           <div className="px-4 pb-4">
