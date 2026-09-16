@@ -6,11 +6,11 @@ import { messages } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { NotFoundError, ForbiddenError, canSeeInternal } from "@/lib/authz";
 import { assertThreadAccess } from "@/lib/threads";
-import { markThreadRead } from "@/actions/messages";
 import { Card, Badge, VisibilityBadge, WaitingOnBadge } from "@/components/ui";
 import { MessageList } from "@/components/thread-list";
 import { differenceInCalendarDays, startOfDay } from "@/lib/dates";
 import { MessageComposer, ThreadActions } from "@/components/message-composer";
+import { MarkThreadRead } from "@/components/mark-thread-read";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +36,9 @@ export default async function ThreadPage({
     with: { author: { columns: { id: true, name: true, image: true, role: true } } },
   });
 
-  await markThreadRead(threadId);
-
   return (
     <div className="mx-auto max-w-[760px]">
+      <MarkThreadRead threadId={threadId} />
       <Link
         href={`/projects/${id}/messages`}
         className="mb-3 inline-block text-[12.5px] text-ink-3 hover:text-brand"

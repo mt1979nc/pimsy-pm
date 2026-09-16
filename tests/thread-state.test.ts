@@ -174,4 +174,17 @@ describe("thread-state stays off Postgres", () => {
     expect(src).not.toMatch(/from ["']@\/lib\/threads["']/);
     expect(src).not.toMatch(/from ["']@\/db["']/);
   });
+
+  it("marks a thread read after paint, not during RSC render", () => {
+    const pages = [
+      "src/app/(app)/projects/[id]/messages/[threadId]/page.tsx",
+      "src/app/(app)/inbox/[threadId]/page.tsx",
+      "src/app/portal/projects/[id]/messages/[threadId]/page.tsx",
+    ];
+    for (const rel of pages) {
+      const src = readFileSync(resolve(process.cwd(), rel), "utf8");
+      expect(src, rel).not.toMatch(/await markThreadRead\(/);
+      expect(src, rel).toMatch(/<MarkThreadRead /);
+    }
+  });
 });

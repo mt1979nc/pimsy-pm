@@ -6,10 +6,10 @@ import { messages } from "@/db/schema";
 import { requireCustomer } from "@/lib/guard";
 import { NotFoundError, ForbiddenError } from "@/lib/authz";
 import { assertThreadAccess } from "@/lib/threads";
-import { markThreadRead } from "@/actions/messages";
 import { Card, Badge, WaitingOnBadge } from "@/components/ui";
 import { MessageList } from "@/components/thread-list";
 import { MessageComposer, ThreadActions } from "@/components/message-composer";
+import { MarkThreadRead } from "@/components/mark-thread-read";
 import { differenceInCalendarDays, startOfDay } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
@@ -40,10 +40,9 @@ export default async function PortalThreadPage({
     with: { author: { columns: { id: true, name: true, image: true, role: true } } },
   });
 
-  await markThreadRead(threadId);
-
   return (
     <>
+      <MarkThreadRead threadId={threadId} />
       <Link
         href={`/portal/projects/${id}/messages`}
         className="mb-3 inline-block text-[12.5px] text-ink-3 hover:text-brand"

@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -290,11 +289,7 @@ export async function markThreadRead(threadId: string) {
     .update(threadParticipants)
     .set({ lastReadAt: new Date() })
     .where(and(eq(threadParticipants.threadId, threadId), eq(threadParticipants.userId, actor.id)));
-  // Called from RSC thread pages. revalidatePath during render 500s in Next 15;
-  // after() runs once the response is sent so the next Inbox/nav paint is honest.
-  after(() => {
-    revalidateThreadSurfaces(thread.projectId, threadId);
-  });
+  revalidateThreadSurfaces(thread.projectId, threadId);
 }
 
 export async function setThreadResolved(threadId: string, resolved: boolean) {
