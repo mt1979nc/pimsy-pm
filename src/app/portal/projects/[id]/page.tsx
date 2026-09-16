@@ -18,6 +18,7 @@ import { attachmentHref } from "@/lib/attachments";
 import { fmtShort, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { resolveTaskDescription } from "@/lib/task-description";
+import { resolveProjectBookingUrls } from "@/lib/booking-urls";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +67,7 @@ export default async function PortalProjectPage({
     openByPhase.reduce((n, g) => n + g.done.length, 0) + looseDone.length;
 
   const milestoneDone = milestones.filter((m) => m.completedAt).length;
+  const bookingUrls = resolveProjectBookingUrls(project);
 
   return (
     <>
@@ -168,6 +170,7 @@ export default async function PortalProjectPage({
                               projectId: id,
                               commentCount: t.comments?.length ?? 0,
                             }}
+                            bookingUrls={bookingUrls}
                           />
                         ))}
                       </div>
@@ -194,6 +197,7 @@ export default async function PortalProjectPage({
                             projectId: id,
                             commentCount: t.comments?.length ?? 0,
                           }}
+                          bookingUrls={bookingUrls}
                         />
                       ))}
                     </div>
@@ -226,6 +230,7 @@ export default async function PortalProjectPage({
                               projectId: id,
                               commentCount: t.comments?.length ?? 0,
                             }}
+                            bookingUrls={bookingUrls}
                           />
                         ))}
                       </div>
@@ -250,6 +255,7 @@ export default async function PortalProjectPage({
                             projectId: id,
                             commentCount: t.comments?.length ?? 0,
                           }}
+                          bookingUrls={bookingUrls}
                         />
                       ))}
                     </div>

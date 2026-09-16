@@ -20,6 +20,7 @@ import { resolveTaskDescription } from "@/lib/task-description";
 import { TaskCompleteControl } from "@/components/task-complete-control";
 import { CustomerAssigneePicker } from "@/components/customer-assignee-picker";
 import { listCustomerProjectTeam, assigneesOf } from "@/lib/task-assignees";
+import { resolveProjectBookingUrls } from "@/lib/booking-urls";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +124,7 @@ export default async function PortalTaskPage({
             assets={attachments}
             taskHref={`/portal/projects/${id}/tasks/${taskId}`}
             projectCode={project.code}
+            bookingUrls={resolveProjectBookingUrls(project)}
           />
         </div>
         {task.dueDate ? (

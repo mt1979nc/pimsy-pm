@@ -65,6 +65,8 @@ export default async function ProjectAboutPage({
           kickoff={kickoff}
           projectId={project.id}
           staffLinks
+          bookingUrls={project.bookingUrls}
+          specialistName={project.lead?.name}
         />
         {extraFacts.length > 0 ? (
           <div className="border-t border-border px-5 py-4">
@@ -139,9 +141,12 @@ export default async function ProjectAboutPage({
             crmAcronym: project.crmAcronym,
             crmKey: project.crmKey,
             zoomBookingUrl: project.zoomBookingUrl,
+            bookingUrls: project.bookingUrls ?? {},
             aboutNotes: project.aboutNotes,
             customFields: project.customFields ?? {},
             onboarded: project.onboarded,
+            specialistName: project.lead?.name ?? null,
+            specialistBookingUrl: project.lead?.zoomBookingUrl ?? null,
           }}
         />
       </Card>

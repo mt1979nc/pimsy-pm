@@ -16,6 +16,7 @@ import { connectedKeyOf } from "@/lib/connected-tasks";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
 import type { ChecklistItemView } from "@/components/task-checklist";
 import { loadAssigneesByTaskIds } from "@/lib/task-assignees";
+import { resolveProjectBookingUrls } from "@/lib/booking-urls";
 
 export const dynamic = "force-dynamic";
 
@@ -46,9 +47,12 @@ export default async function ProjectTasksPage({
         archivedAt: true,
         playbookPath: true,
         rcmTaskCountTotal: true,
+        bookingUrls: true,
+        zoomBookingUrl: true,
       },
       with: {
         members: { columns: { userId: true, role: true } },
+        lead: { columns: { zoomBookingUrl: true } },
       },
     }),
     db.query.phases.findMany({
@@ -214,6 +218,7 @@ export default async function ProjectTasksPage({
       phases={phaseBlocks}
       unphased={toItems(byPhase.get(null) ?? [])}
       assetsByTaskId={assetsByTaskId}
+      bookingUrls={resolveProjectBookingUrls(project ?? {})}
       checklistByTaskId={checklistByTaskId}
       addRcm={
         addRcm.ok

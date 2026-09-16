@@ -276,6 +276,12 @@ export const users = pgTable(
     mustChangePassword: boolean("must_change_password").notNull().default(false),
 
     /**
+     * Staff personal Zoom (or other) booking page. Kickoff on assigned sites
+     * uses this when the project About has no kickoff URL.
+     */
+    zoomBookingUrl: text("zoom_booking_url"),
+
+    /**
      * Per-person alert preferences. Null means "use the org defaults".
      * Shape: { emailEnabled: boolean, types: { [NotificationType]: boolean } }
      */
@@ -562,16 +568,27 @@ export const projects = pgTable(
     ehrTaskCountDone: integer("ehr_task_count_done").notNull().default(0),
 
     /**
-     * Site / About profile — kickoff dates live on the project row; Zoom booking,
-     * notes, and custom fields are edited on About. HubSpot / Prism / CRM key
-     * are staff-only. The customer About tab shows kickoff, go-live, specialist,
-     * booking, notes, and a small set of custom-field keys — never HubSpot.
+     * Site / About profile — kickoff dates live on the project row; per-meeting
+     * booking links, notes, and custom fields are edited on About. HubSpot /
+     * Prism / CRM key are staff-only. The customer About tab shows kickoff,
+     * go-live, specialist, booking links, notes, and a small set of custom-field
+     * keys — never HubSpot.
      */
     hubspotDealUrl: text("hubspot_deal_url"),
     prismClientId: text("prism_client_id"),
     crmAcronym: text("crm_acronym"),
     crmKey: text("crm_key"),
+    /** Legacy kickoff / specialist Zoom URL. Kept in sync with bookingUrls.kickoff. */
     zoomBookingUrl: text("zoom_booking_url"),
+    /**
+     * Per-meeting-type booking pages (workflow discovery, billing discovery,
+     * training 1/2/3, optional kickoff override). Kickoff falls back to
+     * zoom_booking_url then the assigned specialist’s personal page.
+     */
+    bookingUrls: jsonb("booking_urls")
+      .$type<Partial<Record<string, string>>>()
+      .notNull()
+      .default({}),
     aboutNotes: text("about_notes"),
     customFields: jsonb("custom_fields").$type<Record<string, string>>().notNull().default({}),
     /**

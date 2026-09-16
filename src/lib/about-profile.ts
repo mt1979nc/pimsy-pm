@@ -58,6 +58,7 @@ export type PortalAboutPayload = {
   kickoffDate: string | null;
   goLiveDate: string | null;
   zoomBookingUrl: string | null;
+  bookingUrls?: unknown;
   aboutNotes: string | null;
   kickoff: KickoffSnapshot;
   implementationTeam: AboutContactCard[];
@@ -255,6 +256,7 @@ export function toPortalAbout(input: {
   kickoffDate: Date | string | null;
   goLiveDate: Date | string | null;
   zoomBookingUrl: string | null;
+  bookingUrls?: unknown;
   aboutNotes: string | null;
   kickoff: KickoffSnapshot;
   implementationTeam: AboutContactCard[];
@@ -270,6 +272,7 @@ export function toPortalAbout(input: {
     kickoffDate: isoDateOrNull(input.kickoffDate),
     goLiveDate: isoDateOrNull(input.goLiveDate),
     zoomBookingUrl: input.zoomBookingUrl,
+    bookingUrls: input.bookingUrls,
     aboutNotes: input.aboutNotes,
     kickoff: {
       phaseName: isKickoffPhaseVisibleToPortal(input.kickoff) ? input.kickoff.phaseName : null,

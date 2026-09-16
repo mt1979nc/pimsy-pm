@@ -10,6 +10,7 @@ import { ThreadPreviewList } from "@/components/thread-list";
 import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate, daysUntil, isOverdue } from "@/lib/dates";
 import { resolveTaskDescription } from "@/lib/task-description";
+import { resolveProjectBookingUrls } from "@/lib/booking-urls";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your workspace" };
@@ -185,6 +186,7 @@ export default async function PortalHome() {
                             projectId: t.projectId,
                             commentCount: t.comments?.length ?? 0,
                           }}
+                          bookingUrls={resolveProjectBookingUrls(t.project)}
                         />
                       ))}
                     </div>
@@ -236,6 +238,7 @@ export default async function PortalHome() {
                             projectId: t.projectId,
                             commentCount: t.comments?.length ?? 0,
                           }}
+                          bookingUrls={resolveProjectBookingUrls(t.project)}
                         />
                       ))}
                     </div>

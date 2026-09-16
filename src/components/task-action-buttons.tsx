@@ -8,6 +8,7 @@ import {
   type ResolvedTaskActionButton,
   type TaskActionAsset,
 } from "@/lib/playbook-resources";
+import type { BookingUrlMap } from "@/lib/booking-urls";
 
 function isExternalHref(href: string): boolean {
   return /^https?:\/\//i.test(href);
@@ -18,6 +19,7 @@ export function TaskActionButtons({
   assets,
   taskHref,
   projectCode,
+  bookingUrls,
   compact = false,
   className,
   onUpload,
@@ -28,6 +30,7 @@ export function TaskActionButtons({
   taskHref?: string | null;
   /** Human site code (CEDAR) stamped onto the wizard URL for Power Automate. */
   projectCode?: string | null;
+  bookingUrls?: BookingUrlMap | null;
   compact?: boolean;
   className?: string;
   /** List: open an inline upload instead of navigating to the task page. */
@@ -45,6 +48,7 @@ export function TaskActionButtons({
     taskHref,
     projectCode,
     appOrigin: appOrigin || null,
+    bookingUrls,
   }).filter((b) => !(readOnly && b.kind === "upload"));
   const [popup, setPopup] = useState<ResolvedTaskActionButton | null>(null);
 

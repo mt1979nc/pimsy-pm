@@ -27,7 +27,7 @@ export async function portalProjects(actor: CustomerActor) {
     ),
     orderBy: [asc(projects.targetGoLiveDate)],
     with: {
-      lead: { columns: { id: true, name: true, image: true, email: true, title: true } },
+      lead: { columns: { id: true, name: true, image: true, email: true, title: true, zoomBookingUrl: true } },
     },
   });
 }
@@ -51,7 +51,10 @@ export async function portalActionItems(actor: CustomerActor) {
     ),
     orderBy: [asc(tasks.dueDate)],
     with: {
-      project: { columns: { id: true, name: true } },
+      project: {
+        columns: { id: true, name: true, bookingUrls: true, zoomBookingUrl: true },
+        with: { lead: { columns: { zoomBookingUrl: true } } },
+      },
       phase: { columns: { id: true, name: true, order: true, visibility: true, notApplicable: true } },
       // Only SHARED comments — INTERNAL notes stay invisible to the portal.
       comments: {
@@ -248,6 +251,7 @@ export async function portalAbout(actor: CustomerActor, projectId: string): Prom
     kickoffDate: loaded.project.startDate,
     goLiveDate: loaded.project.targetGoLiveDate,
     zoomBookingUrl: loaded.project.zoomBookingUrl,
+    bookingUrls: loaded.project.bookingUrls,
     aboutNotes: loaded.project.aboutNotes,
     kickoff: loaded.kickoff,
     implementationTeam: loaded.implementationTeam,
@@ -265,7 +269,7 @@ export async function portalProject(actor: CustomerActor, projectId: string) {
       isNull(projects.archivedAt),
     ),
     with: {
-      lead: { columns: { id: true, name: true, image: true, email: true, title: true } },
+      lead: { columns: { id: true, name: true, image: true, email: true, title: true, zoomBookingUrl: true } },
       customerAccount: { columns: { id: true, name: true } },
     },
   });

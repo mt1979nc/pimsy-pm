@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, ForbiddenError, NotFoundError } from "@/lib/authz";
 import {
+  previewPortalProject,
   previewPortalTask,
   previewPortalTaskAttachments,
   previewPortalTaskComments,
@@ -17,6 +18,7 @@ import { hasPlaybookFileResource, isCustomerUploadRequestTitle } from "@/lib/pla
 import { isDockFileRequestTitle } from "@/db/dock-task-buttons";
 import { commentsForCustomerSurface } from "@/lib/comment-visibility";
 import { assigneesOf } from "@/lib/task-assignees";
+import { resolveProjectBookingUrls } from "@/lib/booking-urls";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Customer view · Task" };
@@ -38,9 +40,10 @@ export default async function CustomerViewTaskPage({
   const task = await previewPortalTask(id, taskId);
   if (!task) notFound();
 
-  const [rawComments, attachments] = await Promise.all([
+  const [rawComments, attachments, project] = await Promise.all([
     previewPortalTaskComments(task.id),
     previewPortalTaskAttachments(task.id),
+    previewPortalProject(id),
   ]);
   const comments = commentsForCustomerSurface(rawComments);
   const description = resolveTaskDescription(task.title, task.description);
@@ -93,6 +96,7 @@ export default async function CustomerViewTaskPage({
             title={task.title}
             assets={attachments}
             taskHref={`/projects/${id}/customer-view/tasks/${task.id}`}
+            bookingUrls={resolveProjectBookingUrls(project ?? {})}
             readOnly
           />
           {description ? (

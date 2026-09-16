@@ -23,7 +23,7 @@ const RECORDING =
   "After the session, attach the Zoom (or other) recording URL on this task so the practice can rewatch it. Same link may also go on the Recordings tab.";
 
 const SCHEDULE_TRAINING =
-  "Book the session on the specialist’s calendar and put the date/time on this task. The practice completes this item when the slot is confirmed.";
+  "Book the session from the matching Training 1 / 2 / 3 booking page on About (Book Training on this task when the URL is set). The practice completes this item when the slot is confirmed.";
 
 const CONFIRM_LOGINS =
   "Before the session, confirm the named users have logged into PIMSY (the EHR), not just this portal. Staff task details list PATH portal contacts and, when PIMSY_AUDIT_FEED_URL is set, live EHR logins (who and how long). PATH last-seen is not an EHR login. Check this off when they are in; leave a comment if anyone is blocked.";
@@ -37,7 +37,7 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ],
   [
     "Inbed Bookings",
-    "Confirm booking pages for the meeting types this site will use (kickoff / discovery / training). Add the URLs on About when they are ready.",
+    "Confirm booking pages for the meeting types this site will use (kickoff, workflow discovery, billing discovery, training 1 / 2 / 3). Paste the URLs on About. Kickoff uses the assigned specialist’s booking page from Settings when About has no kickoff URL.",
   ],
   [
     "Add Import Link to Task (if applicable)",
@@ -45,7 +45,7 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ],
   [
     "Schedule Kickoff",
-    "Book the kickoff call with the practice and the assigned specialist. Put the meeting time on this task when it is confirmed.",
+    "Book the kickoff call with the practice. Book Kickoff on this task uses the assigned specialist’s booking page unless a kickoff URL is set on About.",
   ],
   ["During Kickoff", PARENT],
   [
@@ -58,7 +58,7 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ],
   [
     "Schedule: Workflow Guided Discovery",
-    "Book Workflow Guided Discovery. Click Here on this task opens the Discovery Wizard when the practice is ready to complete org details.",
+    "Book Workflow Guided Discovery. Book Workflow discovery on this task opens the matching booking page from About when it is set; otherwise Click Here still opens the Discovery Wizard so the practice can complete org details.",
   ],
   ["Post Kickoff", PARENT],
   [
@@ -121,7 +121,7 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ["Billing Config", PARENT],
   [
     "Schedule Billing Workflow Discovery Meeting",
-    "Book billing workflow discovery with the billing specialist and the practice’s billing lead.",
+    "Book billing workflow discovery with the billing specialist and the practice’s billing lead. Book Billing discovery on this task opens the matching URL from About.",
   ],
   [
     "Billing Workflow Discovery Meeting Notes & Recording",

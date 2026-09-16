@@ -29,6 +29,7 @@ export async function previewPortalAbout(projectId: string): Promise<PortalAbout
     kickoffDate: loaded.project.startDate,
     goLiveDate: loaded.project.targetGoLiveDate,
     zoomBookingUrl: loaded.project.zoomBookingUrl,
+    bookingUrls: loaded.project.bookingUrls,
     aboutNotes: loaded.project.aboutNotes,
     kickoff: loaded.kickoff,
     implementationTeam: loaded.implementationTeam,
@@ -41,7 +42,7 @@ export async function previewPortalProject(projectId: string) {
     (await db.query.projects.findFirst({
       where: and(eq(projects.id, projectId), isNull(projects.archivedAt)),
       with: {
-        lead: { columns: { id: true, name: true, image: true, email: true, title: true } },
+        lead: { columns: { id: true, name: true, image: true, email: true, title: true, zoomBookingUrl: true } },
         customerAccount: { columns: { id: true, name: true } },
       },
     })) ?? null

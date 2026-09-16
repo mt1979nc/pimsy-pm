@@ -9,6 +9,13 @@
  * PATH project/task/`/go` return context — never a guessed Storylane address.
  */
 import {
+  BOOKING_MEETING_LABELS,
+  bookingButtonLabel,
+  bookingMeetingTypeForTitle,
+  bookingUrlFor,
+  type BookingUrlMap,
+} from "@/lib/booking-urls";
+import {
   DISCOVERY_WIZARD_URL,
   libraryDefsForTaskTitle,
   normalizeAttachmentUrl,
@@ -205,7 +212,23 @@ export function resolveTaskActionButtons(opts: {
   taskHref?: string | null;
   projectCode?: string | null;
   appOrigin?: string | null;
+  bookingUrls?: BookingUrlMap | null;
 }): ResolvedTaskActionButton[] {
+  const bookingType = bookingMeetingTypeForTitle(opts.title);
+  const bookingHref = bookingType ? bookingUrlFor(opts.bookingUrls, bookingType) : null;
+  if (bookingType && bookingHref) {
+    return [
+      {
+        id: `book-${bookingType}`,
+        kind: "link",
+        label: bookingButtonLabel(bookingType),
+        resourceName: `${BOOKING_MEETING_LABELS[bookingType]} booking page`,
+        href: bookingHref,
+        popup: true,
+      },
+    ];
+  }
+
   const actions = dockTaskActionsForTitle(opts.title);
   const taskHref = opts.taskHref ?? "";
   const out: ResolvedTaskActionButton[] = [];
