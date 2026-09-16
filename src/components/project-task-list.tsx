@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Card, CardHeader, Badge, VisibilityBadge, EmptyState } from "@/components/ui";
+import { Card, CardHeader, Badge, VisibilityBadge, EmptyState, LinkButton } from "@/components/ui";
 import { TaskRow, type TaskRowData } from "@/components/task-row";
 import { TaskListToolbar } from "@/components/task-list-toolbar";
 import { CollapsibleCompleted } from "@/components/collapsible-completed";
 import { AddTaskInline, AddPhaseForm } from "@/app/(app)/projects/[id]/tasks/task-forms";
+import { AddRcmTrackForm } from "@/app/(app)/projects/[id]/settings/add-rcm-track-form";
 import { PhaseNaButton } from "@/app/(app)/projects/[id]/tasks/phase-na-button";
 import { PhaseVisibilityButton } from "@/app/(app)/projects/[id]/tasks/phase-visibility-button";
 import type { MoveTaskPhaseOption } from "@/components/move-task-dialog";
@@ -114,6 +115,7 @@ export function ProjectTaskBoard({
   unphased,
   assetsByTaskId,
   checklistByTaskId,
+  addRcm,
 }: {
   projectId: string;
   currentUserId: string;
@@ -123,6 +125,7 @@ export function ProjectTaskBoard({
   unphased: ProjectTaskListItem[];
   assetsByTaskId: Record<string, TaskActionAsset[]>;
   checklistByTaskId: Record<string, ChecklistItemView[]>;
+  addRcm?: { defaultAssignments: Record<string, string> } | null;
 }) {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<TaskListView>("all");
@@ -187,8 +190,29 @@ export function ProjectTaskBoard({
             <Badge tone="violet">{customerCount} waiting on customer</Badge>
           ) : null}
         </div>
-        <AddPhaseForm projectId={projectId} />
+        <span className="flex flex-wrap items-center gap-2">
+          {addRcm ? (
+            <LinkButton href="#add-rcm" size="sm" variant="secondary">
+              Add RCM
+            </LinkButton>
+          ) : null}
+          <AddPhaseForm projectId={projectId} />
+        </span>
       </div>
+
+      {addRcm ? (
+        <Card id="add-rcm">
+          <CardHeader
+            title="Add RCM"
+            subtitle="Enable the RCM area and playbook tasks on this live Implementation WIP. Open Billing / Discovery / Configuration work stays connected."
+          />
+          <AddRcmTrackForm
+            projectId={projectId}
+            staff={staff}
+            defaultAssignments={addRcm.defaultAssignments}
+          />
+        </Card>
+      ) : null}
 
       {nothingAtAll ? null : (
         <TaskListToolbar query={query} onQuery={setQuery} view={view} onView={setView} />

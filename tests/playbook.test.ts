@@ -19,6 +19,10 @@ import {
   setPhaseNotApplicable,
   type LoadedTemplate,
 } from "@/lib/playbook";
+import {
+  addRcmBlockedMessage,
+  billingRcmAssignmentsFromMembers,
+} from "@/lib/add-rcm";
 import { refreshProjectCounters } from "@/lib/rollup";
 import { db } from "@/db";
 import {
@@ -457,4 +461,247 @@ describe.skipIf(!dbOk)("materialize + N/A + RCM attach (postgres)", () => {
       }),
     ).rejects.toThrow(RCM_TRACK_ALREADY_PRESENT);
   });
+
+  it("adds RCM onto existing Implementation WIP without duplicating or auto-completing open overlap", async () => {
+    const [project] = await db
+      .insert(projects)
+      .values({
+        name: "Mid-WIP Harbor",
+        code: "IMP-P005",
+        customerAccountId: customerId,
+        leadId: specialistId,
+        playbookPath: "EHR",
+        type: "IMPLEMENTATION",
+        status: "IN_PROGRESS",
+        portalEnabled: true,
+      })
+      .returning({ id: projects.id });
+
+    await db.transaction(async (tx) => {
+      await applyRoleMemberships({
+        tx,
+        projectId: project.id,
+        roleAssignments: {
+          IMPLEMENTATION_SPECIALIST: specialistId,
+          T1_BILLING_SUPPORT: billingId,
+        },
+        leadId: specialistId,
+      });
+      await materializeTemplatesOnProject({
+        tx,
+        projectId: project.id,
+        templates: [ehrTemplate],
+        actorId: specialistId,
+        start: new Date("2026-09-01T12:00:00Z"),
+        scaleFactor: 1,
+        excludedAreaKeys: ["eprescribe"],
+        roleAssignments: { IMPLEMENTATION_SPECIALIST: specialistId },
+        defaultInternalAssigneeId: specialistId,
+      });
+    });
+    await refreshProjectCounters(project.id);
+
+    const membersBefore = await db.query.projectMembers.findMany({
+      where: eq(projectMembers.projectId, project.id),
+    });
+    const fromMembers = billingRcmAssignmentsFromMembers(membersBefore);
+
+    const first = await addRcmTrackToProject({
+      projectId: project.id,
+      actorId: rcmId,
+      templates: [rcmTemplate],
+      excludedAreaKeys: [],
+      roleAssignments: {
+        ...fromMembers,
+        RCM_IMPLEMENTATION_SPECIALIST: rcmId,
+      },
+      rcmStart: new Date("2026-10-01T12:00:00Z"),
+      rcmTargetGoLive: new Date("2026-11-15T12:00:00Z"),
+      scaleFactor: 1,
+      overlapMode: "connect",
+      requireActiveWip: true,
+    });
+    expect(first.addedTasks).toBe(2);
+    expect(first.autoCompleted).toBe(0);
+
+    const after = await db.query.tasks.findMany({ where: eq(tasks.projectId, project.id) });
+    const claimMd = after.filter((t) => /claimmd/i.test(t.title));
+    expect(claimMd).toHaveLength(2);
+    expect(claimMd.every((t) => t.status === "TODO" || t.status === "IN_PROGRESS")).toBe(true);
+    expect(claimMd.some((t) => t.workTrack === "EHR")).toBe(true);
+    expect(claimMd.some((t) => t.workTrack === "RCM")).toBe(true);
+    expect(after.some((t) => t.title === "RCM intake" && t.assigneeId === rcmId)).toBe(true);
+
+    const members = await db.query.projectMembers.findMany({
+      where: eq(projectMembers.projectId, project.id),
+    });
+    expect(members.some((m) => m.userId === billingId)).toBe(true);
+    expect(members.some((m) => m.userId === rcmId)).toBe(true);
+
+    const rcmCount = after.filter((t) => t.workTrack === "RCM").length;
+    await expect(
+      addRcmTrackToProject({
+        projectId: project.id,
+        actorId: rcmId,
+        templates: [rcmTemplate],
+        excludedAreaKeys: [],
+        roleAssignments: { RCM_IMPLEMENTATION_SPECIALIST: rcmId },
+        rcmStart: new Date("2026-10-15T12:00:00Z"),
+        rcmTargetGoLive: null,
+        scaleFactor: 1,
+        overlapMode: "connect",
+        requireActiveWip: true,
+      }),
+    ).rejects.toThrow(RCM_TRACK_ALREADY_PRESENT);
+    const rcmAfterSecond = (await db.query.tasks.findMany({ where: eq(tasks.projectId, project.id) })).filter(
+      (t) => t.workTrack === "RCM",
+    );
+    expect(rcmAfterSecond).toHaveLength(rcmCount);
+  });
+
+  it("connect-mode marks only the RCM copy done when the EHR peer is already done", async () => {
+    const [project] = await db
+      .insert(projects)
+      .values({
+        name: "Partial overlap WIP",
+        code: "IMP-P006",
+        customerAccountId: customerId,
+        leadId: specialistId,
+        playbookPath: "EHR",
+        type: "IMPLEMENTATION",
+        status: "IN_PROGRESS",
+        portalEnabled: true,
+      })
+      .returning({ id: projects.id });
+
+    await db.transaction(async (tx) => {
+      await materializeTemplatesOnProject({
+        tx,
+        projectId: project.id,
+        templates: [ehrTemplate],
+        actorId: specialistId,
+        start: new Date("2026-09-01T12:00:00Z"),
+        scaleFactor: 1,
+        excludedAreaKeys: ["eprescribe"],
+        roleAssignments: { IMPLEMENTATION_SPECIALIST: specialistId },
+        defaultInternalAssigneeId: specialistId,
+      });
+    });
+    const live = await db.query.tasks.findMany({ where: eq(tasks.projectId, project.id) });
+    const claim = live.find((t) => /claimmd/i.test(t.title))!;
+    await db.update(tasks).set({ status: "DONE", completedAt: new Date() }).where(eq(tasks.id, claim.id));
+
+    const result = await addRcmTrackToProject({
+      projectId: project.id,
+      actorId: rcmId,
+      templates: [rcmTemplate],
+      excludedAreaKeys: [],
+      roleAssignments: { RCM_IMPLEMENTATION_SPECIALIST: rcmId },
+      rcmStart: new Date("2026-10-01T12:00:00Z"),
+      rcmTargetGoLive: null,
+      scaleFactor: 1,
+      overlapMode: "connect",
+      requireActiveWip: true,
+    });
+    expect(result.autoCompleted).toBe(1);
+    const all = await db.query.tasks.findMany({ where: eq(tasks.projectId, project.id) });
+    const claimMd = all.filter((t) => /claimmd/i.test(t.title));
+    expect(claimMd).toHaveLength(2);
+    expect(claimMd.every((t) => t.status === "DONE")).toBe(true);
+    expect(all.find((t) => t.title === "Kickoff call")?.status).not.toBe("DONE");
+  });
+
+  it("refuses mid-WIP Add RCM after COMPLETED, Onboarded, or Hand-off", async () => {
+    const [completed] = await db
+      .insert(projects)
+      .values({
+        name: "Completed site",
+        code: "IMP-P007",
+        customerAccountId: customerId,
+        leadId: specialistId,
+        playbookPath: "EHR",
+        type: "IMPLEMENTATION",
+        status: "COMPLETED",
+        portalEnabled: true,
+      })
+      .returning({ id: projects.id });
+    await expect(
+      addRcmTrackToProject({
+        projectId: completed.id,
+        actorId: rcmId,
+        templates: [rcmTemplate],
+        excludedAreaKeys: [],
+        roleAssignments: {},
+        rcmStart: new Date("2026-10-01T12:00:00Z"),
+        rcmTargetGoLive: null,
+        scaleFactor: 1,
+        overlapMode: "connect",
+        requireActiveWip: true,
+      }),
+    ).rejects.toThrow(addRcmBlockedMessage("completed"));
+
+    const [onboarded] = await db
+      .insert(projects)
+      .values({
+        name: "Onboarded site",
+        code: "IMP-P008",
+        customerAccountId: customerId,
+        leadId: specialistId,
+        playbookPath: "EHR",
+        type: "IMPLEMENTATION",
+        status: "IN_PROGRESS",
+        onboarded: true,
+        portalEnabled: true,
+      })
+      .returning({ id: projects.id });
+    await expect(
+      addRcmTrackToProject({
+        projectId: onboarded.id,
+        actorId: rcmId,
+        templates: [rcmTemplate],
+        excludedAreaKeys: [],
+        roleAssignments: {},
+        rcmStart: new Date("2026-10-01T12:00:00Z"),
+        rcmTargetGoLive: null,
+        scaleFactor: 1,
+        overlapMode: "connect",
+        requireActiveWip: true,
+      }),
+    ).rejects.toThrow(addRcmBlockedMessage("onboarded"));
+
+    const [handoff] = await db
+      .insert(projects)
+      .values({
+        name: "Handoff site",
+        code: "IMP-P009",
+        customerAccountId: customerId,
+        leadId: specialistId,
+        playbookPath: "EHR",
+        type: "IMPLEMENTATION",
+        status: "IN_PROGRESS",
+        portalEnabled: true,
+      })
+      .returning({ id: projects.id });
+    await db.insert(phases).values({
+      projectId: handoff.id,
+      name: "Workflow & Handoff",
+      order: 0,
+      status: "COMPLETED",
+    });
+    await expect(
+      addRcmTrackToProject({
+        projectId: handoff.id,
+        actorId: rcmId,
+        templates: [rcmTemplate],
+        excludedAreaKeys: [],
+        roleAssignments: {},
+        rcmStart: new Date("2026-10-01T12:00:00Z"),
+        rcmTargetGoLive: null,
+        scaleFactor: 1,
+        overlapMode: "connect",
+        requireActiveWip: true,
+      }),
+    ).rejects.toThrow(addRcmBlockedMessage("handoff"));
+  });
 });
+

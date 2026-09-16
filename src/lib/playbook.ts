@@ -31,8 +31,16 @@ import { canonicalStaffingRole } from "@/lib/staffing";
 import { insertTaskAssigneeRows, newTaskAssigneeIds } from "@/lib/task-assignees";
 import { refreshProjectCounters } from "@/lib/rollup";
 import { syncMilestonesFromTaskCompletion } from "@/lib/milestone-rollup";
-import { connectedKeyOf } from "@/lib/connected-tasks";
 import { expandIdsWithConnectedPeers } from "@/lib/connected-task-sync";
+import {
+  addRcmEligibility,
+  addRcmBlockedMessage,
+  isHandoffComplete,
+  projectHasRcmTrack as rcmTrackPresent,
+  rcmOverlapCompleteIds,
+  RCM_TRACK_ALREADY_PRESENT,
+  type RcmOverlapMode,
+} from "@/lib/add-rcm";
 import { copyLibraryAssetToTask, ensureDefaultAttachmentsOnTask } from "@/lib/template-attachments";
 import {
   PLAYBOOK_PATHS,
@@ -427,25 +435,18 @@ export async function applyRoleMemberships(opts: {
   }
 }
 
-function titlesMatch(a: string, b: string): boolean {
-  const na = normalizeOverlapTitle(a);
-  const nb = normalizeOverlapTitle(b);
-  if (!na || !nb) return false;
-  return na === nb || na.includes(nb) || nb.includes(na);
-}
-
-export const RCM_TRACK_ALREADY_PRESENT = "This project already has an RCM track.";
-
-function projectHasRcmTrack(
-  playbookPath: PlaybookPath | null | undefined,
-  taskRows: { workTrack: string }[],
-): boolean {
-  return playbookPath === "RCM_PRISM" || taskRows.some((t) => t.workTrack === "RCM");
-}
+export { RCM_TRACK_ALREADY_PRESENT };
 
 /**
- * Path 4: add RCM work to an existing EHR site, auto-complete overlapping
- * standard-implementation tasks, reactivate if needed, keep EHR dates.
+ * Add RCM phases/tasks onto an existing site.
+ *
+ * Path 4 (`overlapMode: "auto-complete"`, default): attach to an existing EHR
+ * site with Prism history — auto-complete overlapping standard-implementation
+ * tasks, reactivate if needed, keep EHR dates.
+ *
+ * Mid-WIP Add RCM (`overlapMode: "connect"`, `requireActiveWip: true`): keep
+ * still-open Billing/Discovery/Config overlap connected instead of marking it
+ * done; refuse Hand-off / COMPLETED / Onboarded / archived / cancelled.
  */
 export async function addRcmTrackToProject(opts: {
   projectId: string;
@@ -457,24 +458,31 @@ export async function addRcmTrackToProject(opts: {
   rcmTargetGoLive: Date | null;
   scaleFactor: number;
   skipUsFederalHolidays?: boolean;
+  overlapMode?: RcmOverlapMode;
+  requireActiveWip?: boolean;
 }): Promise<{ addedTasks: number; autoCompleted: number }> {
+  const overlapMode = opts.overlapMode ?? "auto-complete";
   const existing = await db.query.projects.findFirst({
     where: eq(projects.id, opts.projectId),
     columns: {
       id: true,
       status: true,
+      type: true,
       startDate: true,
       initialGoLiveDate: true,
       targetGoLiveDate: true,
       playbookPath: true,
       rcmStartedAt: true,
+      onboarded: true,
+      archivedAt: true,
+      rcmTaskCountTotal: true,
     },
   });
   if (!existing) throw new Error("Project not found.");
 
   const existingPhases = await db.query.phases.findMany({
     where: eq(phases.projectId, opts.projectId),
-    columns: { order: true },
+    columns: { id: true, order: true, name: true, status: true, notApplicable: true },
   });
   const orderOffset = existingPhases.reduce((m, p) => Math.max(m, p.order), -1) + 1;
 
@@ -488,10 +496,48 @@ export async function addRcmTrackToProject(opts: {
       connectKey: true,
       workTrack: true,
       notApplicable: true,
+      phaseId: true,
     },
   });
 
-  if (projectHasRcmTrack(existing.playbookPath, existingTasks)) {
+  const hasRcm = rcmTrackPresent({
+    playbookPath: existing.playbookPath,
+    rcmTaskCountTotal: existing.rcmTaskCountTotal,
+    hasRcmWorkTrack: existingTasks.some((t) => t.workTrack === "RCM"),
+  });
+
+  if (opts.requireActiveWip) {
+    const tasksByPhase = new Map<string, typeof existingTasks>();
+    for (const t of existingTasks) {
+      if (!t.phaseId) continue;
+      const list = tasksByPhase.get(t.phaseId) ?? [];
+      list.push(t);
+      tasksByPhase.set(t.phaseId, list);
+    }
+    const phasesForHandoff = existingPhases.map((p) => ({
+      name: p.name,
+      status: p.status,
+      notApplicable: p.notApplicable,
+      tasks: (tasksByPhase.get(p.id) ?? []).map((t) => ({
+        status: t.status,
+        notApplicable: t.notApplicable,
+      })),
+    }));
+    const eligibility = addRcmEligibility({
+      type: existing.type,
+      status: existing.status,
+      onboarded: existing.onboarded,
+      archivedAt: existing.archivedAt,
+      playbookPath: existing.playbookPath,
+      rcmTaskCountTotal: existing.rcmTaskCountTotal,
+      hasRcmWorkTrack: existingTasks.some((t) => t.workTrack === "RCM"),
+      handoffComplete: isHandoffComplete(phasesForHandoff),
+    });
+    if (!eligibility.ok) {
+      if (eligibility.reason === "already-on") throw new Error(RCM_TRACK_ALREADY_PRESENT);
+      throw new Error(addRcmBlockedMessage(eligibility.reason));
+    }
+  } else if (hasRcm) {
     throw new Error(RCM_TRACK_ALREADY_PRESENT);
   }
 
@@ -525,38 +571,24 @@ export async function addRcmTrackToProject(opts: {
 
     const newRcmTasks = await tx.query.tasks.findMany({
       where: and(eq(tasks.projectId, opts.projectId), eq(tasks.workTrack, "RCM")),
-      columns: { id: true, title: true, overlapKey: true, connectKey: true, status: true },
+      columns: { id: true, title: true, overlapKey: true, connectKey: true, status: true, workTrack: true },
     });
 
-    const completeIds = new Set<string>();
-    for (const rcm of newRcmTasks) {
-      const match = existingTasks.find((ehr) => {
-        if (ehr.notApplicable) return false;
-        if (ehr.workTrack === "RCM") return false;
-        const rcmKey = connectedKeyOf(rcm);
-        const ehrKey = connectedKeyOf(ehr);
-        if (rcmKey && ehrKey && rcmKey === ehrKey) return true;
-        if (rcmKey && ehrKey) return false;
-        return titlesMatch(rcm.title, ehr.title);
-      });
-      if (!match) continue;
-      if (match.status !== "DONE" && match.status !== "CANCELLED") {
-        completeIds.add(match.id);
-      }
-      // Overlapping RCM item is already covered by the EHR implementation.
-      completeIds.add(rcm.id);
-    }
+    const completeIds = rcmOverlapCompleteIds(existingTasks, newRcmTasks, overlapMode);
 
-    if (completeIds.size > 0) {
+    if (completeIds.length > 0) {
       await tx
         .update(tasks)
         .set({ status: "DONE", completedAt: new Date(), updatedAt: new Date() })
-        .where(inArray(tasks.id, [...completeIds]));
-      autoCompleted = completeIds.size;
+        .where(inArray(tasks.id, completeIds));
+      autoCompleted = completeIds.length;
     }
 
-    const nextStatus =
-      existing.status === "COMPLETED" || existing.status === "CANCELLED" || existing.status === "ON_HOLD"
+    const nextStatus = opts.requireActiveWip
+      ? existing.status === "NOT_STARTED"
+        ? "IN_PROGRESS"
+        : existing.status
+      : existing.status === "COMPLETED" || existing.status === "CANCELLED" || existing.status === "ON_HOLD"
         ? "IN_PROGRESS"
         : existing.status === "NOT_STARTED"
           ? "IN_PROGRESS"

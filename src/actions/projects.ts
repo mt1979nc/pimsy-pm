@@ -59,7 +59,6 @@ import {
 import {
   addRcmTrackToProject,
   applyRoleMemberships,
-  RCM_TRACK_ALREADY_PRESENT,
   loadTemplateById,
   materializeTemplatesOnProject,
   parseExcludedAreaKeys,
@@ -71,6 +70,16 @@ import {
 import { ASSIGNABLE_PROJECT_ROLES } from "@/lib/staffing";
 import { autoAssignForProjectRole, notifyDefaultAssigneesForProject } from "@/lib/task-assignees";
 import { isCustomerMemberRole } from "@/lib/task-role-match";
+import {
+  addRcmBlockedMessage,
+  addRcmEligibility,
+  billingRcmAssignmentsFromMembers,
+  isHandoffComplete,
+  mergeBillingRcmAssignments,
+  projectHasRcmTrack,
+  RCM_TRACK_ALREADY_PRESENT,
+  type AddRcmBlockedReason,
+} from "@/lib/add-rcm";
 import {
   parseExcludeFromAnalytics,
   parseExcludeFromAnalyticsIfPresent,
@@ -992,21 +1001,98 @@ export async function markPhaseNotApplicable(phaseId: string, notApplicable: boo
   revalidatePath(`/portal/projects/${phase.projectId}`);
 }
 
+export type AddRcmActionState = ActionState & { alreadyOn?: boolean };
+
+const ADD_RCM_BLOCKED_MESSAGES = new Set<string>(
+  (
+    [
+      "already-on",
+      "completed",
+      "cancelled",
+      "archived",
+      "onboarded",
+      "handoff",
+      "not-implementation",
+    ] as AddRcmBlockedReason[]
+  ).map(addRcmBlockedMessage),
+);
+
 export async function addRcmTrack(
-  _prev: ActionState,
+  _prev: AddRcmActionState,
   formData: FormData,
-): Promise<ActionState> {
+): Promise<AddRcmActionState> {
   const actor = await requireStaff();
   const projectId = String(formData.get("projectId") ?? "");
   if (!projectId) return { error: "Missing project." };
   await assertProjectWrite(actor, projectId);
+
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: {
+      id: true,
+      status: true,
+      type: true,
+      onboarded: true,
+      archivedAt: true,
+      playbookPath: true,
+      rcmTaskCountTotal: true,
+    },
+    with: {
+      members: { columns: { userId: true, role: true } },
+    },
+  });
+  if (!project) return { error: "Missing project." };
+
+  if (
+    projectHasRcmTrack({
+      playbookPath: project.playbookPath,
+      rcmTaskCountTotal: project.rcmTaskCountTotal,
+    })
+  ) {
+    return { alreadyOn: true };
+  }
+
+  const phaseRows = await db.query.phases.findMany({
+    where: eq(phases.projectId, projectId),
+    columns: { id: true, name: true, status: true, notApplicable: true },
+  });
+  const taskRows = await db.query.tasks.findMany({
+    where: eq(tasks.projectId, projectId),
+    columns: { phaseId: true, status: true, notApplicable: true, workTrack: true },
+  });
+  const eligibility = addRcmEligibility({
+    type: project.type,
+    status: project.status,
+    onboarded: project.onboarded,
+    archivedAt: project.archivedAt,
+    playbookPath: project.playbookPath,
+    rcmTaskCountTotal: project.rcmTaskCountTotal,
+    hasRcmWorkTrack: taskRows.some((t) => t.workTrack === "RCM"),
+    handoffComplete: isHandoffComplete(
+      phaseRows.map((p) => ({
+        name: p.name,
+        status: p.status,
+        notApplicable: p.notApplicable,
+        tasks: taskRows
+          .filter((t) => t.phaseId === p.id)
+          .map((t) => ({ status: t.status, notApplicable: t.notApplicable })),
+      })),
+    ),
+  });
+  if (!eligibility.ok) {
+    if (eligibility.reason === "already-on") return { alreadyOn: true };
+    return { error: addRcmBlockedMessage(eligibility.reason) };
+  }
 
   const templates = await resolveTemplatesForPath("RCM_PRISM");
   if (templates.length === 0) {
     return { error: "The RCM (Prism data) playbook is not seeded yet." };
   }
   const excludedAreaKeys = parseExcludedAreaKeys(formData);
-  const roleAssignments = parseRoleAssignments(formData);
+  const roleAssignments = mergeBillingRcmAssignments(
+    billingRcmAssignmentsFromMembers(project.members),
+    parseRoleAssignments(formData),
+  );
   const rcmStart = parseDateInput(formData.get("rcmStartDate")?.toString() ?? "") ?? new Date();
   const rcmTarget = parseDateInput(formData.get("rcmTargetGoLiveDate")?.toString() ?? "");
   const scale = resolvePlaybookScale({
@@ -1025,22 +1111,29 @@ export async function addRcmTrack(
       rcmStart,
       rcmTargetGoLive: scale.goLive,
       scaleFactor: scale.scaleFactor,
+      overlapMode: "connect",
+      requireActiveWip: true,
     });
   } catch (err) {
     console.error("addRcmTrack failed", err);
     if (err instanceof Error && err.message === RCM_TRACK_ALREADY_PRESENT) {
+      return { alreadyOn: true };
+    }
+    if (err instanceof Error && ADD_RCM_BLOCKED_MESSAGES.has(err.message)) {
       return { error: err.message };
     }
-    return { error: "Could not add the RCM track." };
+    return { error: "Could not add RCM." };
   }
   await audit({
     actor,
     action: "project.rcm_track.added",
     entityType: "project",
     entityId: projectId,
-    summary: "RCM track added from project settings",
+    summary: "RCM area added on existing Implementation WIP",
   });
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/tasks`);
+  revalidatePath(`/projects/${projectId}/settings`);
   return { ok: true };
 }
 

@@ -351,8 +351,9 @@ live tasks. Drop real Dock binaries in `content/template-attachments/` and
 run `npm run db:upload:template-attachments -- --apply`, or replace them at
 **Templates → File library**. Staff can also add a new file or paste an
 online-form hyperlink there (no invented Dock/Storylane URLs). Runbook:
-`v1.13-TEMPLATES.md`. Billing Configuration connected tasks / RCM move:
-`v1.14-BILLING-RCM.md` (templates-only seed + resync; HOLD from live).
+`v1.13-TEMPLATES.md`. Billing Configuration connected tasks / RCM move /
+Add RCM on existing Implementation WIP: `v1.14-BILLING-RCM.md` (templates-only
+seed + resync; HOLD from live).
 
 Prism cutover (Capacity / Forecast / Analysis as source of truth in PATH): see
 `v1.11-PRISM-CUTOVER.md`. Dump standalone Prism SQL (or a JSON file from Cloud Shell), then:
