@@ -25,8 +25,10 @@ import {
 } from "@/components/ui";
 import { ProjectRow } from "@/components/project-row";
 import { TaskRow } from "@/components/task-row";
-import { fmtShort, dueLabel, fmtRelative, differenceInCalendarDays, startOfDay } from "@/lib/dates";
+import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
+import { fmtShort, fmtRelative, differenceInCalendarDays, startOfDay } from "@/lib/dates";
 import { isOverviewUpcomingDue } from "@/lib/onboarded";
+import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard" };
@@ -39,7 +41,7 @@ export default async function DashboardPage() {
       portfolioSummary(actor),
       attentionProjects(actor, 6),
       myTasks(actor),
-      waitingOnCustomer(actor, 8),
+      waitingOnCustomer(actor, 40),
       upcomingMilestones(actor, 30, 8),
       listInboxThreads(actor, 8),
       waitingOnThreadRollup(actor),
@@ -55,6 +57,7 @@ export default async function DashboardPage() {
 
   const unread = threads.filter((t) => isUnread(t, actor.id));
   const dueSoon = tasks.filter((t) => isOverviewUpcomingDue(t.dueDate));
+  const chaseHint = formatWaitingOnAreaHint(countWaitingOnByArea(chase));
 
   const firstName = (actor.name ?? actor.email).split(" ")[0];
 
@@ -280,33 +283,18 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader
               title="Waiting on customers"
-              subtitle="Open action items on their side"
+              subtitle="Outstanding customer actions by Discovery, Configuration, and Training"
+              action={
+                <Link href="/my-work" className="text-[12.5px] font-medium text-brand hover:underline">
+                  Chase list
+                </Link>
+              }
             />
-            {chase.length === 0 ? (
-              <EmptyState title="Nothing outstanding" description="No customer action items are open." />
-            ) : (
-              <div className="divide-y divide-border">
-                {chase.map((t) => (
-                  <div key={t.id} className="px-4 py-2.5">
-                    <div className="truncate text-[13px] text-ink">{t.title}</div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">
-                      <Link
-                        href={`/projects/${t.project.id}/tasks`}
-                        className="font-medium text-ink-2 hover:text-brand"
-                      >
-                        {t.project.customerAccount?.name ?? t.project.name}
-                      </Link>
-                      {t.dueDate ? (
-                        <>
-                          <span>·</span>
-                          <span>{dueLabel(t.dueDate)}</span>
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <WaitingOnCustomerList
+              tasks={chase}
+              emptyTitle="Nothing outstanding"
+              emptyDescription="No customer action items are open."
+            />
           </Card>
 
           <Card>
@@ -350,6 +338,9 @@ export default async function DashboardPage() {
                   <div className="mt-1 text-[20px] font-semibold">
                     {summary.openCustomerActions}
                   </div>
+                  {chaseHint ? (
+                    <div className="mt-1 text-[11.5px] leading-snug text-ink-3">{chaseHint}</div>
+                  ) : null}
                 </div>
                 <div className="bg-surface px-4 py-3">
                   <div className="text-[11.5px] uppercase tracking-wide text-ink-3">

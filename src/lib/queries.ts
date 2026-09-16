@@ -273,6 +273,7 @@ export async function waitingOnCustomer(actor: Actor, limit = 50) {
     orderBy: [asc(tasks.dueDate)],
     limit,
     with: {
+      phase: { columns: { id: true, name: true, order: true } },
       project: {
         columns: { id: true, name: true, code: true },
         with: { customerAccount: { columns: { id: true, name: true } } },

@@ -15,7 +15,7 @@ import {
   Avatar,
   HealthBadge,
 } from "@/components/ui";
-import { fmtDate, fmtShort, fmtRelative, dueLabel, isOverdue } from "@/lib/dates";
+import { fmtDate, fmtShort, fmtRelative, isOverdue } from "@/lib/dates";
 import {
   StatusUpdateForm,
   MilestoneToggle,
@@ -25,6 +25,8 @@ import {
 } from "./overview-forms";
 import { cn } from "@/lib/cn";
 import { staffingRoleLabel } from "@/lib/staffing";
+import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
+import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +75,8 @@ export default async function ProjectOverviewPage({
         eq(tasks.notApplicable, false),
       ),
       orderBy: [asc(tasks.dueDate)],
-      limit: 10,
+      limit: 30,
+      with: { phase: { columns: { id: true, name: true, order: true } } },
     }),
   ]);
 
@@ -137,7 +140,8 @@ export default async function ProjectOverviewPage({
             title="Waiting on the customer"
             subtitle={
               customerActions.length > 0
-                ? `${customerActions.length} open action item${customerActions.length === 1 ? "" : "s"}`
+                ? formatWaitingOnAreaHint(countWaitingOnByArea(customerActions)) ??
+                  `${customerActions.length} open action item${customerActions.length === 1 ? "" : "s"}`
                 : "Nothing outstanding"
             }
             action={
@@ -149,35 +153,20 @@ export default async function ProjectOverviewPage({
               </Link>
             }
           />
-          {customerActions.length === 0 ? (
-            <EmptyState
-              title="Nothing on their plate"
-              description="Assign a task to the customer side and it appears in their portal."
-            />
-          ) : (
-            <div className="divide-y divide-border">
-              {customerActions.map((t) => (
-                <div key={t.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] text-ink">{t.title}</div>
-                    {t.dueDate ? (
-                      <div
-                        className={cn(
-                          "text-[12px]",
-                          isOverdue(t.dueDate) ? "font-medium text-red" : "text-ink-3",
-                        )}
-                      >
-                        {dueLabel(t.dueDate)}
-                      </div>
-                    ) : null}
-                  </div>
-                  <Badge tone={t.status === "IN_PROGRESS" ? "brand" : "neutral"}>
-                    {t.status === "IN_PROGRESS" ? "Started" : "Not started"}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
+          <WaitingOnCustomerList
+            tasks={customerActions.map((t) => ({
+              ...t,
+              project: {
+                id,
+                name: project.name,
+                customerAccount: project.customerAccount,
+              },
+            }))}
+            emptyTitle="Nothing on their plate"
+            emptyDescription="Assign a task to the customer side and it appears in their portal."
+            showProject={false}
+            showStatus
+          />
         </Card>
       </div>
 

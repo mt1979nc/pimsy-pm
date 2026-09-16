@@ -10,6 +10,7 @@ import {
   cycleTimeStats,
   teamCapacity,
   openRisks,
+  waitingOnCustomer,
 } from "@/lib/queries";
 import {
   Card,
@@ -28,6 +29,7 @@ import { siteAcronym } from "@/components/project-row";
 import { pctComplete } from "@/lib/pct-complete";
 import { fmtRelative, daysUntil, addDays } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Management" };
@@ -35,7 +37,7 @@ export const metadata = { title: "Management" };
 export default async function AdminOverviewPage() {
   const actor = await requirePortfolioAccess();
 
-  const [summary, attention, customers, cycle, team, risks, staffCount, contactCount, recentlyActive] =
+  const [summary, attention, customers, cycle, team, risks, staffCount, contactCount, recentlyActive, chase] =
     await Promise.all([
       portfolioSummary(actor),
       attentionProjects(actor, 8),
@@ -51,6 +53,7 @@ export default async function AdminOverviewPage() {
         orderBy: [desc(users.lastSeenAt)],
         limit: 8,
       }),
+      waitingOnCustomer(actor, 80),
     ]);
 
   const liveCustomers = customers.filter((c) => c.status === "LIVE").length;
@@ -58,6 +61,7 @@ export default async function AdminOverviewPage() {
   const atRiskCustomers = customers.filter((c) => c.status === "AT_RISK").length;
   const overloaded = team.filter((t) => t.utilization > 110);
   const idle = team.filter((t) => t.utilization < 40 && t.openTasks === 0);
+  const chaseHint = formatWaitingOnAreaHint(countWaitingOnByArea(chase));
 
   return (
     <div className="space-y-6">
@@ -96,7 +100,7 @@ export default async function AdminOverviewPage() {
         <Stat
           label="Waiting on customers"
           value={summary.openCustomerActions}
-          hint="open action items"
+          hint={chaseHint ?? "open action items"}
         />
       </div>
 
