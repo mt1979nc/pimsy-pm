@@ -81,6 +81,7 @@ export type PortalContactFields = {
   name: string;
   email: string;
   title?: string;
+  phone?: string;
 };
 
 /**
@@ -93,6 +94,7 @@ export function parseOptionalPortalContact(
   const name = String(formData.get("contactName") ?? "").trim();
   const emailRaw = String(formData.get("contactEmail") ?? "").trim().toLowerCase();
   const titleRaw = String(formData.get("contactTitle") ?? "").trim();
+  const phoneRaw = String(formData.get("contactPhone") ?? "").trim();
 
   if (!name && !emailRaw) return { ok: true, contact: null };
   if (!name) return { ok: false, error: "Enter the portal contact's name." };
@@ -107,7 +109,12 @@ export function parseOptionalPortalContact(
   }
   return {
     ok: true,
-    contact: { name: name.slice(0, 120), email: parsed.data, title: titleRaw ? titleRaw.slice(0, 120) : undefined },
+    contact: {
+      name: name.slice(0, 120),
+      email: parsed.data,
+      title: titleRaw ? titleRaw.slice(0, 120) : undefined,
+      phone: phoneRaw ? phoneRaw.slice(0, 40) : undefined,
+    },
   };
 }
 
@@ -152,6 +159,7 @@ export async function provisionCustomerContact(opts: {
   email: string;
   name: string;
   title?: string | null;
+  phone?: string | null;
 }): Promise<ProvisionResult> {
   const email = opts.email.trim().toLowerCase();
   const name = opts.name.trim();
@@ -182,6 +190,7 @@ export async function provisionCustomerContact(opts: {
       email,
       name,
       title: opts.title?.trim() || null,
+      phone: opts.phone?.trim() || null,
       role: "CUSTOMER",
       customerAccountId: opts.customerAccountId,
     })
@@ -320,6 +329,7 @@ export async function autoInviteCustomerContact(opts: {
   email: string;
   name: string;
   title?: string | null;
+  phone?: string | null;
   actor: Pick<Actor, "id" | "email" | "name">;
   projectId?: string;
   force?: boolean;
@@ -336,6 +346,7 @@ export async function autoInviteCustomerContact(opts: {
     email: opts.email,
     name: opts.name,
     title: opts.title,
+    phone: opts.phone,
   });
   if (!provisioned.ok) return provisioned;
 

@@ -78,6 +78,10 @@ import {
   sendCustomerInvite,
   type PortalContactFields,
 } from "@/lib/customer-invite";
+import { revalidateAboutSurfaces } from "@/lib/about-revalidate";
+import { parseCustomFieldLines } from "@/lib/about-profile";
+import { parseDealLink } from "@/lib/hubspot";
+import { parseOptionalHttpUrl } from "@/lib/http-url";
 import type { ActionState } from "./messages";
 
 const scopeSchema = z.object({
@@ -116,6 +120,7 @@ async function invitePortalContactsForSite(opts: {
       email: opts.newContact.email,
       name: opts.newContact.name,
       title: opts.newContact.title,
+      phone: opts.newContact.phone,
       actor: opts.actor,
       projectId: opts.projectId,
     });
@@ -146,6 +151,8 @@ const createProjectSchema = z.object({
   targetGoLiveDate: z.string().optional(),
   rcmTargetGoLiveDate: z.string().optional(),
   description: z.string().trim().max(5000).optional(),
+  hubspotDealUrl: z.string().optional(),
+  crmAcronym: z.string().trim().max(40).optional(),
   scopeJson: z.string().optional(),
   discoveryScenario: z.enum(["OPTIMISTIC", "TYPICAL", "PESSIMISTIC"]).optional(),
   skipUsFederalHolidays: z.string().optional(),
@@ -204,6 +211,8 @@ export async function createProject(
     targetGoLiveDate: formData.get("targetGoLiveDate")?.toString() || undefined,
     rcmTargetGoLiveDate: formData.get("rcmTargetGoLiveDate")?.toString() || undefined,
     description: formData.get("description")?.toString() || undefined,
+    hubspotDealUrl: formData.get("hubspotDealUrl")?.toString() || undefined,
+    crmAcronym: formData.get("crmAcronym")?.toString() || undefined,
     scopeJson: formData.get("scopeJson")?.toString() || undefined,
     discoveryScenario: (formData.get("discoveryScenario")?.toString() as never) || undefined,
     skipUsFederalHolidays: formData.get("skipUsFederalHolidays")?.toString() || undefined,
@@ -222,6 +231,11 @@ export async function createProject(
   if (d.type === "INTERNAL" && portalContact.contact) {
     return { error: "Internal projects have no customer portal contacts." };
   }
+
+  const dealLink = parseDealLink(d.hubspotDealUrl ?? "");
+  if (!dealLink.ok) return { error: dealLink.error };
+  const hubspotDealUrl = dealLink.deal?.href ?? null;
+  const crmAcronym = d.crmAcronym?.trim() || null;
 
   const start = d.startDate ? (parseDateInput(d.startDate) ?? new Date()) : new Date();
   const code = await nextProjectCode(d.type);
@@ -357,6 +371,8 @@ export async function createProject(
           playbookPath,
           portalEnabled: d.type !== "INTERNAL",
           excludeFromAnalytics: parseExcludeFromAnalytics(formData),
+          hubspotDealUrl,
+          crmAcronym,
         })
         .returning({ id: projects.id });
 
@@ -712,16 +728,22 @@ export async function addProjectMember(
   }
 
   revalidatePath(`/projects/${projectId}`);
+  revalidateAboutSurfaces({ projectId, customerAccountId: project?.customerAccountId });
   return { ok: true };
 }
 
 export async function removeProjectMember(projectId: string, userId: string) {
   const actor = await requireStaff();
   await assertProjectWrite(actor, projectId);
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { customerAccountId: true },
+  });
   await db
     .delete(projectMembers)
     .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
   revalidatePath(`/projects/${projectId}`);
+  revalidateAboutSurfaces({ projectId, customerAccountId: project?.customerAccountId });
 }
 
 export async function archiveProject(projectId: string) {
@@ -1065,36 +1087,32 @@ export async function updateProjectAbout(
 
   await assertProjectWrite(actor, projectId);
 
-  const hubspotDealUrl = formData.get("hubspotDealUrl")?.toString().trim() ?? "";
+  const dealLink = parseDealLink(formData.get("hubspotDealUrl")?.toString() ?? "");
+  if (!dealLink.ok) return { error: dealLink.error };
+  const zoomLink = parseOptionalHttpUrl(formData.get("zoomBookingUrl")?.toString() ?? "");
+  if (!zoomLink.ok) return { error: zoomLink.error };
+
   const prismClientId = formData.get("prismClientId")?.toString().trim() ?? "";
   const crmAcronym = formData.get("crmAcronym")?.toString().trim() ?? "";
   const crmKey = formData.get("crmKey")?.toString().trim() ?? "";
-  const zoomBookingUrl = formData.get("zoomBookingUrl")?.toString().trim() ?? "";
   const aboutNotes = formData.get("aboutNotes")?.toString() ?? "";
   const onboarded = formData.get("onboarded") === "on";
+  const customFields = parseCustomFieldLines(formData.get("customFields")?.toString() ?? "");
 
-  // Optional free-form custom fields as "key=value" lines.
-  const customRaw = formData.get("customFields")?.toString() ?? "";
-  const customFields: Record<string, string> = {};
-  for (const line of customRaw.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    const eqIdx = trimmed.indexOf("=");
-    if (eqIdx <= 0) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    const value = trimmed.slice(eqIdx + 1).trim();
-    if (key) customFields[key] = value;
-  }
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { customerAccountId: true },
+  });
 
   await db
     .update(projects)
     .set({
-      hubspotDealUrl: hubspotDealUrl || null,
+      hubspotDealUrl: dealLink.deal?.href ?? null,
       prismClientId: prismClientId || null,
       crmAcronym: crmAcronym || null,
       crmKey: crmKey || null,
-      zoomBookingUrl: zoomBookingUrl || null,
-      aboutNotes: aboutNotes || null,
+      zoomBookingUrl: zoomLink.href,
+      aboutNotes: aboutNotes.trim() || null,
       onboarded,
       customFields,
       updatedAt: new Date(),
@@ -1110,9 +1128,7 @@ export async function updateProjectAbout(
   });
 
   revalidatePath(`/projects/${projectId}`);
-  revalidatePath(`/projects/${projectId}/about`);
-  revalidatePath(`/portal/projects/${projectId}`);
-  revalidatePath(`/portal/projects/${projectId}/about`);
+  revalidateAboutSurfaces({ projectId, customerAccountId: project?.customerAccountId });
   revalidatePath("/dashboard");
   revalidatePath("/my-work");
   revalidatePath("/reports");

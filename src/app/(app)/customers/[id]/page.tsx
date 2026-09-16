@@ -18,6 +18,7 @@ import {
 } from "@/components/ui";
 import { ProjectRow, ProjectListHeader } from "@/components/project-row";
 import { PortalContactsPanel, ToggleContactActive, ResendContactInvite } from "./invite-contact-form";
+import { EditContactForm } from "./edit-contact-form";
 import { ConfirmDeleteForm } from "@/components/confirm-delete";
 import { deleteCustomer } from "@/actions/customers";
 import { fmtRelative } from "@/lib/dates";
@@ -129,7 +130,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               ) : (
                 <div className="divide-y divide-border">
                   {customer.contacts.map((c) => (
-                    <div key={c.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <div key={c.id} className="flex items-start gap-3 px-4 py-2.5">
                       <Avatar name={c.name} image={c.image} size={28} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -146,7 +147,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                         <div className="truncate text-[12px] text-ink-3">
                           {c.email}
                           {c.title ? ` · ${c.title}` : ""}
+                          {c.phone ? ` · ${c.phone}` : ""}
                         </div>
+                        <EditContactForm
+                          contact={{ id: c.id, name: c.name, title: c.title, phone: c.phone }}
+                        />
                       </div>
                       <div className="shrink-0 text-right">
                         <div className="text-[11.5px] text-ink-3">

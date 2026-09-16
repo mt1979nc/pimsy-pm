@@ -15,6 +15,7 @@ import {
 import { requirePortfolioAccess } from "@/lib/guard";
 import { canManagePrismCapacity, ForbiddenError, NotFoundError } from "@/lib/authz";
 import { audit } from "@/lib/audit";
+import { parseDealLink } from "@/lib/hubspot";
 import {
   complexityTier,
   parseDiscoveryScenario,
@@ -501,6 +502,8 @@ export async function createEngagement(
   }
   const prismStatus = prismStatusRaw as PrismStatus;
   const prismNote = formData.get("prismNote")?.toString().trim() || null;
+  const dealLink = parseDealLink(formData.get("hubspotDealUrl")?.toString() ?? "");
+  if (!dealLink.ok) return { error: dealLink.error };
   const kickoffDate = parseDateInput(formData.get("kickoffDate")?.toString());
   const requestedGoLive = parseDateInput(formData.get("targetGoLiveDate")?.toString());
 
@@ -554,6 +557,7 @@ export async function createEngagement(
       portalEnabled: prismStatus !== "pipeline",
       prismClientId: acronym,
       crmAcronym: acronym,
+      hubspotDealUrl: dealLink.deal?.href ?? null,
       excludeFromAnalytics: parseExcludeFromAnalytics(formData),
       description: "Added to the Prism roster in PATH. Playbook can be attached later from New project.",
     })

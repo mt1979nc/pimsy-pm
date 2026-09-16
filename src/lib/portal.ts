@@ -11,6 +11,9 @@ import { db } from "@/db";
 import { projects, tasks, phases, milestones, statusUpdates, fileAssets, taskComments } from "@/db/schema";
 import type { Actor } from "./authz";
 import { isCustomerVisiblePhase, portalFacingTaskSql } from "./task-visibility";
+import { loadProjectAbout } from "./about-query";
+import { toPortalAbout } from "./about-profile";
+import type { PortalAboutPayload } from "./about-profile";
 
 export type CustomerActor = Actor & { customerAccountId: string };
 
@@ -218,6 +221,26 @@ export async function portalTask(actor: CustomerActor, projectId: string, taskId
   if (!task) return null;
   if (!isCustomerVisiblePhase(task.phase)) return null;
   return task;
+}
+
+/** Portal-safe About snapshot. HubSpot, CRM key, Prism id, and extras stay off. */
+export async function portalAbout(actor: CustomerActor, projectId: string): Promise<PortalAboutPayload | null> {
+  const project = await portalProject(actor, projectId);
+  if (!project) return null;
+  const loaded = await loadProjectAbout(projectId);
+  if (!loaded) return null;
+  return toPortalAbout({
+    projectName: loaded.project.name,
+    customerName: loaded.project.customerAccount?.name ?? null,
+    crmAcronym: loaded.project.crmAcronym,
+    kickoffDate: loaded.project.startDate,
+    goLiveDate: loaded.project.targetGoLiveDate,
+    zoomBookingUrl: loaded.project.zoomBookingUrl,
+    aboutNotes: loaded.project.aboutNotes,
+    kickoff: loaded.kickoff,
+    implementationTeam: loaded.implementationTeam,
+    customerContacts: loaded.customerInputs,
+  });
 }
 
 /** Portal-safe project fetch. Returns null rather than leaking existence. */

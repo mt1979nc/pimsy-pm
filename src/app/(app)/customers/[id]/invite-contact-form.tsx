@@ -113,6 +113,9 @@ export function PortalContactsPanel({
                 className={inputClass}
               />
             </Field>
+            <Field label="Phone" htmlFor="contactPhone">
+              <input id="contactPhone" name="phone" className={inputClass} />
+            </Field>
             <Field label="Add to project" htmlFor="contactProject">
               <select id="contactProject" name="projectId" className={inputClass}>
                 <option value="">Account access only</option>

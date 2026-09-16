@@ -92,4 +92,12 @@ export const env = {
   get PRISM_READ_API_KEY() {
     return optional("PRISM_READ_API_KEY");
   },
+  /**
+   * Optional HubSpot private-app token for staff About deal pull.
+   * When unset, About shows a clear outbound deal link only. Never required
+   * for PATH to run. Do not expose this to the portal or client bundles.
+   */
+  get HUBSPOT_ACCESS_TOKEN() {
+    return optional("HUBSPOT_ACCESS_TOKEN");
+  },
 };

@@ -4,6 +4,7 @@ import {
   resolveAssigneeForRole,
   staffingRoleFromTitle,
   staffingRoleLabel,
+  staffingRoleRank,
   isManagerOverviewRole,
 } from "@/lib/staffing";
 import {
@@ -48,6 +49,8 @@ describe("staffing helpers", () => {
     expect(staffingRoleLabel("SPECIALIST")).toBe("Implementation Specialist");
     expect(isManagerOverviewRole("RCM_MANAGER")).toBe(true);
     expect(isManagerOverviewRole("SPECIALIST")).toBe(false);
+    expect(staffingRoleRank("LEAD")).toBeLessThan(staffingRoleRank("IMPLEMENTATION_SPECIALIST"));
+    expect(staffingRoleRank("IMPLEMENTATION_SPECIALIST")).toBeLessThan(staffingRoleRank("CONTRIBUTOR"));
   });
 
   it("auto-assigns by role and falls back to the lead for specialists", () => {

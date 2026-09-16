@@ -28,6 +28,7 @@ import {
   STAFF_DOMAIN_CONTACT_ERROR,
 } from "@/lib/customer-invite";
 import { isReservedStaffEmail } from "@/lib/internal-email";
+import { revalidateAboutSurfaces, revalidateCustomerAboutSurfaces } from "@/lib/about-revalidate";
 
 function slugify(s: string) {
   return s
@@ -204,6 +205,7 @@ const inviteSchema = z.object({
   email: z.email("Enter a valid email address."),
   name: z.string().trim().min(1, "Enter their name.").max(120),
   title: z.string().trim().max(120).optional(),
+  phone: z.string().trim().max(40).optional(),
   projectId: z.string().optional(),
 });
 
@@ -224,6 +226,7 @@ export async function inviteCustomerContact(
     email: formData.get("email")?.toString().trim().toLowerCase(),
     name: formData.get("name"),
     title: formData.get("title")?.toString() || undefined,
+    phone: formData.get("phone")?.toString() || undefined,
     projectId: formData.get("projectId")?.toString() || undefined,
   });
   if (!parsed.success) {
@@ -239,6 +242,7 @@ export async function inviteCustomerContact(
     email: d.email,
     name: d.name,
     title: d.title,
+    phone: d.phone,
     actor,
     projectId: d.projectId,
     force,
@@ -265,7 +269,11 @@ export async function inviteCustomerContact(
   }
 
   revalidatePath(`/customers/${d.customerAccountId}`);
-  if (d.projectId) revalidatePath(`/projects/${d.projectId}`);
+  await revalidateCustomerAboutSurfaces(d.customerAccountId);
+  if (d.projectId) {
+    revalidatePath(`/projects/${d.projectId}`);
+    revalidateAboutSurfaces({ projectId: d.projectId, customerAccountId: d.customerAccountId });
+  }
   return {
     ok: true,
     inviteUrl: result.inviteUrl,
@@ -340,8 +348,56 @@ export async function setUserActive(userId: string, isActive: boolean) {
     summary: target.email,
   });
 
-  if (target.customerAccountId) revalidatePath(`/customers/${target.customerAccountId}`);
+  if (target.customerAccountId) {
+    revalidatePath(`/customers/${target.customerAccountId}`);
+    await revalidateCustomerAboutSurfaces(target.customerAccountId);
+  }
   revalidatePath("/admin/users");
+}
+
+export async function updateCustomerContact(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const userId = String(formData.get("userId") ?? "");
+  if (!userId) return { error: "Missing contact." };
+
+  const name = formData.get("name")?.toString().trim() ?? "";
+  const title = formData.get("title")?.toString().trim() ?? "";
+  const phone = formData.get("phone")?.toString().trim() ?? "";
+  if (!name) return { error: "Enter their name." };
+
+  const target = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { id: true, role: true, email: true, customerAccountId: true },
+  });
+  if (!target || target.role !== "CUSTOMER") {
+    return { error: "That contact no longer exists." };
+  }
+
+  await db
+    .update(users)
+    .set({
+      name,
+      title: title || null,
+      phone: phone || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  await audit({
+    actor,
+    action: "customer.contact.updated",
+    entityType: "user",
+    entityId: userId,
+    summary: target.email,
+  });
+
+  if (target.customerAccountId) {
+    await revalidateCustomerAboutSurfaces(target.customerAccountId);
+  }
+  return { ok: true };
 }
 
 export async function deleteCustomer(

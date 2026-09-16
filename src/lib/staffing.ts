@@ -90,6 +90,17 @@ export function staffingRoleLabel(role: string | null | undefined): string {
   return role.toLowerCase().replaceAll("_", " ");
 }
 
+/** Sort key for About implementation-team cards (lead, then playbook roles). */
+export function staffingRoleRank(role: string | null | undefined): number {
+  if (role === "LEAD") return 0;
+  const canonical = canonicalStaffingRole(role);
+  if (canonical) return 1 + STAFFING_ROLES.indexOf(canonical);
+  if (role === "CONTRIBUTOR") return 20;
+  if (role === "OBSERVER") return 21;
+  if (role === "CUSTOMER_CONTACT") return 90;
+  return 40;
+}
+
 export function isManagerOverviewRole(role: string | null | undefined): boolean {
   const canonical = canonicalStaffingRole(role);
   return canonical !== null && MANAGER_OVERVIEW_ROLES.includes(canonical);

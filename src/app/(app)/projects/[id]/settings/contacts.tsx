@@ -201,6 +201,9 @@ export function ProjectContacts({
               className={inputClass}
             />
           </Field>
+          <Field label="Phone" htmlFor="newPhone">
+            <input id="newPhone" name="phone" className={inputClass} />
+          </Field>
 
           <p className="text-[12px] leading-relaxed text-ink-3">
             They&apos;ll get a PATH invite email with a set-password link and be added to this

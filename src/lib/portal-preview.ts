@@ -14,6 +14,27 @@ import {
   taskComments,
 } from "@/db/schema";
 import { isCustomerVisiblePhase, portalFacingTaskSql } from "./task-visibility";
+import { loadProjectAbout } from "./about-query";
+import { toPortalAbout, type PortalAboutPayload } from "./about-profile";
+
+export async function previewPortalAbout(projectId: string): Promise<PortalAboutPayload | null> {
+  const project = await previewPortalProject(projectId);
+  if (!project) return null;
+  const loaded = await loadProjectAbout(projectId);
+  if (!loaded) return null;
+  return toPortalAbout({
+    projectName: loaded.project.name,
+    customerName: loaded.project.customerAccount?.name ?? null,
+    crmAcronym: loaded.project.crmAcronym,
+    kickoffDate: loaded.project.startDate,
+    goLiveDate: loaded.project.targetGoLiveDate,
+    zoomBookingUrl: loaded.project.zoomBookingUrl,
+    aboutNotes: loaded.project.aboutNotes,
+    kickoff: loaded.kickoff,
+    implementationTeam: loaded.implementationTeam,
+    customerContacts: loaded.customerInputs,
+  });
+}
 
 export async function previewPortalProject(projectId: string) {
   return (
