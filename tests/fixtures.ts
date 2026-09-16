@@ -51,10 +51,11 @@ export async function buildFixture() {
     ])
     .returning({ id: customerAccounts.id });
 
-  const [specialist, manager, memberUser, contactA, contactB] = await db
+  const [specialist, otherSpecialist, manager, memberUser, contactA, contactB] = await db
     .insert(users)
     .values([
       { email: "spec@pimsyehr.com", name: "Sam Specialist", role: "SPECIALIST" },
+      { email: "spec2@pimsyehr.com", name: "Riley Specialist", role: "SPECIALIST" },
       { email: "coo@pimsyehr.com", name: "Morgan Manager", role: "MANAGER" },
       { email: "member@pimsyehr.com", name: "Micah Member", role: "MEMBER" },
       {
@@ -104,10 +105,9 @@ export async function buildFixture() {
         portalEnabled: false,
       },
       {
-        // Deliberately has no relationship to `specialist` at all — proves a
-        // specialist is scoped to their own assignments, not the whole
-        // portfolio, while a manager (a leadership/read-all role) still
-        // reaches it.
+        // No relationship to either specialist — covering specialists must
+        // still open and edit it (Dock-parity). A MEMBER without membership
+        // must not. Leadership still reaches it via the same read-all path.
         name: "Bravo phase 2 (manager-led, no specialist)",
         code: "IMP-T005",
         customerAccountId: acctB.id,
@@ -326,6 +326,7 @@ export async function buildFixture() {
     },
     actors: {
       specialist: actorFor(specialist.id, "SPECIALIST", null),
+      otherSpecialist: actorFor(otherSpecialist.id, "SPECIALIST", null),
       manager: actorFor(manager.id, "MANAGER", null),
       member: actorFor(memberUser.id, "MEMBER", null),
       customerA: customerActorFor(contactA.id, acctA.id),

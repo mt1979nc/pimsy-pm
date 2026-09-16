@@ -9,6 +9,9 @@ import {
   canSeePortfolio,
   canManagePrismCapacity,
   canManageTemplates,
+  canReadAllProjects,
+  canWriteAllProjects,
+  canCreateProjects,
   NotFoundError,
   ForbiddenError,
 } from "@/lib/authz";
@@ -17,7 +20,7 @@ import { listTaskAttachments, assertAttachmentAccess } from "@/lib/attachments";
 import { resolveKey } from "@/lib/storage";
 import { db } from "@/db";
 import { eq, sql } from "drizzle-orm";
-import { fileAssets, users, notifications, orgSettings } from "@/db/schema";
+import { fileAssets, users, notifications, orgSettings, tasks } from "@/db/schema";
 import { shouldEmail, builtInDefaults, typesFor, getOrgSettings } from "@/lib/notification-prefs";
 import { notify } from "@/lib/notify";
 import { isAllowedTeamsWebhook, postToTeams } from "@/lib/teams";
@@ -184,21 +187,74 @@ describe.skipIf(!dbOk)("staff access", () => {
   it("a plain MEMBER only reaches projects they belong to", async () => {
     const ids = await accessibleProjectIds(f.actors.member);
     expect(ids).not.toContain(f.projects.a);
+    expect(ids).not.toContain(f.projects.managerOnly);
+    expect(canReadAllProjects(f.actors.member)).toBe(false);
+    expect(canWriteAllProjects(f.actors.member)).toBe(false);
     await expect(assertProjectAccess(f.actors.member, f.projects.a)).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
+    await expect(assertProjectWrite(f.actors.member, f.projects.managerOnly)).rejects.toBeInstanceOf(
       ForbiddenError,
     );
   });
 
-  it("a SPECIALIST only reaches projects they lead or belong to, not the whole portfolio", async () => {
+  it("a SPECIALIST can open any active implementation site, not only ones they lead", async () => {
     const ids = await accessibleProjectIds(f.actors.specialist);
-    // Led or a member of these:
     expect(ids).toContain(f.projects.a);
     expect(ids).toContain(f.projects.b);
-    // Not led, not a member, no relationship at all:
-    expect(ids).not.toContain(f.projects.managerOnly);
+    // Covering: no membership, not the named lead.
+    expect(ids).toContain(f.projects.managerOnly);
     await expect(
       assertProjectAccess(f.actors.specialist, f.projects.managerOnly),
-    ).rejects.toBeInstanceOf(ForbiddenError);
+    ).resolves.toBeTruthy();
+  });
+
+  it("a covering SPECIALIST can open and edit a site whose primary assignee is someone else", async () => {
+    const cover = f.actors.otherSpecialist;
+    expect(canReadAllProjects(cover)).toBe(true);
+    expect(canWriteAllProjects(cover)).toBe(true);
+    expect(canSeePortfolio(cover)).toBe(false);
+    expect(canCreateProjects(cover)).toBe(false);
+
+    const ids = await accessibleProjectIds(cover);
+    expect(ids).toContain(f.projects.a);
+    expect(ids).toContain(f.projects.managerOnly);
+
+    await expect(assertProjectAccess(cover, f.projects.a)).resolves.toMatchObject({
+      id: f.projects.a,
+    });
+    await expect(assertProjectWrite(cover, f.projects.a)).resolves.toMatchObject({
+      id: f.projects.a,
+    });
+    await expect(assertProjectAccess(cover, f.projects.managerOnly)).resolves.toMatchObject({
+      id: f.projects.managerOnly,
+    });
+    await expect(assertProjectWrite(cover, f.projects.managerOnly)).resolves.toMatchObject({
+      id: f.projects.managerOnly,
+    });
+
+    const threads = await listProjectThreads(cover, f.projects.a);
+    const threadIds = threads.map((t) => t.id);
+    expect(threadIds).toContain(f.threads.shared);
+    expect(threadIds).toContain(f.threads.internal);
+  });
+
+  it("a covering SPECIALIST can mutate tasks on a site they do not lead", async () => {
+    const cover = f.actors.otherSpecialist;
+    await assertProjectWrite(cover, f.projects.a);
+
+    await db
+      .update(tasks)
+      .set({ status: "IN_PROGRESS", updatedAt: new Date() })
+      .where(eq(tasks.id, f.tasks.shared));
+
+    const row = await db.query.tasks.findFirst({ where: eq(tasks.id, f.tasks.shared) });
+    expect(row?.status).toBe("IN_PROGRESS");
+
+    await db
+      .update(tasks)
+      .set({ status: "TODO", updatedAt: new Date() })
+      .where(eq(tasks.id, f.tasks.shared));
   });
 
   it("leadership roles (MANAGER and above) still read the whole portfolio", async () => {
@@ -235,6 +291,20 @@ describe.skipIf(!dbOk)("staff access", () => {
     await expect(assertProjectWrite(f.actors.customerA, f.projects.a)).rejects.toBeInstanceOf(
       ForbiddenError,
     );
+  });
+
+  it("a covering specialist's write access does not open the customer portal", async () => {
+    await expect(assertProjectWrite(f.actors.customerB, f.projects.a)).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
+    await expect(assertProjectAccess(f.actors.customerB, f.projects.a)).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+    const customerIds = await accessibleProjectIds(f.actors.customerB);
+    expect(customerIds).toContain(f.projects.b);
+    expect(customerIds).toContain(f.projects.managerOnly);
+    expect(customerIds).not.toContain(f.projects.a);
+    expect(customerIds).not.toContain(f.projects.internal);
   });
 });
 

@@ -14,8 +14,8 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.13.10");
-    expect(APP_VERSION).toMatch(/^1\.13\./);
+    expect(APP_VERSION).toBe("1.14.0");
+    expect(APP_VERSION).toMatch(/^1\.14\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
   });
@@ -97,6 +97,25 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.14.0 any-specialist access to implementation sites", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.14.0");
+    expect(note?.summary).toMatch(/specialist/i);
+    expect(note?.summary).toMatch(/primary assignee|named primary/i);
+    expect(note?.summary).toMatch(/portal/i);
+    expect(note?.highlights?.some((h) => /authz/i.test(h) && /SPECIALIST/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /canReadAllProjects|canWriteAllProjects/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /MEMBER/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /canSeePortfolio|Prism|Portfolio/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No playbook resync/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Hold from live/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /client/i.test(h) && /authz|Postgres/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/\bPHI\b/.test(h) || /No invented PHI|no invented PHI/i.test(h))).toBe(
+      true,
+    );
+    expect(RELEASE_NOTES.find((n) => n.version === "1.13.10")).toBeTruthy();
   });
 
   it("documents v1.13.10 Customer view comments and missing-library-file downloads", () => {

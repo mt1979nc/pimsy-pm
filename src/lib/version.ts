@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.13.10";
+export const APP_VERSION = "1.14.0";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.14.0",
+    date: "2026-09-16",
+    summary:
+      "Any implementation specialist can open and work active sites without being the named primary assignee. Customer portal access is unchanged.",
+    highlights: [
+      "Authz (`src/lib/authz.ts`): SPECIALIST joins OWNER/ADMIN/MANAGER on canReadAllProjects / canWriteAllProjects, so covering specialists can open and edit WIP they do not lead.",
+      "Primary specialist, RCM, and billing membership still drive playbook auto-assignment. MEMBER stays membership-scoped. Customers still only reach their own portal-enabled SHARED work.",
+      "Leadership-only gates are unchanged: Portfolio / Prism / Forecast (`canSeePortfolio`), New project / New customer, hard-delete, and Templates.",
+      "No schema migrate. No playbook resync. Client components must not import authz (it loads the Postgres client). PATH + Prism naming unchanged. Hold from live until Alexander ships the v1.14 batch.",
+    ],
+  },
   {
     version: "1.13.10",
     date: "2026-09-16",
