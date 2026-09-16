@@ -302,8 +302,9 @@ describe.skipIf(!dbOk)("staff access", () => {
     );
     const customerIds = await accessibleProjectIds(f.actors.customerB);
     expect(customerIds).toContain(f.projects.b);
+    expect(customerIds).toContain(f.projects.managerOnly);
     expect(customerIds).not.toContain(f.projects.a);
-    expect(customerIds).not.toContain(f.projects.managerOnly);
+    expect(customerIds).not.toContain(f.projects.internal);
   });
 });
 
