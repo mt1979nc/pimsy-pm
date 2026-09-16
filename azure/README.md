@@ -213,7 +213,7 @@ delete. Do not auto-rename.
 
 ```bash
 export DATABASE_URL='postgresql://…'   # from App Settings; keep quotes
-npm run db:migrate                     # includes 0016_exclude_from_analytics (E2E analytics flag)
+npm run db:migrate                     # includes 0017_support_handoff (Hand off to Support stamp)
 npm run db:cleanup:non-dock            # dry-run against the shipped fixture
 npm run db:cleanup:non-dock -- --apply # delete active non-Dock WIP only
 ```

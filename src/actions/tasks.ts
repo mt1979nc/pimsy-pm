@@ -33,6 +33,8 @@ import {
   removeAssigneeFromTask,
   taskAssigneeIds,
 } from "@/lib/task-assignees";
+import { applySupportHandoffOnComplete } from "@/lib/support-handoff";
+import { isHandOffToSupportTask } from "@/lib/support-handoff-meta";
 import type { ActionState } from "./messages";
 
 const optionalDate = z
@@ -301,6 +303,19 @@ export async function setTaskStatus(taskId: string, status: string) {
       revalidatePath(`/projects/${task.projectId}/settings`);
       revalidatePath(`/projects/${task.projectId}/customer-view`);
       revalidatePath(`/portal/projects/${task.projectId}`);
+    }
+
+    await applySupportHandoffOnComplete({
+      projectId: task.projectId,
+      taskId,
+      taskTitle: task.title,
+      taskDescription: task.description,
+      actor,
+    });
+    if (isHandOffToSupportTask(task.title)) {
+      revalidatePath("/projects");
+      revalidatePath("/dashboard");
+      revalidatePath("/reports");
     }
 
     const project = await db.query.projects.findFirst({

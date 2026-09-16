@@ -31,6 +31,9 @@ export default async function ProjectsPage({
     health: sp.health,
     customerId: sp.customer,
     includeArchived: false,
+    // “All active” / health chips = Implementation WIP. Completing Hand off
+    // to Support sets COMPLETED, which drops the site from this list.
+    openOnly: !sp.status,
   });
 
   const activeKey = sp.health ? `health=${sp.health}` : sp.status ? `status=${sp.status}` : "";
