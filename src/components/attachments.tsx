@@ -415,7 +415,7 @@ export function AddAttachment({
           Add link
         </Button>
         <Button size="sm" variant={uploadRequest ? "primary" : "secondary"} onClick={() => setMode("file")}>
-          {uploadRequest ? "Upload completed file" : "Upload file"}
+          {uploadRequest ? "Upload completed files" : "Upload files"}
         </Button>
         {!fileOnly && attachable.length > 0 ? (
           <Button size="sm" onClick={() => setMode("library")}>
@@ -513,12 +513,14 @@ export function AddAttachment({
         type="file"
         name="file"
         required
+        multiple
         ref={fileInputRef}
         className="w-full text-[13px] text-ink-2 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-[13px] file:font-medium file:text-brand-ink hover:file:opacity-90"
       />
       <input name="description" placeholder="Note (optional)" className={inputClass} />
       <p className="text-[12px] text-ink-3">
-        Images, PDFs, Office documents, CSVs and zips. Up to 25 MB.{" "}
+        Images, PDFs, Office documents, CSVs and zips. Up to 25 MB each. Select several files at
+        once when you have a packet of forms.{" "}
         <strong className="font-medium text-amber">No patient information.</strong>
       </p>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -528,7 +530,7 @@ export function AddAttachment({
             Cancel
           </Button>
             <SubmitButton size="sm" pendingLabel="Uploading…">
-              {uploadRequest ? "Upload completed file" : "Upload"}
+              {uploadRequest ? "Upload completed files" : "Upload"}
             </SubmitButton>
         </div>
       </div>

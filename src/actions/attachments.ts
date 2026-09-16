@@ -5,7 +5,7 @@ import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { fileAssets, tasks, projects, users } from "@/db/schema";
+import { fileAssets, tasks, projects, users, phases } from "@/db/schema";
 import { notify } from "@/lib/notify";
 import { requireUser, requireStaff } from "@/lib/guard";
 import {
@@ -19,6 +19,17 @@ import {
   type Actor,
 } from "@/lib/authz";
 import { assertAttachmentAccess } from "@/lib/attachments";
+import {
+  collectUploadFiles,
+  MAX_DISCOVERY_BATCH_FILES,
+  shouldFanOutWizardWorkbook,
+} from "@/lib/discovery-config-review";
+import {
+  attachWizardWorkbookToConfiguration,
+  hashUploadBytes,
+  spawnConfigurationReviewTasks,
+  type DiscoveryUploadFile,
+} from "@/lib/discovery-config-review-tasks";
 import { defaultLinkLabel, parseHttpUrl } from "@/lib/http-url";
 import { attachLibraryToLiveTask } from "@/lib/library";
 import { checkUpload, putFile, deleteFile, isImage } from "@/lib/storage";
@@ -164,6 +175,29 @@ export async function addTaskLink(
     kind: "LINK",
   });
 
+  try {
+    if (
+      shouldFanOutWizardWorkbook({
+        sourceTitle: task.title,
+        url: parsedUrl.url.toString(),
+        linkName: parsed.data.name?.trim() || null,
+      })
+    ) {
+      await attachWizardWorkbookToConfiguration({
+        actor,
+        projectId: task.projectId,
+        sourceTask: { id: task.id, title: task.title },
+        workbook: {
+          kind: "LINK",
+          name: defaultLinkLabel(parsedUrl.url, parsed.data.name),
+          url: parsedUrl.url.toString(),
+        },
+      });
+    }
+  } catch (err) {
+    console.error("attachWizardWorkbookToConfiguration (link) failed", err);
+  }
+
   revalidateTask(task.projectId, task.id);
   return { ok: true };
 }
@@ -246,54 +280,127 @@ export async function uploadTaskFile(
   const actor = await requireUser();
 
   const taskId = String(formData.get("taskId") ?? "");
-  const file = formData.get("file");
   if (!taskId) return { error: "Missing task." };
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose a file first." };
 
-  const check = checkUpload(file.name, file.type, file.size);
-  if (!check.ok) return { error: check.reason };
+  const files = collectUploadFiles(formData);
+  if (files.length === 0) return { error: "Choose a file first." };
+  if (files.length > MAX_DISCOVERY_BATCH_FILES) {
+    return { error: `Upload up to ${MAX_DISCOVERY_BATCH_FILES} files at a time.` };
+  }
+
+  for (const file of files) {
+    const check = checkUpload(file.name, file.type, file.size);
+    if (!check.ok) return { error: `${file.name}: ${check.reason}` };
+  }
 
   const task = await loadTask(actor, taskId);
   const requested = (formData.get("visibility")?.toString() as "INTERNAL" | "SHARED") || undefined;
   const visibility = resolveVisibilityForActor(actor, requested);
   const effective = task.visibility === "INTERNAL" ? "INTERNAL" : visibility;
+  const note = formData.get("description")?.toString() || null;
 
-  let storageKey: string;
+  const stored: DiscoveryUploadFile[] = [];
   try {
-    const bytes = Buffer.from(await file.arrayBuffer());
-    storageKey = await putFile(file.name, bytes);
+    for (const file of files) {
+      const bytes = Buffer.from(await file.arrayBuffer());
+      const contentHash = hashUploadBytes(bytes);
+      const storageKey = await putFile(file.name, bytes);
+      const kind = isImage(file.type) ? "IMAGE" : "FILE";
+      stored.push({
+        name: file.name.slice(0, 200),
+        mimeType: file.type || null,
+        sizeBytes: file.size,
+        kind,
+        contentHash,
+        visibility: effective,
+        description: note,
+        bytes,
+      });
+      await db.insert(fileAssets).values({
+        name: file.name.slice(0, 200),
+        kind,
+        storageKey,
+        mimeType: file.type || null,
+        sizeBytes: file.size,
+        contentHash,
+        description: note,
+        visibility: effective,
+        taskId: task.id,
+        projectId: task.projectId,
+        uploadedById: actor.id,
+      });
+    }
   } catch (err) {
     console.error("uploadTaskFile failed", err);
     return { error: "Could not save that file. Please try again." };
   }
 
-  await db.insert(fileAssets).values({
-    name: file.name.slice(0, 200),
-    kind: isImage(file.type) ? "IMAGE" : "FILE",
-    storageKey,
-    mimeType: file.type || null,
-    sizeBytes: file.size,
-    description: formData.get("description")?.toString() || null,
-    visibility: effective,
-    taskId: task.id,
-    projectId: task.projectId,
-    uploadedById: actor.id,
-  });
-
+  const summary =
+    stored.length === 1 ? stored[0]!.name : `${stored.length} files`;
   await audit({
     actor,
     action: "task.file.uploaded",
     entityType: "task",
     entityId: task.id,
-    summary: file.name,
-    metadata: { projectId: task.projectId, visibility: effective, bytes: file.size },
+    summary,
+    metadata: {
+      projectId: task.projectId,
+      visibility: effective,
+      count: stored.length,
+      names: stored.map((f) => f.name),
+    },
   });
 
+  const first = stored[0]!;
   await notifyAttachment(actor, task, {
-    name: file.name.slice(0, 200),
+    name: summary,
     visibility: effective,
-    kind: isImage(file.type) ? "IMAGE" : "FILE",
+    kind: first.kind,
   });
+
+  try {
+    const phase = task.phaseId
+      ? await db.query.phases.findFirst({
+          where: eq(phases.id, task.phaseId),
+          columns: { name: true },
+        })
+      : null;
+    const wizardFiles = stored.filter((f) =>
+      shouldFanOutWizardWorkbook({ sourceTitle: task.title, filename: f.name }),
+    );
+    const reviewFiles = stored.filter((f) => !wizardFiles.includes(f));
+    if (reviewFiles.length > 0) {
+      await spawnConfigurationReviewTasks({
+        actor,
+        sourceTask: {
+          id: task.id,
+          title: task.title,
+          projectId: task.projectId,
+          phaseId: task.phaseId,
+        },
+        phaseName: phase?.name,
+        files: reviewFiles,
+      });
+    }
+    for (const file of wizardFiles) {
+      await attachWizardWorkbookToConfiguration({
+        actor,
+        projectId: task.projectId,
+        sourceTask: { id: task.id, title: task.title },
+        workbook: {
+          kind: "FILE",
+          name: file.name,
+          mimeType: file.mimeType,
+          sizeBytes: file.sizeBytes,
+          contentHash: file.contentHash,
+          bytes: file.bytes,
+        },
+      });
+    }
+  } catch (err) {
+    // Discovery upload already saved; specialists can still see the files there.
+    console.error("Discovery → Configuration attach failed", err);
+  }
 
   revalidateTask(task.projectId, task.id);
   return { ok: true };

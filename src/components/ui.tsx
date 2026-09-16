@@ -225,6 +225,11 @@ export function TaskStatusBadge({ status }: { status: TaskStatus }) {
   return <Badge tone={m.tone}>{m.label}</Badge>;
 }
 
+/** Specialist flag on Configuration tasks spawned from Discovery file intake. */
+export function ReviewRequiredBadge() {
+  return <Badge tone="amber">Review required</Badge>;
+}
+
 const priorityMeta: Record<Priority, { label: string; tone: Tone }> = {
   LOW: { label: "Low", tone: "neutral" },
   MEDIUM: { label: "Medium", tone: "neutral" },

@@ -17,6 +17,7 @@ PASSWORD-RESET-LINK.txt
 .pglite/
 .pglite-test/
 .pglite-att-test/
+.pglite-ci/
 uploads/
 content/template-attachments/*
 !content/template-attachments/README.md
