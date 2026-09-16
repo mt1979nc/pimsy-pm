@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq, ne, asc, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { libraryAssets, tasks, taskComments, taskChecklistItems, users } from "@/db/schema";
+import { libraryAssets, phases, tasks, taskComments, taskChecklistItems, users } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, NotFoundError, ForbiddenError } from "@/lib/authz";
 import { listTaskAttachments } from "@/lib/attachments";
@@ -26,6 +26,7 @@ import { AssigneePicker } from "@/components/assignee-picker";
 import { TaskDetailControls } from "./task-controls";
 import { AddTaskInline } from "../task-forms";
 import { DeleteTaskControl } from "@/components/task-row";
+import { MoveTaskControl } from "@/components/move-task-dialog";
 import { fmtDate, dueLabel, isOverdue, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { resolveTaskDescription } from "@/lib/task-description";
@@ -60,7 +61,8 @@ export default async function TaskDetailPage({
   });
   if (!task) notFound();
 
-  const [comments, attachments, staff, contacts, checklist, subtasks, library] = await Promise.all([
+  const [comments, attachments, staff, contacts, checklist, subtasks, library, projectPhases, projectTasks] =
+    await Promise.all([
     db.query.taskComments.findMany({
       where: and(eq(taskComments.taskId, taskId), isNull(taskComments.deletedAt)),
       orderBy: [asc(taskComments.createdAt)],
@@ -107,6 +109,16 @@ export default async function TaskDetailPage({
     db.query.libraryAssets.findMany({
       orderBy: [asc(libraryAssets.name)],
       columns: { id: true, name: true, kind: true, isPlaceholder: true },
+    }),
+    db.query.phases.findMany({
+      where: eq(phases.projectId, id),
+      orderBy: [asc(phases.order)],
+      columns: { id: true, name: true },
+    }),
+    db.query.tasks.findMany({
+      where: eq(tasks.projectId, id),
+      orderBy: [asc(tasks.order)],
+      columns: { id: true, title: true, phaseId: true, parentTaskId: true },
     }),
   ]);
   const attachedLibraryIds = attachments
@@ -403,7 +415,15 @@ export default async function TaskDetailPage({
                 </div>
               ) : null}
             </dl>
-            <div className="border-t border-border px-4 py-3">
+            <div className="border-t border-border px-4 py-3 space-y-3">
+              <MoveTaskControl
+                taskId={task.id}
+                title={task.title}
+                currentPhaseId={task.phaseId}
+                currentParentTaskId={task.parentTaskId}
+                phases={projectPhases}
+                tasks={projectTasks}
+              />
               <DeleteTaskControl taskId={task.id} projectId={id} title={task.title} />
             </div>
           </Card>

@@ -41,6 +41,7 @@ describe("client components stay off the Postgres client", () => {
       "src/components/task-action-buttons.tsx",
       "src/components/record-slip-form.tsx",
       "src/app/(app)/management/_components/weekly-meeting-table.tsx",
+      "src/components/move-task-dialog.tsx",
       "src/app/(app)/templates/[id]/template-editor.tsx",
       "src/app/(app)/library/library-form.tsx",
     ]));
