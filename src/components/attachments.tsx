@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import {
   addTaskLink,
+  attachLibraryItemToTask,
   uploadTaskFile,
   deleteAttachment,
   setAttachmentVisibility,
@@ -11,6 +12,7 @@ import { SubmitButton, FormError } from "@/components/submit-button";
 import { Button, inputClass, VisibilityBadge } from "@/components/ui";
 import { fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { fileAssetOpenHref, libraryKindLabel } from "@/lib/library";
 import {
   DOWNLOAD_COMPLETE_UPLOAD_HINT,
   isPlaybookResourceAsset,
@@ -32,7 +34,7 @@ type Asset = {
 };
 
 function href(a: Asset) {
-  return a.kind === "LINK" ? (a.url ?? "#") : `/api/files/${a.id}`;
+  return fileAssetOpenHref(a);
 }
 
 function prettySize(bytes: number | null) {
@@ -151,6 +153,7 @@ export function AttachmentList({
                   <p className="mt-0.5 text-[12.5px] leading-snug text-ink-2">{a.description}</p>
                 ) : null}
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">
+                  <span>{libraryKindLabel(a.kind)}</span>
                   {a.libraryAssetId ? <span>Playbook default</span> : null}
                   {a.uploadedBy ? <span>{a.uploadedBy.name}</span> : null}
                   <span>{fmtRelative(a.createdAt)}</span>
@@ -256,6 +259,13 @@ function AssetControls({
 // Add link / upload file
 // ---------------------------------------------------------------------------
 
+export type LibraryPick = {
+  id: string;
+  name: string;
+  kind: string;
+  isPlaceholder: boolean;
+};
+
 export function AddAttachment({
   taskId,
   canChooseVisibility,
@@ -265,6 +275,8 @@ export function AddAttachment({
   startInFileMode = false,
   fileOnly = false,
   onFinished,
+  library = [],
+  attachedLibraryIds = [],
 }: {
   taskId: string;
   canChooseVisibility: boolean;
@@ -275,16 +287,22 @@ export function AddAttachment({
   startInFileMode?: boolean;
   fileOnly?: boolean;
   onFinished?: () => void;
+  /** Staff: attach a reusable library file or Link/Form onto this live task. */
+  library?: LibraryPick[];
+  attachedLibraryIds?: string[];
 }) {
-  const [mode, setMode] = useState<"none" | "link" | "file">(
+  const [mode, setMode] = useState<"none" | "link" | "file" | "library">(
     startInFileMode || fileOnly ? "file" : "none",
   );
   const [visibility, setVisibility] = useState<"INTERNAL" | "SHARED">(defaultVisibility);
 
   const [linkState, linkAction] = useActionState(addTaskLink, {});
   const [fileState, fileAction] = useActionState(uploadTaskFile, {});
+  const [libState, libAction] = useActionState(attachLibraryItemToTask, {});
   const linkRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLFormElement>(null);
+  const attached = new Set(attachedLibraryIds);
+  const attachable = library.filter((l) => !attached.has(l.id));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -314,6 +332,12 @@ export function AddAttachment({
       onFinished?.();
     }
   }, [fileState.ok, fileOnly, onFinished]);
+  useEffect(() => {
+    if (libState.ok) {
+      setMode(fileOnly ? "file" : "none");
+      onFinished?.();
+    }
+  }, [libState.ok, fileOnly, onFinished]);
 
   const close = () => {
     if (fileOnly) {
@@ -334,6 +358,11 @@ export function AddAttachment({
         <Button size="sm" variant={uploadRequest ? "primary" : "secondary"} onClick={() => setMode("file")}>
           {uploadRequest ? "Upload completed file" : "Upload file"}
         </Button>
+        {!fileOnly && attachable.length > 0 ? (
+          <Button size="sm" onClick={() => setMode("library")}>
+            Attach from library
+          </Button>
+        ) : null}
       </div>
     );
   }
@@ -355,6 +384,32 @@ export function AddAttachment({
   ) : (
     <VisibilityBadge visibility={effective} />
   );
+
+  if (mode === "library") {
+    return (
+      <form action={libAction} className="space-y-2.5 border-t border-border bg-surface-2 p-4">
+        <input type="hidden" name="taskId" value={taskId} />
+        <FormError error={libState.error} />
+        <select name="libraryAssetId" required className={inputClass}>
+          <option value="">Attach a library file or Link/Form…</option>
+          {attachable.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name} ({libraryKindLabel(l.kind)}
+              {l.isPlaceholder ? ", placeholder" : ""})
+            </option>
+          ))}
+        </select>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button size="sm" type="button" onClick={close}>
+            Cancel
+          </Button>
+          <SubmitButton size="sm" pendingLabel="Attaching…">
+            Attach
+          </SubmitButton>
+        </div>
+      </form>
+    );
+  }
 
   if (mode === "link") {
     return (

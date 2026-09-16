@@ -13,7 +13,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!actor || !isStaff(actor)) return new NextResponse("Not found", { status: 404 });
 
   const asset = await loadLibraryAssetForStaff(actor, id);
-  if (!asset?.storageKey) return new NextResponse("Not found", { status: 404 });
+  if (!asset) return new NextResponse("Not found", { status: 404 });
+  if (asset.kind === "LINK") {
+    const url = asset.url?.trim();
+    if (!url || !/^https?:\/\//i.test(url)) {
+      return new NextResponse("Not found", { status: 404 });
+    }
+    return NextResponse.redirect(url, 302);
+  }
+  if (!asset.storageKey) return new NextResponse("Not found", { status: 404 });
 
   const file = await readFileStream(asset.storageKey);
   if (!file) return new NextResponse("Not found", { status: 404 });

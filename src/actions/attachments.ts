@@ -19,6 +19,8 @@ import {
   type Actor,
 } from "@/lib/authz";
 import { assertAttachmentAccess } from "@/lib/attachments";
+import { defaultLinkLabel, parseHttpUrl } from "@/lib/http-url";
+import { attachLibraryToLiveTask } from "@/lib/library";
 import { checkUpload, putFile, deleteFile, isImage } from "@/lib/storage";
 import { audit } from "@/lib/audit";
 import type { ActionState } from "./messages";
@@ -127,17 +129,8 @@ export async function addTaskLink(
 
   // Accept "docs.google.com/..." as well as a full URL, but only ever store
   // http(s) — javascript: and data: URLs must never become clickable links.
-  const raw = parsed.data.url;
-  const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(candidate);
-  } catch {
-    return { error: "That doesn't look like a valid web address." };
-  }
-  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-    return { error: "Only http and https links are allowed." };
-  }
+  const parsedUrl = parseHttpUrl(parsed.data.url);
+  if (!parsedUrl.ok) return { error: parsedUrl.error };
 
   const task = await loadTask(actor, parsed.data.taskId);
   const visibility = resolveVisibilityForActor(actor, parsed.data.visibility);
@@ -145,9 +138,9 @@ export async function addTaskLink(
   const effective = task.visibility === "INTERNAL" ? "INTERNAL" : visibility;
 
   await db.insert(fileAssets).values({
-    name: parsed.data.name || parsedUrl.hostname + parsedUrl.pathname.replace(/\/$/, ""),
+    name: defaultLinkLabel(parsedUrl.url, parsed.data.name),
     kind: "LINK",
-    url: parsedUrl.toString(),
+    url: parsedUrl.url.toString(),
     visibility: effective,
     taskId: task.id,
     projectId: task.projectId,
@@ -159,12 +152,12 @@ export async function addTaskLink(
     action: "task.link.added",
     entityType: "task",
     entityId: task.id,
-    summary: parsedUrl.hostname,
+    summary: parsedUrl.url.hostname,
     metadata: { projectId: task.projectId, visibility: effective },
   });
 
   await notifyAttachment(actor, task, {
-    name: parsed.data.name?.trim() || parsedUrl.hostname,
+    name: parsed.data.name?.trim() || parsedUrl.url.hostname,
     visibility: effective,
     kind: "LINK",
   });
@@ -209,17 +202,8 @@ export async function addProjectRecording(
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
   }
 
-  const raw = parsed.data.url;
-  const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(candidate);
-  } catch {
-    return { error: "That doesn't look like a valid web address." };
-  }
-  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-    return { error: "Only http and https links are allowed." };
-  }
+  const parsedUrl = parseHttpUrl(parsed.data.url);
+  if (!parsedUrl.ok) return { error: parsedUrl.error };
 
   await assertProjectWrite(actor, parsed.data.projectId);
   const visibility = resolveVisibilityForActor(actor, parsed.data.visibility);
@@ -227,7 +211,7 @@ export async function addProjectRecording(
   await db.insert(fileAssets).values({
     name: parsed.data.name,
     kind: "LINK",
-    url: parsedUrl.toString(),
+    url: parsedUrl.url.toString(),
     description: parsed.data.description || null,
     visibility,
     isRecording: true,
@@ -307,6 +291,43 @@ export async function uploadTaskFile(
     name: file.name.slice(0, 200),
     visibility: effective,
     kind: isImage(file.type) ? "IMAGE" : "FILE",
+  });
+
+  revalidateTask(task.projectId, task.id);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Library clones on live tasks
+// ---------------------------------------------------------------------------
+
+export async function attachLibraryItemToTask(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const taskId = String(formData.get("taskId") ?? "");
+  const libraryAssetId = String(formData.get("libraryAssetId") ?? "");
+  if (!taskId || !libraryAssetId) return { error: "Pick a library item." };
+
+  const task = await loadTask(actor, taskId);
+  await assertProjectWrite(actor, task.projectId);
+
+  const result = await attachLibraryToLiveTask(db, {
+    taskId: task.id,
+    projectId: task.projectId,
+    libraryAssetId,
+    uploadedById: actor.id,
+  });
+  if ("error" in result) return { error: result.error };
+
+  await audit({
+    actor,
+    action: "task.library.attached",
+    entityType: "task",
+    entityId: task.id,
+    summary: libraryAssetId,
+    metadata: { projectId: task.projectId },
   });
 
   revalidateTask(task.projectId, task.id);
