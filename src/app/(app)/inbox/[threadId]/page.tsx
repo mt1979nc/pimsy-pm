@@ -7,8 +7,9 @@ import { requireStaff } from "@/lib/guard";
 import { NotFoundError, ForbiddenError, canSeeInternal } from "@/lib/authz";
 import { assertThreadAccess } from "@/lib/threads";
 import { markThreadRead } from "@/actions/messages";
-import { Card, Badge, VisibilityBadge } from "@/components/ui";
+import { Card, Badge, VisibilityBadge, WaitingOnBadge } from "@/components/ui";
 import { MessageList } from "@/components/thread-list";
+import { differenceInCalendarDays, startOfDay } from "@/lib/dates";
 import { MessageComposer, ThreadActions } from "@/components/message-composer";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +49,15 @@ export default async function InboxThreadPage({
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-[16px] font-semibold tracking-tight text-ink">{thread.subject}</h1>
             <VisibilityBadge visibility={thread.visibility} />
+            {!thread.isResolved && thread.visibility === "SHARED" ? (
+              <WaitingOnBadge
+                waitingOn={thread.waitingOn}
+                agingDays={differenceInCalendarDays(
+                  startOfDay(new Date()),
+                  startOfDay(new Date(thread.waitingOnSince)),
+                )}
+              />
+            ) : null}
             {thread.isResolved ? <Badge tone="green">Resolved</Badge> : null}
           </div>
           <div className="mt-3">
@@ -56,12 +66,20 @@ export default async function InboxThreadPage({
               isResolved={thread.isResolved}
               visibility={thread.visibility}
               canShare={canSeeInternal(actor) && !!thread.projectId}
+              waitingOn={thread.waitingOn}
             />
           </div>
         </div>
 
         <MessageList messages={rows} currentUserId={actor.id} />
-        <MessageComposer threadId={threadId} visibility={thread.visibility} />
+        <MessageComposer
+          threadId={threadId}
+          visibility={thread.visibility}
+          isResolved={thread.isResolved}
+          newConversationHref={
+            thread.projectId ? `/projects/${thread.projectId}/messages` : "/inbox"
+          }
+        />
       </Card>
     </div>
   );

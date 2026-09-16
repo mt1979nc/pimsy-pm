@@ -65,8 +65,8 @@ export default async function ThreadPage({
           </div>
           <p className="mt-1.5 text-[12.5px] text-ink-3">
             {thread.visibility === "SHARED"
-              ? "Customer contacts on this project can read and reply to this thread."
-              : "Only your internal team can see this thread."}
+              ? "Customer contacts on this project can read and reply to this thread. One topic — start a new conversation for a different question."
+              : "Only your internal team can see this thread. One topic — start a new conversation for a different question."}
           </p>
           <div className="mt-3">
             <ThreadActions
@@ -80,7 +80,12 @@ export default async function ThreadPage({
         </div>
 
         <MessageList messages={rows} currentUserId={actor.id} />
-        <MessageComposer threadId={threadId} visibility={thread.visibility} />
+        <MessageComposer
+          threadId={threadId}
+          visibility={thread.visibility}
+          isResolved={thread.isResolved}
+          newConversationHref={`/projects/${id}/messages`}
+        />
       </Card>
     </div>
   );

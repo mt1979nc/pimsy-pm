@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Badge, VisibilityBadge, WaitingOnBadge, Avatar } from "@/components/ui";
+import { Badge, VisibilityBadge, WaitingOnBadge, Avatar, EmptyState } from "@/components/ui";
 import { fmtRelative, differenceInCalendarDays, startOfDay } from "@/lib/dates";
-import { isUnread } from "@/lib/threads";
+import { isUnread, partitionThreads } from "@/lib/thread-state";
+import { CollapsibleCompleted } from "@/components/collapsible-completed";
 import { cn } from "@/lib/cn";
 
 type Thread = {
@@ -102,6 +103,102 @@ export function ThreadList({
             {t.createdBy ? (
               <Avatar name={t.createdBy.name} image={t.createdBy.image} size={24} />
             ) : null}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Open threads first; resolved topics collapse so SLA work stays on top. */
+export function OrganizedThreadList({
+  threads,
+  currentUserId,
+  hrefFor,
+  showProject = false,
+  emptyOpenTitle = "No open conversations",
+  emptyOpenDescription = "Start a new conversation for each topic so waiting-on aging stays honest.",
+}: {
+  threads: Thread[];
+  currentUserId: string;
+  hrefFor: (t: Thread) => string;
+  showProject?: boolean;
+  emptyOpenTitle?: string;
+  emptyOpenDescription?: string;
+}) {
+  const { unreadOpen, readOpen, resolved } = partitionThreads(threads, currentUserId);
+  const open = [...unreadOpen, ...readOpen];
+
+  return (
+    <>
+      {open.length === 0 ? (
+        <EmptyState title={emptyOpenTitle} description={emptyOpenDescription} />
+      ) : (
+        <ThreadList
+          threads={open}
+          currentUserId={currentUserId}
+          hrefFor={hrefFor}
+          showProject={showProject}
+        />
+      )}
+      <CollapsibleCompleted
+        count={resolved.length}
+        noun={resolved.length === 1 ? "resolved topic" : "resolved topics"}
+        hideHint="— hide closed topics"
+        showHint="— show"
+      >
+        <ThreadList
+          threads={resolved}
+          currentUserId={currentUserId}
+          hrefFor={hrefFor}
+          showProject={showProject}
+        />
+      </CollapsibleCompleted>
+    </>
+  );
+}
+
+/** Compact portal / dashboard preview: open (unread first), then resolved. */
+export function ThreadPreviewList({
+  threads,
+  currentUserId,
+  hrefFor,
+}: {
+  threads: Thread[];
+  currentUserId: string;
+  hrefFor: (t: Thread) => string;
+}) {
+  const { unreadOpen, readOpen, resolved } = partitionThreads(threads, currentUserId);
+  const ordered = [...unreadOpen, ...readOpen, ...resolved];
+  return (
+    <div className="divide-y divide-border">
+      {ordered.map((t) => {
+        const unread = isUnread(t, currentUserId);
+        return (
+          <Link
+            key={t.id}
+            href={hrefFor(t)}
+            className="block px-4 py-2.5 hover:bg-surface-2"
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "size-1.5 shrink-0 rounded-full",
+                  unread ? "bg-brand" : "bg-transparent",
+                )}
+                aria-hidden
+              />
+              <span
+                className={cn(
+                  "min-w-0 flex-1 truncate text-[13px]",
+                  unread ? "font-semibold text-ink" : "text-ink",
+                )}
+              >
+                {t.subject}
+              </span>
+              {t.isResolved ? <Badge tone="green">Resolved</Badge> : null}
+            </div>
+            <div className="pl-3.5 text-[12px] text-ink-3">{fmtRelative(t.lastMessageAt)}</div>
           </Link>
         );
       })}

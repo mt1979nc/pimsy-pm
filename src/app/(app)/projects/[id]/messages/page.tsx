@@ -2,7 +2,7 @@ import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess } from "@/lib/authz";
 import { listProjectThreads } from "@/lib/threads";
 import { Card, EmptyState, VisibilityBadge } from "@/components/ui";
-import { ThreadList } from "@/components/thread-list";
+import { OrganizedThreadList } from "@/components/thread-list";
 import { NewThreadForm } from "@/components/message-composer";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,8 @@ export default async function ProjectMessagesPage({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[13px] text-ink-2">
-          Two channels on one project: what the customer sees, and what stays with your team.
+          Two channels on one project: what the customer sees, and what stays with your team. One
+          topic per conversation so waiting-on aging stays honest.
         </p>
         <NewThreadForm projectId={id} />
       </div>
@@ -40,7 +41,7 @@ export default async function ProjectMessagesPage({
             description="Start one and everyone on their side gets an email."
           />
         ) : (
-          <ThreadList
+          <OrganizedThreadList
             threads={shared}
             currentUserId={actor.id}
             hrefFor={(t) => `/projects/${id}/messages/${t.id}`}
@@ -59,10 +60,12 @@ export default async function ProjectMessagesPage({
             description="Use these for anything the customer shouldn't read — pricing, risk, escalations."
           />
         ) : (
-          <ThreadList
+          <OrganizedThreadList
             threads={internal}
             currentUserId={actor.id}
             hrefFor={(t) => `/projects/${id}/messages/${t.id}`}
+            emptyOpenTitle="No open internal threads"
+            emptyOpenDescription="Resolved back-channel topics are folded below."
           />
         )}
       </Card>

@@ -11,7 +11,8 @@ import {
   managedSiteCards,
 } from "@/lib/queries";
 import { pctComplete } from "@/lib/pct-complete";
-import { listInboxThreads, isUnread } from "@/lib/threads";
+import { listInboxThreads } from "@/lib/threads";
+import { partitionThreads } from "@/lib/thread-state";
 import {
   Card,
   CardHeader,
@@ -55,7 +56,8 @@ export default async function DashboardPage() {
     )
     .slice(0, 8);
 
-  const unread = threads.filter((t) => isUnread(t, actor.id));
+  const { unreadOpen } = partitionThreads(threads, actor.id);
+  const unread = unreadOpen;
   const dueSoon = tasks.filter((t) => isOverviewUpcomingDue(t.dueDate));
   const chaseHint = formatWaitingOnAreaHint(countWaitingOnByArea(chase));
 

@@ -1,17 +1,17 @@
 import { requireStaff } from "@/lib/guard";
-import { listInboxThreads, isUnread } from "@/lib/threads";
+import { listInboxThreads } from "@/lib/threads";
+import { partitionThreads } from "@/lib/thread-state";
 import { PageHeader, Card, EmptyState } from "@/components/ui";
 import { ThreadList } from "@/components/thread-list";
+import { CollapsibleCompleted } from "@/components/collapsible-completed";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Inbox" };
 
 export default async function InboxPage() {
   const actor = await requireStaff();
-  const threads = await listInboxThreads(actor, 100);
-
-  const unread = threads.filter((t) => isUnread(t, actor.id));
-  const rest = threads.filter((t) => !isUnread(t, actor.id));
+  const threads = await listInboxThreads(actor, 200);
+  const { unreadOpen, readOpen, resolved } = partitionThreads(threads, actor.id);
 
   const hrefFor = (t: { id: string; projectId: string | null }) =>
     t.projectId ? `/projects/${t.projectId}/messages/${t.id}` : `/inbox/${t.id}`;
@@ -20,7 +20,7 @@ export default async function InboxPage() {
     <>
       <PageHeader
         title="Inbox"
-        subtitle="Every conversation across every project — customer-facing and internal."
+        subtitle="Open topics first. One conversation per question keeps waiting-on aging honest."
       />
 
       {threads.length === 0 ? (
@@ -32,18 +32,18 @@ export default async function InboxPage() {
         </Card>
       ) : (
         <div className="space-y-5">
-          {unread.length > 0 ? (
+          {unreadOpen.length > 0 ? (
             <Card>
               <div className="border-b border-border px-5 py-3">
                 <h2 className="text-[13.5px] font-semibold text-ink">
                   Unread
                   <span className="ml-2 rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-semibold text-brand-ink">
-                    {unread.length}
+                    {unreadOpen.length}
                   </span>
                 </h2>
               </div>
               <ThreadList
-                threads={unread}
+                threads={unreadOpen}
                 currentUserId={actor.id}
                 hrefFor={hrefFor}
                 showProject
@@ -54,20 +54,42 @@ export default async function InboxPage() {
           <Card>
             <div className="border-b border-border px-5 py-3">
               <h2 className="text-[13.5px] font-semibold text-ink">
-                {unread.length > 0 ? "Everything else" : "All conversations"}
+                {unreadOpen.length > 0 ? "Open" : "Open conversations"}
               </h2>
             </div>
-            {rest.length === 0 ? (
-              <EmptyState title="Nothing else here" />
+            {readOpen.length === 0 ? (
+              <EmptyState
+                title={unreadOpen.length > 0 ? "Nothing else open" : "No open conversations"}
+                description="Start a new conversation for a new topic rather than reopening a resolved one."
+              />
             ) : (
               <ThreadList
-                threads={rest}
+                threads={readOpen}
                 currentUserId={actor.id}
                 hrefFor={hrefFor}
                 showProject
               />
             )}
           </Card>
+
+          {resolved.length > 0 ? (
+            <Card>
+              <CollapsibleCompleted
+                count={resolved.length}
+                noun={resolved.length === 1 ? "resolved topic" : "resolved topics"}
+                hideHint="— hide closed topics"
+                showHint="— show"
+                flush
+              >
+                <ThreadList
+                  threads={resolved}
+                  currentUserId={actor.id}
+                  hrefFor={hrefFor}
+                  showProject
+                />
+              </CollapsibleCompleted>
+            </Card>
+          ) : null}
         </div>
       )}
     </>

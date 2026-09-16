@@ -9,7 +9,7 @@ import { assertThreadAccess } from "@/lib/threads";
 import { markThreadRead } from "@/actions/messages";
 import { Card, Badge, WaitingOnBadge } from "@/components/ui";
 import { MessageList } from "@/components/thread-list";
-import { MessageComposer } from "@/components/message-composer";
+import { MessageComposer, ThreadActions } from "@/components/message-composer";
 import { differenceInCalendarDays, startOfDay } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +66,16 @@ export default async function PortalThreadPage({
             ) : null}
             {thread.isResolved ? <Badge tone="green">Resolved</Badge> : null}
           </div>
+          <div className="mt-3">
+            <ThreadActions
+              threadId={threadId}
+              isResolved={thread.isResolved}
+              visibility="SHARED"
+              canShare={false}
+              canSetWaitingOn={false}
+              waitingOn={thread.waitingOn}
+            />
+          </div>
         </div>
 
         <MessageList messages={rows} currentUserId={actor.id} />
@@ -73,6 +83,8 @@ export default async function PortalThreadPage({
           threadId={threadId}
           visibility="SHARED"
           placeholder="Write a reply to your implementation team…"
+          isResolved={thread.isResolved}
+          newConversationHref={`/portal/projects/${id}/messages`}
         />
       </Card>
     </>

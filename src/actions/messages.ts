@@ -20,6 +20,7 @@ import {
   ensureParticipants,
   defaultThreadParticipants,
 } from "@/lib/threads";
+import { nextWaitingOnForReply, nextWaitingOnForReopen } from "@/lib/thread-state";
 import { notify, threadRecipients } from "@/lib/notify";
 import { audit } from "@/lib/audit";
 
@@ -153,14 +154,15 @@ export async function postMessage(
   const { threadId, body } = parsed.data;
 
   const thread = await assertThreadAccess(actor, threadId);
-  if (thread.isResolved) {
+  const wasResolved = thread.isResolved;
+  const now = new Date();
+  if (wasResolved) {
     await db
       .update(messageThreads)
-      .set({ isResolved: false })
+      .set({ isResolved: false, updatedAt: now })
       .where(eq(messageThreads.id, threadId));
   }
 
-  const now = new Date();
   let messageId: string;
   try {
     messageId = await db.transaction(async (tx) => {
@@ -225,16 +227,19 @@ export async function postMessage(
     }
   }
 
-  // Ball-in-court: a reply on an open SHARED thread flips waiting-on to the
-  // other side unless staff already resolved it. Staff can still override.
-  if (thread.visibility === "SHARED" && !thread.isResolved) {
-    const nextWaiting = isCustomer(actor) ? "PIMSY" : "CUSTOMER";
-    if (thread.waitingOn !== nextWaiting) {
-      await db
-        .update(messageThreads)
-        .set({ waitingOn: nextWaiting, waitingOnSince: now, updatedAt: now })
-        .where(eq(messageThreads.id, threadId));
-    }
+  // Ball-in-court: a reply on a SHARED thread flips waiting-on to the other
+  // side. Reopening a resolved topic also resets aging so SLA is honest.
+  const waitingPatch = nextWaitingOnForReply({
+    visibility: thread.visibility,
+    actorIsCustomer: isCustomer(actor),
+    wasResolved,
+    currentWaitingOn: thread.waitingOn,
+  });
+  if (waitingPatch) {
+    await db
+      .update(messageThreads)
+      .set({ waitingOn: waitingPatch.waitingOn, waitingOnSince: now, updatedAt: now })
+      .where(eq(messageThreads.id, threadId));
   }
 
   await notify({
@@ -251,9 +256,7 @@ export async function postMessage(
     exceptUserId: actor.id,
   });
 
-  revalidatePath(linkFor(thread.projectId, threadId, false));
-  revalidatePath(linkFor(thread.projectId, threadId, true));
-  revalidatePath("/inbox");
+  revalidateThreadSurfaces(thread.projectId, threadId);
   return { ok: true };
 }
 
@@ -262,23 +265,54 @@ function linkFor(projectId: string | null, threadId: string, portal: boolean) {
   return projectId ? `${base}/projects/${projectId}/messages/${threadId}` : `/inbox/${threadId}`;
 }
 
+function revalidateThreadSurfaces(projectId: string | null, threadId: string) {
+  revalidatePath(linkFor(projectId, threadId, false));
+  revalidatePath(linkFor(projectId, threadId, true));
+  revalidatePath("/inbox");
+  revalidatePath("/dashboard");
+  revalidatePath("/portal");
+  revalidatePath("/reports/waiting-on");
+  revalidatePath("/reports");
+  if (projectId) {
+    revalidatePath(`/projects/${projectId}/messages`);
+    revalidatePath(`/portal/projects/${projectId}/messages`);
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath(`/portal/projects/${projectId}`);
+  }
+}
+
 export async function markThreadRead(threadId: string) {
   const actor = await requireUser();
-  await assertThreadAccess(actor, threadId);
+  const thread = await assertThreadAccess(actor, threadId);
   await ensureParticipants(threadId, [actor.id]);
   await db
     .update(threadParticipants)
     .set({ lastReadAt: new Date() })
     .where(and(eq(threadParticipants.threadId, threadId), eq(threadParticipants.userId, actor.id)));
+  revalidateThreadSurfaces(thread.projectId, threadId);
 }
 
 export async function setThreadResolved(threadId: string, resolved: boolean) {
   const actor = await requireUser();
   const thread = await assertThreadAccess(actor, threadId);
-  await db
-    .update(messageThreads)
-    .set({ isResolved: resolved, updatedAt: new Date() })
-    .where(eq(messageThreads.id, threadId));
+  const now = new Date();
+  const patch: {
+    isResolved: boolean;
+    updatedAt: Date;
+    waitingOn?: "PIMSY" | "CUSTOMER" | "UNKNOWN";
+    waitingOnSince?: Date;
+  } = { isResolved: resolved, updatedAt: now };
+  if (!resolved) {
+    const next = nextWaitingOnForReopen({
+      visibility: thread.visibility,
+      actorIsCustomer: isCustomer(actor),
+    });
+    if (next) {
+      patch.waitingOn = next.waitingOn;
+      patch.waitingOnSince = now;
+    }
+  }
+  await db.update(messageThreads).set(patch).where(eq(messageThreads.id, threadId));
   await audit({
     actor,
     action: resolved ? "thread.resolved" : "thread.reopened",
@@ -286,7 +320,7 @@ export async function setThreadResolved(threadId: string, resolved: boolean) {
     entityId: threadId,
     summary: thread.subject,
   });
-  revalidatePath(linkFor(thread.projectId, threadId, isCustomer(actor)));
+  revalidateThreadSurfaces(thread.projectId, threadId);
 }
 
 /**

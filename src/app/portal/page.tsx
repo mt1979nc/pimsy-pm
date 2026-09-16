@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { requireCustomer } from "@/lib/guard";
 import { portalProjects, portalActionItems } from "@/lib/portal";
-import { listInboxThreads, isUnread } from "@/lib/threads";
+import { listInboxThreads } from "@/lib/threads";
+import { partitionThreads } from "@/lib/thread-state";
 import { Card, CardHeader, EmptyState, Badge, ProgressBar, Avatar } from "@/components/ui";
 import { PortalTaskRow } from "./portal-task-row";
 import { PortalMessageBox } from "./portal-message-box";
+import { ThreadPreviewList } from "@/components/thread-list";
 import { pctComplete } from "@/lib/pct-complete";
-import { fmtDate, daysUntil, isOverdue, fmtRelative } from "@/lib/dates";
-import { cn } from "@/lib/cn";
+import { fmtDate, daysUntil, isOverdue } from "@/lib/dates";
 import { resolveTaskDescription } from "@/lib/task-description";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,8 @@ export default async function PortalHome() {
   const open = actions.filter((a) => a.status !== "DONE");
   const completed = actions.filter((a) => a.status === "DONE");
   const overdue = open.filter((a) => isOverdue(a.dueDate));
-  const unread = threads.filter((t) => isUnread(t, actor.id));
+  const { unreadOpen } = partitionThreads(threads, actor.id);
+  const unread = unreadOpen;
   const firstName = (actor.name ?? actor.email).split(" ")[0];
 
   type Action = (typeof actions)[number];
@@ -256,33 +258,11 @@ export default async function PortalHome() {
                 description="Send a note with the composer below."
               />
             ) : (
-              <div className="divide-y divide-border">
-                {threads.map((t) => (
-                  <Link
-                    key={t.id}
-                    href={`/portal/projects/${t.projectId}/messages/${t.id}`}
-                    className="block px-4 py-2.5 hover:bg-surface-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "size-1.5 shrink-0 rounded-full",
-                          isUnread(t, actor.id) ? "bg-brand" : "bg-transparent",
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          "truncate text-[13px]",
-                          isUnread(t, actor.id) ? "font-semibold text-ink" : "text-ink",
-                        )}
-                      >
-                        {t.subject}
-                      </span>
-                    </div>
-                    <div className="pl-3.5 text-[12px] text-ink-3">{fmtRelative(t.lastMessageAt)}</div>
-                  </Link>
-                ))}
-              </div>
+              <ThreadPreviewList
+                threads={threads}
+                currentUserId={actor.id}
+                hrefFor={(t) => `/portal/projects/${t.projectId}/messages/${t.id}`}
+              />
             )}
           </Card>
 
