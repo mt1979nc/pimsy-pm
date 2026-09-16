@@ -2,9 +2,9 @@
  * Due-soon / overdue classification for assignee reminders (P1-G).
  *
  * Client-safe: no Postgres, Resend, or env. Customer *digest emails* stay
- * on PR #39 — this module only decides which calendar bucket a due date
- * falls in so the scanner can notify every assignee (join table, not just
- * the primary `assignee_id`).
+ * on `/api/cron/customer-digest` — this module only decides which calendar
+ * bucket a due date falls in so the scanner can notify every assignee
+ * (join table, not just the primary `assignee_id`).
  */
 
 /** Business calendar for “due today / tomorrow” (PIMSY is Eastern). */

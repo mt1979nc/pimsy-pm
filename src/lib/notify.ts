@@ -10,6 +10,7 @@ import { sendEmail, layout, plainText, type Fact, type LayoutOpts } from "./emai
 import { env } from "./env";
 import { getOrgSettings, shouldEmail } from "./notification-prefs";
 import { postToTeams } from "./teams";
+import { holdCustomerEmail } from "./customer-digest";
 
 type NotifyArgs = {
   userIds: string[];
@@ -108,21 +109,27 @@ export async function notify({
   });
   if (recipients.length === 0) return;
 
-  // Decide who gets an email before writing rows, so emailedAt is truthful.
+  // Decide who gets an immediate email before writing rows, so emailedAt is
+  // truthful. Customer digest types are held here and sent later as one
+  // summary — in-app rows are still created for every recipient.
   const org = email ? await getOrgSettings() : null;
-  const emailable = email ? recipients.filter((r) => shouldEmail(r, type, org)) : [];
+  const emailable = email
+    ? recipients.filter((r) => shouldEmail(r, type, org) && !holdCustomerEmail(r.role, type))
+    : [];
   const emailableIds = new Set(emailable.map((r) => r.id));
 
   /** Staff and customers reach the same object by different routes. */
   const routeFor = (role: string) =>
     role === "CUSTOMER" ? (portalLinkUrl ?? linkUrl) : linkUrl;
 
+  const storedBody = body ?? quote?.text ?? null;
+
   await db.insert(notifications).values(
     recipients.map((r) => ({
       userId: r.id,
       type,
       title,
-      body: body ?? null,
+      body: storedBody,
       linkUrl: routeFor(r.role) ?? null,
       emailedAt: emailableIds.has(r.id) ? new Date() : null,
     })),

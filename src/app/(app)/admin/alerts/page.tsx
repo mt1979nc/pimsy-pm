@@ -53,7 +53,9 @@ export default async function AdminAlertsPage() {
       <p className="max-w-2xl text-[13.5px] leading-relaxed text-ink-2">
         These are <strong className="font-semibold">email</strong> settings. In-app notifications
         always appear regardless — suppressing those would hide things people need to act on.
-        Defaults apply to anyone who hasn&apos;t set their own preferences.
+        Defaults apply to anyone who hasn&apos;t set their own preferences. Customer due-soon,
+        overdue, and new-message emails are batched into one PATH summary; staff emails stay
+        immediate.
       </p>
 
       <Card>

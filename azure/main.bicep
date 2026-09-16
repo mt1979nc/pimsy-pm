@@ -45,6 +45,10 @@ param internalEmailDomains string = 'pimsyehr.com'
 @description('Resend API key for outbound email (magic links, notifications, password reset). Leave blank to run without email — links are only reachable via server logs, which is not useful in production, so set this for a real deployment.')
 param resendApiKey string = ''
 
+@secure()
+@description('Shared secret for POST /api/cron/customer-digest (customer email digest) and POST /api/cron/task-due-reminders. Generate with openssl rand -base64 32. Leave blank to disable those endpoints (404).')
+param cronSecret string = ''
+
 @description('App Service Plan SKU. B1 is the cheapest that reliably runs a Next.js server; step up to P0v3 or higher for real production traffic.')
 param appServicePlanSku string = 'B1'
 
@@ -201,6 +205,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'BOOTSTRAP_OWNER_EMAIL', value: bootstrapOwnerEmail }
         { name: 'INTERNAL_EMAIL_DOMAINS', value: internalEmailDomains }
         { name: 'RESEND_API_KEY', value: resendApiKey }
+        { name: 'CRON_SECRET', value: cronSecret }
         { name: 'EMAIL_FROM', value: 'PIMSY Implementations <implementations@pimsyehr.com>' }
         { name: 'AZURE_STORAGE_CONNECTION_STRING', value: storageConnectionString }
         { name: 'AZURE_STORAGE_CONTAINER', value: uploadsContainerName }

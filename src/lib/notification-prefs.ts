@@ -34,7 +34,7 @@ export const ALERT_TYPES: {
   {
     type: "TASK_DUE_SOON",
     label: "Due soon",
-    description: "A reminder before something you own is due.",
+    description: "A reminder before something you own is due. Customers get these in a summary email with other due items, not one email per task.",
     audience: "both",
     staffDefault: false,
     customerDefault: true,
@@ -42,7 +42,7 @@ export const ALERT_TYPES: {
   {
     type: "TASK_OVERDUE",
     label: "Overdue",
-    description: "Something you own has passed its due date.",
+    description: "Something you own has passed its due date. Customers get overdue items in the same summary email as due-soon work.",
     audience: "both",
     staffDefault: true,
     customerDefault: true,
@@ -75,7 +75,7 @@ export const ALERT_TYPES: {
   {
     type: "MESSAGE_POSTED",
     label: "New messages",
-    description: "A new message in a conversation you're part of.",
+    description: "A new message in a conversation you're part of. Customers receive messages from the PIMSY team in a summary email when several arrive close together.",
     audience: "both",
     staffDefault: true,
     customerDefault: true,

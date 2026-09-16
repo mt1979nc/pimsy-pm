@@ -131,6 +131,59 @@ az webapp config appsettings set \
 Until then, password sign-in still works for anyone who already has a
 password set — it's only the "email me a link" flows that need it.
 
+## Customer email digest
+
+Customers do **not** get one Resend email per due-soon task or staff message.
+`notify()` still writes **one in-app notification per event**. A digest job
+groups coalescible customer email (due soon, overdue, messages from the PIMSY
+team) into **one PATH summary** with a portal deep link on each row.
+
+Staff email is unchanged (immediate per event).
+
+### Endpoint
+
+```
+POST https://<AZURE_WEBAPP_NAME>.azurewebsites.net/api/cron/customer-digest
+Authorization: Bearer <CRON_SECRET>
+```
+
+GET is accepted too (same header). Wrong or missing secret → **404**, same
+convention as `/api/prism/snapshot`.
+
+Generate the secret and set it on the Web App (and in `azure/main.parameters.json`
+as `cronSecret` before the next Bicep deploy):
+
+```
+openssl rand -base64 32
+
+az webapp config appsettings set \
+  --name <AZURE_WEBAPP_NAME> \
+  --resource-group <AZURE_RESOURCE_GROUP> \
+  --settings CRON_SECRET="<the secret>"
+```
+
+### Schedule on Azure (recommended)
+
+App Service does not run this by itself. Add a **Logic App** (Consumption)
+with a Recurrence trigger every **15 minutes**, action **HTTP**:
+
+| Field | Value |
+|---|---|
+| Method | POST |
+| URI | `https://<AZURE_WEBAPP_NAME>.azurewebsites.net/api/cron/customer-digest` |
+| Headers | `Authorization` = `Bearer <CRON_SECRET>` |
+
+Fifteen minutes is the coalesce window: five tasks due today/tomorrow, or
+several staff messages in a short span, leave as **one** email. The due-soon
+scan is idempotent for ~20 hours per user+task, so a 15-minute timer does not
+re-spam.
+
+Optional fallback: GitHub Actions workflow `.github/workflows/customer-digest.yml`
+(needs repo secrets `PATH_APP_URL` and `PATH_CRON_SECRET`). Prefer the Logic
+App so the job keeps running if GitHub scheduled workflows delay.
+
+No database migration. No playbook resync.
+
 ## Updating the app after the first deploy
 
 Nothing extra needed — every push to `main` re-runs the same GitHub Actions
@@ -163,10 +216,10 @@ exists — PATH will not invent audit rows. See `v1.14-PIMSY-LOGIN-AUDIT.md`.
 writes per-assignee `TASK_DUE_SOON` / `TASK_OVERDUE` in-app notifications
 (today + tomorrow Eastern, plus overdue). Unset or wrong secret → 404.
 Does **not** send the batched customer digest — that remains the separate
-digest job (PR #39), which can reuse the same `CRON_SECRET`. Set the App
-Setting with `openssl rand -base64 32`. Call from a Logic App recurrence
-(every 15 minutes is plenty; the cooldown is ~20 hours per user+task).
-Migration `0017_task_assignees`.
+`POST /api/cron/customer-digest` job above, which reuses the same
+`CRON_SECRET`. Set the App Setting with `openssl rand -base64 32`. Call
+from a Logic App recurrence (every 15 minutes is plenty; the cooldown is
+~20 hours per user+task). Migration `0017_task_assignees`.
 
 See `v1.10-REPORT.md` in the repo root.
 

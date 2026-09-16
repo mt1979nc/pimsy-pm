@@ -4,8 +4,8 @@
  * Writes one in-app TASK_DUE_SOON / TASK_OVERDUE per assignee per task
  * (join table, not only primary `assignee_id`). Uses existing `notify()` —
  * staff email is immediate per prefs; customer email is also offered here
- * so Inbox still fills. Batch customer digest mail is PR #39 and must not
- * be rebuilt in this slice.
+ * so Inbox still fills. Batch customer digest mail is `/api/cron/customer-digest`
+ * and must not be rebuilt in this slice.
  *
  * Trigger: POST/GET /api/cron/task-due-reminders with Bearer CRON_SECRET.
  */
