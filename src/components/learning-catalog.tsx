@@ -66,13 +66,13 @@ export function LearningCatalog({
   const roles: Array<"all" | LearningAudience> = ["all", "clinical", "billing", "admin"];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search PIMSY guides, scheduling, notes…"
+          placeholder="Search…"
           className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface px-3 py-2 text-[14px] text-ink"
         />
         <div className="flex flex-wrap gap-1.5">
@@ -86,7 +86,7 @@ export function LearningCatalog({
                 role === r ? "bg-brand text-brand-ink" : "bg-surface-2 text-ink-2 hover:text-ink",
               )}
             >
-              {r === "all" ? "All roles" : LEARNING_AUDIENCE_LABEL[r]}
+              {r === "all" ? "All" : LEARNING_AUDIENCE_LABEL[r]}
             </button>
           ))}
         </div>
@@ -99,37 +99,24 @@ export function LearningCatalog({
       ) : (
         filtered.map((section) => (
           <section key={section.id} id={section.slug} className="space-y-3">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-[16px] font-semibold tracking-tight text-ink">{section.title}</h2>
-                <Badge>{section.topicLabel}</Badge>
-              </div>
-              {section.description ? (
-                <p className="mt-1 text-[13px] text-ink-2">{section.description}</p>
-              ) : null}
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <h2 className="text-[16px] font-semibold tracking-tight text-ink">{section.title}</h2>
+            <div className="grid gap-2 sm:grid-cols-2">
               {section.items.map((item) => (
                 <Link
                   key={item.id}
                   href={`${hrefPrefix}/${item.id}`}
-                  className="block rounded-xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,20,30,0.04)] hover:border-brand"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3 hover:border-brand"
                 >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge>{learningKindLabel(item.kind, item.url)}</Badge>
-                    {item.audienceRole !== "all" ? (
-                      <Badge>
-                        {LEARNING_AUDIENCE_LABEL[item.audienceRole as LearningAudience] ?? item.audienceRole}
-                      </Badge>
-                    ) : null}
-                    {item.isPlaceholder ? (
-                      <Badge tone="amber">{learningPlaceholderLabel(item.kind)}</Badge>
-                    ) : null}
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge>{learningKindLabel(item.kind, item.url)}</Badge>
+                      {item.isPlaceholder ? (
+                        <Badge tone="amber">{learningPlaceholderLabel(item.kind)}</Badge>
+                      ) : null}
+                    </div>
+                    <h3 className="mt-1 truncate text-[14.5px] font-semibold text-ink">{item.title}</h3>
                   </div>
-                  <h3 className="mt-2 text-[14.5px] font-semibold leading-snug text-ink">{item.title}</h3>
-                  {item.summary ? (
-                    <p className="mt-1 line-clamp-3 text-[13px] leading-relaxed text-ink-2">{item.summary}</p>
-                  ) : null}
+                  <span className="shrink-0 text-[12.5px] font-medium text-brand">Open</span>
                 </Link>
               ))}
             </div>

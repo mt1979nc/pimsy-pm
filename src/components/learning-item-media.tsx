@@ -1,4 +1,4 @@
-import { Card, CardHeader, LinkButton } from "@/components/ui";
+import { LinkButton } from "@/components/ui";
 import {
   learningIframeSrc,
   learningOpenLabel,
@@ -24,21 +24,20 @@ export function LearningItemMedia({
       : title;
 
   return (
-    <Card className="mt-5">
-      <CardHeader title={iframeSrc ? (isLearningPdfUrl(url) ? "PDF" : "Walkthrough") : "Open"} />
+    <div className="mt-5 overflow-hidden rounded-xl border border-border bg-surface">
       {iframeSrc ? (
         <iframe
           title={frameTitle}
           src={iframeSrc}
-          className="h-[min(640px,70vh)] w-full border-t border-border bg-white"
+          className="h-[min(640px,70vh)] w-full bg-white"
           allow="fullscreen"
         />
       ) : null}
-      <div className="flex flex-wrap gap-2 px-5 py-4">
+      <div className="flex flex-wrap gap-2 px-4 py-3">
         <LinkButton href={url} variant={iframeSrc ? "secondary" : "primary"} target="_blank" rel="noopener noreferrer">
           {openLabel}
         </LinkButton>
       </div>
-    </Card>
+    </div>
   );
 }

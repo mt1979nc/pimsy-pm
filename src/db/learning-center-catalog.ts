@@ -207,14 +207,10 @@ export type LearningSectionSeed = {
   items: LearningItemSeed[];
 };
 
-const DEMO_CLIENT_NOTE = "Practice in PIMSY on test/demo clients only — never real patient records.";
-
 function walkthrough(input: {
   slugKey: string;
   title: string;
-  group: "Scheduling" | "Notes" | "Providers";
   summary: string;
-  steps: string;
   audienceRole: LearningAudience;
   order: number;
   url: string;
@@ -224,11 +220,7 @@ function walkthrough(input: {
     slugKey: input.slugKey,
     title: input.title,
     summary: input.summary,
-    body: `${input.group} how-to in PIMSY.
-
-${input.steps}
-
-The interactive Storylane walkthrough is on this card (or Open in a new tab). ${DEMO_CLIENT_NOTE}`,
+    body: "",
     kind: "LINK",
     audienceRole: input.audienceRole,
     order: input.order,
@@ -251,12 +243,8 @@ export const LEARNING_CENTER_SECTIONS: LearningSectionSeed[] = [
       {
         slugKey: "intro",
         title: "Intro to PIMSY",
-        summary: "What PIMSY is: your electronic health record for charts, calendar, notes, and billing.",
-        body: `PIMSY is your electronic health record. Client charts, the calendar, notes, and billing live in PIMSY.
-
-This Learning Center is guides and Storylane walkthroughs for using PIMSY. Each topic is a card with a real title — not an unlabeled “View PDF” or a blank embed.
-
-Do not paste patient names, charts, or clinical detail into this portal. Training uses demo/test clients inside PIMSY.`,
+        summary: "Charts, calendar, notes, and billing.",
+        body: "PIMSY is the EHR. Train on demo/test clients only — never real patient records.",
         kind: "ARTICLE",
         audienceRole: "all",
         order: 0,
@@ -266,10 +254,8 @@ Do not paste patient names, charts, or clinical detail into this portal. Trainin
       {
         slugKey: "getting-started",
         title: "Getting started with PIMSY v2",
-        summary: "Getting started with PIMSY (Dock PDF).",
-        body: `Open the Getting Started PDF on this card for first sign-in, web vs desktop, and where work lives in PIMSY.
-
-See **Password & access** for password reset and the desktop installer. ${DEMO_CLIENT_NOTE}`,
+        summary: "First sign-in, web vs desktop.",
+        body: "",
         kind: "LINK",
         audienceRole: "all",
         order: 1,
@@ -280,10 +266,8 @@ See **Password & access** for password reset and the desktop installer. ${DEMO_C
       {
         slugKey: "overview",
         title: "Overview",
-        summary: "Interactive overview of PIMSY — calendar, charts, notes, and the provider dashboard.",
-        body: `This Overview walkthrough is the Dock Storylane for PIMSY (calendar, charts, notes, provider dashboard). Play it on this card.
-
-${DEMO_CLIENT_NOTE}`,
+        summary: "Calendar, charts, notes, provider dashboard.",
+        body: "",
         kind: "LINK",
         audienceRole: "all",
         order: 2,
@@ -294,8 +278,8 @@ ${DEMO_CLIENT_NOTE}`,
       {
         slugKey: "tips-successful-implementation",
         title: "Tips for a Successful implementation V2",
-        summary: "Tips for a successful PIMSY implementation (Dock PDF).",
-        body: `Open the tips PDF on this card. It is the Dock “Tips for a Successful implementation” guide — product and go-live habits in PIMSY, not a PATH project map.`,
+        summary: "Go-live habits in PIMSY.",
+        body: "",
         kind: "LINK",
         audienceRole: "all",
         order: 3,
@@ -316,10 +300,8 @@ ${DEMO_CLIENT_NOTE}`,
       {
         slugKey: "password-reset",
         title: "Password Reset",
-        summary: "Reset a PIMSY login — Dock Storylane walkthrough.",
-        body: `On the PIMSY sign-in page, use Forgot password. If your practice uses SSO, follow your IT process instead.
-
-Play the Password Reset walkthrough on this card. This implementation portal is a separate login from PIMSY. Do not send passwords in chat or email.`,
+        summary: "Forgot password on the PIMSY sign-in page.",
+        body: "",
         kind: "LINK",
         audienceRole: "all",
         order: 0,
@@ -330,12 +312,8 @@ Play the Password Reset walkthrough on this card. This implementation portal is 
       {
         slugKey: "access",
         title: "Access",
-        summary: "PIMSY desktop app, web bookmark, practice acronym, and security key.",
-        body: `Install the PIMSY Windows desktop app from the Help Desk page on this card. During setup you enter the practice acronym and security key your specialist provides.
-
-Your PIMSY web bookmark is practice-specific — your specialist gives you that URL. This card does not guess a tenant host.
-
-Do not send security keys or passwords in chat or email.`,
+        summary: "Desktop app installer.",
+        body: "Install the Windows app, then enter the practice acronym and security key from your specialist.",
         kind: "LINK",
         audienceRole: "all",
         order: 1,
@@ -356,13 +334,7 @@ Do not send security keys or passwords in chat or email.`,
       walkthrough({
         slugKey: "navigate-calendar",
         title: "How to Navigate the Calendar in the Portal",
-        group: "Scheduling",
         summary: "Find the calendar, move between days/weeks, and open an appointment.",
-        steps: `In PIMSY:
-
-1. Open the calendar from the appointment widget / schedule view.
-2. Move between day, week, and provider views.
-3. Open an existing appointment on a demo client.`,
         audienceRole: "clinical",
         order: 0,
         url: DOCK_LC_ASSETS.navigateCalendar,
@@ -371,13 +343,7 @@ Do not send security keys or passwords in chat or email.`,
       walkthrough({
         slugKey: "recurring-appointments",
         title: "How to Schedule Recurring Appointments in the Portal",
-        group: "Scheduling",
         summary: "Set a repeating appointment series on a demo client.",
-        steps: `In PIMSY:
-
-1. Create or open a demo appointment.
-2. Set the recurrence pattern.
-3. Confirm the series on the calendar, then edit or cancel a single occurrence vs. the series as trained.`,
         audienceRole: "clinical",
         order: 1,
         url: DOCK_LC_ASSETS.recurringAppointments,
@@ -386,14 +352,7 @@ Do not send security keys or passwords in chat or email.`,
       walkthrough({
         slugKey: "telehealth",
         title: "How to Use Telehealth on the Portal",
-        group: "Scheduling",
         summary: "Launch a telehealth visit from the appointment (when in scope).",
-        steps: `In PIMSY (only if telehealth is in scope):
-
-1. Open a demo telehealth appointment.
-2. Use the launch path your specialist shows (client vs. provider).
-
-Skip this card when telehealth is out of scope.`,
         audienceRole: "clinical",
         order: 2,
         url: DOCK_LC_ASSETS.telehealth,
@@ -402,15 +361,7 @@ Skip this card when telehealth is out of scope.`,
       walkthrough({
         slugKey: "take-a-payment",
         title: "How to Take a Payment in the Portal",
-        group: "Scheduling",
         summary: "Collect a copay / checkout payment in PIMSY.",
-        steps: `In PIMSY:
-
-1. Open a demo appointment at checkout.
-2. Take the payment the way your specialist demonstrates.
-3. Confirm the receipt posts on the demo client.
-
-Do not post card numbers or real patient payment detail in this portal.`,
         audienceRole: "billing",
         order: 3,
         url: DOCK_LC_ASSETS.takeAPayment,
@@ -429,13 +380,7 @@ Do not post card numbers or real patient payment detail in this portal.`,
       walkthrough({
         slugKey: "ambient-scribe",
         title: "Ambient Scribe",
-        group: "Notes",
         summary: "Paisly Ambient Scribe in PIMSY — only if it is in scope.",
-        steps: `In PIMSY (only if Ambient Scribe is in scope):
-
-1. Open a demo encounter.
-2. Follow the Ambient Scribe path in the walkthrough.
-3. Capture a demo note only — never a real encounter in this portal.`,
         audienceRole: "clinical",
         order: 0,
         url: DOCK_LC_ASSETS.ambientScribe,
@@ -443,13 +388,7 @@ Do not post card numbers or real patient payment detail in this portal.`,
       walkthrough({
         slugKey: "group-note",
         title: "How to do a Group Note",
-        group: "Notes",
         summary: "Document a group session in PIMSY when your site uses group notes.",
-        steps: `In PIMSY (only if you document group sessions):
-
-1. Open a demo group session.
-2. Complete the group note.
-3. Record attendance and any individual follow-up notes as trained.`,
         audienceRole: "clinical",
         order: 1,
         url: DOCK_LC_ASSETS.groupNote,
@@ -458,13 +397,7 @@ Do not post card numbers or real patient payment detail in this portal.`,
       walkthrough({
         slugKey: "note",
         title: "How to do a Note",
-        group: "Notes",
         summary: "Open a progress note template and complete a demo note in PIMSY.",
-        steps: `In PIMSY:
-
-1. Open a demo client chart.
-2. Start the progress note template.
-3. Sign or save as trained. Do not paste real clinical text into this portal.`,
         audienceRole: "clinical",
         order: 2,
         url: DOCK_LC_ASSETS.note,
@@ -473,13 +406,7 @@ Do not post card numbers or real patient payment detail in this portal.`,
       walkthrough({
         slugKey: "favorite-tabs",
         title: "How to Favorite tabs in a Note",
-        group: "Notes",
         summary: "Pin the chart tabs you use every day in PIMSY.",
-        steps: `In PIMSY:
-
-1. Open a demo client chart.
-2. Favorite the tabs for your role.
-3. Confirm favorites persist for that training user.`,
         audienceRole: "clinical",
         order: 3,
         url: DOCK_LC_ASSETS.favoriteTabs,
@@ -498,13 +425,7 @@ Do not post card numbers or real patient payment detail in this portal.`,
       walkthrough({
         slugKey: "provider-portal-dashboard",
         title: "How to Navigate the Provider Portal Dashboard",
-        group: "Providers",
         summary: "What providers see in PIMSY on sign-in: dashboard widgets and next appointments.",
-        steps: `In PIMSY:
-
-1. Sign in as a demo provider.
-2. Review the Provider Dashboard widgets.
-3. Open the appointment widget from the dashboard.`,
         audienceRole: "clinical",
         order: 0,
         url: DOCK_LC_ASSETS.providerDashboard,
@@ -513,14 +434,7 @@ Do not post card numbers or real patient payment detail in this portal.`,
       walkthrough({
         slugKey: "manage-prescriptions-drfirst",
         title: "How to Manage Prescriptions with DrFirst in the Portal",
-        group: "Providers",
         summary: "ePrescribe / DrFirst in PIMSY — only if prescribing is in scope.",
-        steps: `In PIMSY (only if ePrescribe is in scope):
-
-1. Open the prescriber workspace / queues on a demo patient.
-2. Send or manage a demo prescription as trained.
-
-Never send live prescription or patient identifiers in this portal.`,
         audienceRole: "clinical",
         order: 1,
         url: DOCK_LC_ASSETS.managePrescriptions,
@@ -540,18 +454,12 @@ Never send live prescription or patient identifiers in this portal.`,
       {
         slugKey: "training-how-it-works",
         title: "How training works",
-        summary: "Five PIMSY modules in sequence; group notes only if you use them.",
-        body: `Trainers learn PIMSY in this order, then teach the rest of the practice:
-
-1. Training 1 — Intro to PIMSY, client charts, appointments/calendar
-2. Training 2 — Client charts
-3. Training 3 — Appointments & notes
-4. Training 4 — Group notes (only if your practice uses group notes)
-5. Training 5 — Intake
-
-Storylane walkthroughs for calendar, notes, and providers are in those sections.
-
-${DEMO_CLIENT_NOTE}`,
+        summary: "Five PIMSY modules in order. Skip group notes if unused.",
+        body: `1. Intro, charts, calendar
+2. Client charts
+3. Appointments & notes
+4. Group notes (if used)
+5. Intake`,
         kind: "ARTICLE",
         audienceRole: "all",
         order: 0,
@@ -560,18 +468,12 @@ ${DEMO_CLIENT_NOTE}`,
       {
         slugKey: "training-1",
         title: "Training 1: Intro to PIMSY, Client Charts, Appointments/Calendar",
-        summary: "User profile, provider dashboard, appointment widget, client management, create/term.",
-        body: `PIMSY topics in this module:
-
-- User Profile / Signature Capture
+        summary: "Profile, dashboard, appointment widget, clients.",
+        body: `- User Profile / Signature Capture
 - Provider Dashboard
 - Appointment Widget
-- Client Management (active, inactive, groups, favorites)
-- Client Create / Term
-
-See **Scheduling** and **Providers** for the Dock Storylanes.
-
-${DEMO_CLIENT_NOTE}`,
+- Client Management
+- Client Create / Term`,
         kind: "ARTICLE",
         audienceRole: "all",
         order: 1,
@@ -581,16 +483,12 @@ ${DEMO_CLIENT_NOTE}`,
       {
         slugKey: "training-2",
         title: "Training 2: Client Charts",
-        summary: "Creating a client, demographics, diagnoses, treatment plans, documents in PIMSY.",
-        body: `PIMSY topics in this module:
-
-- Creating a client
+        summary: "Demographics, diagnoses, treatment plans, documents.",
+        body: `- Creating a client
 - Demographics and contacts
 - Diagnoses
 - Treatment planning
-- Chart documents
-
-${DEMO_CLIENT_NOTE}`,
+- Chart documents`,
         kind: "ARTICLE",
         audienceRole: "clinical",
         order: 2,
@@ -600,17 +498,11 @@ ${DEMO_CLIENT_NOTE}`,
       {
         slugKey: "training-3",
         title: "Training 3: Appointments & Notes",
-        summary: "Scheduling, progress notes, checkout payments in PIMSY.",
-        body: `PIMSY topics in this module:
-
-- Scheduling appointments
-- Progress notes and note templates
+        summary: "Scheduling, notes, checkout payments.",
+        body: `- Scheduling
+- Progress notes
 - Payments at checkout
-- Paisly Ambient Scribe (if in scope)
-
-See **Scheduling** and **Notes** for the Dock Storylanes.
-
-${DEMO_CLIENT_NOTE}`,
+- Ambient Scribe (if in scope)`,
         kind: "ARTICLE",
         audienceRole: "clinical",
         order: 3,
@@ -620,18 +512,10 @@ ${DEMO_CLIENT_NOTE}`,
       {
         slugKey: "training-4",
         title: "Training 4: Group Notes (if applicable)",
-        summary: "Group session setup, group notes, attendance in PIMSY — only if you use group notes.",
-        body: `Skip this module when the practice does not document group sessions.
-
-PIMSY topics:
-
-- Group session setup
-- Group note documentation
-- Attendance and individual follow-up notes
-
-See **Notes → How to do a Group Note** for the walkthrough.
-
-${DEMO_CLIENT_NOTE}`,
+        summary: "Group sessions — skip if unused.",
+        body: `- Group session setup
+- Group notes
+- Attendance / follow-up notes`,
         kind: "ARTICLE",
         audienceRole: "clinical",
         order: 4,
@@ -640,14 +524,10 @@ ${DEMO_CLIENT_NOTE}`,
       {
         slugKey: "training-5",
         title: "Training 5: Intake",
-        summary: "Intake Assistant, inquiry-to-chart, consents in PIMSY.",
-        body: `PIMSY topics in this module:
-
-- Intake Assistant / public forms
-- New-client workflow from inquiry to chart
-- Consents and required intake documents
-
-${DEMO_CLIENT_NOTE}`,
+        summary: "Intake Assistant, inquiry to chart, consents.",
+        body: `- Intake Assistant / public forms
+- Inquiry to chart
+- Consents`,
         kind: "ARTICLE",
         audienceRole: "clinical",
         order: 5,

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { requireStaff } from "@/lib/guard";
 import { canManageLearningCenter } from "@/lib/authz";
 import { loadLearningCatalog } from "@/lib/learning-center";
@@ -6,9 +5,6 @@ import { LearningCatalog } from "@/components/learning-catalog";
 import { PageHeader, Card, CardHeader, Badge, LinkButton } from "@/components/ui";
 import { TemplateHubNav } from "@/components/template-hub-nav";
 import { AddLearningItemForm, EditLearningItemForm } from "./learning-forms";
-import { db } from "@/db";
-import { libraryAssets } from "@/db/schema";
-import { asc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Learning Center" };
@@ -17,15 +13,11 @@ export default async function StaffLearningPage() {
   const actor = await requireStaff();
   const canEdit = canManageLearningCenter(actor);
   const sections = await loadLearningCatalog(actor, { includeDrafts: canEdit });
-  const library = canEdit
-    ? await db.query.libraryAssets.findMany({ orderBy: [asc(libraryAssets.name)] })
-    : [];
 
   return (
     <>
       <PageHeader
         title="Learning Center"
-        subtitle="PIMSY how-tos and Storylanes — Getting started, Password & access, Scheduling, Notes, Providers, Training. Titled cards, not unlabeled PDFs. Owners and admins can curate."
         actions={
           canEdit ? (
             <LinkButton href="/library" size="sm">
@@ -38,7 +30,7 @@ export default async function StaffLearningPage() {
 
       <LearningCatalog
         sections={sections}
-        emptyHint="No Learning Center items yet. Run npm run db:seed -- --templates-only."
+        emptyHint="Nothing published yet. Seed with npm run db:seed -- --templates-only."
       />
 
       {canEdit
@@ -73,16 +65,6 @@ export default async function StaffLearningPage() {
             </Card>
           ))
         : null}
-
-      {canEdit && library.length > 0 ? (
-        <p className="mt-5 text-[12.5px] text-ink-3">
-          Default Dock files (Discovery Wizard, billing sheets) live in the{" "}
-          <Link href="/library" className="text-brand hover:underline">
-            file library
-          </Link>
-          . Replacing a placeholder there updates new workspaces and Learning Center downloads.
-        </p>
-      ) : null}
     </>
   );
 }

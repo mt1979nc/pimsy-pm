@@ -584,6 +584,10 @@ describe("Learning Center IA", () => {
     expect(portalList).toContain('hrefPrefix="/portal/learn"');
     expect(staffItem).toContain("LearningItemMedia");
     expect(portalItem).toContain("LearningItemMedia");
+    const catalogUi = readFileSync(resolve(process.cwd(), "src/components/learning-catalog.tsx"), "utf8");
+    expect(catalogUi).toContain(">Open<");
+    expect(catalogUi).not.toContain("item.summary ?");
+    expect(portalItem).toContain("learningIframeSrc");
   });
 
   it("filters catalog search without leaking extra sections", () => {
