@@ -111,6 +111,30 @@ export function addRcmEligibility(project: AddRcmProjectInput): AddRcmEligibilit
   return { ok: true };
 }
 
+/** Which Add RCM chrome to render. Form stays hidden until the user expands. */
+export type AddRcmPanelView = "hidden" | "trigger" | "form" | "summary";
+
+export function addRcmPanelView(input: {
+  eligible: boolean;
+  alreadyOn: boolean;
+  expanded: boolean;
+}): AddRcmPanelView {
+  if (input.alreadyOn) return "summary";
+  if (!input.eligible) return "hidden";
+  return input.expanded ? "form" : "trigger";
+}
+
+export const ADD_RCM_HASH = "#add-rcm";
+
+export function addRcmHashShouldExpand(
+  hash: string | null | undefined,
+  alreadyOn: boolean,
+): boolean {
+  if (alreadyOn) return false;
+  const value = (hash ?? "").trim();
+  return value === ADD_RCM_HASH || value === "add-rcm";
+}
+
 export function addRcmBlockedMessage(reason: AddRcmBlockedReason): string {
   switch (reason) {
     case "already-on":

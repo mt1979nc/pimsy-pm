@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.16.0");
+    expect(APP_VERSION).toBe("1.16.4");
     expect(APP_VERSION).toMatch(/^1\.16\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,17 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.16.4 collapsed Add RCM on existing projects", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.16.4");
+    expect(note?.summary).toMatch(/Add RCM/i);
+    expect(note?.summary).toMatch(/hidden by default|button/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /Add RCM/.test(h) && /clicked|button/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /compact RCM/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /seed|resync/i.test(h))).toBe(true);
   });
 
   it("documents v1.16.0 template default assignee by role", () => {

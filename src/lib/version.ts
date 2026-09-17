@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.16.3";
+export const APP_VERSION = "1.16.4";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.16.4",
+    date: "2026-09-17",
+    summary:
+      "Add RCM on an existing project stays a single button until you click it. The large RCM fields panel is hidden by default; already-on sites show a compact RCM chip instead of an empty form. No schema migrate.",
+    highlights: [
+      "Tasks hub and Settings: default is Add RCM only — no large RCM box until clicked.",
+      "After Add RCM, start/target dates and billing/RCM assignees appear so the existing attach flow still saves.",
+      "If RCM is already on the project, a compact RCM summary (dates and counts when present) replaces the form.",
+      "No schema migrate. No playbook seed or resync.",
+    ],
+  },
   {
     version: "1.16.3",
     date: "2026-09-17",
@@ -46,7 +58,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
   },
   
   {
-    version: "1.16.1",
+    version: "1.16.0",
     date: "2026-09-17",
     summary:
       "Template editing sets a task’s default assignee to a staffing role (Implementation Specialist, billing, customer lead, …) — not a named person. Creating a project from that playbook assigns those tasks to whoever holds the role. No schema migrate.",

@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   ADD_RCM_ROLES,
   RCM_TRACK_ALREADY_ON,
   addRcmBlockedMessage,
   addRcmEligibility,
+  addRcmHashShouldExpand,
+  addRcmPanelView,
   billingRcmAssignmentsFromMembers,
   findRcmOverlapPeer,
   isBillingOrRcmStaffingRole,
@@ -64,6 +68,37 @@ describe("Add RCM eligibility (mid-implementation)", () => {
     });
     expect(addRcmBlockedMessage("handoff")).toMatch(/Hand-off/);
     expect(addRcmBlockedMessage("onboarded")).toMatch(/Onboarded/);
+  });
+
+  it("hides the RCM fields panel until Add RCM is clicked", () => {
+    expect(addRcmPanelView({ eligible: true, alreadyOn: false, expanded: false })).toBe("trigger");
+    expect(addRcmPanelView({ eligible: true, alreadyOn: false, expanded: true })).toBe("form");
+    expect(addRcmPanelView({ eligible: false, alreadyOn: true, expanded: false })).toBe("summary");
+    expect(addRcmPanelView({ eligible: false, alreadyOn: true, expanded: true })).toBe("summary");
+    expect(addRcmPanelView({ eligible: false, alreadyOn: false, expanded: true })).toBe("hidden");
+    expect(addRcmHashShouldExpand("#add-rcm", false)).toBe(true);
+    expect(addRcmHashShouldExpand("add-rcm", false)).toBe(true);
+    expect(addRcmHashShouldExpand("#add-rcm", true)).toBe(false);
+    expect(addRcmHashShouldExpand("", false)).toBe(false);
+  });
+
+  it("keeps the Tasks and Settings RCM form behind Add RCM", () => {
+    const tasks = readFileSync(resolve(process.cwd(), "src/components/project-task-list.tsx"), "utf8");
+    const settings = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/projects/[id]/settings/page.tsx"),
+      "utf8",
+    );
+    const form = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/projects/[id]/settings/add-rcm-track-form.tsx"),
+      "utf8",
+    );
+    expect(tasks).toMatch(/rcmView === "form" && addRcm/);
+    expect(tasks).toMatch(/"Add RCM"/);
+    expect(tasks).not.toMatch(/href="#add-rcm"/);
+    expect(settings).toMatch(/<AddRcmPanel/);
+    expect(settings).not.toMatch(/AddRcmAlreadyOnNote/);
+    expect(form).toMatch(/AddRcmOnSummary/);
+    expect(form).toMatch(/view === "trigger"/);
   });
 
   it("detects a finished Workflow & Handoff phase", () => {

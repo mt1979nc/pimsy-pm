@@ -46,6 +46,9 @@ export default async function ProjectTasksPage({
         onboarded: true,
         archivedAt: true,
         playbookPath: true,
+        rcmStartedAt: true,
+        rcmTargetGoLiveDate: true,
+        rcmTaskCountDone: true,
         rcmTaskCountTotal: true,
         bookingUrls: true,
         zoomBookingUrl: true,
@@ -228,6 +231,16 @@ export default async function ProjectTasksPage({
         addRcm.ok
           ? {
               defaultAssignments: billingRcmAssignmentsFromMembers(project.members),
+            }
+          : null
+      }
+      rcmSummary={
+        !addRcm.ok && addRcm.reason === "already-on"
+          ? {
+              startedAt: iso(project.rcmStartedAt),
+              targetGoLiveDate: iso(project.rcmTargetGoLiveDate),
+              taskCountDone: project.rcmTaskCountDone,
+              taskCountTotal: project.rcmTaskCountTotal,
             }
           : null
       }

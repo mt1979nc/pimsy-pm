@@ -1,12 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Card, CardHeader, Badge, VisibilityBadge, EmptyState, LinkButton } from "@/components/ui";
+import { useEffect, useMemo, useState } from "react";
+import { Card, CardHeader, Badge, Button, VisibilityBadge, EmptyState } from "@/components/ui";
 import { TaskRow, type TaskRowData } from "@/components/task-row";
 import { TaskListToolbar } from "@/components/task-list-toolbar";
 import { CollapsibleCompleted } from "@/components/collapsible-completed";
 import { AddTaskInline, AddPhaseForm } from "@/app/(app)/projects/[id]/tasks/task-forms";
-import { AddRcmTrackForm } from "@/app/(app)/projects/[id]/settings/add-rcm-track-form";
+import {
+  AddRcmOnSummary,
+  AddRcmTrackForm,
+  type AddRcmSummary,
+} from "@/app/(app)/projects/[id]/settings/add-rcm-track-form";
+import { ADD_RCM_HASH, addRcmHashShouldExpand, addRcmPanelView } from "@/lib/add-rcm";
 import { PhaseNaButton } from "@/app/(app)/projects/[id]/tasks/phase-na-button";
 import { PhaseVisibilityButton } from "@/app/(app)/projects/[id]/tasks/phase-visibility-button";
 import type { MoveTaskPhaseOption } from "@/components/move-task-dialog";
@@ -121,6 +126,7 @@ export function ProjectTaskBoard({
   bookingUrls,
   checklistByTaskId,
   addRcm,
+  rcmSummary,
 }: {
   projectId: string;
   currentUserId: string;
@@ -132,9 +138,37 @@ export function ProjectTaskBoard({
   bookingUrls?: BookingUrlMap | null;
   checklistByTaskId: Record<string, ChecklistItemView[]>;
   addRcm?: { defaultAssignments: Record<string, string> } | null;
+  rcmSummary?: AddRcmSummary | null;
 }) {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<TaskListView>("all");
+  const [addRcmOpen, setAddRcmOpen] = useState(false);
+  const alreadyOn = Boolean(rcmSummary) && !addRcm;
+  const rcmView = addRcmPanelView({
+    eligible: Boolean(addRcm),
+    alreadyOn,
+    expanded: addRcmOpen,
+  });
+
+  useEffect(() => {
+    const sync = () => {
+      if (addRcmHashShouldExpand(window.location.hash, alreadyOn)) setAddRcmOpen(true);
+    };
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, [alreadyOn]);
+
+  function setAddRcmExpanded(next: boolean) {
+    setAddRcmOpen(next);
+    if (typeof window === "undefined") return;
+    if (next && window.location.hash !== ADD_RCM_HASH) {
+      window.history.replaceState(null, "", ADD_RCM_HASH);
+    }
+    if (!next && window.location.hash === ADD_RCM_HASH) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }
 
   const allTasks = useMemo(
     () => [...phases.flatMap((p) => p.tasks), ...unphased],
@@ -197,25 +231,32 @@ export function ProjectTaskBoard({
           ) : null}
         </div>
         <span className="flex flex-wrap items-center gap-2">
-          {addRcm ? (
-            <LinkButton href="#add-rcm" size="sm" variant="secondary">
-              Add RCM
-            </LinkButton>
+          {rcmView === "trigger" || rcmView === "form" ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              type="button"
+              aria-expanded={rcmView === "form"}
+              aria-controls="add-rcm"
+              onClick={() => setAddRcmExpanded(rcmView !== "form")}
+            >
+              {rcmView === "form" ? "Cancel" : "Add RCM"}
+            </Button>
+          ) : rcmView === "summary" ? (
+            <AddRcmOnSummary {...rcmSummary} />
           ) : null}
           <AddPhaseForm projectId={projectId} />
         </span>
       </div>
 
-      {addRcm ? (
+      {rcmView === "form" && addRcm ? (
         <Card id="add-rcm">
-          <CardHeader
-            title="Add RCM"
-            subtitle="Enable the RCM area and playbook tasks on this live Implementation WIP. Open Billing / Discovery / Configuration work stays connected."
-          />
+          <CardHeader title="Add RCM" />
           <AddRcmTrackForm
             projectId={projectId}
             staff={staff}
             defaultAssignments={addRcm.defaultAssignments}
+            onCancel={() => setAddRcmExpanded(false)}
           />
         </Card>
       ) : null}
