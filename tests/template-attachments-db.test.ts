@@ -17,6 +17,7 @@ import {
 } from "@/db/schema";
 import { DISCOVERY_WIZARD_URL } from "@/db/dock-default-attachments";
 import { TRAINING_SESSION_DESCRIPTION } from "@/db/dock-training-checklists";
+import { dockPlaybookDescriptionForTitle } from "@/db/dock-playbook-copy";
 import { applyTemplateDockExtras, seedLibraryPlaceholders } from "@/db/seed-dock-parity";
 import { loadTemplateById, materializeTemplatesOnProject } from "@/lib/playbook";
 import { applyPlaybookResync, planPlaybookResync } from "@/lib/playbook-resync";
@@ -176,7 +177,10 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
     expect(billing?.description).toMatch(/Upload any working copy/i);
 
     const training = live.find((t) => t.title === "Training 1: Intro to PIMSY");
-    expect(training?.description).toContain("- [ ] User Profile / Signature Capture");
+    expect(training?.description).toBe(dockPlaybookDescriptionForTitle("Training 1: Intro to PIMSY"));
+    expect(training?.description).toMatch(/nested items|checklist/i);
+    expect(training?.description).toMatch(/Storylane/);
+    expect(training?.description).not.toContain("- [ ] User Profile / Signature Capture");
     const trainingChecks = await db.query.taskChecklistItems.findMany({
       where: eq(taskChecklistItems.taskId, training!.id),
     });
@@ -259,7 +263,9 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
   it("fills template descriptions and keeps editor checklist extras", async () => {
     const loaded = await loadTemplateById(templateId);
     const training = loaded?.phases[0]?.tasks.find((t) => t.title === "Training 1: Intro to PIMSY");
-    expect(training?.description).toContain("- [ ] User Profile / Signature Capture");
+    expect(training?.description).toBe(dockPlaybookDescriptionForTitle("Training 1: Intro to PIMSY"));
+    expect(training?.description).toMatch(/nested items|checklist/i);
+    expect(training?.description).not.toContain("- [ ] User Profile / Signature Capture");
     const checks = await db.query.templateTaskChecklistItems.findMany({
       where: eq(templateTaskChecklistItems.templateTaskId, training!.id),
     });
@@ -407,7 +413,10 @@ describe.skipIf(!dbOk)("template default attachments (postgres)", () => {
     const notesAfter = await db.query.tasks.findFirst({ where: eq(tasks.id, notesBilling.id) });
     expect(billingAfter?.description).toMatch(/Click Here to Submit Billing Questionnaire/i);
     expect(billingAfter?.description).toMatch(/Upload any working copy/i);
-    expect(trainingAfter?.description).toContain("- [ ] User Profile / Signature Capture");
+    expect(trainingAfter?.description).toBe(
+      dockPlaybookDescriptionForTitle("Training 1: Intro to PIMSY"),
+    );
+    expect(trainingAfter?.description).not.toContain("- [ ] User Profile / Signature Capture");
     expect(notesAfter?.description).toBe("Specialist notes for Cedar kickoff.");
     const trainingChecks = await db.query.taskChecklistItems.findMany({
       where: eq(taskChecklistItems.taskId, training.id),

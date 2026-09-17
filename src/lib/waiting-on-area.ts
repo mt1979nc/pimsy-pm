@@ -3,8 +3,9 @@
  *
  * Discovery / Configuration / Training are the three implementation areas
  * specialists chase. Everything else (Kickoff, Accessing Pimsy, import,
- * Billing, ePrescribe, go-live, …) stays on the list under Other — we do not
- * drop those items.
+ * Billing, Billing Configuration, ePrescribe, go-live, …) stays on the list
+ * under Other — we do not drop those items. Billing Configuration is the
+ * billing-team tab, not Site Configuration.
  *
  * Client-safe: no Postgres, rollup, or library server imports.
  */
@@ -42,14 +43,17 @@ export function emptyWaitingOnAreaCounts(): WaitingOnAreaCounts {
  * Map a live phase name onto the staff chase buckets.
  *
  * Training is checked first so “Core (Train the Trainer)” and “End-User
- * Training Prep” do not fall through. Configuration matches Site
- * Configuration (and any “configur*” tab). Discovery matches the Discovery
- * tab — not Guided Discovery meetings that live under Configuration.
+ * Training Prep” do not fall through. Billing / Billing Configuration are
+ * checked next so “Billing Configuration” does not match the Configuration
+ * bucket via “configur*”. Configuration matches Site Configuration (and any
+ * remaining “configur*” tab). Discovery matches the Discovery tab — not
+ * Guided Discovery meetings that live under Configuration.
  */
 export function classifyWaitingOnArea(phaseName?: string | null): WaitingOnArea {
   const t = (phaseName ?? "").trim().toLowerCase();
   if (!t) return "other";
   if (/train/.test(t)) return "training";
+  if (/billing/.test(t)) return "other";
   if (/configur/.test(t)) return "configuration";
   if (/discovery/.test(t)) return "discovery";
   return "other";

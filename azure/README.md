@@ -165,7 +165,9 @@ az webapp config appsettings set \
 ### Schedule on Azure (recommended)
 
 App Service does not run this by itself. Add a **Logic App** (Consumption)
-with a Recurrence trigger every **15 minutes**, action **HTTP**:
+with a Recurrence trigger every **15 minutes**, action **HTTP**. Live names:
+**`pimsy-customer-digest`** (this job) and **`pimsy-cron-task-due-reminders`**
+(Wave B assignee due reminders below). Same App Setting `CRON_SECRET`.
 
 | Field | Value |
 |---|---|
