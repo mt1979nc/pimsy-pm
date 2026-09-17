@@ -24,6 +24,7 @@ describe("classifyWaitingOnArea", () => {
     expect(classifyWaitingOnArea("Accessing Pimsy")).toBe("other");
     expect(classifyWaitingOnArea("Demographic Import")).toBe("other");
     expect(classifyWaitingOnArea("Billing")).toBe("other");
+    expect(classifyWaitingOnArea("Billing Configuration")).toBe("other");
     expect(classifyWaitingOnArea("ePrescribe")).toBe("other");
     expect(classifyWaitingOnArea("RCM Kickoff")).toBe("other");
     expect(classifyWaitingOnArea("Payer & Enrollment")).toBe("other");
@@ -47,7 +48,9 @@ describe("classifyWaitingOnArea", () => {
     expect(byArea.other).toContain("Kickoff");
     expect(byArea.other).toContain("Accessing Pimsy");
     expect(byArea.other).toContain("Billing");
+    expect(byArea.other).toContain("Billing Configuration");
     expect(byArea.other).not.toContain("Discovery");
+    expect(byArea.other).not.toContain("Site Configuration");
   });
 });
 
@@ -89,6 +92,7 @@ describe("waitingOnPhaseDetail", () => {
     expect(waitingOnPhaseDetail("Site Configuration", "configuration")).toBeNull();
     expect(waitingOnPhaseDetail("Core (Train the Trainer)", "training")).toBe("Core (Train the Trainer)");
     expect(waitingOnPhaseDetail("Kickoff", "other")).toBe("Kickoff");
+    expect(waitingOnPhaseDetail("Billing Configuration", "other")).toBe("Billing Configuration");
   });
 });
 

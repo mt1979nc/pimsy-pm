@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.14.4";
+export const APP_VERSION = "1.15.0";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.15.0",
+    date: "2026-09-17",
+    summary:
+      "Waves A–C are live on PATH. Footer/version is v1.15.0 after the major batch (any-specialist through customer digests). No schema migrate; no playbook seed/resync.",
+    highlights: [
+      "Shipped on live: any-specialist access, auto invite, slip/weekly meeting, Move, wizard /go, About/kickoff/CRM, business-day dues, waiting-on by area, Zendesk/Accessing Pimsy, EHR login audit card, kickoff extras, threads, multi-assignee/auto-assign (0017), Hand off to Support (0018), Discovery→Config (0019), Billing/RCM + Add RCM (0020), booking URLs (0021), training session (0022), customer digests (#39).",
+      "Azure Logic Apps `pimsy-customer-digest` and `pimsy-cron-task-due-reminders` every 15 minutes with Bearer `CRON_SECRET`. Customer email stays batched; staff email stays immediate. Portal deep links only.",
+      "Waiting-on-customer highlight buckets stay Discovery / Configuration / Training. Billing Configuration is the billing-team tab and groups under Other — not Site Configuration.",
+      "Training 1 playbook copy uses nested checklist items (User Profile / Signature Capture and the rest). Live descriptions do not dump `- [ ]` markdown; first-class checklist rows remain.",
+      "No schema migrate. No playbook seed or resync. PATH + Prism naming unchanged. Do not revive standalone Prism / nice-rock.",
+    ],
+  },
   {
     version: "1.14.4",
     date: "2026-09-16",

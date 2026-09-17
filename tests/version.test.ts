@@ -14,8 +14,8 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.14.4");
-    expect(APP_VERSION).toMatch(/^1\.14\./);
+    expect(APP_VERSION).toBe("1.15.0");
+    expect(APP_VERSION).toMatch(/^1\.15\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
   });
@@ -97,6 +97,31 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.15.0 post-ship of Waves A–C and the footer bump", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.15.0");
+    expect(note?.summary).toMatch(/Waves A–C|live/i);
+    expect(note?.summary).toMatch(/v1\.15\.0|1\.15\.0/);
+    expect(note?.highlights?.some((h) => /any-specialist/i.test(h) && /digest/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /0017/.test(h) && /0018/.test(h) && /0022/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /pimsy-customer-digest/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /pimsy-cron-task-due-reminders/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /CRON_SECRET/.test(h) && /15 minutes/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Billing Configuration/.test(h) && /Other/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /User Profile \/ Signature Capture/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /- \[ \]/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /seed|resync/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/\bPHI\b/.test(h) || /No invented PHI|no invented PHI/i.test(h))).toBe(
+      true,
+    );
+    expect(RELEASE_NOTES.find((n) => n.version === "1.14.4")).toBeTruthy();
   });
 
   it("documents the v1.14.4 createProjectSchema crmAcronym hotfix", () => {
