@@ -21,7 +21,7 @@ import { ProjectContacts } from "./contacts";
 import { SlipHistoryList } from "@/components/slip-history";
 import { RecordSlipForm } from "@/components/record-slip-form";
 import { staffingRoleLabel } from "@/lib/staffing";
-import { AddRcmAlreadyOnNote, AddRcmTrackForm } from "./add-rcm-track-form";
+import { AddRcmPanel } from "./add-rcm-track-form";
 import { assessHistoricalComplete, loadOpenHistoricalTasks } from "@/lib/historical-complete";
 import {
   addRcmEligibility,
@@ -246,21 +246,20 @@ export default async function ProjectSettingsPage({
         </Card>
 
         {showAddRcm ? (
-          <Card id="add-rcm">
-            <CardHeader
-              title="Add RCM"
-              subtitle={
-                addRcm.ok
-                  ? "Enable the RCM area on this live Implementation WIP. Does not rewrite EHR dates."
-                  : "RCM area"
-              }
-            />
-            {addRcm.ok ? (
-              <AddRcmTrackForm projectId={id} staff={staff} defaultAssignments={rcmAssignments} />
-            ) : (
-              <AddRcmAlreadyOnNote />
-            )}
-          </Card>
+          <AddRcmPanel
+            projectId={id}
+            staff={staff}
+            defaultAssignments={rcmAssignments}
+            alreadyOn={!addRcm.ok}
+            summary={{
+              startedAt: project.rcmStartedAt ? project.rcmStartedAt.toISOString() : null,
+              targetGoLiveDate: project.rcmTargetGoLiveDate
+                ? project.rcmTargetGoLiveDate.toISOString()
+                : null,
+              taskCountDone: project.rcmTaskCountDone,
+              taskCountTotal: project.rcmTaskCountTotal,
+            }}
+          />
         ) : null}
 
         <Card>
