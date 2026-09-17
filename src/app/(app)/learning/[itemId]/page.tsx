@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireStaff } from "@/lib/guard";
 import { loadLearningItem } from "@/lib/learning-center";
+import { LearningItemMedia } from "@/components/learning-item-media";
 import { Card, CardHeader, Badge, LinkButton } from "@/components/ui";
 import {
   LEARNING_AUDIENCE_LABEL,
@@ -40,7 +41,7 @@ export default async function StaffLearningItemPage({
       <div className="mb-3 flex flex-wrap gap-2">
         <Badge>{topicLabel}</Badge>
         <Badge>{item.section.title}</Badge>
-        <Badge>{learningKindLabel(item.kind)}</Badge>
+        <Badge>{learningKindLabel(item.kind, openUrl)}</Badge>
         {item.audienceRole !== "all" ? (
           <Badge>{LEARNING_AUDIENCE_LABEL[item.audienceRole as LearningAudience] ?? item.audienceRole}</Badge>
         ) : null}
@@ -55,28 +56,22 @@ export default async function StaffLearningItemPage({
           <div className="whitespace-pre-wrap px-5 py-4 text-[14px] leading-relaxed text-ink">{item.body}</div>
         </Card>
       ) : null}
-      {fileHref || openUrl ? (
+      {openUrl ? <LearningItemMedia title={item.title} kind={item.kind} url={openUrl} /> : null}
+      {fileHref ? (
         <Card className="mt-5">
-          <CardHeader title="Open" />
+          <CardHeader title="Download" />
           <div className="flex flex-wrap gap-2 px-5 py-4">
-            {fileHref ? (
-              <LinkButton href={fileHref} variant="primary">
-                {learningOpenLabel(item.libraryAsset?.name ?? item.title, "FILE")}
-              </LinkButton>
-            ) : null}
-            {openUrl ? (
-              <LinkButton href={openUrl} target="_blank" rel="noopener noreferrer">
-                {learningOpenLabel(item.title, item.kind)}
-              </LinkButton>
-            ) : null}
+            <LinkButton href={fileHref} variant="primary">
+              {learningOpenLabel(item.libraryAsset?.name ?? item.title, "FILE")}
+            </LinkButton>
           </div>
         </Card>
-      ) : showPending ? (
+      ) : null}
+      {showPending && !openUrl && !fileHref ? (
         <Card className="mt-5">
           <CardHeader title={learningPlaceholderLabel(item.kind)} />
           <p className="px-5 py-4 text-[14px] leading-relaxed text-ink-2">
-            The live Storylane or Dock file is not attached yet. Paste the cohort URL on this card.
-            Do not invent a Storylane address.
+            The live Storylane or Dock file is not attached yet. Do not invent a Storylane address.
           </p>
         </Card>
       ) : null}

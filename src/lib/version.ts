@@ -27,12 +27,12 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: "1.16.5",
     date: "2026-09-17",
     summary:
-      "Customer Learning Center is PIMSY EHR how-tos (Dock groups: Getting started, Password & access, Scheduling, Notes, Providers, Training, Reference) — not a PATH implementation journey. Named cards, no unlabeled PDFs or blank Storylane embeds.",
+      "Customer Learning Center is PIMSY EHR how-tos with Dock Storylane walkthroughs and public Getting Started / Tips PDFs — not a PATH implementation journey. Named cards; iframe embed for inline Storylanes.",
     highlights: [
       "Portal LC teaches PIMSY (charts, calendar, notes, providers, intake). Discovery worksheets, go-live checklists, and ClaimMD stay on project tasks — not in the library.",
-      "Sections: Getting started (Intro / Getting Started / Overview / Training Guide), Password & access (Password reset Storylane pending + PIMSY desktop installer), Scheduling, Notes, Providers, Training (PIMSY modules 1–5 including Training 4 group notes), Reference.",
-      "Dock Scheduling / Notes / Providers how-tos are named cards (Navigate Calendar, Recurring Appointments, Telehealth, Take a payment, Ambient Scribe, Group Note, Note, Favorite tabs, Provider Portal Dashboard, Manage Prescriptions with DrFirst).",
-      "Live URL only where this repo already has it: PIMSY desktop installer. Storylane walkthroughs stay titled placeholders until a specialist pastes a cohort URL. Seed keeps a staff-pasted URL and retires old Discovery/Billing/Go-live LC sections.",
+      "Sections: Getting started (Intro, Getting started with PIMSY v2 PDF, Overview walkthrough, Tips V2 PDF), Password & access (Password Reset walkthrough + PIMSY desktop installer), Scheduling, Notes, Providers, Training (PIMSY modules 1–5 including Training 4 group notes).",
+      "Wires Dock LC asset URLs (app.storylane.io / pimsy.storylane.io + public GCS PDFs). Never Dock space/page URLs. PIMSY Implementation Customer Guide.pdf omitted until PATH re-hosts (signed GCS not hardcoded).",
+      "Iframe embed when the Storylane URL has embed=inline; share/popup Storylanes and PDFs also Open in a new tab with the real title (never View PDF).",
       "No schema migrate. Refresh live catalog with `npm run db:seed -- --templates-only`. Search and role filters unchanged.",
       "PATH (Plan · Assign · Track · Handoff) hosts the portal; Prism stays the analytics module. Do not revive standalone Prism / nice-rock.",
     ],

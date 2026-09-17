@@ -36,10 +36,14 @@ import {
   LEARNING_CENTER_SECTIONS,
   LEARNING_SECTION_SLUGS,
   RETIRED_LEARNING_SECTION_SLUGS,
+  DOCK_LC_ASSETS,
+  LEARNING_DESKTOP_INSTALL_URL,
   learningCatalogWiredUrls,
+  learningIframeSrc,
   learningOpenLabel,
+  isLearningDockSpaceUrl,
+  isSignedGcsUrl,
 } from "@/db/learning-center-catalog";
-import { PIMSY_DESKTOP_INSTALL_URL } from "@/lib/accessing-pimsy";
 import { findByPlaybookTitle, normalizeOverlapTitle } from "@/lib/playbook-meta";
 import { isProtectedWipAcronym } from "@/lib/demo-entities";
 
@@ -441,9 +445,14 @@ describe("Learning Center IA", () => {
       "Notes",
       "Providers",
       "Training",
-      "Reference",
     ]);
-    expect([...RETIRED_LEARNING_SECTION_SLUGS]).toEqual(["discovery", "billing", "go-live", "after-go-live"]);
+    expect([...RETIRED_LEARNING_SECTION_SLUGS]).toEqual([
+      "discovery",
+      "billing",
+      "go-live",
+      "after-go-live",
+      "reference",
+    ]);
     const topics = new Set<string>(LEARNING_CENTER_SECTIONS.map((s) => s.topic));
     expect(topics.has("password_access")).toBe(true);
     expect(topics.has("scheduling")).toBe(true);
@@ -456,56 +465,68 @@ describe("Learning Center IA", () => {
     const start = LEARNING_CENTER_SECTIONS.find((s) => s.slug === "getting-started");
     expect(start?.items.map((i) => i.title)).toEqual([
       "Intro to PIMSY",
-      "Getting started",
+      "Getting started with PIMSY v2",
       "Overview",
-      "Training Guide",
+      "Tips for a Successful implementation V2",
     ]);
     const bodies = LEARNING_CENTER_SECTIONS.flatMap((s) => s.items.map((i) => i.body)).join("\n");
     expect(bodies).not.toMatch(/Your action items/i);
     expect(bodies).not.toMatch(/violet \*\*Yours\*\*/i);
   });
 
-  it("uses Dock topic titles as searchable cards without blank file embeds", () => {
+  it("uses Dock inventory titles as searchable cards with real asset URLs", () => {
     const titles = LEARNING_CENTER_SECTIONS.flatMap((s) => s.items.map((i) => i.title));
     for (const need of [
       "Intro to PIMSY",
-      "Access",
-      "Getting started",
+      "Getting started with PIMSY v2",
       "Overview",
-      "Password reset",
-      "Training Guide",
+      "Tips for a Successful implementation V2",
+      "Password Reset",
+      "Access",
       "How training works",
       "Training 4: Group Notes (if applicable)",
-      "Take a payment",
-      "Navigate Calendar",
-      "Recurring Appointments",
-      "Telehealth",
+      "How to Navigate the Calendar in the Portal",
+      "How to Schedule Recurring Appointments in the Portal",
+      "How to Use Telehealth on the Portal",
+      "How to Take a Payment in the Portal",
       "Ambient Scribe",
-      "Group Note",
-      "Note",
-      "Favorite tabs",
-      "Provider Portal Dashboard",
-      "Manage Prescriptions with DrFirst",
+      "How to do a Group Note",
+      "How to do a Note",
+      "How to Favorite tabs in a Note",
+      "How to Navigate the Provider Portal Dashboard",
+      "How to Manage Prescriptions with DrFirst in the Portal",
       DOCK_TRAINING_1_TITLE,
     ]) {
       expect(titles).toContain(need);
     }
     expect(titles).not.toContain("Discovery Wizard");
-    expect(titles).not.toContain("Go-live checklist (what “ready” means)");
+    expect(titles).not.toContain("PIMSY Implementation Customer Guide.pdf");
     expect(titles).not.toContain("ClaimMD enrollment");
-    const wizard = LEARNING_CENTER_SECTIONS.flatMap((s) => s.items).find((i) => i.title === "Discovery Wizard");
-    expect(wizard).toBeUndefined();
-    const access = LEARNING_CENTER_SECTIONS.flatMap((s) => s.items).find((i) => i.title === "Access");
-    expect(access?.kind).toBe("LINK");
-    expect(access?.url).toBe(PIMSY_DESKTOP_INSTALL_URL);
-    expect(access?.url).toBe("https://pimsyehr.com/solutions/install-pimsy/");
-    expect(access?.isPlaceholder).toBe(false);
-    const blankFiles = LEARNING_CENTER_SECTIONS.flatMap((s) => s.items).filter(
-      (i) => i.kind === "FILE" && !i.librarySlug,
+    const byTitle = new Map(LEARNING_CENTER_SECTIONS.flatMap((s) => s.items.map((i) => [i.title, i])));
+    expect(byTitle.get("Overview")?.url).toBe(DOCK_LC_ASSETS.overview);
+    expect(byTitle.get("Password Reset")?.url).toBe(DOCK_LC_ASSETS.passwordReset);
+    expect(byTitle.get("Getting started with PIMSY v2")?.url).toBe(DOCK_LC_ASSETS.gettingStartedPdf);
+    expect(byTitle.get("Tips for a Successful implementation V2")?.url).toBe(DOCK_LC_ASSETS.tipsPdf);
+    expect(byTitle.get("How to Navigate the Calendar in the Portal")?.url).toBe(DOCK_LC_ASSETS.navigateCalendar);
+    expect(byTitle.get("How to Schedule Recurring Appointments in the Portal")?.url).toBe(
+      DOCK_LC_ASSETS.recurringAppointments,
     );
-    expect(blankFiles).toEqual([]);
-    expect(learningOpenLabel("Navigate Calendar", "LINK")).toBe("Open Navigate Calendar");
-    expect(learningOpenLabel("Navigate Calendar", "LINK")).not.toMatch(/view pdf/i);
+    expect(byTitle.get("How to Use Telehealth on the Portal")?.url).toBe(DOCK_LC_ASSETS.telehealth);
+    expect(byTitle.get("How to Take a Payment in the Portal")?.url).toBe(DOCK_LC_ASSETS.takeAPayment);
+    expect(byTitle.get("Ambient Scribe")?.url).toBe(DOCK_LC_ASSETS.ambientScribe);
+    expect(byTitle.get("How to do a Group Note")?.url).toBe(DOCK_LC_ASSETS.groupNote);
+    expect(byTitle.get("How to do a Note")?.url).toBe(DOCK_LC_ASSETS.note);
+    expect(byTitle.get("How to Favorite tabs in a Note")?.url).toBe(DOCK_LC_ASSETS.favoriteTabs);
+    expect(byTitle.get("How to Navigate the Provider Portal Dashboard")?.url).toBe(DOCK_LC_ASSETS.providerDashboard);
+    expect(byTitle.get("How to Manage Prescriptions with DrFirst in the Portal")?.url).toBe(
+      DOCK_LC_ASSETS.managePrescriptions,
+    );
+    expect(byTitle.get("Access")?.url).toBe(LEARNING_DESKTOP_INSTALL_URL);
+    expect(byTitle.get("Intro to PIMSY")?.url).toBeUndefined();
+    expect(LEARNING_CENTER_SECTIONS.flatMap((s) => s.items).every((i) => i.isPlaceholder !== true || Boolean(i.url))).toBe(
+      true,
+    );
+    expect(learningOpenLabel("How to Navigate the Calendar in the Portal", "LINK")).not.toMatch(/view pdf/i);
   });
 
   it("keeps Training 1–5 in PIMSY module order including Training 4", () => {
@@ -524,23 +545,45 @@ describe("Learning Center IA", () => {
     expect(orders).toEqual([...orders].sort((a, b) => a - b));
   });
 
-  it("does not invent Storylane or ClaimMD hosts in the catalog", () => {
+  it("wires only Dock inventory Storylane/PDF URLs plus the desktop installer", () => {
+    const allowed = new Set<string>([...Object.values(DOCK_LC_ASSETS), LEARNING_DESKTOP_INSTALL_URL]);
     const urls = learningCatalogWiredUrls();
-    expect(urls).toEqual([PIMSY_DESKTOP_INSTALL_URL]);
+    expect(urls).toEqual(expect.arrayContaining([...Object.values(DOCK_LC_ASSETS), LEARNING_DESKTOP_INSTALL_URL]));
     for (const url of urls) {
-      expect(url).not.toMatch(/storylane/i);
+      expect(allowed.has(url)).toBe(true);
+      expect(isLearningDockSpaceUrl(url)).toBe(false);
+      expect(isSignedGcsUrl(url)).toBe(false);
+      expect(url).not.toMatch(/pimsyehr\.dock\.us/i);
       expect(url).not.toMatch(/claimmd/i);
-      expect(url).not.toMatch(/drfirst/i);
+      expect(url).not.toMatch(/drfirst\.com/i);
     }
-    const pendingHowTos = LEARNING_CENTER_SECTIONS.flatMap((s) => s.items).filter(
-      (i) =>
-        i.isPlaceholder &&
-        ["Navigate Calendar", "Take a payment", "Ambient Scribe", "Manage Prescriptions with DrFirst"].includes(
-          i.title,
-        ),
-    );
-    expect(pendingHowTos.length).toBe(4);
-    expect(pendingHowTos.every((i) => !i.url)).toBe(true);
+    expect(learningIframeSrc(DOCK_LC_ASSETS.overview)).toBe(DOCK_LC_ASSETS.overview);
+    expect(learningIframeSrc(DOCK_LC_ASSETS.passwordReset)).toBe(DOCK_LC_ASSETS.passwordReset);
+    expect(learningIframeSrc(DOCK_LC_ASSETS.ambientScribe)).toBe(DOCK_LC_ASSETS.ambientScribe);
+    expect(learningIframeSrc(DOCK_LC_ASSETS.groupNote)).toBe(DOCK_LC_ASSETS.groupNote);
+    expect(learningIframeSrc(DOCK_LC_ASSETS.favoriteTabs)).toBe(DOCK_LC_ASSETS.favoriteTabs);
+    expect(learningIframeSrc(DOCK_LC_ASSETS.gettingStartedPdf)).toBe(DOCK_LC_ASSETS.gettingStartedPdf);
+    expect(learningIframeSrc(DOCK_LC_ASSETS.tipsPdf)).toBe(DOCK_LC_ASSETS.tipsPdf);
+    expect(learningIframeSrc(DOCK_LC_ASSETS.navigateCalendar)).toBeNull();
+    expect(learningIframeSrc(DOCK_LC_ASSETS.recurringAppointments)).toBeNull();
+    expect(learningIframeSrc(DOCK_LC_ASSETS.telehealth)).toBeNull();
+    expect(learningIframeSrc(DOCK_LC_ASSETS.takeAPayment)).toBeNull();
+    expect(learningIframeSrc(DOCK_LC_ASSETS.note)).toBeNull();
+    expect(learningIframeSrc(DOCK_LC_ASSETS.providerDashboard)).toBeNull();
+    expect(learningIframeSrc(DOCK_LC_ASSETS.managePrescriptions)).toBeNull();
+    expect(LEARNING_CENTER_SECTIONS.flatMap((s) => s.items).filter((i) => i.isPlaceholder && !i.url)).toEqual([]);
+  });
+
+  it("staff /learning and portal /portal/learn both render the shared catalog", () => {
+    const staffList = readFileSync(resolve(process.cwd(), "src/app/(app)/learning/page.tsx"), "utf8");
+    const portalList = readFileSync(resolve(process.cwd(), "src/app/portal/learn/page.tsx"), "utf8");
+    const staffItem = readFileSync(resolve(process.cwd(), "src/app/(app)/learning/[itemId]/page.tsx"), "utf8");
+    const portalItem = readFileSync(resolve(process.cwd(), "src/app/portal/learn/[itemId]/page.tsx"), "utf8");
+    expect(staffList).toContain("loadLearningCatalog");
+    expect(portalList).toContain("loadLearningCatalog");
+    expect(portalList).toContain('hrefPrefix="/portal/learn"');
+    expect(staffItem).toContain("LearningItemMedia");
+    expect(portalItem).toContain("LearningItemMedia");
   });
 
   it("filters catalog search without leaking extra sections", () => {

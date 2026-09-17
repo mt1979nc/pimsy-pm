@@ -116,7 +116,7 @@ export function LearningCatalog({
                   className="block rounded-xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,20,30,0.04)] hover:border-brand"
                 >
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge>{learningKindLabel(item.kind)}</Badge>
+                    <Badge>{learningKindLabel(item.kind, item.url)}</Badge>
                     {item.audienceRole !== "all" ? (
                       <Badge>
                         {LEARNING_AUDIENCE_LABEL[item.audienceRole as LearningAudience] ?? item.audienceRole}

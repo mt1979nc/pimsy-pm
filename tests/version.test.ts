@@ -105,14 +105,16 @@ describe("staff Update History source", () => {
     expect(note?.summary).toMatch(/not a PATH implementation journey/i);
     expect(note?.highlights?.some((h) => /Password & access/.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Training 4/.test(h))).toBe(true);
-    expect(note?.highlights?.some((h) => /Navigate Calendar/.test(h))).toBe(true);
-    expect(note?.highlights?.some((h) => /Take a payment/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /storylane\.io/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Customer Guide/.test(h) && /omitted|signed/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /embed=inline/.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Discovery worksheets|go-live checklists|ClaimMD/.test(h))).toBe(
       true,
     );
     expect(note?.highlights?.some((h) => /templates-only/.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
     expect(note?.highlights?.every((h) => !/storylane\.com/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/dock\.us/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
     expect(RELEASE_NOTES.find((n) => n.version === "1.16.4")).toBeTruthy();
     expect(RELEASE_NOTES.find((n) => n.version === "1.16.3")).toBeTruthy();
