@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.16.1";
+export const APP_VERSION = "1.16.2";
 
 export type ReleaseNote = {
   version: string;
@@ -22,8 +22,7 @@ export type ReleaseNote = {
 };
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
-export const RELEASE_NOTES: ReleaseNote[] = [
-  {
+export const RELEASE_NOTES: ReleaseNote[] = [   {     version: "1.16.2",     date: "2026-09-17",     summary:       "Hotfix: portal learn no longer passes the removed itemHref function prop after #59. Azure deploy failed on the stale prop. No schema migrate.",     highlights: [       "Removes the non-serializable itemHref function prop from the portal Learning Center.",       "No schema migrate.",     ],   },   {
         version: "1.16.1",
         date: "2026-09-17",
         summary:
