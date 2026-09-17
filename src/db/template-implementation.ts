@@ -49,7 +49,11 @@ export type SeedTask = {
     | "T1_BILLING_SUPPORT"
     | "T2_BILLING_SUPPORT"
     | "RCM_IMPLEMENTATION_SPECIALIST"
-    | "RCM_MANAGER";
+    | "RCM_MANAGER"
+    | "IMPLEMENTATION_DIRECTOR"
+    | "SUPPORT_DIRECTOR"
+    | "CUSTOMER_PROJECT_LEAD"
+    | "CUSTOMER_BILLING";
   workTrack?: "EHR" | "RCM" | "SHARED";
   overlapKey?: string;
   /** Dock-style connected duplicate — complete in one area reflects in the other. */

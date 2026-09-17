@@ -49,6 +49,24 @@ export const STAFFING_ROLE_LABELS: Record<StaffingRole, string> = {
   SUPPORT_DIRECTOR: "Support Director",
 };
 
+/**
+ * Roles a template task can name as its default assignee. These are staffing /
+ * playbook roles — never a person. Customer lead + billing sit beside the
+ * PATH team roles already used for auto-assign.
+ */
+export const TEMPLATE_ASSIGNEE_ROLES = [
+  ...STAFFING_ROLES,
+  "CUSTOMER_PROJECT_LEAD",
+  "CUSTOMER_BILLING",
+] as const;
+
+export type TemplateAssigneeRole = (typeof TEMPLATE_ASSIGNEE_ROLES)[number];
+
+export const CUSTOMER_TEMPLATE_ROLES = [
+  "CUSTOMER_PROJECT_LEAD",
+  "CUSTOMER_BILLING",
+] as const satisfies readonly TemplateAssigneeRole[];
+
 /** Roles that get a site overview card even when they own no individual tasks. */
 export const MANAGER_OVERVIEW_ROLES: readonly StaffingRole[] = [
   "RCM_MANAGER",
@@ -123,9 +141,33 @@ export function roleAssignmentKeys(role: string | null | undefined): string[] {
   return [...keys];
 }
 
+/** Persist / parse a template task's default assignee role (never a user id). */
+export function parseTemplateDefaultRole(
+  raw: string | null | undefined,
+): ProjectMemberRole | null {
+  const value = (raw ?? "").trim();
+  if (!value) return null;
+  if ((ASSIGNABLE_PROJECT_ROLES as readonly string[]).includes(value)) {
+    return value as ProjectMemberRole;
+  }
+  return null;
+}
+
+export function isCustomerTemplateRole(role: string | null | undefined): boolean {
+  return Boolean(role && (CUSTOMER_TEMPLATE_ROLES as readonly string[]).includes(role));
+}
+
+export function suggestedTemplateDefaultRole(
+  ownerSide: "INTERNAL" | "CUSTOMER",
+): TemplateAssigneeRole {
+  return ownerSide === "CUSTOMER" ? "CUSTOMER_PROJECT_LEAD" : "IMPLEMENTATION_SPECIALIST";
+}
+
 /**
  * Pick the assignee for a template task from the create-project roster.
- * Falls back to the implementation lead for specialist-owned internal work.
+ * Looks up the named default role first (staff or customer). Falls back to
+ * the implementation lead only for specialist-owned internal work. Missing
+ * role holders return null — callers leave the task unassigned.
  */
 export function resolveAssigneeForRole(
   defaultRole: string | null | undefined,
@@ -133,11 +175,11 @@ export function resolveAssigneeForRole(
   fallbackLeadId: string | null,
   ownerSide: "INTERNAL" | "CUSTOMER",
 ): string | null {
-  if (ownerSide === "CUSTOMER") return null;
   const keys = roleAssignmentKeys(defaultRole);
   for (const key of keys) {
     if (assignments[key]) return assignments[key];
   }
+  if (ownerSide === "CUSTOMER") return null;
   const canonical = canonicalStaffingRole(defaultRole);
   if (!canonical || canonical === "IMPLEMENTATION_SPECIALIST") {
     return fallbackLeadId;

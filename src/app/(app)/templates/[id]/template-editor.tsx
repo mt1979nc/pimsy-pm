@@ -23,7 +23,7 @@ import { TemplateLockButton } from "../template-lock-button";
 import { TEMPLATE_LOCKED_MESSAGE } from "@/lib/template-lock";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Badge, Button, Card, CardHeader, Field, LinkButton, VisibilityBadge, inputClass } from "@/components/ui";
-import { STAFFING_ROLES, STAFFING_ROLE_LABELS, staffingRoleLabel } from "@/lib/staffing";
+import { STAFFING_ROLES, STAFFING_ROLE_LABELS, staffingRoleLabel, CUSTOMER_TEMPLATE_ROLES, suggestedTemplateDefaultRole, isCustomerTemplateRole } from "@/lib/staffing";
 import {
   OPTIONAL_AREA_CATALOG,
   PLAYBOOK_PATH_META,
@@ -84,6 +84,128 @@ type EditorPhase = {
   workTrack: WorkTrack;
   tasks: EditorTask[];
 };
+
+function TemplateDefaultRoleSelect({
+  value,
+  onChange,
+  id,
+}: {
+  value: string;
+  onChange?: (role: string) => void;
+  id?: string;
+}) {
+  return (
+    <select
+      id={id}
+      name="defaultRole"
+      value={onChange ? value : undefined}
+      defaultValue={onChange ? undefined : value}
+      onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+      className={inputClass}
+      aria-label="Default assignee role"
+    >
+      <option value="">No auto-assign</option>
+      <optgroup label="PATH team">
+        {STAFFING_ROLES.map((r) => (
+          <option key={r} value={r}>
+            {STAFFING_ROLE_LABELS[r]}
+          </option>
+        ))}
+      </optgroup>
+      <optgroup label="Customer">
+        {CUSTOMER_TEMPLATE_ROLES.map((r) => (
+          <option key={r} value={r}>
+            {staffingRoleLabel(r)}
+          </option>
+        ))}
+      </optgroup>
+    </select>
+  );
+}
+
+function EditOwnerAndRole({
+  ownerSide: initialOwner,
+  defaultRole: initialRole,
+  visibility,
+}: {
+  ownerSide: "INTERNAL" | "CUSTOMER";
+  defaultRole: string | null;
+  visibility: "INTERNAL" | "SHARED";
+}) {
+  const [ownerSide, setOwnerSide] = useState(initialOwner);
+  const [role, setRole] = useState(initialRole ?? "");
+
+  function onOwnerChange(next: "INTERNAL" | "CUSTOMER") {
+    setOwnerSide(next);
+    const customerRole = isCustomerTemplateRole(role);
+    if (next === "CUSTOMER" && !customerRole) {
+      setRole(suggestedTemplateDefaultRole("CUSTOMER"));
+    } else if (next === "INTERNAL" && customerRole) {
+      setRole(suggestedTemplateDefaultRole("INTERNAL"));
+    }
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      <Field label="Owner">
+        <select
+          name="ownerSide"
+          value={ownerSide}
+          onChange={(e) => onOwnerChange(e.target.value === "CUSTOMER" ? "CUSTOMER" : "INTERNAL")}
+          className={inputClass}
+        >
+          <option value="INTERNAL">Our team</option>
+          <option value="CUSTOMER">Customer</option>
+        </select>
+      </Field>
+      <Field label="Visibility">
+        <select name="visibility" defaultValue={visibility} className={inputClass}>
+          <option value="INTERNAL">Internal</option>
+          <option value="SHARED">Shared</option>
+        </select>
+      </Field>
+      <Field
+        label="Default assignee (role)"
+        hint="Whoever holds this role on the project. Not a named person."
+      >
+        <TemplateDefaultRoleSelect value={role} onChange={setRole} />
+      </Field>
+    </div>
+  );
+}
+
+function AddTaskOwnerAndRole() {
+  const [ownerSide, setOwnerSide] = useState<"INTERNAL" | "CUSTOMER">("INTERNAL");
+  const [role, setRole] = useState<string>(suggestedTemplateDefaultRole("INTERNAL"));
+
+  function onOwnerChange(next: "INTERNAL" | "CUSTOMER") {
+    setOwnerSide(next);
+    const customerRole = isCustomerTemplateRole(role);
+    if (next === "CUSTOMER" && !customerRole) {
+      setRole(suggestedTemplateDefaultRole("CUSTOMER"));
+    } else if (next === "INTERNAL" && customerRole) {
+      setRole(suggestedTemplateDefaultRole("INTERNAL"));
+    }
+  }
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-[1fr_160px_180px_auto]">
+      <input name="title" required placeholder="Add a task…" className={inputClass} />
+      <select
+        name="ownerSide"
+        value={ownerSide}
+        onChange={(e) => onOwnerChange(e.target.value === "CUSTOMER" ? "CUSTOMER" : "INTERNAL")}
+        className={inputClass}
+        aria-label="Owner"
+      >
+        <option value="INTERNAL">Our team</option>
+        <option value="CUSTOMER">Customer</option>
+      </select>
+      <TemplateDefaultRoleSelect value={role} onChange={setRole} />
+      <SubmitButton size="sm">Add task</SubmitButton>
+    </div>
+  );
+}
 
 /** Keep drag order, append newly created ids, drop deleted ones. */
 function mergeOrder(current: string[], incoming: string[]): string[] {
@@ -195,7 +317,7 @@ export function TemplateEditor({
       <Card>
         <CardHeader
           title="Playbook"
-          subtitle="Used when creating a new workspace. Rename here. Duplicate makes a custom copy so the four site-creation paths stay unique. Changes here do not rewrite live projects."
+          subtitle="Used when creating a new workspace. Each task’s default assignee is a staffing role (Implementation Specialist, billing, customer lead, …) — not a named person. When that role is filled on the project, PATH auto-assigns the task. Duplicate makes a custom copy so the four site-creation paths stay unique. Changes here do not rewrite live projects."
           action={
             <span className="flex flex-wrap items-center gap-3">
               <TemplateLockButton templateId={template.id} locked={template.isLocked} />
@@ -542,22 +664,7 @@ function PhaseEditor({
       <form action={taskAction} className="space-y-2 border-t border-border bg-surface-2 p-4">
         <input type="hidden" name="phaseId" value={phase.id} />
         <FormError error={taskState.error} />
-        <div className="grid gap-2 sm:grid-cols-[1fr_160px_140px_auto]">
-          <input name="title" required placeholder="Add a task…" className={inputClass} />
-          <select name="ownerSide" defaultValue="INTERNAL" className={inputClass}>
-            <option value="INTERNAL">Our team</option>
-            <option value="CUSTOMER">Customer</option>
-          </select>
-          <select name="defaultRole" defaultValue="IMPLEMENTATION_SPECIALIST" className={inputClass}>
-            <option value="">No auto-assign</option>
-            {STAFFING_ROLES.map((r) => (
-              <option key={r} value={r}>
-                {STAFFING_ROLE_LABELS[r]}
-              </option>
-            ))}
-          </select>
-          <SubmitButton size="sm">Add task</SubmitButton>
-        </div>
+        <AddTaskOwnerAndRole />
         {parents.length > 0 ? (
           <Field label="Nest under (optional)">
             <select name="parentTaskId" defaultValue="" className={inputClass}>
@@ -571,8 +678,10 @@ function PhaseEditor({
           </Field>
         ) : null}
         <p className="text-[11.5px] text-ink-3">
-          New tasks land at the end of this phase. Nest under a section task to match Dock checklists.
-          Drag to reorder.
+          Default assignee is a role, not a person. When that role is named on the project, the
+          task auto-assigns to them (and to nested subtasks that share the role). New tasks land
+          at the end of this phase. Nest under a section task to match Dock checklists. Drag to
+          reorder.
         </p>
       </form>
       <p className="hidden">{templateId}</p>
@@ -684,30 +793,11 @@ function TaskEditor({
                 placeholder="Dock task notes — training cues, links the specialist should use, what “done” looks like."
               />
             </Field>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="Owner">
-                <select name="ownerSide" defaultValue={task.ownerSide} className={inputClass}>
-                  <option value="INTERNAL">Our team</option>
-                  <option value="CUSTOMER">Customer</option>
-                </select>
-              </Field>
-              <Field label="Visibility">
-                <select name="visibility" defaultValue={task.visibility} className={inputClass}>
-                  <option value="INTERNAL">Internal</option>
-                  <option value="SHARED">Shared</option>
-                </select>
-              </Field>
-              <Field label="Default role">
-                <select name="defaultRole" defaultValue={task.defaultRole ?? ""} className={inputClass}>
-                  <option value="">No auto-assign</option>
-                  {STAFFING_ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {STAFFING_ROLE_LABELS[r]}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
+            <EditOwnerAndRole
+              ownerSide={task.ownerSide}
+              defaultRole={task.defaultRole}
+              visibility={task.visibility}
+            />
             {siblings.length > 0 || task.parentTaskId ? (
               <Field label="Nest under">
                 <select name="parentTaskId" defaultValue={task.parentTaskId ?? ""} className={inputClass}>

@@ -449,6 +449,7 @@ export const templateTasks = pgTable(
     estimateHours: real("estimate_hours"),
     isOptional: boolean("is_optional").notNull().default(false),
     areaKey: text("area_key"),
+    /** Default assignee is a project staffing role — never a named user. */
     defaultRole: projectMemberRoleEnum("default_role"),
     workTrack: workTrackEnum("work_track").notNull().default("EHR"),
     /** Shared key used to auto-complete overlapping EHR/RCM work. */
@@ -773,6 +774,7 @@ export const tasks = pgTable(
     /** Per-project only — does not change the template. */
     notApplicable: boolean("not_applicable").notNull().default(false),
     workTrack: workTrackEnum("work_track").notNull().default("EHR"),
+    /** Copied from the playbook; used to resolve role → person at create and later. */
     defaultRole: projectMemberRoleEnum("default_role"),
     overlapKey: text("overlap_key"),
     /** Dock-style connected duplicate — same key as the copy in another area. */

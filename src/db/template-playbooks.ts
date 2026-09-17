@@ -60,10 +60,19 @@ function defaultRoleFor(
   track: "EHR" | "RCM" | "SHARED",
   phaseName: string,
 ): SeedTask["defaultRole"] {
-  if (task.ownerSide === "CUSTOMER") return undefined;
   if (task.defaultRole) return task.defaultRole;
   const title = task.title.toLowerCase();
   const phase = phaseName.toLowerCase();
+  if (task.ownerSide === "CUSTOMER") {
+    if (
+      /billing|claimmd|payer|invoice|authorization|auth training/.test(title) ||
+      phase === "billing" ||
+      phase.includes("billing configuration")
+    ) {
+      return "CUSTOMER_BILLING";
+    }
+    return "CUSTOMER_PROJECT_LEAD";
+  }
   if (track === "RCM") {
     if (/kickoff|first clean|first claims/i.test(title)) return "RCM_IMPLEMENTATION_SPECIALIST";
     return "RCM_IMPLEMENTATION_SPECIALIST";
