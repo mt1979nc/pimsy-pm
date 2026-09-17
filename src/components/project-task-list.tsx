@@ -267,10 +267,7 @@ export function ProjectTaskBoard({
 
       {nothingAtAll ? (
         <Card>
-          <EmptyState
-            title="No tasks yet"
-            description="Add a phase to structure the work, or start adding tasks directly."
-          />
+          <EmptyState title="No tasks yet" />
           <div className="border-t border-border">
             <AddTaskInline projectId={projectId} staff={staff} defaultAssigneeId={defaultAssigneeId} />
           </div>
@@ -352,9 +349,9 @@ export function ProjectTaskBoard({
         );
       })}
 
-      {unphased.length > 0 || phases.length > 0 ? (
+      {unphased.length > 0 ? (
         <Card>
-          <CardHeader title="Unphased tasks" subtitle={`${unphased.length} item(s)`} />
+          <CardHeader title="Unphased" subtitle={`${unphased.length}`} />
           {unphasedFiltered.filtered.length === 0 ? (
             <p className="px-5 py-4 text-[13px] text-ink-3">
               {unphased.length === 0 ? "Everything is assigned to a phase." : "No tasks match this filter."}
@@ -393,15 +390,16 @@ export function ProjectTaskBoard({
             <AddTaskInline projectId={projectId} staff={staff} defaultAssigneeId={defaultAssigneeId} />
           </div>
         </Card>
+      ) : phases.length > 0 ? (
+        <Card>
+          <AddTaskInline
+            projectId={projectId}
+            staff={staff}
+            defaultAssigneeId={defaultAssigneeId}
+            label="+ Add unphased task"
+          />
+        </Card>
       ) : null}
-
-      <p className="text-[12.5px] leading-relaxed text-ink-3">
-        Check a box to complete — you do not have to open the task. Upload files and Click Here run
-        from this list. Finished groups collapse under Completed. Add, remove, or Move… a task to
-        another section (Configuration, Discovery, …) or under another parent; that does not change
-        the playbook. Nested specialist work stays on this staff list. The customer portal shows
-        parent status plus customer-owned items. Playbook authoring is Templates (owner/admin).
-      </p>
     </div>
   );
 }

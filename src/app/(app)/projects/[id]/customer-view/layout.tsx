@@ -51,12 +51,11 @@ export default async function CustomerViewLayout({
           recordingsHref={recordings.length > 0 ? `${base}/recordings` : undefined}
           messagesHref={`/projects/${id}/messages`}
         />
-        <p className="mt-3 px-1 text-[11.5px] leading-relaxed text-ink-3">
+        <p className="mt-3 px-1 text-[11.5px] text-ink-3">
           Same tabs the customer can open.{" "}
           <Link href={`/projects/${id}/tasks`} className="text-brand hover:underline">
             Expose or hide
-          </Link>{" "}
-          from the task list eyelid.
+          </Link>
         </p>
       </aside>
       <div className="min-w-0 flex-1">{children}</div>

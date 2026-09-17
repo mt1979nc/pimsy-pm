@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.16.5";
+export const APP_VERSION = "1.17.0";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.17.0",
+    date: "2026-09-17",
+    summary:
+      "PATH visual cleanup for adoption: staff and portal screens are shorter, more scannable, and calmer. Critical status (due, assignee, waiting-on, blockers) stays visible. No schema migrate.",
+    highlights: [
+      "Staff project home: drops the project-updates essay; Post update is the one primary action. Waiting-on, milestones, risks, and team stay as compact lists.",
+      "Task list: rows keep title, due, assignee, blocked/customer/RCM chips; description and checklist bodies move to the task page (hover still shows a snippet). Footer how-to paragraph removed. Empty Unphased card hidden. Add RCM stays a button until clicked.",
+      "Task detail: due and complete sit in the header; card subtitles cut. About Edit site profile and Extra fields collapse like Add RCM. Settings Record slip and Danger zone collapse by default.",
+      "Shared chrome: tighter page/card headers, empty states, and badges (Shared / Internal). Nav labels unchanged. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+      "Portal included: home, project overview, tasks, and About lose helper paragraphs and row descriptions. Learning Center catalog from 1.16.5 is unchanged aside from shared header spacing.",
+      "No schema migrate. No playbook seed or resync.",
+    ],
+  },
   {
     version: "1.16.5",
     date: "2026-09-17",

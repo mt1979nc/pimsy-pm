@@ -24,7 +24,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="Settings" subtitle="Your profile and working preferences." />
+      <PageHeader title="Settings" />
 
       <div className="mx-auto max-w-[640px] space-y-5">
         <Card>
@@ -47,7 +47,7 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader
             title="Password"
-            subtitle={me.passwordHash ? "Change your password." : "Set a password to sign in without an emailed link."}
+            subtitle={me.passwordHash ? undefined : "Set a password to skip magic-link email."}
           />
           <PasswordForm hasPassword={!!me.passwordHash} />
         </Card>
@@ -55,7 +55,6 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader
             title="Alerts"
-            subtitle="What lands in your inbox. In-app notifications aren't affected."
           />
           <MyAlertSettings
             types={alertTypes}
@@ -67,32 +66,17 @@ export default async function SettingsPage() {
 
         {canManageTemplates(actor) ? (
           <Card>
-            <CardHeader
-              title="Playbooks"
-              subtitle="Templates area — Dock Implementation playbooks, optional areas, and reusable files."
-              action={
-                <LinkButton href="/templates" size="sm" variant="primary">
-                  Open templates
-                </LinkButton>
-              }
-            />
-            <div className="space-y-2 px-5 py-4 text-[13px] leading-relaxed text-ink-2">
-              <p>
-                Edit phases, nested tasks, descriptions, training checklists, and default
-                attachments. Duplicate a path if you need a custom playbook without touching the
-                four site-creation options.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <LinkButton href="/templates" size="sm">
-                  Playbooks
-                </LinkButton>
-                <LinkButton href="/library" size="sm">
-                  File library
-                </LinkButton>
-                <LinkButton href="/learning" size="sm">
-                  Learning Center
-                </LinkButton>
-              </div>
+            <CardHeader title="Playbooks" />
+            <div className="flex flex-wrap gap-2 px-4 py-3">
+              <LinkButton href="/templates" size="sm">
+                Playbooks
+              </LinkButton>
+              <LinkButton href="/library" size="sm">
+                File library
+              </LinkButton>
+              <LinkButton href="/learning" size="sm">
+                Learning Center
+              </LinkButton>
             </div>
           </Card>
         ) : null}
@@ -100,29 +84,24 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader
             title="Update History"
-            subtitle={`Staff-only release notes. Currently v${APP_VERSION}.`}
             action={
               <LinkButton href="/updates" size="sm" variant="secondary">
                 What&apos;s new
               </LinkButton>
             }
           />
-          <div className="px-5 py-4 text-[13px] leading-relaxed text-ink-2">
-            Feature changes for this workspace. Customers never see this list.
+          <div className="px-4 py-3 text-[13px] text-ink-2">
+            v{APP_VERSION} — staff only. Customers never see this list.
           </div>
         </Card>
 
         <Card>
           <CardHeader title="About this workspace" />
-          <div className="space-y-3 p-5 text-[13px] leading-relaxed text-ink-2">
-            <p>
-              This system tracks implementation logistics only — timelines, configuration
-              checklists, training scheduling and correspondence.
-            </p>
+          <div className="space-y-2 p-4 text-[13px] text-ink-2">
+            <p>Implementation logistics only — timelines, checklists, training, correspondence.</p>
             <p className="rounded-lg bg-amber-soft px-3 py-2 text-amber">
               <strong className="font-semibold">No PHI.</strong> Never post patient names, records,
-              or clinical detail here, and tell your customers the same. If a customer pastes
-              something they shouldn&apos;t, delete the message and follow your incident process.
+              or clinical detail.
             </p>
           </div>
         </Card>

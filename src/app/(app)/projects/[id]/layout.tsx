@@ -45,8 +45,8 @@ export default async function ProjectLayout({
 
   return (
     <>
-      <div className="mb-5">
-        <div className="mb-1.5 flex items-center gap-2 text-[12.5px] text-ink-3">
+      <div className="mb-4">
+        <div className="mb-1 flex items-center gap-2 text-[12px] text-ink-3">
           <Link href="/projects" className="hover:text-brand">
             Projects
           </Link>
@@ -63,15 +63,13 @@ export default async function ProjectLayout({
           )}
         </div>
 
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
                 {project.name}
               </h1>
               <span className="font-mono text-[12px] text-ink-3">{project.code}</span>
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
               <HealthBadge health={project.health} />
               <ProjectStatusBadge status={project.status} />
               {!project.portalEnabled ? <Badge tone="amber">Portal off</Badge> : null}
@@ -83,34 +81,25 @@ export default async function ProjectLayout({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <div className="min-w-[130px]">
-              <div className="text-[11.5px] uppercase tracking-wide text-ink-3">Go-live</div>
-              <div
-                className={cn(
-                  "mt-0.5 text-[13.5px] font-medium",
-                  late ? "text-red" : "text-ink",
-                )}
-              >
-                {project.targetGoLiveDate ? fmtDate(project.targetGoLiveDate) : "Not set"}
-              </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px]">
+            <div className={cn("font-medium", late ? "text-red" : "text-ink")}>
+              {project.targetGoLiveDate ? fmtDate(project.targetGoLiveDate) : "Go-live unset"}
               {days !== null && project.status !== "COMPLETED" ? (
-                <div className="text-[12px] text-ink-3">
-                  {late ? `${Math.abs(days)} days late` : `in ${days} days`}
-                </div>
+                <span className="ml-1 font-normal text-ink-3">
+                  {late ? `${Math.abs(days)}d late` : `in ${days}d`}
+                </span>
               ) : null}
             </div>
-
-            <div className="min-w-[130px]">
-              <div className="text-[11.5px] uppercase tracking-wide text-ink-3">
-                {project.rcmTaskCountTotal > 0 ? "EHR progress" : "Progress"}
-              </div>
-              <div className="mt-0.5 text-[13.5px] font-medium text-ink">
-                {project.rcmTaskCountTotal > 0
-                  ? pctComplete(project.ehrTaskCountDone, project.ehrTaskCountTotal)
-                  : pct}
-                %
-                <span className="ml-1.5 text-[12px] font-normal text-ink-3">
+            <div className="min-w-[120px]">
+              <div className="flex items-baseline justify-between gap-2 text-[12px]">
+                <span className="font-medium text-ink">
+                  {project.rcmTaskCountTotal > 0 ? "EHR " : ""}
+                  {project.rcmTaskCountTotal > 0
+                    ? pctComplete(project.ehrTaskCountDone, project.ehrTaskCountTotal)
+                    : pct}
+                  %
+                </span>
+                <span className="text-ink-3">
                   {project.rcmTaskCountTotal > 0
                     ? `${project.ehrTaskCountDone}/${project.ehrTaskCountTotal}`
                     : `${project.taskCountDone}/${project.taskCountTotal}`}
@@ -120,15 +109,16 @@ export default async function ProjectLayout({
                 value={project.rcmTaskCountTotal > 0 ? project.ehrTaskCountDone : project.taskCountDone}
                 total={project.rcmTaskCountTotal > 0 ? project.ehrTaskCountTotal : project.taskCountTotal}
                 tone={pct === 100 ? "green" : "brand"}
-                className="mt-1.5"
+                className="mt-1"
               />
             </div>
             {project.rcmTaskCountTotal > 0 ? (
-              <div className="min-w-[130px]">
-                <div className="text-[11.5px] uppercase tracking-wide text-ink-3">RCM progress</div>
-                <div className="mt-0.5 text-[13.5px] font-medium text-ink">
-                  {pctComplete(project.rcmTaskCountDone, project.rcmTaskCountTotal)}%
-                  <span className="ml-1.5 text-[12px] font-normal text-ink-3">
+              <div className="min-w-[120px]">
+                <div className="flex items-baseline justify-between gap-2 text-[12px]">
+                  <span className="font-medium text-ink">
+                    RCM {pctComplete(project.rcmTaskCountDone, project.rcmTaskCountTotal)}%
+                  </span>
+                  <span className="text-ink-3">
                     {project.rcmTaskCountDone}/{project.rcmTaskCountTotal}
                   </span>
                 </div>
@@ -136,25 +126,21 @@ export default async function ProjectLayout({
                   value={project.rcmTaskCountDone}
                   total={project.rcmTaskCountTotal}
                   tone="violet"
-                  className="mt-1.5"
+                  className="mt-1"
                 />
               </div>
             ) : null}
-
             {project.lead ? (
-              <div>
-                <div className="text-[11.5px] uppercase tracking-wide text-ink-3">Lead</div>
-                <div className="mt-1 flex items-center gap-1.5">
-                  <Avatar name={project.lead.name} image={project.lead.image} size={22} />
-                  <span className="text-[13px] text-ink">{project.lead.name}</span>
-                </div>
+              <div className="flex items-center gap-1.5">
+                <Avatar name={project.lead.name} image={project.lead.image} size={20} />
+                <span className="text-ink">{project.lead.name}</span>
               </div>
             ) : null}
           </div>
         </div>
       </div>
 
-      <div className="mb-5 flex items-center gap-5 border-b border-border">
+      <div className="mb-4 flex items-center gap-4 border-b border-border">
         <SubNavLink href={`/projects/${id}`}>Overview</SubNavLink>
         <SubNavLink href={`/projects/${id}/about`}>About</SubNavLink>
         <SubNavLink href={`/projects/${id}/tasks`}>Tasks</SubNavLink>

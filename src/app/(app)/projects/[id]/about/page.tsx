@@ -14,6 +14,7 @@ import { AboutHubSpotPanel } from "@/components/about-hubspot-panel";
 import { AboutContactCardGrid } from "@/components/about-contact-card";
 import { KickoffFacts } from "@/components/kickoff-facts";
 import { extraKickoffFacts } from "@/lib/kickoff-about";
+import { CollapsedSection } from "@/components/collapsed-section";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "About" };
@@ -51,12 +52,9 @@ export default async function ProjectAboutPage({
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <Card>
-        <CardHeader
-          title="Kickoff & site"
-          subtitle="Same kickoff dates, booking, and CRM acronym the portal About shows."
-        />
+        <CardHeader title="Kickoff & site" />
         <AboutKickoffPanel
           kickoffDate={project.startDate}
           goLiveDate={project.targetGoLiveDate}
@@ -76,64 +74,50 @@ export default async function ProjectAboutPage({
       </Card>
 
       <Card>
-        <CardHeader
-          title="HubSpot"
-          subtitle="Pull when a private-app token is set; otherwise a clear outbound deal link."
-        />
+        <CardHeader title="HubSpot" />
         <AboutHubSpotPanel summary={hubspot} />
       </Card>
 
       <Card>
-        <CardHeader
-          title="Implementation team"
-          subtitle="Playbook staffing roles plus people assigned on Kickoff tasks"
-        />
+        <CardHeader title="Implementation team" />
         <div className="p-5 pt-0">
           <AboutContactCardGrid
             cards={implementationTeam}
             showEmail
-            empty="Assign staffing roles on New project, or add members on Settings. Kickoff task assignees also appear here."
+            empty="Assign roles on New project, or add members on Settings."
           />
         </div>
       </Card>
 
       <Card>
-        <CardHeader
-          title="Practice contacts"
-          subtitle="Live from the customer account — cards update when a contact is invited or edited"
-        />
+        <CardHeader title="Practice contacts" />
         <div className="p-5 pt-0">
           <AboutContactCardGrid
             cards={customerContacts}
             showEmail
-            empty="Invite a practice contact on the customer page or project Settings."
+            empty="Invite a contact on the customer page or Settings."
           />
         </div>
       </Card>
 
       {extras.length > 0 ? (
         <Card>
-          <CardHeader
-            title="Extra fields"
-            subtitle="Keys that duplicate HubSpot, CRM, Zoom, Prism, or the PIMSY bookmark are not stored."
-          />
-          <dl className="divide-y divide-border text-[13px]">
-            {extras.map((row) => (
-              <div key={row.key} className="flex justify-between gap-3 px-5 py-2">
-                <dt className="shrink-0 text-ink-3">{row.key}</dt>
-                <dd className="truncate text-right text-ink">{row.value}</dd>
-              </div>
-            ))}
-          </dl>
+          <CollapsedSection title="Extra fields" openLabel="Show">
+            <dl className="divide-y divide-border text-[13px]">
+              {extras.map((row) => (
+                <div key={row.key} className="flex justify-between gap-3 px-4 py-2">
+                  <dt className="shrink-0 text-ink-3">{row.key}</dt>
+                  <dd className="truncate text-right text-ink">{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </CollapsedSection>
         </Card>
       ) : null}
 
       <Card>
-        <CardHeader
-          title="Edit site profile"
-          subtitle="Staff only. HubSpot, Prism, CRM key, and the PIMSY bookmark copy onto Accessing Pimsy when that task still has the catalog blurb. HubSpot, Prism, and CRM key never appear on the customer portal."
-        />
-        <ProjectAboutForm
+        <CollapsedSection title="Edit site profile" openLabel="Edit" closeLabel="Hide">
+          <ProjectAboutForm
           project={{
             id: project.id,
             hubspotDealUrl: project.hubspotDealUrl,
@@ -149,6 +133,7 @@ export default async function ProjectAboutPage({
             specialistBookingUrl: project.lead?.zoomBookingUrl ?? null,
           }}
         />
+        </CollapsedSection>
       </Card>
     </div>
   );

@@ -8,12 +8,11 @@ import { Badge, PriorityBadge, VisibilityBadge, Avatar, AvatarStack, ReviewRequi
 import { showReviewRequiredBadge } from "@/lib/discovery-config-review";
 import { TaskActionButtons } from "@/components/task-action-buttons";
 import { AddAttachment } from "@/components/attachments";
-import { TaskChecklist, type ChecklistItemView } from "@/components/task-checklist";
+import type { ChecklistItemView } from "@/components/task-checklist";
 import { MoveTaskDialog, type MoveTaskPhaseOption } from "@/components/move-task-dialog";
 import { AddTaskInline } from "@/app/(app)/projects/[id]/tasks/task-forms";
 import type { MoveTaskNode } from "@/lib/task-move";
 import { dueLabel, isOverdue } from "@/lib/dates";
-import { descriptionSnippet } from "@/lib/task-description";
 import { cn } from "@/lib/cn";
 import { scheduledSessionLabel } from "@/lib/training-session";
 import type { Priority, TaskStatus, Visibility, OwnerSide } from "@/db/schema";
@@ -104,7 +103,6 @@ export function TaskRow({
   const overdue = isOverdue(task.dueDate, completedAt);
   const specialistSub = Boolean(task.parentTaskId) && task.ownerSide === "INTERNAL";
   const nested = (task.depth ?? 0) > 0;
-  const snippet = descriptionSnippet(task.description, nested ? 120 : 180);
 
   function toggle() {
     if (!canEdit) return;
@@ -139,7 +137,7 @@ export function TaskRow({
       )}
     >
       <div
-        className="flex items-start gap-3 px-4 py-2.5"
+        className="flex items-start gap-3 px-4 py-2"
         style={task.depth ? { paddingLeft: 16 + task.depth * 14 } : undefined}
       >
         {hasChildren && onToggleChildren ? (
@@ -192,6 +190,7 @@ export function TaskRow({
             {href ? (
               <Link
                 href={href}
+                title={task.description ? task.description.replace(/\s+/g, " ").slice(0, 240) : undefined}
                 className={cn(
                   "text-[13.5px] leading-snug hover:text-brand hover:underline",
                   done ? "text-ink-3 line-through" : "text-ink",
@@ -212,7 +211,7 @@ export function TaskRow({
             {nested && task.priority !== "HIGH" && task.priority !== "URGENT" ? null : (
               <PriorityBadge priority={task.priority} />
             )}
-            {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer action</Badge> : null}
+            {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
             {specialistSub ? <Badge tone="amber">Specialist</Badge> : null}
             {showReviewRequiredBadge(task) ? <ReviewRequiredBadge /> : null}
             {task.status === "BLOCKED" ? <Badge tone="red">Blocked</Badge> : null}
@@ -337,20 +336,9 @@ export function TaskRow({
             ) : null}
           </div>
 
-          {snippet ? (
-            <p className="mt-1 line-clamp-2 text-[12.5px] leading-snug text-ink-2">{snippet}</p>
-          ) : null}
-
           {checklist.length > 0 ? (
-            <div className="mt-2">
-              <TaskChecklist
-                taskId={task.id}
-                items={checklist}
-                canEdit={false}
-                canToggle={canEdit}
-                taskIsInternal={task.visibility === "INTERNAL"}
-                compact
-              />
+            <div className="mt-1 text-[11.5px] text-ink-3">
+              {checklist.filter((c) => c.done).length}/{checklist.length} checklist
             </div>
           ) : null}
 

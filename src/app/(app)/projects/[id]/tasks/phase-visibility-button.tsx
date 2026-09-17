@@ -38,7 +38,7 @@ export function PhaseVisibilityButton({
           <circle cx="12" cy="12" r="3" />
         </svg>
       )}
-      {hidden ? "Expose tab" : "Hide tab"}
+      {hidden ? "Expose" : "Hide"}
     </button>
   );
 }

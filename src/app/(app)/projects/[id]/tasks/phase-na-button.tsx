@@ -19,7 +19,7 @@ export function PhaseNaButton({
       className="text-[12px] text-ink-3 underline-offset-2 hover:text-ink hover:underline disabled:opacity-50"
       title="Removes this section from this project only. The template is unchanged."
     >
-      {notApplicable ? "Restore section" : "Section N/A"}
+      {notApplicable ? "Restore" : "N/A"}
     </button>
   );
 }

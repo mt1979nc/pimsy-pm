@@ -4,8 +4,6 @@ import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, ForbiddenError, NotFoundError } from "@/lib/authz";
 import { previewPortalPhase } from "@/lib/portal-preview";
 import { Card, CardHeader, EmptyState, Badge, Avatar } from "@/components/ui";
-import { PortalAreaIntro } from "@/components/portal-area-intro";
-import { resolveTaskDescription } from "@/lib/task-description";
 import { orderTasksForNesting } from "@/lib/task-tree";
 import { fmtShort } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -34,21 +32,12 @@ export default async function CustomerViewPhasePage({
 
   return (
     <Card>
-      <CardHeader
-        title={phase.name}
-        subtitle="Customer-visible tasks in this area — click a title to open it."
-      />
-      <PortalAreaIntro
-        phaseName={phase.name}
-        description={phase.description}
-        tasks={nested.map((t) => ({ id: t.id, title: t.title }))}
-        taskHref={(taskId) => `/projects/${id}/customer-view/tasks/${taskId}`}
-      />
+      <CardHeader title={phase.name} />
+      {phase.description ? (
+        <p className="line-clamp-2 px-4 pb-2 text-[12.5px] text-ink-3">{phase.description}</p>
+      ) : null}
       {nested.length === 0 ? (
-        <EmptyState
-          title="Nothing shared in this area"
-          description="Specialist nested work stays on the staff task list."
-        />
+        <EmptyState title="Nothing shared in this area" />
       ) : (
         <div className="divide-y divide-border">
           {nested.map((t) => (
@@ -72,17 +61,12 @@ export default async function CustomerViewPhasePage({
                   <span className="text-[11.5px] text-ink-3">
                     {t.status === "DONE" ? "Complete" : t.status === "IN_PROGRESS" ? "In progress" : "Not started"}
                   </span>
-                  {t.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer action</Badge> : null}
+                  {t.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
                   <CommentCountBadge
                     count={t.comments?.length ?? 0}
                     href={`/projects/${id}/customer-view/tasks/${t.id}`}
                   />
                 </div>
-                {resolveTaskDescription(t.title, t.description) ? (
-                  <p className="mt-1 line-clamp-2 text-[12.5px] text-ink-2">
-                    {resolveTaskDescription(t.title, t.description)}
-                  </p>
-                ) : null}
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-ink-3">
                   {t.assignee?.name ? (
                     <span className="inline-flex items-center gap-1.5">

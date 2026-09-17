@@ -12,18 +12,8 @@ import {
   BOOKING_MEETING_TYPES,
   migrateLegacyZoomBooking,
   normalizeBookingUrls,
-  type BookingMeetingType,
   type BookingUrlMap,
 } from "@/lib/booking-urls";
-
-const BOOKING_HINTS: Record<BookingMeetingType, string> = {
-  kickoff: "Leave blank to use the assigned specialist’s booking page from Settings.",
-  workflowDiscovery: "Inbed (or Zoom) page for Workflow Guided Discovery.",
-  billingDiscovery: "Inbed (or Zoom) page for Billing Workflow Discovery.",
-  training1: "Booking page the practice uses for Training 1.",
-  training2: "Booking page the practice uses for Training 2.",
-  training3: "Booking page the practice uses for Training 3.",
-};
 
 export function ProjectAboutForm({
   project,
@@ -69,17 +59,15 @@ export function ProjectAboutForm({
           />
           <span>
             <span className="block text-[13.5px] font-medium text-ink">Onboarded</span>
-            <span className="block text-[12.5px] text-ink-3">
-              When checked, overdue and upcoming-due tasks for this site leave the dashboard, My
-              Work, and Portfolio rollups. They stay on this project hub. Staff only — not shown
-              on the portal.
+            <span className="block text-[12px] text-ink-3">
+              Hides overdue/upcoming from dashboard, My work, and Portfolio. Stays on this hub.
             </span>
           </span>
         </label>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="CRM acronym" htmlFor="crmAcronym" hint="Shown on portal About as the account code.">
+        <Field label="CRM acronym" htmlFor="crmAcronym">
           <input
             id="crmAcronym"
             name="crmAcronym"
@@ -88,11 +76,7 @@ export function ProjectAboutForm({
             className={inputClass}
           />
         </Field>
-        <Field
-          label="CRM key / security key"
-          htmlFor="crmKey"
-          hint="Internal security key. Staff only — never on the portal. Copies onto Accessing Pimsy when that task still has the catalog blurb."
-        >
+        <Field label="CRM key" htmlFor="crmKey">
           <input
             id="crmKey"
             name="crmKey"
@@ -103,11 +87,7 @@ export function ProjectAboutForm({
         </Field>
       </div>
 
-      <Field
-        label="Bookmark / CRM link"
-        htmlFor="bookmarkUrl"
-        hint="PIMSY web bookmark for Accessing Pimsy. Not the HubSpot deal URL. Saved as custom field bookmark."
-      >
+      <Field label="Bookmark" htmlFor="bookmarkUrl">
         <input
           id="bookmarkUrl"
           name="bookmarkUrl"
@@ -118,11 +98,7 @@ export function ProjectAboutForm({
         />
       </Field>
 
-      <Field
-        label="HubSpot deal URL"
-        htmlFor="hubspotDealUrl"
-        hint="Paste the HubSpot deal record. PATH stores a clear outbound link and pulls the deal name when HUBSPOT_ACCESS_TOKEN is set. Leave blank to clear."
-      >
+      <Field label="HubSpot deal URL" htmlFor="hubspotDealUrl">
         <input
           id="hubspotDealUrl"
           name="hubspotDealUrl"
@@ -134,11 +110,7 @@ export function ProjectAboutForm({
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          label="Prism client ID"
-          htmlFor="prismClientId"
-          hint="Staff/analytics identifier. Not shown on the portal."
-        >
+        <Field label="Prism client ID" htmlFor="prismClientId">
           <input
             id="prismClientId"
             name="prismClientId"
@@ -150,13 +122,7 @@ export function ProjectAboutForm({
 
       <div className="space-y-3 rounded-xl border border-border p-4">
         <div>
-          <h3 className="text-[13.5px] font-medium text-ink">Booking links</h3>
-          <p className="mt-0.5 text-[12.5px] text-ink-3">
-            One URL per meeting type. Schedule tasks and the customer portal open the matching
-            page. Kickoff uses the assigned specialist’s Settings URL when this kickoff field is
-            blank
-            {project.specialistName ? ` (${project.specialistName})` : ""}.
-          </p>
+          <h3 className="text-[13px] font-medium text-ink">Booking links</h3>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {BOOKING_MEETING_TYPES.map((type) => {
@@ -168,8 +134,8 @@ export function ProjectAboutForm({
                 htmlFor={field}
                 hint={
                   type === "kickoff" && project.specialistBookingUrl && !bookingUrls.kickoff
-                    ? `Currently ${project.specialistName ?? "the assigned specialist"}’s booking page.`
-                    : BOOKING_HINTS[type]
+                    ? `Uses ${project.specialistName ?? "specialist"}’s booking page.`
+                    : undefined
                 }
               >
                 <input
@@ -186,7 +152,7 @@ export function ProjectAboutForm({
         </div>
       </div>
 
-      <Field label="About notes" htmlFor="aboutNotes" hint="Shared with the customer portal.">
+      <Field label="About notes" htmlFor="aboutNotes">
         <textarea
           id="aboutNotes"
           name="aboutNotes"
@@ -197,11 +163,7 @@ export function ProjectAboutForm({
         />
       </Field>
 
-      <Field
-        label="Extra fields"
-        htmlFor="customFields"
-        hint="Optional leftovers that are not HubSpot, CRM, Zoom, Prism, or the PIMSY bookmark (those have fields above). One per line as key=value. Staff only. Empty keys are dropped."
-      >
+      <Field label="Extra fields" htmlFor="customFields" hint="One per line as key=value.">
         <textarea
           id="customFields"
           name="customFields"

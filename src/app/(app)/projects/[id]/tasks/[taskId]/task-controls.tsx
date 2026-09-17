@@ -48,16 +48,16 @@ export function TaskDetailControls({
 
   if (!editing) {
     return (
-      <div className="space-y-4 p-5">
+      <div className="space-y-3 p-4">
         {task.description ? (
-          <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">
+          <p className="whitespace-pre-wrap text-[13.5px] leading-snug text-ink">
             {task.description}
           </p>
         ) : (
-          <p className="text-[13.5px] italic text-ink-3">No description yet.</p>
+          <p className="text-[13px] text-ink-3">No description.</p>
         )}
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+        <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
           <select
             value={task.status}
             disabled={pending}
@@ -98,7 +98,7 @@ export function TaskDetailControls({
             disabled={pending}
             onClick={() => change(() => markTaskNotApplicable(task.id, !task.notApplicable))}
           >
-            {task.notApplicable ? "Restore from N/A" : "Not applicable"}
+            {task.notApplicable ? "Restore" : "N/A"}
           </Button>
           <Button size="sm" onClick={() => setEditing(true)}>
             Edit details
@@ -122,7 +122,6 @@ export function TaskDetailControls({
       <Field
         label="Description"
         htmlFor="description"
-        hint="What needs doing, and anything the person picking this up would need to know."
       >
         <textarea
           id="description"

@@ -235,25 +235,26 @@ export default async function TaskDetailPage({
     <div className="mx-auto max-w-[900px]">
       <Link
         href={`/projects/${id}/tasks`}
-        className="mb-3 inline-block text-[12.5px] text-ink-3 hover:text-brand"
+        className="mb-2 inline-block text-[12px] text-ink-3 hover:text-brand"
       >
-        ← All tasks
+        ← Tasks
       </Link>
 
-      <div className="mb-5">
+      <div className="mb-4">
         <div className="flex flex-wrap items-center gap-2">
           <TaskStatusBadge status={task.status} />
           <PriorityBadge priority={task.priority} />
           <VisibilityBadge visibility={task.visibility} />
           {showReviewRequiredBadge(task) ? <ReviewRequiredBadge /> : null}
-          {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer action</Badge> : null}
+          {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
           {task.phase ? <Badge>{task.phase.name}</Badge> : null}
           {connectedPeers.length > 0 ? <Badge tone="green">Connected</Badge> : null}
+          {task.status === "BLOCKED" ? <Badge tone="red">Blocked</Badge> : null}
         </div>
-        <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+        <h1 className="mt-1.5 text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
           {task.title}
         </h1>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        <div className="mt-2 flex flex-wrap items-center gap-3">
           <TaskCompleteControl
             taskId={task.id}
             title={task.title}
@@ -267,20 +268,19 @@ export default async function TaskDetailPage({
             projectCode={task.project.code}
             bookingUrls={resolveProjectBookingUrls(task.project)}
           />
+          {sessionLabel ? (
+            <span className="text-[13px] font-medium text-ink">{sessionLabel}</span>
+          ) : task.dueDate ? (
+            <span className={cn("text-[13px]", overdue ? "font-medium text-red" : "text-ink-2")}>
+              {dueLabel(task.dueDate, completedAt)}
+            </span>
+          ) : (
+            <span className="text-[13px] text-ink-3">No due date</span>
+          )}
         </div>
-        {sessionLabel ? (
-          <p className="mt-1.5 text-[13.5px] font-medium text-ink">{sessionLabel}</p>
-        ) : null}
-        {task.dueDate ? (
-          <p className={cn("mt-1.5 text-[13.5px]", overdue ? "font-medium text-red" : "text-ink-2")}>
-            {dueLabel(task.dueDate, completedAt)} · {fmtDate(task.dueDate)}
-          </p>
-        ) : sessionLabel ? null : (
-          <p className="mt-1.5 text-[13.5px] text-ink-3">No due date</p>
-        )}
         {connectedPeers.length > 0 ? (
-          <p className="mt-2 text-[13px] text-ink-2">
-            Connected — complete here and it reflects on{" "}
+          <p className="mt-1.5 text-[12.5px] text-ink-2">
+            Also on{" "}
             {connectedPeers.map((peer, i) => (
               <span key={peer.id}>
                 {i > 0 ? ", " : null}
@@ -292,13 +292,12 @@ export default async function TaskDetailPage({
                 </Link>
               </span>
             ))}
-            .
           </p>
         ) : null}
       </div>
 
-      <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.5fr_1fr]">
-        <div className="space-y-5">
+      <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1.5fr_1fr]">
+        <div className="space-y-4">
           {loginConfirmation ? (
             <PimsyLoginConfirmationCard projectId={id} confirmation={loginConfirmation} />
           ) : null}
@@ -306,16 +305,8 @@ export default async function TaskDetailPage({
           {hasFileAction ? (
             <Card>
               <CardHeader
-                title="Links & files"
-                subtitle={
-                  isDockFileRequestTitle(task.title)
-                    ? "Upload files on this task"
-                    : uploadRequest
-                      ? "Download, complete the file, and upload it here — same pattern as Dock"
-                      : attachments.length > 0
-                        ? `${attachments.length} attached`
-                        : "Anything the work depends on"
-                }
+                title="Files"
+                subtitle={attachments.length > 0 ? `${attachments.length}` : undefined}
               />
               <div id="files">
                 <AttachmentList
@@ -362,11 +353,8 @@ export default async function TaskDetailPage({
 
           {sessionTask ? (
             <Card>
-              <CardHeader
-                title="Session time"
-                subtitle="Booked on the specialist calendar — saved on this training task"
-              />
-              <div className="px-5 py-4">
+              <CardHeader title="Session" />
+              <div className="px-4 py-3">
                 <TrainingSessionBook taskId={task.id} sessionAt={task.sessionAt} />
               </div>
             </Card>
@@ -374,14 +362,7 @@ export default async function TaskDetailPage({
 
           {checklist.length > 0 ? (
             <Card>
-              <CardHeader
-                title={agendaTask ? "Training agenda" : "Checklist"}
-                subtitle={
-                  agendaTask
-                    ? "Check areas off as you cover them. Incomplete items carry to the next session when this one is completed."
-                    : "Check items off here — add or remove items on Templates."
-                }
-              />
+              <CardHeader title={agendaTask ? "Agenda" : "Checklist"} />
               <TaskChecklist
                 taskId={task.id}
                 items={checklistView}
@@ -397,8 +378,8 @@ export default async function TaskDetailPage({
               title="Sub-tasks"
               subtitle={
                 subtasks.length > 0
-                  ? `${subtasks.filter((s) => s.status === "DONE").length}/${subtasks.length} done · specialist work stays off the customer view`
-                  : "Specialist checklist under this parent — the customer sees this task’s status only"
+                  ? `${subtasks.filter((s) => s.status === "DONE").length}/${subtasks.length} done`
+                  : undefined
               }
             />
             {subtasks.length > 0 ? (
@@ -443,10 +424,8 @@ export default async function TaskDetailPage({
           {hasFileAction ? null : (
             <Card>
               <CardHeader
-                title="Links & files"
-                subtitle={
-                  attachments.length > 0 ? `${attachments.length} attached` : "Anything the work depends on"
-                }
+                title="Files"
+                subtitle={attachments.length > 0 ? `${attachments.length}` : undefined}
               />
               <div id="files">
                 <AttachmentList
@@ -474,14 +453,7 @@ export default async function TaskDetailPage({
           )}
 
           <Card>
-            <CardHeader
-              title="Comments"
-              subtitle={
-                task.visibility === "INTERNAL"
-                  ? "This task is internal, so its comments are too"
-                  : "Shared comments are visible to the customer"
-              }
-            />
+            <CardHeader title="Comments" />
             <TaskComments
               taskId={task.id}
               comments={comments}
@@ -492,7 +464,7 @@ export default async function TaskDetailPage({
           </Card>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           <Card>
             <CardHeader title="Assigned to" />
             <div className="p-4">

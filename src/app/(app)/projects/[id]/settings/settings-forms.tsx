@@ -94,7 +94,7 @@ export function ProjectSettingsForm({
         <Field
           label="Target go-live"
           htmlFor="targetGoLiveDate"
-          hint="Kickoff → go-live drives the schedule. Use Record slip below to push this date with a cause."
+          hint="Use Record slip to push this date with a cause."
         >
           <input
             id="targetGoLiveDate"

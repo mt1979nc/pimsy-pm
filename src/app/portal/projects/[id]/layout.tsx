@@ -36,17 +36,17 @@ export default async function PortalProjectLayout({
 
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+          <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
             {project.name}
           </h1>
-          <p className="mt-1 text-[13.5px] text-ink-2">
+          <p className="mt-0.5 text-[13px] text-ink-2">
             {project.status === "COMPLETED"
-              ? "You're live."
+              ? "Live"
               : days !== null
                 ? days >= 0
-                  ? `Go-live ${fmtDate(project.targetGoLiveDate)} — ${days} days away`
-                  : `Target date was ${fmtDate(project.targetGoLiveDate)}`
-                : "Go-live date to be confirmed"}
+                  ? `Go-live ${fmtDate(project.targetGoLiveDate)} · ${days}d`
+                  : `Target was ${fmtDate(project.targetGoLiveDate)}`
+                : "Go-live unset"}
           </p>
         </div>
         {project.status === "COMPLETED" ? (

@@ -31,8 +31,8 @@ export default async function PortalLayout({ children }: { children: React.React
               <div className="truncate text-[13px] font-semibold leading-tight text-ink">
                 {account?.name ?? "Your workspace"}
               </div>
-              <div className="truncate text-[11.5px] leading-tight text-ink-3">
-                PIMSY implementation
+              <div className="truncate text-[11px] leading-tight text-ink-3">
+                PATH workspace
               </div>
             </div>
           </Link>
@@ -73,10 +73,8 @@ export default async function PortalLayout({ children }: { children: React.React
       <main className="mx-auto max-w-[1000px] px-4 py-7 sm:px-6">{children}</main>
 
       <footer className="mx-auto max-w-[1000px] px-4 pb-10 sm:px-6">
-        <p className="border-t border-border pt-4 text-[12px] leading-relaxed text-ink-3">
-          This workspace covers your PIMSY implementation only. Please don&apos;t post patient
-          information here — if you need to send clinical detail, ask your implementation
-          specialist for the secure channel.
+        <p className="border-t border-border pt-3 text-[12px] text-ink-3">
+          Implementation logistics only — please don&apos;t post patient information here.
         </p>
       </footer>
     </div>

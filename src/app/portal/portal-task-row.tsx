@@ -48,7 +48,7 @@ export function PortalTaskRow({
     : null;
 
   return (
-    <div className={cn("flex items-start gap-3 px-5 py-3", pending && "opacity-60")}>
+    <div className={cn("flex items-start gap-3 px-4 py-2", pending && "opacity-60")}>
       <button
         type="button"
         disabled={pending}
@@ -82,10 +82,11 @@ export function PortalTaskRow({
           {taskHref ? (
             <Link
               href={taskHref}
-              className={cn(
+                className={cn(
                 "block min-w-0 flex-1 text-[14px] leading-snug hover:text-brand hover:underline",
                 done ? "text-ink-3 line-through" : "text-ink",
               )}
+              title={task.description ? task.description.replace(/\s+/g, " ").slice(0, 240) : undefined}
             >
               {task.title}
             </Link>
@@ -116,11 +117,6 @@ export function PortalTaskRow({
         </div>
         {task.projectName ? (
           <div className="mt-0.5 text-[12px] text-ink-3">{task.projectName}</div>
-        ) : null}
-        {task.description ? (
-          <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-[12.5px] leading-relaxed text-ink-2">
-            {task.description}
-          </p>
         ) : null}
         {uploadOpen && task.projectId ? (
           <div className="mt-2 overflow-hidden rounded-lg border border-border">

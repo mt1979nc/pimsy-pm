@@ -35,18 +35,19 @@ export function MessageComposer({
       <input type="hidden" name="threadId" value={threadId} />
       <FormError error={state.error} />
       {isResolved ? (
-        <p className="mb-2 text-[12.5px] leading-relaxed text-ink-2">
-          This topic is resolved. Reply to reopen it.
+        <p className="mb-2 text-[12.5px] text-ink-2">
+          Resolved. Reply to reopen
           {newConversationHref ? (
             <>
               {" "}
+              or{" "}
               <a href={newConversationHref} className="font-medium text-brand hover:underline">
-                Start a new conversation
-              </a>{" "}
-              for a different question so waiting-on aging stays honest.
+                start a new topic
+              </a>
+              .
             </>
           ) : (
-            " Start a new conversation for a different question so waiting-on aging stays honest."
+            "."
           )}
         </p>
       ) : null}

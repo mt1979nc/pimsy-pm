@@ -70,11 +70,9 @@ export default async function CustomerViewPreviewPage({
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-border bg-amber-soft px-4 py-3">
         <div className="min-w-0">
-          <div className="text-[13px] font-semibold text-ink">Customer view (read-only preview)</div>
+          <div className="text-[13px] font-semibold text-ink">Customer view</div>
           <p className="mt-0.5 text-[12.5px] text-ink-2">
-            Mirrors what {project.customerAccount?.name ?? "the customer"} sees in the portal —
-            parent / shared status only, not specialist sub-tasks. Presentation only; no editing
-            chrome. You cannot complete tasks or send messages from here.
+            Read-only preview of the portal for {project.customerAccount?.name ?? "the customer"}.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -92,8 +90,7 @@ export default async function CustomerViewPreviewPage({
       {!project.portalEnabled ? (
         <Card className="border-red/30 bg-red-soft/30">
           <p className="px-5 py-4 text-[13px] text-ink">
-            Portal is currently <strong>off</strong> for this project. Customers cannot open it;
-            this preview still shows what SHARED content would look like.
+            Portal is <strong>off</strong>. This preview still shows SHARED content.
           </p>
         </Card>
       ) : null}
@@ -141,11 +138,9 @@ export default async function CustomerViewPreviewPage({
 
       <Card>
         <CardHeader
-          title="Project timeline"
+          title="Timeline"
           subtitle={
-            milestones.length > 0
-              ? `${milestoneDone} of ${milestones.length} milestones complete`
-              : "Key dates for go-live"
+            milestones.length > 0 ? `${milestoneDone}/${milestones.length}` : undefined
           }
         />
         {milestones.length === 0 ? (
@@ -178,13 +173,10 @@ export default async function CustomerViewPreviewPage({
       <Card>
         <CardHeader
           title="Shared progress"
-          subtitle={`${openCount} open · ${doneCount} done · parent status only (specialist sub-tasks hidden)`}
+          subtitle={`${openCount} open · ${doneCount} done`}
         />
         {openCount + doneCount === 0 ? (
-          <EmptyState
-            title="Nothing shared with the customer yet"
-            description="SHARED parent tasks and customer action items appear here. Specialist nested work stays on the staff task list."
-          />
+          <EmptyState title="Nothing shared yet" />
         ) : (
           <div className="divide-y divide-border">
             {areaGroups.map(({ phase, tasks: phaseTasks }) => (
@@ -230,7 +222,7 @@ export default async function CustomerViewPreviewPage({
                                 : "Not started"}
                           </span>
                           {t.ownerSide === "CUSTOMER" ? (
-                            <Badge tone="violet">Customer action</Badge>
+                            <Badge tone="violet">Customer</Badge>
                           ) : null}
                           <CommentCountBadge
                             count={t.comments?.length ?? 0}
@@ -295,10 +287,7 @@ export default async function CustomerViewPreviewPage({
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
-          <CardHeader
-            title="Project updates"
-            subtitle="Shared weekly snapshots — not Messages, not a task comment"
-          />
+          <CardHeader title="Updates" />
           {updates.length === 0 ? (
             <EmptyState title="No updates yet" />
           ) : (
