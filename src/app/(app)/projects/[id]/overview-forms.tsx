@@ -24,9 +24,9 @@ export function StatusUpdateForm({
 
   if (!open) {
     return (
-      <div className="flex justify-end border-b border-border px-5 py-2.5">
-        <Button size="sm" onClick={() => setOpen(true)}>
-          Post an update
+      <div className="flex justify-end border-b border-border px-4 py-2">
+        <Button size="sm" variant="primary" onClick={() => setOpen(true)}>
+          Post update
         </Button>
       </div>
     );
@@ -37,11 +37,6 @@ export function StatusUpdateForm({
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="visibility" value={visibility} />
       <FormError error={state.error} />
-      <p className="text-[12.5px] leading-relaxed text-ink-3">
-        A dated health snapshot — not a chat. Shared publishes to the customer portal and can email
-        contacts. Internal is a staff note; customers never see it. Use Messages for conversation
-        and a task comment for one action item.
-      </p>
 
       <Field label="Summary" htmlFor="summary">
         <textarea

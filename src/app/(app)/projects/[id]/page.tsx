@@ -28,10 +28,6 @@ import { staffingRoleLabel } from "@/lib/staffing";
 import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
 import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
 import { ContactCard } from "@/components/contact-card";
-import {
-  PROJECT_UPDATES_PURPOSE,
-  PROJECT_UPDATES_WHEN,
-} from "@/lib/project-updates";
 
 export const dynamic = "force-dynamic";
 
@@ -89,23 +85,13 @@ export default async function ProjectOverviewPage({
   const customerContacts = project.members.filter((m) => m.user.role === "CUSTOMER");
 
   return (
-    <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.35fr_1fr]">
-      <div className="space-y-5">
+    <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1.35fr_1fr]">
+      <div className="space-y-4">
         <Card>
-          <CardHeader
-            title="Project updates"
-            subtitle="Weekly snapshot for the practice — not a chat"
-          />
-          <p className="border-b border-border px-5 py-2.5 text-[12.5px] leading-relaxed text-ink-3">
-            {PROJECT_UPDATES_PURPOSE} {PROJECT_UPDATES_WHEN} Shared publishes to the portal and can
-            email contacts; Internal is staff-only.
-          </p>
+          <CardHeader title="Updates" />
           <StatusUpdateForm projectId={id} currentHealth={project.health} />
           {updates.length === 0 ? (
-            <EmptyState
-              title="No updates posted yet"
-              description="Post when the picture changed, or before a touchpoint. Messages are for conversation; a task comment is for one action item."
-            />
+            <EmptyState title="No updates yet" />
           ) : (
             <div className="divide-y divide-border">
               {updates.map((u) => (
@@ -171,15 +157,15 @@ export default async function ProjectOverviewPage({
                 customerAccount: project.customerAccount,
               },
             }))}
-            emptyTitle="Nothing on their plate"
-            emptyDescription="Assign a task to the customer side and it appears in their portal."
+            emptyTitle="None"
+            emptyDescription="Assign a customer task to show it here."
             showProject={false}
             showStatus
           />
         </Card>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <Card>
           <CardHeader title="Milestones" />
           {projectMilestones.length === 0 ? (
@@ -293,7 +279,7 @@ export default async function ProjectOverviewPage({
               href={`/projects/${id}/settings`}
               className="text-[12.5px] font-medium text-brand hover:underline"
             >
-              Manage team & portal access →
+              Manage team
             </Link>
           </div>
         </Card>

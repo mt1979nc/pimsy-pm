@@ -41,8 +41,7 @@ export function RecordSlipForm({
 
       {compact ? null : (
         <p className="text-[12.5px] leading-relaxed text-ink-2">
-          Recording a slip pushes go-live and rescales open phase/task dates. Move the date,
-          or enter slip days (+N). Cause/note alone is not enough.
+          Recording a slip pushes go-live and rescales open dates. New date or +N days required.
         </p>
       )}
 

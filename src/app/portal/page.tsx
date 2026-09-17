@@ -49,13 +49,13 @@ export default async function PortalHome() {
   return (
     <>
       <div className="mb-6">
-        <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+        <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
           Hi {firstName}
         </h1>
-        <p className="mt-1 text-[14px] text-ink-2">
+        <p className="mt-0.5 text-[13px] text-ink-2">
           {open.length === 0
-            ? "You're all caught up — nothing is waiting on you right now."
-            : `${open.length} item${open.length === 1 ? "" : "s"} need${open.length === 1 ? "s" : ""} your attention.`}
+            ? "You're caught up."
+            : `${open.length} item${open.length === 1 ? "" : "s"} waiting on you.`}
         </p>
       </div>
 
@@ -70,10 +70,10 @@ export default async function PortalHome() {
       <div className="mb-5 space-y-4">
         {projects.length === 0 ? (
           <Card>
-            <EmptyState
-              title="No projects yet"
-              description="Your implementation specialist will open this up when your project starts."
-            />
+              <EmptyState
+                title="No projects yet"
+                description="Your specialist will open this when work starts."
+              />
           </Card>
         ) : (
           projects.map((p) => {
@@ -144,11 +144,11 @@ export default async function PortalHome() {
           {open.length > 0 ? (
             <Card>
               <CardHeader
-                title="What we need from you"
+                title="Your tasks"
                 subtitle={
                   overdue.length > 0
-                    ? `${overdue.length} past due · grouped by area`
-                    : "Grouped by area — Discovery, Training, Go-live, and more"
+                    ? `${overdue.length} past due`
+                    : undefined
                 }
               />
               <div className="space-y-1 pb-2">
@@ -194,19 +194,13 @@ export default async function PortalHome() {
             </Card>
           ) : (
             <Card>
-              <EmptyState
-                title="Nothing waiting on you"
-                description="When new items land, they’ll show up here grouped by area."
-              />
+              <EmptyState title="Nothing waiting on you" />
             </Card>
           )}
 
           {completed.length > 0 ? (
             <Card>
-              <CardHeader
-                title="Completed"
-                subtitle="Tap the checkmark to reopen an item if it was marked done by mistake"
-              />
+              <CardHeader title="Completed" />
               <div className="space-y-1 pb-2">
                 {doneGroups.map((g) => (
                   <div key={"done-" + g.label + g.items[0]?.id} className="border-b border-border last:border-b-0">
@@ -252,13 +246,10 @@ export default async function PortalHome() {
           <Card>
             <CardHeader
               title="Messages"
-              subtitle={unread.length > 0 ? `${unread.length} unread` : "Your conversations"}
+              subtitle={unread.length > 0 ? `${unread.length} unread` : undefined}
             />
             {threads.length === 0 ? (
-              <EmptyState
-                title="No messages yet"
-                description="Send a note with the composer below."
-              />
+              <EmptyState title="No messages yet" />
             ) : (
               <ThreadPreviewList
                 threads={threads}

@@ -45,7 +45,6 @@ export function CollapsibleCompleted({
           <path d="m9 6 6 6-6 6" />
         </svg>
         {count} {noun}
-        <span className="font-normal text-ink-3">{open ? hideHint : showHint}</span>
       </button>
       {open ? <div className="divide-y divide-border border-t border-border">{children}</div> : null}
     </div>

@@ -40,7 +40,7 @@ export function AboutKickoffPanel({
     zoomBookingUrl,
   });
   return (
-    <div className="space-y-4 p-5">
+    <div className="space-y-3 p-4">
       <dl className="grid gap-4 sm:grid-cols-2">
         <div>
           <dt className="text-[11.5px] uppercase tracking-wide text-ink-3">Kickoff</dt>

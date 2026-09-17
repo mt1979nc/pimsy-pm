@@ -15,7 +15,6 @@ import {
 import type { TaskActionAsset } from "@/lib/playbook-resources";
 import type { BookingUrlMap } from "@/lib/booking-urls";
 import { cn } from "@/lib/cn";
-import { PortalAreaIntro } from "@/components/portal-area-intro";
 
 export type PortalListTask = {
   id: string;
@@ -118,25 +117,18 @@ export function PortalPhaseTaskList({
     <Card>
       <CardHeader
         title={phaseName}
-        subtitle={
-          phaseDescription ??
-          "Status for this area — parent items only. Specialist checklists stay with your implementation team."
-        }
         action={
           tasks.length > 0 ? (
             <span className="text-[12.5px] text-ink-3">
-              {done}/{tasks.length} complete
+              {done}/{tasks.length}
               {inProgress > 0 ? ` · ${inProgress} in progress` : ""}
             </span>
           ) : undefined
         }
       />
-      <PortalAreaIntro
-        phaseName={phaseName}
-        description={null}
-        tasks={tasks.map((t) => ({ id: t.id, title: t.title }))}
-        taskHref={(taskId) => `/portal/projects/${projectId}/tasks/${taskId}`}
-      />
+      {phaseDescription ? (
+        <p className="line-clamp-2 px-4 pb-2 text-[12.5px] text-ink-3">{phaseDescription}</p>
+      ) : null}
       {tasks.length > 0 ? (
         <div className="space-y-3 px-5 pt-4">
           <ProgressBar value={done} total={tasks.length} tone={pct === 100 ? "green" : "brand"} />
@@ -152,7 +144,7 @@ export function PortalPhaseTaskList({
       ) : null}
 
       {tasks.length === 0 ? (
-        <EmptyState title="Nothing here yet" description="Check back once this phase gets underway." />
+        <EmptyState title="Nothing here yet" />
       ) : filtered.length === 0 ? (
         <p className="px-5 py-4 text-[13px] text-ink-3">No tasks match this filter.</p>
       ) : (

@@ -39,7 +39,7 @@ import { isZendeskAgentUrl } from "@/lib/zendesk";
 import { PIMSY_DESKTOP_INSTALL_URL } from "@/lib/accessing-pimsy";
 
 export const DOWNLOAD_COMPLETE_UPLOAD_HINT =
-  "Download the file, complete it, then use Upload files on this task to send it back.";
+  "Download, complete, then Upload files here.";
 
 export {
   DOCK_BILLING_QUESTIONNAIRE_LABEL,

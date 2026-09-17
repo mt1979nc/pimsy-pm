@@ -83,7 +83,7 @@ export default async function CustomerViewTaskPage({
                   ? "In progress"
                   : "Not started"}
             </Badge>
-            {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer action</Badge> : null}
+            {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
             {task.phase ? (
               <Link
                 href={`/projects/${id}/customer-view/phases/${task.phase.id}`}

@@ -22,6 +22,7 @@ import { SlipHistoryList } from "@/components/slip-history";
 import { RecordSlipForm } from "@/components/record-slip-form";
 import { staffingRoleLabel } from "@/lib/staffing";
 import { AddRcmPanel } from "./add-rcm-track-form";
+import { CollapsedSection } from "@/components/collapsed-section";
 import { assessHistoricalComplete, loadOpenHistoricalTasks } from "@/lib/historical-complete";
 import {
   addRcmEligibility,
@@ -154,7 +155,7 @@ export default async function ProjectSettingsPage({
   );
 
   return (
-    <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.3fr_1fr]">
+    <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1.3fr_1fr]">
       <Card>
         <CardHeader title="Project settings" />
         <ProjectSettingsForm
@@ -174,39 +175,36 @@ export default async function ProjectSettingsPage({
           }}
           staff={staff}
         />
-        <div className="border-t border-border px-5 py-4">
-          <div className="rounded-xl border border-transparent bg-amber-soft p-4">
-            <h3 className="mb-2 text-[13px] font-semibold text-ink">Record a slip</h3>
-            <RecordSlipForm
-              projectId={project.id}
-              currentGoLive={
-                project.targetGoLiveDate ? toDateInput(project.targetGoLiveDate) : ""
-              }
-              source="settings"
-              variant="settings"
-            />
-          </div>
+        <div className="border-t border-border">
+          <CollapsedSection title="Record a slip" openLabel="Record" closeLabel="Cancel">
+            <div className="px-4 py-3">
+              <RecordSlipForm
+                projectId={project.id}
+                currentGoLive={
+                  project.targetGoLiveDate ? toDateInput(project.targetGoLiveDate) : ""
+                }
+                source="settings"
+                variant="settings"
+              />
+            </div>
+          </CollapsedSection>
         </div>
         {projectSlips.length > 0 ? (
           <div className="border-t border-border px-5 py-4">
             <SlipHistoryList slips={projectSlips} />
           </div>
         ) : (
-          <p className="border-t border-border px-5 py-3 text-[12.5px] text-ink-3">
-            No slips recorded yet. Record slip saves the event and confirmation here.
+          <p className="border-t border-border px-4 py-2 text-[12px] text-ink-3">
+            No slips recorded.
           </p>
         )}
       </Card>
 
-      <div className="space-y-5">
+      <div className="space-y-4">
         <Card>
           <CardHeader
             title="Customer contacts"
-            subtitle={
-              customer
-                ? `Who at ${customer.name} can open this project`
-                : "Internal project — no customer contacts"
-            }
+            subtitle={customer ? customer.name : "No customer"}
           />
           <ProjectContacts
             projectId={id}
@@ -219,10 +217,7 @@ export default async function ProjectSettingsPage({
         </Card>
 
         <Card>
-          <CardHeader
-            title="Your team"
-            subtitle="Internal people working on this project"
-          />
+          <CardHeader title="Your team" />
           <div className="divide-y divide-border">
             {project.members
               .filter((m) => m.user.role !== "CUSTOMER")
@@ -269,38 +264,31 @@ export default async function ProjectSettingsPage({
               <VisibilityBadge visibility={project.portalEnabled ? "SHARED" : "INTERNAL"} />
             }
           />
-          <p className="px-5 py-4 text-[13px] leading-relaxed text-ink-2">
+          <p className="px-4 py-3 text-[13px] text-ink-2">
             {project.portalEnabled
-              ? "Contacts on this customer account can sign in and see shared phases, milestones, their action items and shared conversations."
-              : "The portal is off. Customer contacts cannot open this project at all."}
+              ? "Contacts can sign in and see shared work."
+              : "Portal is off. Contacts cannot open this project."}
           </p>
         </Card>
 
         <Card>
-          <CardHeader
-            title="Customer portal tabs"
-            subtitle="Dock eyelid: hide until ready, then expose (same control as the task list). Kickoff and Discovery start visible on a new workspace."
-          />
+          <CardHeader title="Portal tabs" />
           <PhaseVisibilityList phases={projectPhases} />
         </Card>
 
         <Card>
-          <CardHeader
-            title="Recordings"
-            subtitle="Shown on the portal Recordings tab and mirrored onto the matching training task"
-          />
+          <CardHeader title="Recordings" />
           <RecordingsManager projectId={id} recordings={recordings} sessions={trainingSessions} />
         </Card>
 
         <Card>
-          <CardHeader title="Danger zone" />
-          <div className="space-y-5 p-5">
+          <CollapsedSection title="Danger zone" openLabel="Show" closeLabel="Hide">
+          <div className="space-y-4 p-4">
             <div>
               <h3 className="text-[13px] font-medium text-ink">Complete historical tasks on time</h3>
               {!historicalEligibility.ok ? (
                 <p className="mt-2 text-[12.5px] text-ink-3">
-                  {historicalEligibility.reason} Use About → Onboarded for overview exclusion
-                  without rewriting task history, or add kickoff and go-live dates first.
+                  {historicalEligibility.reason}
                 </p>
               ) : openHistoricalTasks.length === 0 ? (
                 <p className="mt-2 text-[12.5px] text-ink-3">No open tasks to complete.</p>
@@ -314,15 +302,14 @@ export default async function ProjectSettingsPage({
                 </div>
               )}
             </div>
-            <div className="border-t border-border pt-5">
+            <div className="border-t border-border pt-4">
               <ArchiveProjectButton projectId={id} />
               <p className="mt-2 text-[12px] text-ink-3">
-                Archiving hides the project from lists and immediately revokes portal access. Nothing
-                is deleted.
+                Archiving hides the project from lists and revokes portal access. Nothing is deleted.
               </p>
             </div>
             {canDeletePortfolioRecords(actor) ? (
-              <div className="border-t border-border pt-5">
+              <div className="border-t border-border pt-4">
                 <DeleteProjectForm
                   projectId={id}
                   confirmToken={project.crmAcronym || project.code}
@@ -333,6 +320,7 @@ export default async function ProjectSettingsPage({
               </div>
             ) : null}
           </div>
+          </CollapsedSection>
         </Card>
       </div>
     </div>

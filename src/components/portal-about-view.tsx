@@ -20,20 +20,12 @@ export function PortalAboutView({
     return (
       <Card>
         <CardHeader
-          title="About this implementation"
-          subtitle={
-            staffPreview
-              ? "Same About tab the customer sees — presentation only."
-              : "Site profile shared by your implementation team."
-          }
+          title="About"
+          subtitle={staffPreview ? "Customer-facing" : undefined}
         />
         <EmptyState
           title="Nothing here yet"
-          description={
-            staffPreview
-              ? "Notes, booking, kickoff status, and contact cards the specialist adds on staff About appear here."
-              : "Your implementation specialist will add notes, booking links, and team contacts as the project gets going."
-          }
+          description={staffPreview ? undefined : "Your specialist will add notes and contacts."}
         />
       </Card>
     );
@@ -42,14 +34,7 @@ export function PortalAboutView({
   return (
     <div className="space-y-5">
       <Card>
-        <CardHeader
-          title="About this implementation"
-          subtitle={
-            staffPreview
-              ? "Same kickoff dates, booking, and contacts the customer sees."
-              : "Kickoff dates, booking, and who to reach on your PATH workspace."
-          }
-        />
+        <CardHeader title="About" />
         <AboutKickoffPanel
           kickoffDate={payload.kickoffDate}
           goLiveDate={payload.goLiveDate}
@@ -77,10 +62,7 @@ export function PortalAboutView({
       </Card>
 
       <Card>
-        <CardHeader
-          title="Implementation team"
-          subtitle="People assigned on this workspace from the playbook roster"
-        />
+        <CardHeader title="Implementation team" />
         <div className="p-5 pt-0">
           <AboutContactCardGrid
             cards={payload.implementationTeam}
@@ -91,7 +73,7 @@ export function PortalAboutView({
       </Card>
 
       <Card>
-        <CardHeader title="Your practice contacts" subtitle="People at the practice on this project" />
+        <CardHeader title="Practice contacts" />
         <div className="p-5 pt-0">
           <AboutContactCardGrid
             cards={payload.customerContacts}

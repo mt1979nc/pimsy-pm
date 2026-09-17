@@ -82,7 +82,7 @@ export default async function MyWorkPage() {
     <>
       <PageHeader
         title="My work"
-        subtitle="Everything assigned to you, grouped by customer and phase."
+        subtitle="Assigned to you, by customer and phase"
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -133,10 +133,7 @@ export default async function MyWorkPage() {
 
           {tasks.length === 0 ? (
             <Card>
-              <EmptyState
-                title="Nothing assigned to you"
-                description="Tasks assigned to you across any project show up here."
-              />
+              <EmptyState title="Nothing assigned" />
             </Card>
           ) : null}
         </div>
@@ -144,7 +141,7 @@ export default async function MyWorkPage() {
         <Card>
           <CardHeader
             title="Chase list"
-            subtitle={chaseHint ?? "Open action items sitting with customers"}
+            subtitle={chaseHint}
           />
           <WaitingOnCustomerList tasks={chase} emptyTitle="Nothing outstanding" />
         </Card>

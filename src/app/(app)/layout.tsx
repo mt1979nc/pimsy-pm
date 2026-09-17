@@ -118,7 +118,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </nav>
       </div>
 
-      <main className="min-w-0 flex-1 px-4 pb-16 pt-16 sm:px-6 md:pt-7 lg:px-8">
+      <main className="min-w-0 flex-1 px-4 pb-16 pt-16 sm:px-6 md:pt-6 lg:px-8">
         <div className="mx-auto w-full max-w-[1180px] has-[[data-page-width=full]]:max-w-none">
           {children}
         </div>

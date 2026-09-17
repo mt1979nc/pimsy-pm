@@ -14,8 +14,8 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.16.5");
-    expect(APP_VERSION).toMatch(/^1\.16\./);
+    expect(APP_VERSION).toBe("1.17.0");
+    expect(APP_VERSION).toMatch(/^1\.17\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
   });
@@ -97,6 +97,24 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.17.0 PATH visual cleanup for adoption", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.17.0");
+    expect(note?.summary).toMatch(/visual cleanup|scannable/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /Post update|project-updates essay/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Task list/.test(h) && /description/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Add RCM/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Edit site profile|Danger zone|Record slip/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Portal included/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Learning Center/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/\bPHI\b/.test(h) || /No invented PHI|no invented PHI/i.test(h))).toBe(
+      true,
+    );
+    expect(RELEASE_NOTES.find((n) => n.version === "1.16.5")).toBeTruthy();
   });
 
   it("documents v1.16.5 Learning Center as PIMSY how-tos", () => {

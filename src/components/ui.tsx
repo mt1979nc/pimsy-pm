@@ -48,13 +48,13 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "flex items-start justify-between gap-4 border-b border-border px-5 py-3.5",
+        "flex items-center justify-between gap-3 border-b border-border px-4 py-2",
         className,
       )}
     >
       <div className="min-w-0">
-        <h2 className="text-[13.5px] font-semibold tracking-tight text-ink">{title}</h2>
-        {subtitle ? <p className="mt-0.5 text-[12.5px] text-ink-3">{subtitle}</p> : null}
+        <h2 className="text-[13px] font-semibold tracking-tight text-ink">{title}</h2>
+        {subtitle ? <p className="mt-0.5 text-[12px] leading-snug text-ink-3">{subtitle}</p> : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>
@@ -73,13 +73,13 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        {breadcrumb ? <div className="mb-1.5 text-[12.5px] text-ink-3">{breadcrumb}</div> : null}
-        <h1 className="text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+        {breadcrumb ? <div className="mb-1 text-[12px] text-ink-3">{breadcrumb}</div> : null}
+        <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
           {title}
         </h1>
-        {subtitle ? <p className="mt-1 text-[13.5px] text-ink-2">{subtitle}</p> : null}
+        {subtitle ? <p className="mt-0.5 text-[13px] text-ink-2">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
@@ -159,14 +159,17 @@ const toneClasses: Record<Tone, string> = {
 export function Badge({
   tone = "neutral",
   className,
+  title,
   children,
 }: {
   tone?: Tone;
   className?: string;
+  title?: string;
   children: React.ReactNode;
 }) {
   return (
     <span
+      title={title}
       className={cn(
         "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11.5px] font-medium leading-4 whitespace-nowrap",
         toneClasses[tone],
@@ -285,14 +288,14 @@ export function VisibilityBadge({
 }) {
   if (visibility === "SHARED") {
     return (
-      <Badge tone="brand" className={className}>
-        <EyeIcon /> Customer can see
+      <Badge tone="brand" className={className} title="Customer can see this">
+        <EyeIcon /> Shared
       </Badge>
     );
   }
   return (
-    <Badge tone="neutral" className={className}>
-      <LockIcon /> Internal only
+    <Badge tone="neutral" className={className} title="Staff only — customers cannot see this">
+      <LockIcon /> Internal
     </Badge>
   );
 }
@@ -483,10 +486,10 @@ export function Stat({
 }) {
   const inner = (
     <>
-      <div className="text-[12px] font-medium uppercase tracking-wide text-ink-3">{label}</div>
+      <div className="text-[11px] font-medium uppercase tracking-wide text-ink-3">{label}</div>
       <div
         className={cn(
-          "mt-1.5 text-[26px] font-semibold leading-none tracking-[-0.02em]",
+          "mt-1 text-[22px] font-semibold leading-none tracking-[-0.02em]",
           tone === "red" && "text-red",
           tone === "amber" && "text-amber",
           tone === "green" && "text-green",
@@ -494,11 +497,11 @@ export function Stat({
       >
         {value}
       </div>
-      {hint ? <div className="mt-1.5 text-[12.5px] text-ink-3">{hint}</div> : null}
+      {hint ? <div className="mt-1 text-[12px] text-ink-3">{hint}</div> : null}
     </>
   );
   const className = cn(
-    "block rounded-xl border border-border bg-surface px-4 py-3.5",
+    "block rounded-xl border border-border bg-surface px-3.5 py-2.5",
     href && "transition-colors hover:border-border-strong hover:bg-surface-2",
   );
   return href ? (
@@ -522,13 +525,13 @@ export function EmptyState({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
-      {icon ? <div className="mb-3 text-ink-3">{icon}</div> : null}
-      <p className="text-[14px] font-medium text-ink">{title}</p>
+    <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+      {icon ? <div className="mb-2 text-ink-3">{icon}</div> : null}
+      <p className="text-[13.5px] font-medium text-ink">{title}</p>
       {description ? (
-        <p className="mt-1 max-w-sm text-[13px] text-ink-3">{description}</p>
+        <p className="mt-0.5 max-w-sm text-[12.5px] text-ink-3">{description}</p>
       ) : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      {action ? <div className="mt-3">{action}</div> : null}
     </div>
   );
 }
@@ -547,12 +550,12 @@ export function Field({
   className?: string;
 }) {
   return (
-    <div className={cn("space-y-1.5", className)}>
-      <label htmlFor={htmlFor} className="block text-[12.5px] font-medium text-ink-2">
+    <div className={cn("space-y-1", className)}>
+      <label htmlFor={htmlFor} className="block text-[12px] font-medium text-ink-2">
         {label}
       </label>
       {children}
-      {hint ? <p className="text-[12px] text-ink-3">{hint}</p> : null}
+      {hint ? <p className="text-[11.5px] leading-snug text-ink-3">{hint}</p> : null}
     </div>
   );
 }

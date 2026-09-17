@@ -82,11 +82,11 @@ export default async function PortalProjectPage({
       {/* Timeline first */}
       <Card className="mb-5">
         <CardHeader
-          title="Project timeline"
+          title="Timeline"
           subtitle={
             milestones.length > 0
-              ? `${milestoneDone} of ${milestones.length} milestones complete`
-              : "Key dates for your go-live"
+              ? `${milestoneDone}/${milestones.length}`
+              : undefined
           }
         />
         {milestones.length === 0 ? (
@@ -129,18 +129,15 @@ export default async function PortalProjectPage({
         <div className="space-y-5">
           <Card>
             <CardHeader
-              title="What we need from you"
+              title="Your tasks"
               subtitle={
                 openCount > 0
-                  ? `${openCount} open · grouped by area`
-                  : "You're all caught up"
+                  ? `${openCount} open`
+                  : "Caught up"
               }
             />
             {openCount === 0 && doneCount === 0 ? (
-              <EmptyState
-                title="You're all caught up"
-                description="Use Areas on the left to browse each phase of your implementation."
-              />
+              <EmptyState title="You're caught up" />
             ) : (
               <div className="space-y-1 pb-2">
                 {openByPhase.map(({ phase, open, done }) => (
@@ -211,7 +208,7 @@ export default async function PortalProjectPage({
 
           {doneCount > 0 ? (
             <Card>
-              <CardHeader title="Completed" subtitle="Tap the checkmark to reopen" />
+              <CardHeader title="Completed" />
               <div className="space-y-1 pb-2">
                 {openByPhase.map(({ phase, done }) =>
                   done.length === 0 ? null : (
@@ -271,10 +268,7 @@ export default async function PortalProjectPage({
 
           {updates.length > 0 ? (
             <Card>
-              <CardHeader
-                title="Project updates"
-                subtitle="Dated snapshots from your specialist — not a replacement for Messages"
-              />
+              <CardHeader title="Updates" />
               <div className="divide-y divide-border">
                 {updates.map((u) => (
                   <div key={u.id} className="px-5 py-4">
@@ -297,10 +291,10 @@ export default async function PortalProjectPage({
           <Card>
             <CardHeader
               title="Messages"
-              subtitle={unread.length > 0 ? `${unread.length} unread` : "Your conversations"}
+              subtitle={unread.length > 0 ? `${unread.length} unread` : undefined}
             />
             {projectThreads.length === 0 ? (
-              <EmptyState title="No messages yet" description="Send a note below anytime." />
+              <EmptyState title="No messages yet" />
             ) : (
               <ThreadPreviewList
                 threads={projectThreads}

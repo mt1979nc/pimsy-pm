@@ -67,7 +67,7 @@ export default async function DashboardPage() {
     <>
       <PageHeader
         title={`Good ${greeting()}, ${firstName}`}
-        subtitle="Everything that needs you today, in one place."
+        subtitle="Needs you today"
         actions={
           <>
             {canCreateProjects(actor) ? (
@@ -105,8 +105,7 @@ export default async function DashboardPage() {
         <div className="space-y-5">
           <Card>
             <CardHeader
-              title="Needs your attention"
-              subtitle="Ranked by health, blockers and schedule slip"
+              title="Needs attention"
               action={
                 <Link href="/projects" className="text-[12.5px] font-medium text-brand hover:underline">
                   All projects
@@ -114,10 +113,7 @@ export default async function DashboardPage() {
               }
             />
             {attention.length === 0 ? (
-              <EmptyState
-                title="Nothing is off track"
-                description="Every active project is green and on schedule."
-              />
+              <EmptyState title="Nothing off track" />
             ) : (
               <div className="divide-y divide-border">
                 {attention.map((p) => (
@@ -130,8 +126,7 @@ export default async function DashboardPage() {
           {managed.length > 0 ? (
             <Card>
               <CardHeader
-                title="Sites you oversee"
-                subtitle="Assigned as lead or director/manager — even if you are not on every task"
+                title="Your sites"
               />
               <div className="divide-y divide-border">
                 {managed.map((p) => {
@@ -187,7 +182,7 @@ export default async function DashboardPage() {
               }
             />
             {tasks.length === 0 ? (
-              <EmptyState title="Nothing assigned to you" description="Enjoy the quiet." />
+              <EmptyState title="Nothing assigned" />
             ) : (
               <div className="divide-y divide-border">
                 {tasks.slice(0, 7).map((t) => (
@@ -243,7 +238,6 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader
               title="Waiting-on threads"
-              subtitle="Open shared conversations — ball in court"
               action={
                 <Link
                   href="/reports/waiting-on"
@@ -254,7 +248,7 @@ export default async function DashboardPage() {
               }
             />
             {waitingThreadFlat.length === 0 ? (
-              <EmptyState title="No tagged open threads" description="Shared conversations with a waiting-on side show up here." />
+              <EmptyState title="No tagged threads" />
             ) : (
               <div className="divide-y divide-border">
                 {waitingThreadFlat.map((t) => {
@@ -285,7 +279,6 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader
               title="Waiting on customers"
-              subtitle="Outstanding customer actions by Discovery, Configuration, and Training"
               action={
                 <Link href="/my-work" className="text-[12.5px] font-medium text-brand hover:underline">
                   Chase list
@@ -294,8 +287,8 @@ export default async function DashboardPage() {
             />
             <WaitingOnCustomerList
               tasks={chase}
-              emptyTitle="Nothing outstanding"
-              emptyDescription="No customer action items are open."
+              emptyTitle="None"
+              emptyDescription={undefined}
             />
           </Card>
 
@@ -331,7 +324,7 @@ export default async function DashboardPage() {
 
           {canSeePortfolio(actor) ? (
             <Card>
-              <CardHeader title="Portfolio" subtitle="Leadership view" />
+              <CardHeader title="Portfolio" />
               <div className="grid grid-cols-2 gap-px bg-border">
                 <div className="bg-surface px-4 py-3">
                   <div className="text-[11.5px] uppercase tracking-wide text-ink-3">
@@ -355,10 +348,10 @@ export default async function DashboardPage() {
               </div>
               <div className="space-y-1 border-t border-border px-4 py-3">
                 <Link href="/reports" className="block text-[12.5px] font-medium text-brand hover:underline">
-                  Open the full portfolio report →
+                  Portfolio
                 </Link>
                 <Link href="/reports/waiting-on" className="block text-[12.5px] font-medium text-brand hover:underline">
-                  Waiting-on WIP rollup →
+                  Waiting-on WIP
                 </Link>
               </div>
             </Card>
