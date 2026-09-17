@@ -20,11 +20,9 @@ type Section = {
 
 export function LearningCatalog({
   sections,
-  itemHref,
   emptyHint,
 }: {
   sections: Section[];
-  itemHref: (item: LearningItemView) => string;
   emptyHint: string;
 }) {
   const [q, setQ] = useState("");
@@ -106,7 +104,7 @@ export function LearningCatalog({
               {section.items.map((item) => (
                 <Link
                   key={item.id}
-                  href={itemHref(item)}
+                  href={`/learning/${item.id}`}
                   className="block rounded-xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,20,30,0.04)] hover:border-brand"
                 >
                   <div className="flex flex-wrap items-center gap-1.5">

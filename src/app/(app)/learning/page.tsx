@@ -38,13 +38,12 @@ export default async function StaffLearningPage() {
 
       <LearningCatalog
         sections={sections}
-        itemHref={(item) => `/learning/${item.id}`}
         emptyHint="No Learning Center items yet. Run npm run db:seed -- --templates-only after migrating."
       />
 
       {canEdit
         ? sections.map((section) => (
-            <Card key={`edit-${section.id}`} className="mt-5">
+            <Card key={"edit-" + section.id} className="mt-5">
               <CardHeader
                 title={section.title}
                 subtitle="Add or edit items in this section"
