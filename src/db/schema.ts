@@ -1254,7 +1254,7 @@ export const learningCenterSections = pgTable(
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     description: text("description"),
-    /** getting_started | discovery | training | billing | go_live | after_go_live | reference */
+    /** getting_started | password_access | scheduling | notes | providers | training | reference */
     topic: text("topic").notNull(),
     /** all | clinical | billing | admin */
     audienceRole: text("audience_role").notNull().default("all"),

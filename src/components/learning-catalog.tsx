@@ -7,7 +7,6 @@ import { cn } from "@/lib/cn";
 import type { LearningItemView } from "@/lib/learning-center";
 import {
   LEARNING_AUDIENCE_LABEL,
-  learningJourneyStep,
   learningKindLabel,
   learningPlaceholderLabel,
   type LearningAudience,
@@ -73,7 +72,7 @@ export function LearningCatalog({
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search topics, trainings, worksheets…"
+          placeholder="Search PIMSY guides, scheduling, notes…"
           className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface px-3 py-2 text-[14px] text-ink"
         />
         <div className="flex flex-wrap gap-1.5">
@@ -102,9 +101,6 @@ export function LearningCatalog({
           <section key={section.id} id={section.slug} className="space-y-3">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold text-brand-ink">
-                  {learningJourneyStep(section.order ?? 0)}
-                </span>
                 <h2 className="text-[16px] font-semibold tracking-tight text-ink">{section.title}</h2>
                 <Badge>{section.topicLabel}</Badge>
               </div>

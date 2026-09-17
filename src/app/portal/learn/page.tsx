@@ -15,7 +15,7 @@ export default async function PortalLearnPage() {
     <>
       <PageHeader
         title="Learning Center"
-        subtitle="Your implementation journey — Getting started through go-live, then reference how-tos. Titled cards, not unlabeled PDFs."
+        subtitle="Guides and Storylanes for PIMSY — titled cards, not unlabeled PDFs."
       />
       <LearningCatalog
         sections={sections}
@@ -23,11 +23,11 @@ export default async function PortalLearnPage() {
         emptyHint="Nothing published yet. Your implementation specialist will add materials here."
       />
       <p className="mt-6 text-[13px] text-ink-2">
-        Looking for a file your specialist attached to a specific step? Open that task under{" "}
+        Looking for a file on a configuration or training step? Open that step in{" "}
         <Link href="/portal" className="font-medium text-brand hover:underline">
           your workspace
         </Link>
-        .
+        . This library is PIMSY how-tos.
       </p>
     </>
   );

@@ -81,8 +81,8 @@ export default async function PortalLearnItemPage({
           <Card>
             <CardHeader title={learningPlaceholderLabel(item.kind)} />
             <p className="px-5 py-4 text-[14px] leading-relaxed text-ink-2">
-              The live file or walkthrough URL is not in PATH yet. Your specialist will attach it on this card or
-              on the matching training task. PATH does not invent Storylane or unlabeled “View PDF” links.
+              The live Storylane or Dock file is not attached yet. Your specialist will paste the
+              cohort URL on this card. PATH does not invent Storylane or unlabeled “View PDF” links.
             </p>
           </Card>
         ) : null}

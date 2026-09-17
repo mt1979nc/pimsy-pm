@@ -25,7 +25,7 @@ export default async function StaffLearningPage() {
     <>
       <PageHeader
         title="Learning Center"
-        subtitle="Customer journey: Getting started → Discovery → Training 1–5 → Billing → Go-live → After go-live → Reference. Titled cards, not unlabeled PDFs. Owners and admins can curate."
+        subtitle="PIMSY how-tos and Storylanes — Getting started, Password & access, Scheduling, Notes, Providers, Training, Reference. Titled cards, not unlabeled PDFs. Owners and admins can curate."
         actions={
           canEdit ? (
             <LinkButton href="/library" size="sm">

@@ -75,8 +75,8 @@ export default async function StaffLearningItemPage({
         <Card className="mt-5">
           <CardHeader title={learningPlaceholderLabel(item.kind)} />
           <p className="px-5 py-4 text-[14px] leading-relaxed text-ink-2">
-            The live file or walkthrough URL is not in PATH yet. Paste it on this card or the matching training
-            task. Do not invent a Storylane address.
+            The live Storylane or Dock file is not attached yet. Paste the cohort URL on this card.
+            Do not invent a Storylane address.
           </p>
         </Card>
       ) : null}

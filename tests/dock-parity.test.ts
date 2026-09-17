@@ -34,9 +34,9 @@ import {
 import { filterLearningCatalog } from "@/lib/learning-center";
 import {
   LEARNING_CENTER_SECTIONS,
-  LEARNING_JOURNEY_SECTION_SLUGS,
+  LEARNING_SECTION_SLUGS,
+  RETIRED_LEARNING_SECTION_SLUGS,
   learningCatalogWiredUrls,
-  learningJourneyStep,
   learningOpenLabel,
 } from "@/db/learning-center-catalog";
 import { PIMSY_DESKTOP_INSTALL_URL } from "@/lib/accessing-pimsy";
@@ -432,35 +432,37 @@ describe("training checklists and nested tasks", () => {
 });
 
 describe("Learning Center IA", () => {
-  it("groups seed content as a numbered customer journey", () => {
-    expect(LEARNING_CENTER_SECTIONS.map((s) => s.slug)).toEqual([...LEARNING_JOURNEY_SECTION_SLUGS]);
+  it("groups seed content as Dock LC topics for using PIMSY", () => {
+    expect(LEARNING_CENTER_SECTIONS.map((s) => s.slug)).toEqual([...LEARNING_SECTION_SLUGS]);
     expect(LEARNING_CENTER_SECTIONS.map((s) => s.title)).toEqual([
       "Getting started",
-      "Discovery",
-      "Training modules",
-      "Billing",
-      "Go-live",
-      "After go-live",
+      "Password & access",
+      "Scheduling",
+      "Notes",
+      "Providers",
+      "Training",
       "Reference",
     ]);
-    expect(LEARNING_CENTER_SECTIONS.map((s) => learningJourneyStep(s.order))).toEqual([1, 2, 3, 4, 5, 6, 7]);
-    const topics = new Set(LEARNING_CENTER_SECTIONS.map((s) => s.topic));
-    expect(topics.has("discovery")).toBe(true);
+    expect([...RETIRED_LEARNING_SECTION_SLUGS]).toEqual(["discovery", "billing", "go-live", "after-go-live"]);
+    const topics = new Set<string>(LEARNING_CENTER_SECTIONS.map((s) => s.topic));
+    expect(topics.has("password_access")).toBe(true);
+    expect(topics.has("scheduling")).toBe(true);
+    expect(topics.has("notes")).toBe(true);
+    expect(topics.has("providers")).toBe(true);
     expect(topics.has("training")).toBe(true);
-    expect(topics.has("billing")).toBe(true);
-    expect(topics.has("go_live")).toBe(true);
-    expect(topics.has("after_go_live")).toBe(true);
-    expect(topics.has("reference")).toBe(true);
+    expect(topics.has("discovery")).toBe(false);
+    expect(topics.has("go_live")).toBe(false);
     expect(LEARNING_CENTER_SECTIONS.every((s) => s.items.length > 0)).toBe(true);
     const start = LEARNING_CENTER_SECTIONS.find((s) => s.slug === "getting-started");
     expect(start?.items.map((i) => i.title)).toEqual([
       "Intro to PIMSY",
-      "Access",
-      "Password reset",
-      "Training Guide",
-      "Overview",
       "Getting started",
+      "Overview",
+      "Training Guide",
     ]);
+    const bodies = LEARNING_CENTER_SECTIONS.flatMap((s) => s.items.map((i) => i.body)).join("\n");
+    expect(bodies).not.toMatch(/Your action items/i);
+    expect(bodies).not.toMatch(/violet \*\*Yours\*\*/i);
   });
 
   it("uses Dock topic titles as searchable cards without blank file embeds", () => {
@@ -475,26 +477,24 @@ describe("Learning Center IA", () => {
       "How training works",
       "Training 4: Group Notes (if applicable)",
       "Take a payment",
-      "Scheduling",
       "Navigate Calendar",
       "Recurring Appointments",
       "Telehealth",
-      "Notes",
       "Ambient Scribe",
       "Group Note",
       "Note",
       "Favorite tabs",
-      "Providers",
       "Provider Portal Dashboard",
       "Manage Prescriptions with DrFirst",
       DOCK_TRAINING_1_TITLE,
     ]) {
       expect(titles).toContain(need);
     }
+    expect(titles).not.toContain("Discovery Wizard");
+    expect(titles).not.toContain("Go-live checklist (what “ready” means)");
+    expect(titles).not.toContain("ClaimMD enrollment");
     const wizard = LEARNING_CENTER_SECTIONS.flatMap((s) => s.items).find((i) => i.title === "Discovery Wizard");
-    expect(wizard?.kind).toBe("LINK");
-    expect(wizard?.url).toBe(DISCOVERY_WIZARD_URL);
-    expect(wizard?.isPlaceholder).toBe(false);
+    expect(wizard).toBeUndefined();
     const access = LEARNING_CENTER_SECTIONS.flatMap((s) => s.items).find((i) => i.title === "Access");
     expect(access?.kind).toBe("LINK");
     expect(access?.url).toBe(PIMSY_DESKTOP_INSTALL_URL);
@@ -504,12 +504,11 @@ describe("Learning Center IA", () => {
       (i) => i.kind === "FILE" && !i.librarySlug,
     );
     expect(blankFiles).toEqual([]);
-    expect(learningOpenLabel("Discovery Wizard", "LINK")).toBe("Open Discovery Wizard");
     expect(learningOpenLabel("Navigate Calendar", "LINK")).toBe("Open Navigate Calendar");
     expect(learningOpenLabel("Navigate Calendar", "LINK")).not.toMatch(/view pdf/i);
   });
 
-  it("keeps Training 1–5 in playbook order including Training 4", () => {
+  it("keeps Training 1–5 in PIMSY module order including Training 4", () => {
     const training = LEARNING_CENTER_SECTIONS.find((s) => s.slug === "training");
     const sessionTitles = training!.items
       .map((i) => i.title)
@@ -527,8 +526,7 @@ describe("Learning Center IA", () => {
 
   it("does not invent Storylane or ClaimMD hosts in the catalog", () => {
     const urls = learningCatalogWiredUrls();
-    expect(urls).toContain(DISCOVERY_WIZARD_URL);
-    expect(urls).toContain(PIMSY_DESKTOP_INSTALL_URL);
+    expect(urls).toEqual([PIMSY_DESKTOP_INSTALL_URL]);
     for (const url of urls) {
       expect(url).not.toMatch(/storylane/i);
       expect(url).not.toMatch(/claimmd/i);

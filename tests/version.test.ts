@@ -99,15 +99,17 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
   });
 
-  it("documents v1.16.5 Learning Center customer journey", () => {
+  it("documents v1.16.5 Learning Center as PIMSY how-tos", () => {
     const note = RELEASE_NOTES.find((n) => n.version === "1.16.5");
-    expect(note?.summary).toMatch(/customer journey/i);
-    expect(note?.summary).toMatch(/Training 1–5|Training 1-5/);
-    expect(note?.highlights?.some((h) => /Training 4/.test(h) && /Training 3/.test(h) && /Training 5/.test(h))).toBe(
+    expect(note?.summary).toMatch(/PIMSY/);
+    expect(note?.summary).toMatch(/not a PATH implementation journey/i);
+    expect(note?.highlights?.some((h) => /Password & access/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Training 4/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Navigate Calendar/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Take a payment/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Discovery worksheets|go-live checklists|ClaimMD/.test(h))).toBe(
       true,
     );
-    expect(note?.highlights?.some((h) => /Navigate Calendar/.test(h))).toBe(true);
-    expect(note?.highlights?.some((h) => /View PDF/.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /templates-only/.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
     expect(note?.highlights?.every((h) => !/storylane\.com/i.test(h))).toBe(true);

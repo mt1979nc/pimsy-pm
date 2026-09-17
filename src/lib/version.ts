@@ -27,14 +27,14 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: "1.16.5",
     date: "2026-09-17",
     summary:
-      "PATH Learning Center is a numbered customer journey (Getting started → Discovery → Training 1–5 → Billing → Go-live → After go-live → Reference), carrying Dock Implementation Template topics without unlabeled PDFs or blank Storylane embeds.",
+      "Customer Learning Center is PIMSY EHR how-tos (Dock groups: Getting started, Password & access, Scheduling, Notes, Providers, Training, Reference) — not a PATH implementation journey. Named cards, no unlabeled PDFs or blank Storylane embeds.",
     highlights: [
-      "Seven portal sections in journey order: Getting started (welcome, Access, password reset, Training Guide, overview), Discovery, Training modules (Guide → How training works → Training 1–5), Billing, Go-live, After go-live, Reference.",
-      "Training 4 (Group Notes, if applicable) sits between Training 3 and Training 5 so the catalog matches the playbook sequence.",
-      "Dock Scheduling / Notes / Providers how-tos are named cards (Navigate Calendar, Recurring Appointments, Telehealth, Ambient Scribe, Group Note, Note, Favorite tabs, Provider Portal Dashboard, Manage Prescriptions with DrFirst) — never “View PDF”.",
-      "Live URLs only where this repo already has them: Discovery Wizard and PIMSY desktop installer (Access). Storylane / ClaimMD / payment walkthroughs stay titled placeholders until a specialist pastes a cohort URL. Seed keeps a staff-pasted URL.",
+      "Portal LC teaches PIMSY (charts, calendar, notes, providers, intake). Discovery worksheets, go-live checklists, and ClaimMD stay on project tasks — not in the library.",
+      "Sections: Getting started (Intro / Getting Started / Overview / Training Guide), Password & access (Password reset Storylane pending + PIMSY desktop installer), Scheduling, Notes, Providers, Training (PIMSY modules 1–5 including Training 4 group notes), Reference.",
+      "Dock Scheduling / Notes / Providers how-tos are named cards (Navigate Calendar, Recurring Appointments, Telehealth, Take a payment, Ambient Scribe, Group Note, Note, Favorite tabs, Provider Portal Dashboard, Manage Prescriptions with DrFirst).",
+      "Live URL only where this repo already has it: PIMSY desktop installer. Storylane walkthroughs stay titled placeholders until a specialist pastes a cohort URL. Seed keeps a staff-pasted URL and retires old Discovery/Billing/Go-live LC sections.",
       "No schema migrate. Refresh live catalog with `npm run db:seed -- --templates-only`. Search and role filters unchanged.",
-      "PATH (Plan · Assign · Track · Handoff). Prism stays the analytics module. Do not revive standalone Prism / nice-rock.",
+      "PATH (Plan · Assign · Track · Handoff) hosts the portal; Prism stays the analytics module. Do not revive standalone Prism / nice-rock.",
     ],
   },
   {

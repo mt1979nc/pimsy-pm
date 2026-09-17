@@ -63,8 +63,8 @@ export default async function PortalHome() {
         <Link href="/portal/learn" className="block px-5 py-4 hover:bg-surface-2">
           <div className="text-[15px] font-semibold text-ink">Learning Center</div>
           <p className="mt-0.5 text-[13px] text-ink-2">
-            Guides and worksheets. Discovery action items are on your project — open the Discovery
-            area from a workspace to work the real tasks.
+            Guides and Storylanes for using PIMSY. Discovery worksheets and project
+            steps stay on your workspace.
           </p>
         </Link>
       </Card>

@@ -230,6 +230,8 @@ export async function applyTemplateDockExtras() {
 export async function seedLearningCenter() {
   const libs = await db.query.libraryAssets.findMany();
   const libBySlug = new Map(libs.map((l) => [l.slug, l]));
+  const keepSlugs = new Set(LEARNING_CENTER_SECTIONS.map((s) => s.slug));
+  const sectionIdBySlug = new Map<string, string>();
 
   for (const section of LEARNING_CENTER_SECTIONS) {
     const existing = await db.query.learningCenterSections.findFirst({
@@ -251,6 +253,7 @@ export async function seedLearningCenter() {
             })
             .returning({ id: learningCenterSections.id })
         )[0]!.id;
+    sectionIdBySlug.set(section.slug, sectionId);
 
     if (existing) {
       await db
@@ -265,22 +268,23 @@ export async function seedLearningCenter() {
         })
         .where(eq(learningCenterSections.id, sectionId));
     }
+  }
 
-    const currentItems = await db.query.learningCenterItems.findMany({
-      where: eq(learningCenterItems.sectionId, sectionId),
-    });
+  // Match across sections so Access / Storylanes / Training 4 can move with the IA.
+  const allItems = await db.query.learningCenterItems.findMany();
+  const claimed = new Set<string>();
+  const upsertedIds = new Set<string>();
 
-    const keepTitles = new Set(section.items.map((i) => i.title.toLowerCase()));
-    const upsertedIds = new Set<string>();
-
+  for (const section of LEARNING_CENTER_SECTIONS) {
+    const sectionId = sectionIdBySlug.get(section.slug)!;
     for (const item of section.items) {
       const lib = item.librarySlug ? libBySlug.get(item.librarySlug) : undefined;
       const aliases = new Set(
         [item.title, ...(item.replaceTitles ?? [])].map((t) => t.toLowerCase()),
       );
-      const match =
-        currentItems.find((r) => aliases.has(r.title.toLowerCase())) ??
-        currentItems.find((r) => r.title.toLowerCase() === item.title.toLowerCase());
+      const match = allItems.find(
+        (r) => !claimed.has(r.id) && aliases.has(r.title.toLowerCase()),
+      );
 
       if (match && !match.isPlaceholder && match.kind === "FILE" && match.storageKey) {
         await db
@@ -295,6 +299,7 @@ export async function seedLearningCenter() {
             updatedAt: new Date(),
           })
           .where(eq(learningCenterItems.id, match.id));
+        claimed.add(match.id);
         upsertedIds.add(match.id);
         continue;
       }
@@ -327,6 +332,7 @@ export async function seedLearningCenter() {
 
       if (match) {
         await db.update(learningCenterItems).set(values).where(eq(learningCenterItems.id, match.id));
+        claimed.add(match.id);
         upsertedIds.add(match.id);
       } else {
         const inserted = await db
@@ -336,14 +342,19 @@ export async function seedLearningCenter() {
         upsertedIds.add(inserted[0]!.id);
       }
     }
-
-    for (const row of currentItems) {
-      if (upsertedIds.has(row.id)) continue;
-      if (!row.isPlaceholder) continue;
-      if (keepTitles.has(row.title.toLowerCase())) continue;
-      await db.delete(learningCenterItems).where(eq(learningCenterItems.id, row.id));
-    }
   }
+
+  for (const row of allItems) {
+    if (upsertedIds.has(row.id)) continue;
+    await db.delete(learningCenterItems).where(eq(learningCenterItems.id, row.id));
+  }
+
+  const leftoverSections = await db.query.learningCenterSections.findMany();
+  for (const section of leftoverSections) {
+    if (keepSlugs.has(section.slug)) continue;
+    await db.delete(learningCenterSections).where(eq(learningCenterSections.id, section.id));
+  }
+
   console.log(`  ✓ Learning Center: ${LEARNING_CENTER_SECTIONS.length} sections`);
 }
 
