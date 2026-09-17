@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.16.4";
+export const APP_VERSION = "1.16.5";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.16.5",
+    date: "2026-09-17",
+    summary:
+      "PATH Learning Center is a numbered customer journey (Getting started → Discovery → Training 1–5 → Billing → Go-live → After go-live → Reference), carrying Dock Implementation Template topics without unlabeled PDFs or blank Storylane embeds.",
+    highlights: [
+      "Seven portal sections in journey order: Getting started (welcome, Access, password reset, Training Guide, overview), Discovery, Training modules (Guide → How training works → Training 1–5), Billing, Go-live, After go-live, Reference.",
+      "Training 4 (Group Notes, if applicable) sits between Training 3 and Training 5 so the catalog matches the playbook sequence.",
+      "Dock Scheduling / Notes / Providers how-tos are named cards (Navigate Calendar, Recurring Appointments, Telehealth, Ambient Scribe, Group Note, Note, Favorite tabs, Provider Portal Dashboard, Manage Prescriptions with DrFirst) — never “View PDF”.",
+      "Live URLs only where this repo already has them: Discovery Wizard and PIMSY desktop installer (Access). Storylane / ClaimMD / payment walkthroughs stay titled placeholders until a specialist pastes a cohort URL. Seed keeps a staff-pasted URL.",
+      "No schema migrate. Refresh live catalog with `npm run db:seed -- --templates-only`. Search and role filters unchanged.",
+      "PATH (Plan · Assign · Track · Handoff). Prism stays the analytics module. Do not revive standalone Prism / nice-rock.",
+    ],
+  },
   {
     version: "1.16.4",
     date: "2026-09-17",

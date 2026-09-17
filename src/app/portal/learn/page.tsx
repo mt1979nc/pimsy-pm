@@ -15,7 +15,7 @@ export default async function PortalLearnPage() {
     <>
       <PageHeader
         title="Learning Center"
-        subtitle="Guides and trainings for your implementation — titled topic cards, not unlabeled PDFs."
+        subtitle="Your implementation journey — Getting started through go-live, then reference how-tos. Titled cards, not unlabeled PDFs."
       />
       <LearningCatalog
         sections={sections}

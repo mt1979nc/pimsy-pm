@@ -5,7 +5,13 @@ import Link from "next/link";
 import { Card, Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { LearningItemView } from "@/lib/learning-center";
-import { LEARNING_AUDIENCE_LABEL, learningKindLabel, type LearningAudience } from "@/db/learning-center-catalog";
+import {
+  LEARNING_AUDIENCE_LABEL,
+  learningJourneyStep,
+  learningKindLabel,
+  learningPlaceholderLabel,
+  type LearningAudience,
+} from "@/db/learning-center-catalog";
 
 type Section = {
   id: string;
@@ -15,6 +21,7 @@ type Section = {
   topic: string;
   topicLabel: string;
   audienceRole: string;
+  order?: number;
   items: LearningItemView[];
 };
 
@@ -95,6 +102,9 @@ export function LearningCatalog({
           <section key={section.id} id={section.slug} className="space-y-3">
             <div>
               <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold text-brand-ink">
+                  {learningJourneyStep(section.order ?? 0)}
+                </span>
                 <h2 className="text-[16px] font-semibold tracking-tight text-ink">{section.title}</h2>
                 <Badge>{section.topicLabel}</Badge>
               </div>
@@ -116,8 +126,8 @@ export function LearningCatalog({
                         {LEARNING_AUDIENCE_LABEL[item.audienceRole as LearningAudience] ?? item.audienceRole}
                       </Badge>
                     ) : null}
-                    {item.isPlaceholder && item.kind === "FILE" ? (
-                      <Badge tone="amber">File pending</Badge>
+                    {item.isPlaceholder ? (
+                      <Badge tone="amber">{learningPlaceholderLabel(item.kind)}</Badge>
                     ) : null}
                   </div>
                   <h3 className="mt-2 text-[14.5px] font-semibold leading-snug text-ink">{item.title}</h3>

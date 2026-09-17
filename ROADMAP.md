@@ -32,6 +32,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **thread open/resolved, unread, and mark resolved (v1.14.3)** | **Shipped** | Threads organize open vs resolved, unread follows the last-read cursor reliably, and staff or portal can mark a topic resolved. |
 | **Assign (Wave B)** | **Shipped** | Multi-assignee join + auto-assign specialist / billing / customer lead / customer billing. P1-G: Billing Questionnaire → project lead + billing specialist; due-soon/overdue pings to every assignee (digest mail in Wave C). Migration `0017_task_assignees`. |
 | **Template default assignee by role (v1.16)** | **Shipped** | Playbook editor names a **staffing role** (not a person) as a task’s default assignee. Create/apply resolves the project role holder; missing holder stays unassigned. Later role fill is additive (Wave B). No migrate. Optional `--templates-only` for customer-lead badges. |
+| **Learning Center customer journey (v1.17)** | **Shipped** | PATH Learning Center carries Dock Implementation Template LC topics as a numbered journey (Getting started → Discovery → Training 1–5 → Billing → Go-live → After go-live → Reference). Training 4 restored in sequence. Named Scheduling/Notes/Providers how-tos; no invented Storylane URLs. No migrate; `npm run db:seed -- --templates-only`. |
 | **Hand off to Support (Wave B)** | **Shipped** | Completing the post go-live **Hand off to Support** task emails Kori Hale (`kori@pimsyehr.com`) with outstanding items from the task description and marks the site **COMPLETED**. Migration `0018_support_handoff`. |
 | **Discovery → Configuration review (Wave B)** | **Shipped** | Discovery uploads spawn Configuration review tasks (`reviewRequired`) and wizard Excel fans out to Configuration consumers. Migration `0019_review_required`. |
 | **Billing / RCM connected (Wave B)** | **Shipped** | Billing Configuration team tab; connected Discovery/Configuration copies; EHR+RCM move to RCM tab; **Add RCM on existing Implementation WIP**. Migration `0020_connected_tasks`. Runbook: `v1.14-BILLING-RCM.md`. |
@@ -55,7 +56,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | 5. Write cutover | **v1.11** | **Done in PATH** | Writes already land only in PATH. Standalone Prism stays human-writable until Alexander darks it. |
 | 6. **Retire standalone Prism** | After go/no-go | **Ready to dark** | Archive / shut down nice-rock after the checklist in `v1.11-PRISM-CUTOVER.md`. |
 
-Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shipped)** → **v1.9 playbook/staffing (shipped)** → **v1.10 Forecast (shipped)** → **v1.11 Prism cutover (shipped)** → **Milestone: dark standalone Prism** (Alexander confirms). **v1.14 Waves A–C (shipped on live)** through customer digests (#39). Footer **v1.16.0**.
+Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shipped)** → **v1.9 playbook/staffing (shipped)** → **v1.10 Forecast (shipped)** → **v1.11 Prism cutover (shipped)** → **Milestone: dark standalone Prism** (Alexander confirms). **v1.14 Waves A–C (shipped on live)** through customer digests (#39). Footer **v1.17.0**.
 
 ## Demo polish
 
@@ -65,7 +66,7 @@ Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shi
 | Zoom recordings sync | **Partial (Wave B, shipped)** | Manual paste still; one link now lands on Recordings **and** the Training N task. No Zoom API pull. |
 | Template reseed | Planned — `--templates-only` still the ops path; v1.13 duplicate is an in-app copy, not a live Dock pull |
 | Mentions / notify | Partial — customer due-soon / overdue / staff-message **email** is batched; in-app stays per item |
-| File library by area | **Shipped** (v1.12) | Reusable library + Learning Center topic groups; placeholders until Dock binaries are uploaded. |
+| File library by area | **Shipped** (v1.12, LC journey v1.17) | Reusable library + Learning Center **customer journey** sections; named how-tos; placeholders until Dock binaries / Storylane URLs are uploaded. |
 
 ## Ops
 

@@ -25,7 +25,7 @@ export default async function StaffLearningPage() {
     <>
       <PageHeader
         title="Learning Center"
-        subtitle="What customers see in the portal: titled topic cards (Intro, Training Guide, Password Reset, Scheduling, Notes, Providers, …). Owners and admins can curate. Do not add unlabeled PDFs or empty embeds."
+        subtitle="Customer journey: Getting started → Discovery → Training 1–5 → Billing → Go-live → After go-live → Reference. Titled cards, not unlabeled PDFs. Owners and admins can curate."
         actions={
           canEdit ? (
             <LinkButton href="/library" size="sm">
@@ -38,7 +38,7 @@ export default async function StaffLearningPage() {
 
       <LearningCatalog
         sections={sections}
-        emptyHint="No Learning Center items yet. Run npm run db:seed -- --templates-only after migrating."
+        emptyHint="No Learning Center items yet. Run npm run db:seed -- --templates-only."
       />
 
       {canEdit

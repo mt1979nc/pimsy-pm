@@ -283,15 +283,28 @@ export async function seedLearningCenter() {
         currentItems.find((r) => r.title.toLowerCase() === item.title.toLowerCase());
 
       if (match && !match.isPlaceholder && match.kind === "FILE" && match.storageKey) {
+        await db
+          .update(learningCenterItems)
+          .set({
+            sectionId,
+            title: item.title,
+            summary: item.summary,
+            body: item.body,
+            audienceRole: item.audienceRole,
+            order: item.order,
+            updatedAt: new Date(),
+          })
+          .where(eq(learningCenterItems.id, match.id));
         upsertedIds.add(match.id);
         continue;
       }
 
-      const url = item.url ?? lib?.url ?? null;
       const kind = item.kind;
-      const isPlaceholder =
-        item.isPlaceholder ??
-        (kind === "FILE" && !(lib && !lib.isPlaceholder && lib.storageKey));
+      const catalogUrl = item.url ?? lib?.url ?? null;
+      // Keep a staff-pasted cohort URL (Storylane, etc.) when the catalog has none.
+      const url = catalogUrl ?? (match?.url?.trim() || null);
+      const liveFile = Boolean(lib && !lib.isPlaceholder && lib.storageKey);
+      const isPlaceholder = url || liveFile ? false : (item.isPlaceholder ?? (kind === "FILE" && !liveFile));
 
       const values = {
         sectionId,

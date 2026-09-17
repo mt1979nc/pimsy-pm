@@ -7,6 +7,8 @@ import {
   LEARNING_AUDIENCE_LABEL,
   LEARNING_TOPIC_META,
   learningKindLabel,
+  learningOpenLabel,
+  learningPlaceholderLabel,
   type LearningAudience,
   type LearningTopic,
 } from "@/db/learning-center-catalog";
@@ -28,7 +30,7 @@ export default async function PortalLearnItemPage({
   const fileHref =
     item.storageKey || item.libraryAsset?.storageKey ? `/api/learn/${item.id}/file` : null;
   const openUrl = item.url ?? item.libraryAsset?.url ?? null;
-  const showFilePending = item.kind === "FILE" && !fileHref && !openUrl && item.isPlaceholder;
+  const showPending = item.isPlaceholder && !fileHref && !openUrl;
 
   return (
     <>
@@ -42,8 +44,10 @@ export default async function PortalLearnItemPage({
         {item.audienceRole !== "all" ? (
           <Badge>{LEARNING_AUDIENCE_LABEL[item.audienceRole as LearningAudience] ?? item.audienceRole}</Badge>
         ) : null}
-        {showFilePending ? (
-          <Badge tone="amber">File pending — ask your specialist for the live copy</Badge>
+        {showPending ? (
+          <Badge tone="amber">
+            {learningPlaceholderLabel(item.kind)} — ask your specialist for the live copy
+          </Badge>
         ) : null}
       </div>
       <h1 className="text-[22px] font-semibold leading-tight tracking-[-0.02em] text-ink">{item.title}</h1>
@@ -63,15 +67,23 @@ export default async function PortalLearnItemPage({
             <div className="flex flex-wrap gap-2 px-5 py-4">
               {fileHref ? (
                 <LinkButton href={fileHref} variant="primary">
-                  Download {item.libraryAsset?.name ?? item.title}
+                  {learningOpenLabel(item.libraryAsset?.name ?? item.title, "FILE")}
                 </LinkButton>
               ) : null}
               {openUrl ? (
                 <LinkButton href={openUrl} variant="secondary" target="_blank" rel="noopener noreferrer">
-                  {item.title.toLowerCase().includes("wizard") ? "Open Discovery Wizard" : `Open ${item.title}`}
+                  {learningOpenLabel(item.title, item.kind)}
                 </LinkButton>
               ) : null}
             </div>
+          </Card>
+        ) : showPending ? (
+          <Card>
+            <CardHeader title={learningPlaceholderLabel(item.kind)} />
+            <p className="px-5 py-4 text-[14px] leading-relaxed text-ink-2">
+              The live file or walkthrough URL is not in PATH yet. Your specialist will attach it on this card or
+              on the matching training task. PATH does not invent Storylane or unlabeled “View PDF” links.
+            </p>
           </Card>
         ) : null}
       </div>

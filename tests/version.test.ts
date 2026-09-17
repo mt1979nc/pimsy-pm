@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.16.4");
+    expect(APP_VERSION).toBe("1.16.5");
     expect(APP_VERSION).toMatch(/^1\.16\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,23 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.16.5 Learning Center customer journey", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.16.5");
+    expect(note?.summary).toMatch(/customer journey/i);
+    expect(note?.summary).toMatch(/Training 1–5|Training 1-5/);
+    expect(note?.highlights?.some((h) => /Training 4/.test(h) && /Training 3/.test(h) && /Training 5/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /Navigate Calendar/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /View PDF/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /templates-only/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/storylane\.com/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.16.4")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.16.3")).toBeTruthy();
   });
 
   it("documents v1.16.4 collapsed Add RCM on existing projects", () => {
