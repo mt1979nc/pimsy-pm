@@ -12,6 +12,7 @@ import { phases, projects, projectMembers, taskAssignees, tasks } from "@/db/sch
 import { notify } from "@/lib/notify";
 import {
   autoAssignKindForRole,
+  defaultRoleMatchesMemberRole,
   staffingIdsFromAssignments,
   taskMatchesAutoAssign,
   userIdsForNewTask,
@@ -197,7 +198,6 @@ export async function autoAssignForProjectRole(opts: {
   client?: Writer;
 }): Promise<number> {
   const kind = autoAssignKindForRole(opts.role);
-  if (!kind) return 0;
   const client = opts.client ?? db;
   const [projectTasks, projectPhases] = await Promise.all([
     client.query.tasks.findMany({
@@ -210,9 +210,12 @@ export async function autoAssignForProjectRole(opts: {
     }),
   ]);
   const phaseName = new Map(projectPhases.map((p) => [p.id, p.name]));
-  const matching = projectTasks.filter((t) =>
-    taskMatchesAutoAssign(t as RoleMatchTask, t.phaseId ? (phaseName.get(t.phaseId) ?? null) : null, kind),
-  );
+  const matching = projectTasks.filter((t) => {
+    const phase = t.phaseId ? (phaseName.get(t.phaseId) ?? null) : null;
+    if (kind && taskMatchesAutoAssign(t as RoleMatchTask, phase, kind)) return true;
+    return defaultRoleMatchesMemberRole(t.defaultRole, opts.role);
+  });
+  if (matching.length === 0) return 0;
   let addedCount = 0;
   for (const task of matching) {
     const { added } = await addAssigneesToTask({

@@ -77,6 +77,7 @@ describe.skipIf(!dbOk)("duplicate playbook (postgres)", () => {
         ownerSide: "INTERNAL",
         visibility: "SHARED",
         description: "Book the call.",
+        defaultRole: "IMPLEMENTATION_SPECIALIST",
       })
       .returning({ id: templateTasks.id });
     await db.insert(templateTaskChecklistItems).values({
@@ -128,6 +129,7 @@ describe.skipIf(!dbOk)("duplicate playbook (postgres)", () => {
     expect(parent).toBeTruthy();
     expect(child?.parentTaskId).toBe(parent?.id);
     expect(child?.description).toBe("Book the call.");
+    expect(child?.defaultRole).toBe("IMPLEMENTATION_SPECIALIST");
     expect(child?.checklistItems.some((c) => c.label === "Confirm attendees")).toBe(true);
     expect(child?.defaultAttachments.some((a) => a.libraryAsset?.slug === "discovery-wizard")).toBe(
       true,

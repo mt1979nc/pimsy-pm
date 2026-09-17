@@ -16,7 +16,7 @@ import {
 import { requireStaff } from "@/lib/guard";
 import { canManageTemplates, ForbiddenError, NotFoundError } from "@/lib/authz";
 import { audit } from "@/lib/audit";
-import { ASSIGNABLE_PROJECT_ROLES } from "@/lib/staffing";
+import { parseTemplateDefaultRole } from "@/lib/staffing";
 import { normalizeAreaKey } from "@/lib/playbook-meta";
 import { attachLibraryToTemplateTask as attachLibraryItem } from "@/lib/library";
 import { cloneProjectTemplate } from "@/lib/template-clone";
@@ -233,8 +233,6 @@ export async function reorderTemplatePhases(templateId: string, orderedIds: stri
   revalidatePath(`/templates/${templateId}`);
 }
 
-const roleSchema = z.enum(ASSIGNABLE_PROJECT_ROLES as unknown as [string, ...string[]]);
-
 export async function createTemplateTask(
   _prev: ActionState,
   formData: FormData,
@@ -258,8 +256,7 @@ export async function createTemplateTask(
   });
   const maxOrder = existing.reduce((m, t) => Math.max(m, t.order), -1);
   const ownerSide = formData.get("ownerSide") === "CUSTOMER" ? "CUSTOMER" : "INTERNAL";
-  const roleRaw = formData.get("defaultRole")?.toString() || "";
-  const defaultRole = roleSchema.safeParse(roleRaw).success ? (roleRaw as never) : null;
+  const defaultRole = parseTemplateDefaultRole(formData.get("defaultRole")?.toString());
 
   await db.insert(templateTasks).values({
     phaseId,
@@ -302,8 +299,7 @@ export async function updateTemplateTask(
   if (locked) return locked;
 
   const ownerSide = formData.get("ownerSide") === "CUSTOMER" ? "CUSTOMER" : "INTERNAL";
-  const roleRaw = formData.get("defaultRole")?.toString() || "";
-  const defaultRole = roleSchema.safeParse(roleRaw).success ? (roleRaw as never) : null;
+  const defaultRole = parseTemplateDefaultRole(formData.get("defaultRole")?.toString());
   const parentRaw = formData.get("parentTaskId")?.toString() || "";
   let parentTaskId: string | null = parentRaw || null;
   if (parentTaskId === taskId) parentTaskId = null;

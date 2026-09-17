@@ -9,7 +9,7 @@
  * existing assignees (including a previous specialist or customer lead).
  */
 
-import { canonicalStaffingRole } from "@/lib/staffing";
+import { canonicalStaffingRole, roleAssignmentKeys } from "@/lib/staffing";
 
 export type AutoAssignKind =
   | "STAFF_ALL"
@@ -48,6 +48,23 @@ export function isBillingRelatedTask(
   }
   if ((task.areaKey ?? "").toLowerCase() === "payroll") return true;
   return false;
+}
+
+/**
+ * True when the template/live task named this default role and a project
+ * member was given a matching staffing / customer role. Used so RCM,
+ * directors, and explicit template defaults still auto-assign when the
+ * role is filled later (Wave B blanket kinds do not cover those roles).
+ */
+export function defaultRoleMatchesMemberRole(
+  taskDefaultRole: string | null | undefined,
+  memberRole: string | null | undefined,
+): boolean {
+  if (!taskDefaultRole || !memberRole) return false;
+  if (taskDefaultRole === memberRole) return true;
+  const taskKeys = new Set(roleAssignmentKeys(taskDefaultRole));
+  if (taskKeys.has(memberRole)) return true;
+  return roleAssignmentKeys(memberRole).some((key) => taskKeys.has(key));
 }
 
 export function autoAssignKindForRole(role: string | null | undefined): AutoAssignKind | null {
@@ -156,6 +173,7 @@ export function userIdsForNewTask(
       add(assignments.billingSupportId);
       add(assignments.t2BillingId);
     }
+    add(assignments.defaultRoleAssigneeId);
   }
   return ids;
 }

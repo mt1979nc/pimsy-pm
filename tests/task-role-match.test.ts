@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   autoAssignKindForRole,
   customerMayChangeAssignee,
+  defaultRoleMatchesMemberRole,
   isBillingRelatedTask,
   taskMatchesAutoAssign,
   userIdsForNewTask,
@@ -125,6 +126,39 @@ describe("billing vs specialist vs customer matching", () => {
       { customerLeadId: "pat", customerBillingId: "lee" },
     );
     expect(logos).toEqual(["pat"]);
+  });
+
+  it("resolves a customer task's template defaultRole when the lead was not also named", () => {
+    expect(
+      userIdsForNewTask(
+        {
+          title: "Upload Company Logo(s)",
+          ownerSide: "CUSTOMER",
+          defaultRole: "CUSTOMER_PROJECT_LEAD",
+        },
+        "Discovery",
+        { defaultRoleAssigneeId: "pat" },
+      ),
+    ).toEqual(["pat"]);
+    expect(
+      userIdsForNewTask(
+        {
+          title: "Upload Company Logo(s)",
+          ownerSide: "CUSTOMER",
+          defaultRole: "CUSTOMER_PROJECT_LEAD",
+        },
+        "Discovery",
+        {},
+      ),
+    ).toEqual([]);
+  });
+
+  it("matches template defaultRole to the project member role, including aliases", () => {
+    expect(defaultRoleMatchesMemberRole("RCM_IMPLEMENTATION_SPECIALIST", "RCM")).toBe(true);
+    expect(defaultRoleMatchesMemberRole("T1_BILLING_SUPPORT", "BILLING_SUPPORT")).toBe(true);
+    expect(defaultRoleMatchesMemberRole("CUSTOMER_PROJECT_LEAD", "CUSTOMER_PROJECT_LEAD")).toBe(true);
+    expect(defaultRoleMatchesMemberRole("IMPLEMENTATION_SPECIALIST", "RCM_MANAGER")).toBe(false);
+    expect(defaultRoleMatchesMemberRole(null, "IMPLEMENTATION_SPECIALIST")).toBe(false);
   });
 
   it("lets customers reassign among their project team only", () => {

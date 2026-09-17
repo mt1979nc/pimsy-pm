@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.15.0";
+export const APP_VERSION = "1.16.0";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.16.0",
+    date: "2026-09-17",
+    summary:
+      "Template editing sets a task’s default assignee to a staffing role (Implementation Specialist, billing, customer lead, …) — not a named person. Creating a project from that playbook assigns those tasks to whoever holds the role. No schema migrate.",
+    highlights: [
+      "Templates already stored defaultRole (v1.9). The editor now lists PATH team roles plus Customer project lead and Customer billing, labeled Default assignee (role). There is no person picker on the playbook.",
+      "Project create / template apply resolves that role from the site roster (Wave B join table, source AUTO_ROLE). A missing role holder leaves the task unassigned instead of crashing.",
+      "Naming someone on the project later still uses additive auto-assign. Roles without a Wave B blanket (RCM specialist, directors) now also match tasks whose template defaultRole is that role. Existing assignees are kept.",
+      "Customer portal and MEMBER membership scoping are unchanged. P1-G Billing Questionnaire still adds project lead + billing specialist.",
+      "No schema migrate (extends template_task.default_role / task.default_role). Optional `npm run db:seed -- --templates-only` so Dock playbooks show customer-lead / customer-billing badges; live tasks are not rewritten. No playbook resync required.",
+      "PATH (Plan · Assign · Track · Handoff). Prism stays the analytics module. Do not revive standalone Prism / nice-rock.",
+    ],
+  },
   {
     version: "1.15.0",
     date: "2026-09-17",

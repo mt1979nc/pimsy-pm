@@ -14,8 +14,8 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.15.0");
-    expect(APP_VERSION).toMatch(/^1\.15\./);
+    expect(APP_VERSION).toBe("1.16.0");
+    expect(APP_VERSION).toMatch(/^1\.16\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
   });
@@ -97,6 +97,19 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.16.0 template default assignee by role", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.16.0");
+    expect(note?.summary).toMatch(/staffing role/i);
+    expect(note?.summary).toMatch(/not a named person/i);
+    expect(note?.highlights?.some((h) => /Default assignee \(role\)/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Customer project lead/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /templates-only/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /MEMBER/.test(h) && /portal/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.15.0")).toBeTruthy();
   });
 
   it("documents v1.15.0 post-ship of Waves A–C and the footer bump", () => {

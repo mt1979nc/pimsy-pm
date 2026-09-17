@@ -71,6 +71,15 @@ describe("staffing helpers", () => {
     ).toBe("lead");
     expect(resolveAssigneeForRole("T2_BILLING_SUPPORT", {}, "lead", "INTERNAL")).toBeNull();
     expect(resolveAssigneeForRole("IMPLEMENTATION_SPECIALIST", {}, "lead", "CUSTOMER")).toBeNull();
+    expect(
+      resolveAssigneeForRole(
+        "CUSTOMER_PROJECT_LEAD",
+        { CUSTOMER_PROJECT_LEAD: "pat" },
+        "lead",
+        "CUSTOMER",
+      ),
+    ).toBe("pat");
+    expect(resolveAssigneeForRole("CUSTOMER_BILLING", {}, "lead", "CUSTOMER")).toBeNull();
   });
 
   it("infers staffing role from title", () => {
