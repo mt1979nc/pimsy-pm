@@ -32,7 +32,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       "Portal LC teaches PIMSY (charts, calendar, notes, providers, intake). Discovery worksheets, go-live checklists, and ClaimMD stay on project tasks — not in the library.",
       "Sections: Getting started (Intro, Getting started with PIMSY v2 PDF, Overview walkthrough, Tips V2 PDF), Password & access (Password Reset walkthrough + PIMSY desktop installer), Scheduling, Notes, Providers, Training (PIMSY modules 1–5 including Training 4 group notes).",
       "Wires Dock LC asset URLs (app.storylane.io / pimsy.storylane.io + public GCS PDFs). Never Dock space/page URLs. PIMSY Implementation Customer Guide.pdf omitted until PATH re-hosts (signed GCS not hardcoded).",
-      "Iframe embed when the Storylane URL has embed=inline; share/popup Storylanes and PDFs also Open in a new tab with the real title (never View PDF). Catalog cards are title + type + Open; detail pages put the player first.",
+      "Iframe embed when the Storylane URL has embed=inline; share/popup Storylanes and PDFs also Open in a new tab (never View PDF). Catalog is a scannable list: title + Storylane/PDF + Open. Detail pages put the player first with a short Open control.",
       "No schema migrate. Refresh live catalog with `npm run db:seed -- --templates-only`. Search and role filters unchanged.",
       "PATH (Plan · Assign · Track · Handoff) hosts the portal; Prism stays the analytics module. Do not revive standalone Prism / nice-rock.",
     ],

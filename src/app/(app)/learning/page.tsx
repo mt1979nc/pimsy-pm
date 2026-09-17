@@ -36,11 +36,7 @@ export default async function StaffLearningPage() {
       {canEdit
         ? sections.map((section) => (
             <Card key={"edit-" + section.id} className="mt-5">
-              <CardHeader
-                title={section.title}
-                subtitle="Add or edit items in this section"
-                action={<Badge>{section.items.length}</Badge>}
-              />
+              <CardHeader title={section.title} action={<Badge>{section.items.length}</Badge>} />
               {section.items.map((item) => (
                 <details key={item.id} className="border-t border-border">
                   <summary className="cursor-pointer px-5 py-2.5 text-[13.5px] font-medium hover:bg-surface-2">

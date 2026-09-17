@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Card, Badge } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { LearningItemView } from "@/lib/learning-center";
 import {
@@ -66,7 +66,7 @@ export function LearningCatalog({
   const roles: Array<"all" | LearningAudience> = ["all", "clinical", "billing", "admin"];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <input
           type="search"
@@ -98,28 +98,28 @@ export function LearningCatalog({
         </Card>
       ) : (
         filtered.map((section) => (
-          <section key={section.id} id={section.slug} className="space-y-3">
-            <h2 className="text-[16px] font-semibold tracking-tight text-ink">{section.title}</h2>
-            <div className="grid gap-2 sm:grid-cols-2">
+          <section key={section.id} id={section.slug}>
+            <h2 className="mb-2 text-[15px] font-semibold tracking-tight text-ink">{section.title}</h2>
+            <ul className="divide-y divide-border border-y border-border">
               {section.items.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`${hrefPrefix}/${item.id}`}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3 hover:border-brand"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge>{learningKindLabel(item.kind, item.url)}</Badge>
-                      {item.isPlaceholder ? (
-                        <Badge tone="amber">{learningPlaceholderLabel(item.kind)}</Badge>
-                      ) : null}
-                    </div>
-                    <h3 className="mt-1 truncate text-[14.5px] font-semibold text-ink">{item.title}</h3>
-                  </div>
-                  <span className="shrink-0 text-[12.5px] font-medium text-brand">Open</span>
-                </Link>
+                <li key={item.id}>
+                  <Link
+                    href={`${hrefPrefix}/${item.id}`}
+                    className="flex items-center gap-3 py-3 hover:text-brand"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-[14.5px] font-medium text-ink">
+                      {item.title}
+                    </span>
+                    <span className="shrink-0 text-[12px] text-ink-3">
+                      {item.isPlaceholder
+                        ? learningPlaceholderLabel(item.kind)
+                        : learningKindLabel(item.kind, item.url)}
+                    </span>
+                    <span className="shrink-0 text-[12.5px] font-medium text-brand">Open</span>
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         ))
       )}

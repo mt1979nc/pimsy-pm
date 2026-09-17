@@ -16,24 +16,24 @@ export function LearningItemMedia({
   url: string;
 }) {
   const iframeSrc = learningIframeSrc(url);
-  const openLabel = learningOpenLabel(title, kind);
+  const openLabel = learningOpenLabel(title, kind, url);
   const frameTitle = isLearningStorylaneUrl(url)
-    ? `${title} walkthrough`
+    ? `${title} Storylane`
     : isLearningPdfUrl(url)
       ? `${title} PDF`
       : title;
 
   return (
-    <div className="mt-5 overflow-hidden rounded-xl border border-border bg-surface">
+    <div className="mt-4">
       {iframeSrc ? (
         <iframe
           title={frameTitle}
           src={iframeSrc}
-          className="h-[min(640px,70vh)] w-full bg-white"
+          className="h-[min(640px,70vh)] w-full rounded-xl border border-border bg-white"
           allow="fullscreen"
         />
       ) : null}
-      <div className="flex flex-wrap gap-2 px-4 py-3">
+      <div className={iframeSrc ? "mt-3" : ""}>
         <LinkButton href={url} variant={iframeSrc ? "secondary" : "primary"} target="_blank" rel="noopener noreferrer">
           {openLabel}
         </LinkButton>

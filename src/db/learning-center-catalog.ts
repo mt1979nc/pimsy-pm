@@ -159,27 +159,24 @@ export function learningIframeSrc(url: string): string | null {
 }
 
 export function learningKindLabel(kind: string, url?: string | null): string {
-  if (url && isLearningStorylaneUrl(url)) return "Walkthrough";
+  if (url && isLearningStorylaneUrl(url)) return "Storylane";
   if (url && isLearningPdfUrl(url)) return "PDF";
   const k = kind.toUpperCase();
   if (k === "LINK") return "Link";
   if (k === "FILE") return "File";
-  return "Article";
+  return "Guide";
 }
 
 /** Catalog / detail badge when a Dock PDF or Storylane URL is not wired yet. */
-export function learningPlaceholderLabel(kind: string): string {
-  const k = kind.toUpperCase();
-  if (k === "FILE") return "File pending";
-  if (k === "LINK") return "Walkthrough pending";
-  return "Walkthrough pending";
+export function learningPlaceholderLabel(_kind: string): string {
+  return "Pending";
 }
 
-/** Named open/download control — never “View PDF”. */
-export function learningOpenLabel(title: string, kind = "LINK"): string {
+/** Short open control — never “View PDF”, never repeats the full title. */
+export function learningOpenLabel(title: string, kind = "LINK", url?: string | null): string {
   if (title.toLowerCase().includes("wizard")) return "Open Discovery Wizard";
-  if (kind.toUpperCase() === "FILE") return `Download ${title}`;
-  return `Open ${title}`;
+  if (kind.toUpperCase() === "FILE" || (url && isLearningPdfUrl(url))) return "Open PDF";
+  return "Open";
 }
 
 export type LearningItemSeed = {

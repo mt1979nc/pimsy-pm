@@ -41,6 +41,7 @@ import {
   learningCatalogWiredUrls,
   learningIframeSrc,
   learningOpenLabel,
+  learningKindLabel,
   isLearningDockSpaceUrl,
   isSignedGcsUrl,
 } from "@/db/learning-center-catalog";
@@ -526,7 +527,10 @@ describe("Learning Center IA", () => {
     expect(LEARNING_CENTER_SECTIONS.flatMap((s) => s.items).every((i) => i.isPlaceholder !== true || Boolean(i.url))).toBe(
       true,
     );
+    expect(learningOpenLabel("How to Navigate the Calendar in the Portal", "LINK")).toBe("Open");
     expect(learningOpenLabel("How to Navigate the Calendar in the Portal", "LINK")).not.toMatch(/view pdf/i);
+    expect(learningKindLabel("LINK", DOCK_LC_ASSETS.overview)).toBe("Storylane");
+    expect(learningKindLabel("LINK", DOCK_LC_ASSETS.gettingStartedPdf)).toBe("PDF");
   });
 
   it("keeps Training 1–5 in PIMSY module order including Training 4", () => {
