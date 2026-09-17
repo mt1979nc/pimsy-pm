@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.16.0";
+export const APP_VERSION = "1.16.1";
 
 export type ReleaseNote = {
   version: string;
@@ -24,7 +24,18 @@ export type ReleaseNote = {
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: "1.16.0",
+        version: "1.16.1",
+        date: "2026-09-17",
+        summary:
+                "Learning Center no longer passes a function prop from the server component to the client catalog. Link URLs are built in the client from serializable item data. No schema migrate.",
+        highlights: [
+                "Fixes the /learning crash caused by the non-serializable itemHref function prop.",
+                "No schema migrate.",
+              ],
+  },
+  
+  {
+    version: "1.16.1",
     date: "2026-09-17",
     summary:
       "Template editing sets a task’s default assignee to a staffing role (Implementation Specialist, billing, customer lead, …) — not a named person. Creating a project from that playbook assigns those tasks to whoever holds the role. No schema migrate.",
