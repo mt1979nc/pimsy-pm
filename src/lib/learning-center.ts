@@ -56,6 +56,7 @@ export async function loadLearningCatalog(actor: Actor, opts?: { includeDrafts?:
     topicLabel: string;
     audienceRole: string;
     published: boolean;
+    order: number;
     items: LearningItemView[];
   }> = [];
 
@@ -99,6 +100,7 @@ export async function loadLearningCatalog(actor: Actor, opts?: { includeDrafts?:
       topicLabel: LEARNING_TOPIC_META[section.topic as LearningTopic]?.label ?? section.topic,
       audienceRole: section.audienceRole,
       published: section.published,
+      order: section.order,
       items,
     });
   }

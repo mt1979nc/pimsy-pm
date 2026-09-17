@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.16.4";
+export const APP_VERSION = "1.16.5";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.16.5",
+    date: "2026-09-17",
+    summary:
+      "Customer Learning Center is PIMSY EHR how-tos with Dock Storylane walkthroughs and public Getting Started / Tips PDFs — not a PATH implementation journey. Named cards; iframe embed for inline Storylanes.",
+    highlights: [
+      "Portal LC teaches PIMSY (charts, calendar, notes, providers, intake). Discovery worksheets, go-live checklists, and ClaimMD stay on project tasks — not in the library.",
+      "Sections: Getting started (Intro, Getting started with PIMSY v2 PDF, Overview walkthrough, Tips V2 PDF), Password & access (Password Reset walkthrough + PIMSY desktop installer), Scheduling, Notes, Providers, Training (PIMSY modules 1–5 including Training 4 group notes).",
+      "Wires Dock LC asset URLs (app.storylane.io / pimsy.storylane.io + public GCS PDFs). Never Dock space/page URLs. PIMSY Implementation Customer Guide.pdf omitted until PATH re-hosts (signed GCS not hardcoded).",
+      "Iframe embed when the Storylane URL has embed=inline; share/popup Storylanes and PDFs also Open in a new tab (never View PDF). Catalog is a scannable list: title + Storylane/PDF + Open. Detail pages put the player first with a short Open control.",
+      "No schema migrate. Refresh live catalog with `npm run db:seed -- --templates-only`. Search and role filters unchanged.",
+      "PATH (Plan · Assign · Track · Handoff) hosts the portal; Prism stays the analytics module. Do not revive standalone Prism / nice-rock.",
+    ],
+  },
   {
     version: "1.16.4",
     date: "2026-09-17",

@@ -2,10 +2,15 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Card, Badge } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { LearningItemView } from "@/lib/learning-center";
-import { LEARNING_AUDIENCE_LABEL, learningKindLabel, type LearningAudience } from "@/db/learning-center-catalog";
+import {
+  LEARNING_AUDIENCE_LABEL,
+  learningKindLabel,
+  learningPlaceholderLabel,
+  type LearningAudience,
+} from "@/db/learning-center-catalog";
 
 type Section = {
   id: string;
@@ -15,6 +20,7 @@ type Section = {
   topic: string;
   topicLabel: string;
   audienceRole: string;
+  order?: number;
   items: LearningItemView[];
 };
 
@@ -60,13 +66,13 @@ export function LearningCatalog({
   const roles: Array<"all" | LearningAudience> = ["all", "clinical", "billing", "admin"];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search topics, trainings, worksheets…"
+          placeholder="Search…"
           className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface px-3 py-2 text-[14px] text-ink"
         />
         <div className="flex flex-wrap gap-1.5">
@@ -80,7 +86,7 @@ export function LearningCatalog({
                 role === r ? "bg-brand text-brand-ink" : "bg-surface-2 text-ink-2 hover:text-ink",
               )}
             >
-              {r === "all" ? "All roles" : LEARNING_AUDIENCE_LABEL[r]}
+              {r === "all" ? "All" : LEARNING_AUDIENCE_LABEL[r]}
             </button>
           ))}
         </div>
@@ -92,41 +98,28 @@ export function LearningCatalog({
         </Card>
       ) : (
         filtered.map((section) => (
-          <section key={section.id} id={section.slug} className="space-y-3">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-[16px] font-semibold tracking-tight text-ink">{section.title}</h2>
-                <Badge>{section.topicLabel}</Badge>
-              </div>
-              {section.description ? (
-                <p className="mt-1 text-[13px] text-ink-2">{section.description}</p>
-              ) : null}
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+          <section key={section.id} id={section.slug}>
+            <h2 className="mb-2 text-[15px] font-semibold tracking-tight text-ink">{section.title}</h2>
+            <ul className="divide-y divide-border border-y border-border">
               {section.items.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`${hrefPrefix}/${item.id}`}
-                  className="block rounded-xl border border-border bg-surface p-4 shadow-[0_1px_2px_rgba(15,20,30,0.04)] hover:border-brand"
-                >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge>{learningKindLabel(item.kind)}</Badge>
-                    {item.audienceRole !== "all" ? (
-                      <Badge>
-                        {LEARNING_AUDIENCE_LABEL[item.audienceRole as LearningAudience] ?? item.audienceRole}
-                      </Badge>
-                    ) : null}
-                    {item.isPlaceholder && item.kind === "FILE" ? (
-                      <Badge tone="amber">File pending</Badge>
-                    ) : null}
-                  </div>
-                  <h3 className="mt-2 text-[14.5px] font-semibold leading-snug text-ink">{item.title}</h3>
-                  {item.summary ? (
-                    <p className="mt-1 line-clamp-3 text-[13px] leading-relaxed text-ink-2">{item.summary}</p>
-                  ) : null}
-                </Link>
+                <li key={item.id}>
+                  <Link
+                    href={`${hrefPrefix}/${item.id}`}
+                    className="flex items-center gap-3 py-3 hover:text-brand"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-[14.5px] font-medium text-ink">
+                      {item.title}
+                    </span>
+                    <span className="shrink-0 text-[12px] text-ink-3">
+                      {item.isPlaceholder
+                        ? learningPlaceholderLabel(item.kind)
+                        : learningKindLabel(item.kind, item.url)}
+                    </span>
+                    <span className="shrink-0 text-[12.5px] font-medium text-brand">Open</span>
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         ))
       )}
