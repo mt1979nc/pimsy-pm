@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.4");
+    expect(APP_VERSION).toBe("1.18.5");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,28 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.5 Thursday Updates instruction and Imp Spec reminder", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.5");
+    expect(note?.summary).toMatch(/Thursday/i);
+    expect(note?.summary).toMatch(/account-update|account update/i);
+    expect(note?.summary).toMatch(/0025_status_update_due/);
+    expect(note?.highlights?.some((h) => /temperature\/health|Temperature/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /lead/i.test(h) && /Thursday 00:00/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /weekly-status-update-reminder/.test(h) && /CRON_SECRET/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /Due today: Provide account updates/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /0025_status_update_due/.test(h) && /STATUS_UPDATE_DUE/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.every((h) => !/@mention/i.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.4")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.3")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.2")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.1")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.0")).toBeTruthy();
   });
 
   it("documents v1.18.4 training recordings aggregate tab", () => {

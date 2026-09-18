@@ -97,6 +97,15 @@ export const ALERT_TYPES: {
     customerDefault: true,
   },
   {
+    type: "STATUS_UPDATE_DUE",
+    label: "Thursday account update due",
+    description:
+      "Thursday reminder when a site you lead still needs this week’s account update.",
+    audience: "staff",
+    staffDefault: true,
+    customerDefault: false,
+  },
+  {
     type: "MILESTONE_COMPLETED",
     label: "Milestones",
     description: "A milestone on your project is completed.",

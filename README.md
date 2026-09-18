@@ -48,11 +48,12 @@ their conversation with your team.
 Nothing else.
 
 **Project updates** — the Overview composer is the weekly “where are we?”
-snapshot (done / next / needs from the practice). Use it when the week’s
-picture changed or before a touchpoint. **Messages** are for conversation;
-a **task comment** is for one action item. Shared posts land on the customer
-portal (and can email contacts). Internal is a staff note — customers never
-see it.
+snapshot (done / next / needs from the practice). Staff see a short Thursday
+prompt above the box (health/temperature, site concerns, new risks). Imp Specs
+who lead a site get a Thursday email if that week’s update is still missing.
+**Messages** are for conversation; a **task comment** is for one action item.
+Shared posts land on the customer portal (and can email contacts). Internal is
+a staff note — customers never see it.
 
 **About / kickoff** — staff About shows kickoff and go-live already stored on
 the project, Zoom booking, notes, and staff-only HubSpot / Prism / CRM key.

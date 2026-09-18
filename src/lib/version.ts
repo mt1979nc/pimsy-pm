@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.4";
+export const APP_VERSION = "1.18.5";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.5",
+    date: "2026-09-18",
+    summary:
+      "Thursday account-update instruction on the staff Updates composer, and a weekly Imp Spec reminder for sites still missing this week’s update. Migrate 0025_status_update_due.",
+    highlights: [
+      "Staff project Updates: short standing prompt above the composer — every Thursday include temperature/health, site concerns, and whether risks were added. Copy lives in `src/lib/project-updates.ts`.",
+      "Missing this week’s update = no status update authored by the site lead since Thursday 00:00 in the lead’s timezone (default America/Chicago). Covering-specialist posts do not clear it.",
+      "Cron: POST/GET `/api/cron/weekly-status-update-reminder` with Bearer `CRON_SECRET`. Safe on the existing 15-minute Logic Apps (no-ops off Thursday / before 08:00 local). Preferred: Logic App `pimsy-cron-weekly-status-updates`, Thursday 08:00 America/Chicago.",
+      "One email + in-app row per lead: “Due today: Provide account updates for sites X, Y, Z”. Staff alert default on (`STATUS_UPDATE_DUE`); customers never receive it.",
+      "Migrate 0025_status_update_due: `ALTER TYPE notification_type ADD VALUE 'STATUS_UPDATE_DUE'`. No playbook resync. Does not add mentions, recordings, RCM tags, or extra edit/delete.",
+    ],
+  },
   {
     version: "1.18.4",
     date: "2026-09-18",

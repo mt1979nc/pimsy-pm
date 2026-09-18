@@ -116,10 +116,11 @@ export const env = {
   },
   /**
    * Bearer token for POST/GET /api/cron/customer-digest (batched customer
-   * email) and /api/cron/task-due-reminders (assignee due-soon / overdue
-   * pings). Azure Logic App / Timer, or GitHub Actions. Unset → those
-   * routes 404 (same convention as PRISM_READ_API_KEY). Generate with:
-   * openssl rand -base64 32
+   * email), /api/cron/task-due-reminders (assignee due-soon / overdue
+   * pings), and /api/cron/weekly-status-update-reminder (Thursday Imp Spec
+   * account-update nag). Azure Logic App / Timer, or GitHub Actions.
+   * Unset → those routes 404 (same convention as PRISM_READ_API_KEY).
+   * Generate with: openssl rand -base64 32
    */
   get CRON_SECRET() {
     return optional("CRON_SECRET");

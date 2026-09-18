@@ -174,6 +174,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "TASK_COMMENTED",
   "TASK_COMPLETED",
   "FILE_UPLOADED",
+  "STATUS_UPDATE_DUE",
 ]);
 
 // ===========================================================================

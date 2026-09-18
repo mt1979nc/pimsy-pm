@@ -461,6 +461,7 @@ describe.skipIf(!dbOk)("notification preferences", () => {
     const customerTypes = typesFor("customer").map((t) => t.type);
     expect(customerTypes).not.toContain("PROJECT_HEALTH_CHANGED");
     expect(customerTypes).not.toContain("RISK_RAISED");
+    expect(customerTypes).not.toContain("STATUS_UPDATE_DUE");
     expect(customerTypes).toContain("TASK_ASSIGNED");
   });
 
