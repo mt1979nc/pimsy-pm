@@ -766,7 +766,9 @@ export async function addTaskComment(
   }
 
   revalidatePath(`/projects/${task.projectId}/tasks/${taskId}`);
+  revalidatePath(`/projects/${task.projectId}/tasks`);
   revalidatePath(`/portal/projects/${task.projectId}/tasks/${taskId}`);
+  revalidatePath(`/portal/projects/${task.projectId}`);
   return { ok: true };
 }
 

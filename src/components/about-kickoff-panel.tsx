@@ -26,6 +26,7 @@ export function AboutKickoffPanel({
   staffLinks,
   bookingUrls,
   specialistName,
+  hasRcm = false,
 }: {
   kickoffDate: Date | string | null;
   goLiveDate: Date | string | null;
@@ -37,6 +38,7 @@ export function AboutKickoffPanel({
   staffLinks: boolean;
   bookingUrls?: BookingUrlMap | unknown;
   specialistName?: string | null;
+  hasRcm?: boolean;
 }) {
   const urls = resolveProjectBookingUrls({
     bookingUrls,
@@ -58,6 +60,14 @@ export function AboutKickoffPanel({
           <div>
             <dt className="text-[11.5px] uppercase tracking-wide text-ink-3">Account</dt>
             <dd className="mt-0.5 text-[14px] font-medium text-ink">{crmAcronym}</dd>
+          </div>
+        ) : null}
+        {hasRcm ? (
+          <div>
+            <dt className="text-[11.5px] uppercase tracking-wide text-ink-3">RCM</dt>
+            <dd className="mt-0.5">
+              <Badge tone="violet">On</Badge>
+            </dd>
           </div>
         ) : null}
         {liveSite ? (

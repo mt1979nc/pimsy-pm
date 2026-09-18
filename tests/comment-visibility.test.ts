@@ -48,4 +48,20 @@ describe("task comment visibility", () => {
     expect(src).toMatch(/readOnly/);
     expect(src).not.toMatch(/from ["']@\/db["']/);
   });
+
+  it("staff project task list shows a comment count from existing comments", () => {
+    const row = readFileSync(resolve(process.cwd(), "src/components/task-row.tsx"), "utf8");
+    const page = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/projects/[id]/tasks/page.tsx"),
+      "utf8",
+    );
+    const counts = readFileSync(resolve(process.cwd(), "src/lib/comment-counts.ts"), "utf8");
+    expect(row).toMatch(/CommentCountBadge/);
+    expect(row).toMatch(/commentCount/);
+    expect(page).toMatch(/commentCountsByTaskIds/);
+    expect(page).toMatch(/commentCount: commentCounts.get/);
+    expect(counts).toMatch(/taskComments/);
+    expect(counts).toMatch(/groupBy/);
+    expect(counts).toMatch(/No denormalized count column/);
+  });
 });

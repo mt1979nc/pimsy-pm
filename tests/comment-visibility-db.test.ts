@@ -10,6 +10,7 @@ import {
   previewPortalTaskComments,
 } from "@/lib/portal-preview";
 import { commentsForCustomerSurface } from "@/lib/comment-visibility";
+import { commentCountsByTaskIds } from "@/lib/comment-counts";
 
 const dbOk = await db
   .execute(sql`select 1`)
@@ -53,5 +54,12 @@ describe.skipIf(!dbOk)("customer / Customer view task comments (postgres)", () =
     expect(comments.map((c) => c.body)).toEqual(["Shared comment the customer should read."]);
     expect(comments.every((c) => c.visibility === "SHARED")).toBe(true);
     expect(commentsForCustomerSurface(comments)).toHaveLength(1);
+  });
+
+  it("staff comment counts include INTERNAL; sharedOnly matches the portal", async () => {
+    const staff = await commentCountsByTaskIds([sharedTaskId]);
+    const portal = await commentCountsByTaskIds([sharedTaskId], { sharedOnly: true });
+    expect(staff.get(sharedTaskId)).toBe(2);
+    expect(portal.get(sharedTaskId)).toBe(1);
   });
 });

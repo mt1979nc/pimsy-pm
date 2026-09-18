@@ -46,6 +46,7 @@ export function PortalAboutView({
           staffLinks={false}
           bookingUrls={payload.bookingUrls}
           specialistName={payload.implementationTeam[0]?.name}
+          hasRcm={payload.hasRcm}
         />
         {extraFacts.length > 0 ? (
           <div className="border-t border-border px-5 py-4">

@@ -193,11 +193,31 @@ describe("portal About payload", () => {
     });
     expect(payload.crmAcronym).toBe("ACME");
     expect(payload.liveSiteUrl).toBe("https://cedar.pimsyehr.com/");
+    expect(payload.hasRcm).toBe(false);
     expect(payload.kickoff.items.map((i) => i.title)).toEqual(["Dock Overview & Threads"]);
     expect(payload.implementationTeam).toHaveLength(1);
     expect(payload.customerContacts).toHaveLength(1);
     expect(JSON.stringify(payload)).not.toMatch(/hubspot|crmKey|prismClient/i);
     expect(portalAboutHasContent(payload)).toBe(true);
+  });
+
+  it("passes the RCM tag through without leaking staff-only ids", () => {
+    const payload = toPortalAbout({
+      projectName: "Acme",
+      customerName: "Acme",
+      crmAcronym: "ACME",
+      kickoffDate: null,
+      goLiveDate: null,
+      zoomBookingUrl: null,
+      aboutNotes: null,
+      hasRcm: true,
+      kickoff: { phaseName: null, phaseVisibility: null, items: [] },
+      implementationTeam: [],
+      customerContacts: [],
+    });
+    expect(payload.hasRcm).toBe(true);
+    expect(portalAboutHasContent(payload)).toBe(true);
+    expect(JSON.stringify(payload)).not.toMatch(/hubspot|crmKey|prismClient|playbookPath/i);
   });
 
   it("hides kickoff items when the Kickoff tab is still INTERNAL", () => {

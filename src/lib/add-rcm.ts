@@ -86,12 +86,19 @@ export function isHandoffComplete(
   });
 }
 
+/** Create-time EHR+RCM / RCM legacy, or mid-WIP Add RCM (stored as RCM_PRISM). */
+const RCM_PLAYBOOK_PATHS = new Set(["EHR_RCM", "RCM_LEGACY", "RCM_PRISM"]);
+
+export function isRcmPlaybookPath(path?: string | null): boolean {
+  return Boolean(path && RCM_PLAYBOOK_PATHS.has(path));
+}
+
 export function projectHasRcmTrack(input: {
   playbookPath?: string | null;
   rcmTaskCountTotal?: number | null;
   hasRcmWorkTrack?: boolean;
 }): boolean {
-  if (input.playbookPath === "RCM_PRISM") return true;
+  if (isRcmPlaybookPath(input.playbookPath)) return true;
   if ((input.rcmTaskCountTotal ?? 0) > 0) return true;
   return Boolean(input.hasRcmWorkTrack);
 }

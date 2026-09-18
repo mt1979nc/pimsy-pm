@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.1");
+    expect(APP_VERSION).toBe("1.18.2");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,22 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.2 RCM chips and task-list comment counts", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.2");
+    expect(note?.summary).toMatch(/RCM/i);
+    expect(note?.summary).toMatch(/comment/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /Projects tab/.test(h) && /RCM/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /About/.test(h) && /RCM/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Add RCM/.test(h) && /RCM_PRISM|playbook_path/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /task list/.test(h) && /comment/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.1")).toBeTruthy();
   });
 
   it("documents v1.18.1 complete sections dropping to the bottom", () => {

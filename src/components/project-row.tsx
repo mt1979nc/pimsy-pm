@@ -9,6 +9,7 @@ import {
 import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate, daysUntil } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { projectHasRcmTrack } from "@/lib/add-rcm";
 
 type Row = {
   id: string;
@@ -20,6 +21,8 @@ type Row = {
   targetGoLiveDate: Date | string | null;
   taskCountDone: number;
   taskCountTotal: number;
+  playbookPath?: string | null;
+  rcmTaskCountTotal?: number | null;
   customerAccount?: { id: string; name: string } | null;
   lead?: { id: string; name: string | null; image?: string | null } | null;
 };
@@ -36,7 +39,11 @@ export function ProjectRow({ project, href }: { project: Row; href?: string }) {
   const late = days !== null && days < 0 && project.status !== "COMPLETED";
   const acronym = siteAcronym(project);
   const siteName = project.customerAccount?.name ?? project.name;
-  const hoverTitle = [acronym, siteName, project.name !== siteName ? project.name : null]
+  const hasRcm = projectHasRcmTrack({
+    playbookPath: project.playbookPath,
+    rcmTaskCountTotal: project.rcmTaskCountTotal,
+  });
+  const hoverTitle = [acronym, siteName, project.name !== siteName ? project.name : null, hasRcm ? "RCM" : null]
     .filter(Boolean)
     .join(" · ");
 
@@ -47,8 +54,11 @@ export function ProjectRow({ project, href }: { project: Row; href?: string }) {
       className="group flex items-center gap-4 px-4 py-3 transition-colors hover:bg-surface-2"
     >
       <div className="min-w-0 flex-[2.2]">
-        <div className="truncate text-[13.5px] font-semibold text-ink group-hover:text-brand">
-          {acronym}
+        <div className="flex items-center gap-1.5">
+          <div className="truncate text-[13.5px] font-semibold text-ink group-hover:text-brand">
+            {acronym}
+          </div>
+          {hasRcm ? <Badge tone="violet">RCM</Badge> : null}
         </div>
         <div className="mt-0.5 truncate text-[12.5px] text-ink-3" title={siteName}>
           {siteName}
