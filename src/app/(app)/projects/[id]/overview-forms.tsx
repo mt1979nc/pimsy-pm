@@ -13,10 +13,13 @@ import {
 import { toggleMilestone, createMilestone } from "@/actions/tasks";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Field, inputClass, Button, VisibilityBadge, HealthBadge, SeverityBadge, Avatar } from "@/components/ui";
+import { MentionBody } from "@/components/mention-body";
+import { MentionTextarea } from "@/components/mention-textarea";
 import { cn } from "@/lib/cn";
 import { fmtRelative } from "@/lib/dates";
 import { canEditAuthoredRecord } from "@/lib/authored-content";
 import type { ActionState } from "@/actions/messages";
+import type { MentionCandidate } from "@/lib/mentions";
 import {
   PROJECT_UPDATES_DUE_TODAY_LABEL,
   PROJECT_UPDATES_THURSDAY_HEADLINE,
@@ -52,9 +55,11 @@ function WeeklyUpdateInstruction() {
 export function StatusUpdateForm({
   projectId,
   currentHealth,
+  mentionCandidates = [],
 }: {
   projectId: string;
   currentHealth: string;
+  mentionCandidates?: MentionCandidate[];
 }) {
   const [state, action] = useActionState(publishStatusUpdate, {});
   const [open, setOpen] = useState(false);
@@ -69,27 +74,46 @@ export function StatusUpdateForm({
           <input type="hidden" name="visibility" value={visibility} />
           <FormError error={state.error} />
 
-          <Field label="Summary" htmlFor="summary">
-            <textarea
+          <Field label="Summary" htmlFor="summary" hint="Type @ to mention">
+            <MentionTextarea
               id="summary"
               name="summary"
               rows={2}
               required
               autoFocus
+              candidates={mentionCandidates}
+              visibility={visibility}
               placeholder="Config is complete and we start staff training Monday."
-              className={inputClass}
             />
           </Field>
 
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Done this period" htmlFor="accomplished">
-              <textarea id="accomplished" name="accomplished" rows={3} className={inputClass} />
+              <MentionTextarea
+                id="accomplished"
+                name="accomplished"
+                rows={3}
+                candidates={mentionCandidates}
+                visibility={visibility}
+              />
             </Field>
             <Field label="Coming up next" htmlFor="upcoming">
-              <textarea id="upcoming" name="upcoming" rows={3} className={inputClass} />
+              <MentionTextarea
+                id="upcoming"
+                name="upcoming"
+                rows={3}
+                candidates={mentionCandidates}
+                visibility={visibility}
+              />
             </Field>
             <Field label="What we need from you" htmlFor="needsFromYou">
-              <textarea id="needsFromYou" name="needsFromYou" rows={3} className={inputClass} />
+              <MentionTextarea
+                id="needsFromYou"
+                name="needsFromYou"
+                rows={3}
+                candidates={mentionCandidates}
+                visibility={visibility}
+              />
             </Field>
           </div>
 
@@ -320,6 +344,7 @@ export function StatusUpdateItem({
   update,
   currentUserId,
   currentUserRole,
+  mentionCandidates = [],
 }: {
   update: {
     id: string;
@@ -336,6 +361,7 @@ export function StatusUpdateItem({
   };
   currentUserId: string;
   currentUserRole: string;
+  mentionCandidates?: MentionCandidate[];
 }) {
   const canManage = canEditAuthoredRecord({ id: currentUserId, role: currentUserRole }, update.authorId);
   const [editing, setEditing] = useState(false);
@@ -353,41 +379,45 @@ export function StatusUpdateItem({
         <input type="hidden" name="updateId" value={update.id} />
         <FormError error={state.error} />
         <Field label="Summary" htmlFor={`summary-${update.id}`}>
-          <textarea
+          <MentionTextarea
             id={`summary-${update.id}`}
             name="summary"
             rows={2}
             required
             defaultValue={update.summary}
-            className={inputClass}
+            candidates={mentionCandidates}
+            visibility={update.visibility}
           />
         </Field>
         <div className="grid gap-3 sm:grid-cols-3">
           <Field label="Done this period" htmlFor={`accomplished-${update.id}`}>
-            <textarea
+            <MentionTextarea
               id={`accomplished-${update.id}`}
               name="accomplished"
               rows={3}
               defaultValue={update.accomplished ?? ""}
-              className={inputClass}
+              candidates={mentionCandidates}
+              visibility={update.visibility}
             />
           </Field>
           <Field label="Coming up next" htmlFor={`upcoming-${update.id}`}>
-            <textarea
+            <MentionTextarea
               id={`upcoming-${update.id}`}
               name="upcoming"
               rows={3}
               defaultValue={update.upcoming ?? ""}
-              className={inputClass}
+              candidates={mentionCandidates}
+              visibility={update.visibility}
             />
           </Field>
           <Field label="What we need from you" htmlFor={`needs-${update.id}`}>
-            <textarea
+            <MentionTextarea
               id={`needs-${update.id}`}
               name="needsFromYou"
               rows={3}
               defaultValue={update.needsFromYou ?? ""}
-              className={inputClass}
+              candidates={mentionCandidates}
+              visibility={update.visibility}
             />
           </Field>
         </div>
@@ -445,7 +475,10 @@ export function StatusUpdateItem({
         ) : null}
       </div>
       {error ? <p className="mb-2 text-[12px] text-red">{error}</p> : null}
-      <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">{update.summary}</p>
+      <MentionBody
+        text={update.summary}
+        className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink"
+      />
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         {[
           ["Completed", update.accomplished],
@@ -458,7 +491,10 @@ export function StatusUpdateItem({
               <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-3">
                 {label}
               </div>
-              <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-snug text-ink-2">{v}</p>
+              <MentionBody
+                text={v as string}
+                className="mt-1 whitespace-pre-wrap text-[12.5px] leading-snug text-ink-2"
+              />
             </div>
           ))}
       </div>

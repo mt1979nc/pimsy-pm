@@ -172,7 +172,7 @@ What generates mail:
 | Task assigned to you | The assignee — staff or a named customer contact |
 | Task completed | Project lead and the task's owner. A customer clearing an action item is the loudest one. |
 | New message or reply | Everyone on the thread |
-| Mentioned by name | The person mentioned |
+| Mentioned by name | The person mentioned — in a message, task comment, or project update |
 | Comment on a task | Task owner and project lead |
 | File or link attached | Project lead and the task's owner |
 | Due soon / overdue | The owner |

@@ -39,13 +39,13 @@ describe("canEditAuthoredRecord", () => {
 });
 
 describe("edit/delete UI is short and on the right surfaces", () => {
-  it("comments, updates, and risks expose Edit/Delete without mentions or revision logs", () => {
+  it("comments, updates, and risks expose Edit/Delete without revision logs", () => {
     const comments = readFileSync(resolve(process.cwd(), "src/components/task-comments.tsx"), "utf8");
     expect(comments).toMatch(/editTaskComment/);
     expect(comments).toMatch(/deleteTaskComment/);
     expect(comments).toMatch(/editedAt/);
     expect(comments).toMatch(/Delete this comment\?/);
-    expect(comments).not.toMatch(/@mention|mention/);
+    expect(comments).toMatch(/MentionTextarea/);
 
     const forms = readFileSync(
       resolve(process.cwd(), "src/app/(app)/projects/[id]/overview-forms.tsx"),
@@ -58,7 +58,7 @@ describe("edit/delete UI is short and on the right surfaces", () => {
     expect(forms).toMatch(/deleteRisk/);
     expect(forms).toMatch(/Delete this update\?/);
     expect(forms).toMatch(/Delete this risk\?/);
-    expect(forms).not.toMatch(/revision|changelog|@mention/i);
+    expect(forms).not.toMatch(/revision|changelog/i);
 
     const staffTask = readFileSync(
       resolve(process.cwd(), "src/app/(app)/projects/[id]/tasks/[taskId]/page.tsx"),

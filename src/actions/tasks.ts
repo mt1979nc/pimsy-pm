@@ -26,6 +26,8 @@ import { setTaskNotApplicable } from "@/lib/playbook";
 import { isSpecialistSubtask, liveTaskCreateDefaults } from "@/lib/task-visibility";
 import { customerMayChangeAssignee } from "@/lib/task-role-match";
 import { editTaskCommentForActor, deleteTaskCommentForActor } from "@/lib/content-edit";
+import { notifyBodyMentions } from "@/lib/mention-notify";
+import { mentionPlainText } from "@/lib/mentions";
 import { exposePhaseFromCompletedTask } from "@/lib/expose-phase";
 import { applyTaskMove } from "@/lib/task-relink";
 import { syncMilestonesFromTaskCompletion } from "@/lib/milestone-rollup";
@@ -751,7 +753,7 @@ export async function addTaskComment(
       title: `New comment on "${task.title}"`,
       // The excerpt is quoted rather than inlined, so the email reads like a
       // notification about a comment instead of pretending to be the comment.
-      quote: { author: actor.name ?? actor.email ?? "Someone", text: body.slice(0, 400) },
+      quote: { author: actor.name ?? actor.email ?? "Someone", text: mentionPlainText(body).slice(0, 400) },
       facts: [{ name: "Project", value: project?.name ?? "—" }],
       linkUrl: `/projects/${task.projectId}/tasks/${taskId}`,
       portalLinkUrl: `/portal/projects/${task.projectId}/tasks/${taskId}`,
@@ -765,6 +767,18 @@ export async function addTaskComment(
       exceptUserId: actor.id,
     });
   }
+
+  await notifyBodyMentions({
+    actor,
+    projectId: task.projectId,
+    texts: [body],
+    visibility,
+    quote: body,
+    linkUrl: `/projects/${task.projectId}/tasks/${taskId}`,
+    portalLinkUrl: `/portal/projects/${task.projectId}/tasks/${taskId}`,
+    ctaLabel: "Read and reply",
+    projectName: project?.name,
+  });
 
   revalidatePath(`/projects/${task.projectId}/tasks/${taskId}`);
   revalidatePath(`/projects/${task.projectId}/tasks`);
@@ -783,7 +797,22 @@ function revalidateTaskComments(projectId: string, taskId: string) {
 
 export async function editTaskComment(commentId: string, body: string) {
   const actor = await requireUser();
-  const { projectId, taskId } = await editTaskCommentForActor(actor, commentId, body);
+  const { projectId, taskId, previousBody, visibility } = await editTaskCommentForActor(
+    actor,
+    commentId,
+    body,
+  );
+  await notifyBodyMentions({
+    actor,
+    projectId,
+    texts: [body],
+    previousTexts: [previousBody],
+    visibility,
+    quote: body,
+    linkUrl: `/projects/${projectId}/tasks/${taskId}`,
+    portalLinkUrl: `/portal/projects/${projectId}/tasks/${taskId}`,
+    ctaLabel: "Read and reply",
+  });
   revalidateTaskComments(projectId, taskId);
 }
 

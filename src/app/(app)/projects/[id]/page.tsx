@@ -27,6 +27,7 @@ import { staffingRoleLabel } from "@/lib/staffing";
 import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
 import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
 import { ContactCard } from "@/components/contact-card";
+import { listMentionCandidates } from "@/lib/mention-candidates";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function ProjectOverviewPage({
   });
   if (!project) notFound();
 
-  const [projectMilestones, projectRisks, updates, customerActions] = await Promise.all([
+  const [projectMilestones, projectRisks, updates, customerActions, mentionCandidates] = await Promise.all([
     db.query.milestones.findMany({
       where: eq(milestones.projectId, id),
       orderBy: [asc(milestones.order), asc(milestones.dueDate)],
@@ -78,6 +79,7 @@ export default async function ProjectOverviewPage({
       limit: 30,
       with: { phase: { columns: { id: true, name: true, order: true } } },
     }),
+    listMentionCandidates(id, "staff"),
   ]);
 
   const staffMembers = project.members.filter((m) => m.user.role !== "CUSTOMER");
@@ -88,7 +90,11 @@ export default async function ProjectOverviewPage({
       <div className="space-y-4">
         <Card>
           <CardHeader title="Updates" />
-          <StatusUpdateForm projectId={id} currentHealth={project.health} />
+          <StatusUpdateForm
+            projectId={id}
+            currentHealth={project.health}
+            mentionCandidates={mentionCandidates}
+          />
           {updates.length === 0 ? (
             <EmptyState title="No updates yet" />
           ) : (
@@ -99,6 +105,7 @@ export default async function ProjectOverviewPage({
                   update={u}
                   currentUserId={actor.id}
                   currentUserRole={actor.role}
+                  mentionCandidates={mentionCandidates}
                 />
               ))}
             </div>

@@ -36,11 +36,8 @@ import { showReviewRequiredBadge } from "@/lib/discovery-config-review";
 import { listConnectedPeers } from "@/lib/connected-task-sync";
 import { resolveProjectBookingUrls } from "@/lib/booking-urls";
 import { TrainingSessionBook } from "@/components/training-session-book";
-import {
-  canBookTrainingSession,
-  isTrainingSessionParent,
-  scheduledSessionLabel,
-} from "@/lib/training-session";
+import { canBookTrainingSession, isTrainingSessionParent, scheduledSessionLabel } from "@/lib/training-session";
+import { peopleToMentionCandidates } from "@/lib/mentions";
 
 export const dynamic = "force-dynamic";
 
@@ -461,6 +458,7 @@ export default async function TaskDetailPage({
               currentUserRole={actor.role}
               canChooseVisibility
               taskIsInternal={task.visibility === "INTERNAL"}
+              mentionCandidates={peopleToMentionCandidates([...staff, ...contacts])}
             />
           </Card>
         </div>

@@ -14,6 +14,7 @@ import { Card, CardHeader, EmptyState, Badge, Avatar, ProgressBar } from "@/comp
 import { PortalTaskRow } from "../../portal-task-row";
 import { PortalMessageBox } from "../../portal-message-box";
 import { ThreadPreviewList } from "@/components/thread-list";
+import { MentionBody } from "@/components/mention-body";
 import { attachmentHref } from "@/lib/attachments";
 import { fmtShort, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -282,9 +283,10 @@ export default async function PortalProjectPage({
                       <span className="text-[12px] text-ink-3">{fmtRelative(u.publishedAt)}</span>
                     {u.editedAt ? <span className="text-[11.5px] text-ink-3">edited</span> : null}
                     </div>
-                    <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">
-                      {u.summary}
-                    </p>
+                    <MentionBody
+                      text={u.summary}
+                      className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink"
+                    />
                   </div>
                 ))}
               </div>

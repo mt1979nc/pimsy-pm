@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.5";
+export const APP_VERSION = "1.18.6";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.6",
+    date: "2026-09-18",
+    summary:
+      "Type @ in comments and project updates to mention PATH staff and this site’s customer contacts. Short-name picker inserts tokens; chips in display; MENTIONED in-app and email. No schema migrate.",
+    highlights: [
+      "Staff comments and project updates: type @, pick a short name, insert `@[Morgan](user:id)` in the body. Portal shared comments use the same picker for the implementation team plus this site’s contacts.",
+      "Who: staff composer lists active PATH staff plus this site’s customer contacts. Portal lists project staff (and the lead) plus this site’s contacts — not another customer, not the whole directory.",
+      "Internal comments/updates never notify a customer, even if a contact token is pasted. Shared mentions use existing MENTIONED (in-app always; email per Mentions alert prefs, immediate, not the customer digest). Staff and portal deep links.",
+      "Chips on staff comments, project updates, portal comments, and portal / Customer view update summaries. Edit still notifies only newly added mentions. Edit/delete rules unchanged from 1.18.3.",
+      "No schema migrate — tokens live in the body; notifications reuse the existing type. Thursday Updates instruction and Imp Spec reminder stay as shipped in 1.18.5. No recordings or RCM tags in this slice.",
+      "PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.5",
     date: "2026-09-18",

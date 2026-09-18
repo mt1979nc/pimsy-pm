@@ -25,6 +25,7 @@ import { cn } from "@/lib/cn";
 import { orderTasksForNesting } from "@/lib/task-tree";
 import { CommentCountBadge } from "@/components/comment-count-badge";
 import { sortPhaseSections } from "@/lib/task-list-filter";
+import { MentionBody } from "@/components/mention-body";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Customer view" };
@@ -303,9 +304,10 @@ export default async function CustomerViewPreviewPage({
                     <span className="text-[11.5px] text-ink-3">{fmtRelative(u.publishedAt)}</span>
                     {u.editedAt ? <span className="text-[11.5px] text-ink-3">edited</span> : null}
                   </div>
-                  <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-ink-2">
-                    {u.summary}
-                  </p>
+                  <MentionBody
+                    text={u.summary}
+                    className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-ink-2"
+                  />
                 </div>
               ))}
             </div>

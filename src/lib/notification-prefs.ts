@@ -83,7 +83,7 @@ export const ALERT_TYPES: {
   {
     type: "MENTIONED",
     label: "Mentions",
-    description: "Someone mentions you by name in a message.",
+    description: "Someone mentions you by name in a message, comment, or project update.",
     audience: "both",
     staffDefault: true,
     customerDefault: true,
