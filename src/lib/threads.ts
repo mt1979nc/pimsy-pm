@@ -1,4 +1,4 @@
-import { and, eq, desc, inArray, or, isNull } from "drizzle-orm";
+import { and, eq, desc, inArray, or, isNull, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { messageThreads, threadParticipants, projects } from "@/db/schema";
 import {
@@ -9,7 +9,6 @@ import {
   accessibleProjectIds,
   type Actor,
 } from "./authz";
-import { isUnread } from "./thread-state";
 
 export { isUnread, partitionThreads } from "./thread-state";
 
@@ -62,11 +61,11 @@ export async function listProjectThreads(actor: Actor, projectId: string) {
   });
 }
 
-/** Every thread across everything the actor can reach — the unified inbox. */
-export async function listInboxThreads(actor: Actor, limit = 60) {
+/** Same inbox reach as the Inbox page — project threads plus account/org threads. */
+async function inboxThreadConditions(actor: Actor): Promise<SQL[] | null> {
   const projectIds = await accessibleProjectIds(actor);
 
-  const scope = [];
+  const scope: SQL[] = [];
   if (projectIds.length > 0) scope.push(inArray(messageThreads.projectId, projectIds));
   if (isCustomer(actor) && actor.customerAccountId) {
     scope.push(
@@ -79,10 +78,17 @@ export async function listInboxThreads(actor: Actor, limit = 60) {
     // Staff also see account-level and org-wide threads.
     scope.push(isNull(messageThreads.projectId));
   }
-  if (scope.length === 0) return [];
+  if (scope.length === 0) return null;
 
-  const conditions = [scope.length === 1 ? scope[0] : or(...scope)!];
+  const conditions: SQL[] = [scope.length === 1 ? scope[0]! : or(...scope)!];
   if (!canSeeInternal(actor)) conditions.push(eq(messageThreads.visibility, "SHARED"));
+  return conditions;
+}
+
+/** Every thread across everything the actor can reach — the unified inbox. */
+export async function listInboxThreads(actor: Actor, limit = 60) {
+  const conditions = await inboxThreadConditions(actor);
+  if (!conditions) return [];
 
   return db.query.messageThreads.findMany({
     where: and(...conditions),
@@ -102,10 +108,36 @@ export async function listInboxThreads(actor: Actor, limit = 60) {
 /**
  * Open (unresolved) unread count for the nav badge. Resolved topics stay
  * out of the number so SLA work is not drowned by closed history.
+ *
+ * Must stay a COUNT — the staff layout calls this on every render, including
+ * the RSC refresh after marking a task done. Hydrating 500 inbox threads with
+ * participants just to count was multi-second on small App Service + remote
+ * Postgres.
  */
 export async function unreadThreadCount(actor: Actor) {
-  const threads = await listInboxThreads(actor, 500);
-  return threads.filter((t) => !t.isResolved && isUnread(t, actor.id)).length;
+  const conditions = await inboxThreadConditions(actor);
+  if (!conditions) return 0;
+
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(messageThreads)
+    .leftJoin(
+      threadParticipants,
+      and(eq(threadParticipants.threadId, messageThreads.id), eq(threadParticipants.userId, actor.id)),
+    )
+    .where(
+      and(
+        ...conditions,
+        eq(messageThreads.isResolved, false),
+        or(
+          isNull(threadParticipants.userId),
+          isNull(threadParticipants.lastReadAt),
+          sql`${threadParticipants.lastReadAt} < ${messageThreads.lastMessageAt}`,
+        ),
+      ),
+    );
+
+  return row?.n ?? 0;
 }
 
 /** Add users to a thread without duplicating rows. */

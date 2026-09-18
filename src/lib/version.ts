@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.17.2";
+export const APP_VERSION = "1.17.3";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.17.3",
+    date: "2026-09-18",
+    summary:
+      "PATH task complete feels instant: checkbox is optimistic, completion email/Teams no longer block the click, and the nav unread badge is a COUNT instead of loading the inbox. No schema migrate.",
+    highlights: [
+      "Mark done no longer greys the row until Resend and a full page refresh finish. The checkbox flips immediately; a failure rolls back.",
+      "Completion email and Teams post run after the response (Next.js after()). In-app notification still created.",
+      "Project task counters refresh in one FILTER query, not six sequential COUNT round-trips to Postgres.",
+      "Staff/portal layout unread badge is a SQL count. Completing a task revalidates the layout; it no longer hydrates 500 inbox threads with participants.",
+      "Training session side-effects skip the full-project task load unless the row is a training session, schedule, or child of one.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.17.2",
     date: "2026-09-18",

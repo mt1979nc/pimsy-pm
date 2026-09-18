@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { setTaskStatus } from "@/actions/tasks";
 import { TaskActionButtons } from "@/components/task-action-buttons";
 import { AddAttachment } from "@/components/attachments";
@@ -40,7 +40,8 @@ export function PortalTaskRow({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const done = task.status === "DONE";
+  const [optimisticStatus, setOptimisticStatus] = useOptimistic(task.status);
+  const done = optimisticStatus === "DONE";
   const overdue = isOverdue(task.dueDate) && !done;
   const comments = task.commentCount ?? 0;
   const taskHref = task.projectId
@@ -48,16 +49,18 @@ export function PortalTaskRow({
     : null;
 
   return (
-    <div className={cn("flex items-start gap-3 px-4 py-2", pending && "opacity-60")}>
+    <div className={cn("flex items-start gap-3 px-4 py-2")}>
       <button
         type="button"
         disabled={pending}
         aria-label={done ? `Mark ${task.title} not done` : `Mark ${task.title} done`}
         onClick={() => {
           setError(null);
+          const next = done ? "TODO" : "DONE";
           start(async () => {
+            setOptimisticStatus(next);
             try {
-              await setTaskStatus(task.id, done ? "TODO" : "DONE");
+              await setTaskStatus(task.id, next);
             } catch (e) {
               setError(e instanceof Error ? e.message : "Could not update that item.");
             }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useOptimistic, useState, useTransition } from "react";
 import { updateTask, setTaskStatus, setTaskVisibility, markTaskNotApplicable } from "@/actions/tasks";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Button, Field, inputClass, VisibilityBadge } from "@/components/ui";
@@ -34,6 +34,7 @@ export function TaskDetailControls({
   const [editing, setEditing] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [optimisticStatus, setOptimisticStatus] = useOptimistic(task.status);
 
   function change(fn: () => Promise<unknown>) {
     setError(null);
@@ -59,11 +60,14 @@ export function TaskDetailControls({
 
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
           <select
-            value={task.status}
+            value={optimisticStatus}
             disabled={pending}
             onChange={(e) => {
               const next = e.target.value;
-              change(() => setTaskStatus(task.id, next));
+              change(async () => {
+                setOptimisticStatus(next);
+                await setTaskStatus(task.id, next);
+              });
             }}
             className="rounded-lg border border-border-strong bg-surface px-2.5 py-1.5 text-[13px]"
           >

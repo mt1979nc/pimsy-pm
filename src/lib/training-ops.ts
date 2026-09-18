@@ -182,6 +182,18 @@ export async function applyTrainingStatusSideEffects(opts: {
 }): Promise<{ carried: number; parentCompleted: boolean }> {
   if (opts.nextStatus !== "DONE") return { carried: 0, parentCompleted: false };
 
+  const selfRef = parseTrainingRef(opts.task.title);
+  if (selfRef?.role !== "schedule" && selfRef?.role !== "session") {
+    if (!opts.task.parentTaskId) return { carried: 0, parentCompleted: false };
+    const parent = await db.query.tasks.findFirst({
+      where: eq(tasks.id, opts.task.parentTaskId),
+      columns: { title: true },
+    });
+    if (parseTrainingRef(parent?.title ?? "")?.role !== "session") {
+      return { carried: 0, parentCompleted: false };
+    }
+  }
+
   const all = await loadProjectTrainingTasks(opts.task.projectId);
   const live = all.find((t) => t.id === opts.task.id) ?? { ...opts.task, status: opts.nextStatus };
   const ref = parseTrainingRef(live.title);
