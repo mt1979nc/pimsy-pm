@@ -25,8 +25,54 @@ export type FilterableTask = {
   notApplicable?: boolean | null;
 };
 
-function isClosed(t: FilterableTask): boolean {
+/** Closed for list/section math: DONE, cancelled, or N/A. */
+export function isTaskClosed(t: { status: string; notApplicable?: boolean | null }): boolean {
   return Boolean(t.notApplicable) || t.status === "DONE" || t.status === "CANCELLED";
+}
+
+function isClosed(t: FilterableTask): boolean {
+  return isTaskClosed(t);
+}
+
+/**
+ * A phase/section is complete when it has tasks and every one is DONE, N/A, or
+ * cancelled. N/A counts as complete. Empty sections stay in original order.
+ * A section marked N/A is complete even with no rows.
+ */
+export function isSectionComplete(
+  tasks: readonly { status: string; notApplicable?: boolean | null }[],
+  opts?: { sectionNotApplicable?: boolean },
+): boolean {
+  if (opts?.sectionNotApplicable) return true;
+  if (tasks.length === 0) return false;
+  return tasks.every(isTaskClosed);
+}
+
+/**
+ * Incomplete sections first (stable original order), then complete sections
+ * (stable original order) so finished phases accumulate at the bottom.
+ */
+export function sortSectionsByCompletion<T>(
+  sections: readonly T[],
+  complete: (section: T) => boolean,
+): T[] {
+  const incomplete: T[] = [];
+  const finished: T[] = [];
+  for (const section of sections) {
+    (complete(section) ? finished : incomplete).push(section);
+  }
+  return [...incomplete, ...finished];
+}
+
+export function sortPhaseSections<
+  T extends {
+    notApplicable?: boolean | null;
+    tasks: readonly { status: string; notApplicable?: boolean | null }[];
+  },
+>(sections: readonly T[]): T[] {
+  return sortSectionsByCompletion(sections, (section) =>
+    isSectionComplete(section.tasks, { sectionNotApplicable: Boolean(section.notApplicable) }),
+  );
 }
 
 function haystack(t: FilterableTask): string {

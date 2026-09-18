@@ -19,6 +19,7 @@ import { fmtShort, fmtRelative } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { resolveTaskDescription } from "@/lib/task-description";
 import { resolveProjectBookingUrls } from "@/lib/booking-urls";
+import { isSectionComplete, sortSectionsByCompletion } from "@/lib/task-list-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -48,14 +49,17 @@ export default async function PortalProjectPage({
   const customerTasks = (tasks: typeof looseTasks) =>
     tasks.filter((t) => t.ownerSide === "CUSTOMER");
 
-  const openByPhase = phases
-    .map((phase) => {
-      const mine = customerTasks(phase.tasks);
-      const open = mine.filter((t) => t.status !== "DONE");
-      const done = mine.filter((t) => t.status === "DONE");
-      return { phase, open, done, all: mine };
-    })
-    .filter((g) => g.all.length > 0);
+  const openByPhase = sortSectionsByCompletion(
+    phases
+      .map((phase) => {
+        const mine = customerTasks(phase.tasks);
+        const open = mine.filter((t) => t.status !== "DONE");
+        const done = mine.filter((t) => t.status === "DONE");
+        return { phase, open, done, all: mine };
+      })
+      .filter((g) => g.all.length > 0),
+    (g) => isSectionComplete(g.all),
+  );
 
   const looseMine = customerTasks(looseTasks);
   const looseOpen = looseMine.filter((t) => t.status !== "DONE");

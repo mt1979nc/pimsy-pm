@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.0");
+    expect(APP_VERSION).toBe("1.18.1");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,21 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.1 complete sections dropping to the bottom", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.1");
+    expect(note?.summary).toMatch(/section/i);
+    expect(note?.summary).toMatch(/bottom/i);
+    expect(note?.summary).toMatch(/N\/A/);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /DONE/.test(h) && /N\/A/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /original order/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /portal/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /optimistic|client-side|already-loaded/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/\bCRM\b/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.0")).toBeTruthy();
   });
 
   it("documents v1.18.0 Forecast+ weight updates", () => {

@@ -64,6 +64,17 @@ export function portalFacingTaskSql(): SQL {
 }
 
 /**
+ * SHARED parent / customer-owned rows including N/A and cancelled — used to
+ * decide whether a portal area is complete (N/A counts as done).
+ */
+export function portalSectionTaskSql(): SQL {
+  return and(
+    eq(tasks.visibility, "SHARED"),
+    or(isNull(tasks.parentTaskId), eq(tasks.ownerSide, "CUSTOMER")),
+  )!;
+}
+
+/**
  * Defaults for a live-project create. New sub-tasks are specialist work
  * (internal) unless explicitly assigned to the customer.
  */

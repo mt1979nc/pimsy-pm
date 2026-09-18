@@ -20,7 +20,9 @@ import { fmtShort } from "@/lib/dates";
 import {
   excludeCollapsedDescendants,
   filterNestedTasks,
+  isSectionComplete,
   partitionCompletedGroups,
+  sortSectionsByCompletion,
   type TaskListView,
 } from "@/lib/task-list-filter";
 import type { ChecklistItemView } from "@/components/task-checklist";
@@ -66,6 +68,7 @@ function PhaseTaskRows({
   allowStructureEdit,
   movePhases,
   moveTasks,
+  onPreviewChange,
 }: {
   projectId: string;
   tasks: ProjectTaskListItem[];
@@ -77,6 +80,10 @@ function PhaseTaskRows({
   allowStructureEdit: boolean;
   movePhases: MoveTaskPhaseOption[];
   moveTasks: MoveTaskNode[];
+  onPreviewChange?: (
+    taskId: string,
+    patch: { status?: ProjectTaskListItem["status"]; notApplicable?: boolean },
+  ) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const parentsWithChildren = childIdsOf(tasks);
@@ -98,6 +105,9 @@ function PhaseTaskRows({
           childrenCollapsed={collapsed.has(t.id)}
           movePhases={movePhases}
           moveTasks={moveTasks}
+          onPreviewChange={
+            onPreviewChange ? (patch) => onPreviewChange(t.id, patch) : undefined
+          }
           onToggleChildren={
             parentsWithChildren.has(t.id)
               ? () =>
@@ -170,13 +180,72 @@ export function ProjectTaskBoard({
     }
   }
 
-  const allTasks = useMemo(
+  const [taskPreview, setTaskPreview] = useState<
+    Record<string, { status?: ProjectTaskListItem["status"]; notApplicable?: boolean }>
+  >({});
+  const [phaseNaPreview, setPhaseNaPreview] = useState<Record<string, boolean>>({});
+
+  const serverTasks = useMemo(
     () => [...phases.flatMap((p) => p.tasks), ...unphased],
     [phases, unphased],
   );
+
+  useEffect(() => {
+    setTaskPreview((prev) => {
+      if (Object.keys(prev).length === 0) return prev;
+      const byId = new Map(serverTasks.map((t) => [t.id, t]));
+      let changed = false;
+      const next = { ...prev };
+      for (const [id, patch] of Object.entries(next)) {
+        const server = byId.get(id);
+        if (
+          !server ||
+          ((patch.status === undefined || patch.status === server.status) &&
+            (patch.notApplicable === undefined || patch.notApplicable === server.notApplicable))
+        ) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    setPhaseNaPreview((prev) => {
+      if (Object.keys(prev).length === 0) return prev;
+      let changed = false;
+      const next = { ...prev };
+      for (const phase of phases) {
+        if (next[phase.id] === undefined || next[phase.id] === phase.notApplicable) {
+          if (next[phase.id] !== undefined) {
+            delete next[phase.id];
+            changed = true;
+          }
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [serverTasks, phases]);
+
+  const livePhases = useMemo(
+    () =>
+      phases.map((phase) => ({
+        ...phase,
+        notApplicable: phaseNaPreview[phase.id] ?? phase.notApplicable,
+        tasks: phase.tasks.map((t) => (taskPreview[t.id] ? { ...t, ...taskPreview[t.id] } : t)),
+      })),
+    [phases, taskPreview, phaseNaPreview],
+  );
+  const liveUnphased = useMemo(
+    () => unphased.map((t) => (taskPreview[t.id] ? { ...t, ...taskPreview[t.id] } : t)),
+    [unphased, taskPreview],
+  );
+
+  const allTasks = useMemo(
+    () => [...livePhases.flatMap((p) => p.tasks), ...liveUnphased],
+    [livePhases, liveUnphased],
+  );
   const movePhases = useMemo<MoveTaskPhaseOption[]>(
-    () => phases.map((p) => ({ id: p.id, name: p.name })),
-    [phases],
+    () => livePhases.map((p) => ({ id: p.id, name: p.name })),
+    [livePhases],
   );
   const moveTasks = useMemo<MoveTaskNode[]>(
     () =>
@@ -189,8 +258,15 @@ export function ProjectTaskBoard({
     [allTasks],
   );
 
+  function previewTaskChange(
+    taskId: string,
+    patch: { status?: ProjectTaskListItem["status"]; notApplicable?: boolean },
+  ) {
+    setTaskPreview((prev) => ({ ...prev, [taskId]: { ...prev[taskId], ...patch } }));
+  }
+
   const filteredPhases = useMemo(() => {
-    return phases.map((phase) => {
+    const rows = livePhases.map((phase) => {
       const filtered = filterNestedTasks(phase.tasks, {
         query,
         view,
@@ -199,12 +275,15 @@ export function ProjectTaskBoard({
       const split = partitionCompletedGroups(filtered);
       return { phase, filtered, ...split };
     });
-  }, [phases, query, view, currentUserId]);
+    return sortSectionsByCompletion(rows, (row) =>
+      isSectionComplete(row.phase.tasks, { sectionNotApplicable: row.phase.notApplicable }),
+    );
+  }, [livePhases, query, view, currentUserId]);
 
   const unphasedFiltered = useMemo(() => {
-    const filtered = filterNestedTasks(unphased, { query, view, currentUserId });
+    const filtered = filterNestedTasks(liveUnphased, { query, view, currentUserId });
     return { filtered, ...partitionCompletedGroups(filtered) };
-  }, [unphased, query, view, currentUserId]);
+  }, [liveUnphased, query, view, currentUserId]);
 
   const openCount = allTasks.filter(
     (t) => !t.notApplicable && t.status !== "DONE" && t.status !== "CANCELLED",
@@ -277,6 +356,9 @@ export function ProjectTaskBoard({
       {filteredPhases.map(({ phase, filtered, active, completed }) => {
         const done = phase.tasks.filter((t) => t.status === "DONE").length;
         const applicable = phase.tasks.filter((t) => !t.notApplicable).length;
+        const sectionDone = isSectionComplete(phase.tasks, {
+          sectionNotApplicable: phase.notApplicable,
+        });
         return (
           <Card key={phase.id}>
             <CardHeader
@@ -286,7 +368,11 @@ export function ProjectTaskBoard({
                   {phase.visibility === "INTERNAL" ? (
                     <VisibilityBadge visibility="INTERNAL" />
                   ) : null}
-                  {phase.notApplicable ? <Badge tone="amber">N/A</Badge> : null}
+                  {phase.notApplicable ? (
+                    <Badge tone="amber">N/A</Badge>
+                  ) : sectionDone ? (
+                    <Badge tone="green">Done</Badge>
+                  ) : null}
                   {phase.workTrack === "RCM" ? <Badge tone="violet">RCM</Badge> : null}
                 </span>
               }
@@ -299,7 +385,13 @@ export function ProjectTaskBoard({
               action={
                 <span className="flex flex-wrap items-center justify-end gap-3">
                   <PhaseVisibilityButton phaseId={phase.id} visibility={phase.visibility} />
-                  <PhaseNaButton phaseId={phase.id} notApplicable={phase.notApplicable} />
+                  <PhaseNaButton
+                    phaseId={phase.id}
+                    notApplicable={phase.notApplicable}
+                    onPreviewChange={(next) =>
+                      setPhaseNaPreview((prev) => ({ ...prev, [phase.id]: next }))
+                    }
+                  />
                 </span>
               }
             />
@@ -320,6 +412,7 @@ export function ProjectTaskBoard({
                   allowStructureEdit
                   movePhases={movePhases}
                   moveTasks={moveTasks}
+                  onPreviewChange={previewTaskChange}
                 />
               </div>
             )}
@@ -335,6 +428,7 @@ export function ProjectTaskBoard({
                 allowStructureEdit
                 movePhases={movePhases}
                 moveTasks={moveTasks}
+                onPreviewChange={previewTaskChange}
               />
             </CollapsibleCompleted>
             <div className="border-t border-border">
@@ -369,6 +463,7 @@ export function ProjectTaskBoard({
                 allowStructureEdit
                 movePhases={movePhases}
                 moveTasks={moveTasks}
+                onPreviewChange={previewTaskChange}
               />
             </div>
           )}
@@ -384,6 +479,7 @@ export function ProjectTaskBoard({
               allowStructureEdit
               movePhases={movePhases}
               moveTasks={moveTasks}
+              onPreviewChange={previewTaskChange}
             />
           </CollapsibleCompleted>
           <div className="border-t border-border">

@@ -70,6 +70,7 @@ export function TaskRow({
   onToggleChildren,
   movePhases,
   moveTasks,
+  onPreviewChange,
 }: {
   task: TaskRowData;
   showProject?: boolean;
@@ -88,6 +89,8 @@ export function TaskRow({
   /** Staff Move… catalog (sections + parents). Omitted on My Work / dashboard. */
   movePhases?: MoveTaskPhaseOption[];
   moveTasks?: MoveTaskNode[];
+  /** Immediate local status/N/A so complete sections can drop without waiting. */
+  onPreviewChange?: (patch: { status?: TaskRowData["status"]; notApplicable?: boolean }) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -109,11 +112,13 @@ export function TaskRow({
     if (!canEdit) return;
     setError(null);
     const next = done ? "TODO" : "DONE";
+    onPreviewChange?.({ status: next });
     startTransition(async () => {
       setOptimisticStatus(next);
       try {
         await setTaskStatus(task.id, next);
       } catch (e) {
+        onPreviewChange?.({ status: task.status });
         setError(e instanceof Error ? e.message : "Could not update that item.");
       }
     });
@@ -254,15 +259,17 @@ export function TaskRow({
               <button
                 type="button"
                 disabled={pending}
-                onClick={() =>
+                onClick={() => {
+                  onPreviewChange?.({ notApplicable: !na });
                   startTransition(async () => {
                     try {
                       await markTaskNotApplicable(task.id, !na);
                     } catch (e) {
+                      onPreviewChange?.({ notApplicable: na });
                       setError(e instanceof Error ? e.message : "Could not update that item.");
                     }
-                  })
-                }
+                  });
+                }}
                 className="hover:text-ink hover:underline opacity-0 group-hover:opacity-100 focus:opacity-100"
                 title="Remove from this project only — does not change the template"
               >
