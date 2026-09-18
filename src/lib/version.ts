@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.17.0";
+export const APP_VERSION = "1.17.1";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.17.1",
+    date: "2026-09-18",
+    summary:
+      "New project shows CRM acronym once. The leftover second field was the same crmAcronym as About, not a second schema column. No schema migrate.",
+    highlights: [
+      "New project: one CRM acronym input (shown on portal About; still copied onto Accessing Pimsy). Security key and Bookmark / CRM link stay.",
+      "Does not undo the v1.14.4 createProjectSchema crmAcronym dedupe. Still one crmAcronym plus crmKey / bookmarkUrl / hubspotDealUrl.",
+      "About Edit site profile already had a single CRM acronym. No schema migrate. No playbook seed or resync.",
+    ],
+  },
   {
     version: "1.17.0",
     date: "2026-09-17",
