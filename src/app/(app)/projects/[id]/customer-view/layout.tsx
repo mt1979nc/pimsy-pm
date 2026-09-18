@@ -2,11 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, ForbiddenError, NotFoundError } from "@/lib/authz";
-import {
-  previewPortalPhaseTabs,
-  previewPortalProject,
-  previewPortalRecordings,
-} from "@/lib/portal-preview";
+import { previewPortalPhaseTabs, previewPortalProject } from "@/lib/portal-preview";
 import { CustomerAreaNav } from "@/components/customer-area-nav";
 
 export const dynamic = "force-dynamic";
@@ -27,10 +23,9 @@ export default async function CustomerViewLayout({
     throw err;
   }
 
-  const [project, phaseTabs, recordings] = await Promise.all([
+  const [project, phaseTabs] = await Promise.all([
     previewPortalProject(id),
     previewPortalPhaseTabs(id),
-    previewPortalRecordings(id),
   ]);
 
   if (!project) notFound();
@@ -48,7 +43,7 @@ export default async function CustomerViewLayout({
             name: p.name,
             href: `${base}/phases/${p.id}`,
           }))}
-          recordingsHref={recordings.length > 0 ? `${base}/recordings` : undefined}
+          recordingsHref={`${base}/recordings`}
           messagesHref={`/projects/${id}/messages`}
         />
         <p className="mt-3 px-1 text-[11.5px] text-ink-3">

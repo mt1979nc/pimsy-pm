@@ -1147,9 +1147,9 @@ export const fileAssets = pgTable(
       onDelete: "set null",
     }),
     /**
-     * A recording is a LINK the portal Recordings tab surfaces. May also hang
-     * off the individual training-session task (`taskId`) so the same row
-     * mirrors onto that session. Project-level (null taskId) still allowed.
+     * A recording is a LINK the Recordings tab aggregates. Source of truth is
+     * the training-session task (`taskId`). Project-level (null taskId) rows
+     * from older Settings uploads still list.
      */
     isRecording: boolean("is_recording").notNull().default(false),
 

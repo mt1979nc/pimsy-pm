@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.3";
+export const APP_VERSION = "1.18.4";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.4",
+    date: "2026-09-18",
+    summary:
+      "Training recordings stay on each training task. Staff and customer Recordings views list those same links (title, session/date, Open). No second upload. No schema migrate.",
+    highlights: [
+      "Source of truth remains the Zoom link attached on the Training N task (or Recording Link child). Recordings tab aggregates; it does not add a second paste box.",
+      "Staff project: Recordings tab next to Tasks. Short list with session label, date, visibility, Open. Session label opens the training task.",
+      "Customer portal and Customer view: Recordings always in Areas for quick access, including the empty state.",
+      "Settings no longer has a separate Add recording form. Pointer to the Recordings tab.",
+      "No schema migrate. No @mentions, edit/delete, RCM tags, or weekly reminders in this slice.",
+      "PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.3",
     date: "2026-09-18",

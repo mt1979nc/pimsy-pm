@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.3");
+    expect(APP_VERSION).toBe("1.18.4");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,20 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.4 training recordings aggregate tab", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.4");
+    expect(note?.summary).toMatch(/training task/i);
+    expect(note?.summary).toMatch(/Recordings/);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /source of truth/i.test(h) && /Training N/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Staff project/.test(h) && /Recordings tab/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Areas/.test(h) && /customer/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Settings/.test(h) && /Add recording/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.3")).toBeTruthy();
   });
 
   it("documents v1.18.3 comment/update/risk edit and delete", () => {

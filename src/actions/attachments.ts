@@ -114,6 +114,8 @@ function revalidateTask(projectId: string, taskId: string) {
   revalidatePath(`/portal/projects/${projectId}/tasks/${taskId}`);
   revalidatePath(`/portal/projects/${projectId}`);
   revalidatePath(`/portal/projects/${projectId}/recordings`);
+  revalidatePath(`/projects/${projectId}/recordings`);
+  revalidatePath(`/projects/${projectId}/customer-view/recordings`);
   revalidatePath(`/projects/${projectId}/settings`);
   revalidatePath(`/projects/${projectId}/customer-view`);
 }
@@ -233,9 +235,9 @@ const recordingSchema = z.object({
 });
 
 /**
- * A training-session recording. Shown on the portal Recordings tab, and
- * mirrored onto the matching Training N task when a session is selected or
- * the name parses (e.g. "Training 2").
+ * A training-session recording. Mirrors onto the matching Training N task
+ * (source of truth) so the Recordings tab can list the same link. Prefer
+ * attaching the Zoom URL on the training task — this is not a second upload UI.
  */
 export async function addProjectRecording(
   _prev: ActionState,
@@ -282,6 +284,7 @@ export async function addProjectRecording(
   });
 
   revalidatePath(`/projects/${parsed.data.projectId}/settings`);
+  revalidatePath(`/projects/${parsed.data.projectId}/recordings`);
   revalidatePath(`/projects/${parsed.data.projectId}/tasks`);
   if (mirrored.sessionTaskId) {
     revalidatePath(`/projects/${parsed.data.projectId}/tasks/${mirrored.sessionTaskId}`);
@@ -290,6 +293,7 @@ export async function addProjectRecording(
   revalidatePath(`/portal/projects/${parsed.data.projectId}`);
   revalidatePath(`/portal/projects/${parsed.data.projectId}/recordings`);
   revalidatePath(`/projects/${parsed.data.projectId}/customer-view`);
+  revalidatePath(`/projects/${parsed.data.projectId}/customer-view/recordings`);
   return { ok: true };
 }
 
