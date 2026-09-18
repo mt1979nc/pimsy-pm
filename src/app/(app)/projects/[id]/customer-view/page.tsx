@@ -301,6 +301,7 @@ export default async function CustomerViewPreviewPage({
                       {u.author?.name ?? "Team"}
                     </span>
                     <span className="text-[11.5px] text-ink-3">{fmtRelative(u.publishedAt)}</span>
+                    {u.editedAt ? <span className="text-[11.5px] text-ink-3">edited</span> : null}
                   </div>
                   <p className="mt-1.5 whitespace-pre-wrap text-[13px] leading-relaxed text-ink-2">
                     {u.summary}

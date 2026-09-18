@@ -931,6 +931,8 @@ export const risks = pgTable(
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Set when title / description / severity change after create. */
+    editedAt: timestamp("edited_at", { withTimezone: true }),
   },
   (t) => [
     index("risk_project_status_idx").on(t.projectId, t.status),
@@ -960,6 +962,8 @@ export const statusUpdates = pgTable(
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Set when summary / sections / health change after publish. */
+    editedAt: timestamp("edited_at", { withTimezone: true }),
   },
   (t) => [index("status_update_project_idx").on(t.projectId, t.publishedAt)],
 );

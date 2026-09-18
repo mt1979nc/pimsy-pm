@@ -10,18 +10,17 @@ import {
   CardHeader,
   EmptyState,
   Badge,
-  SeverityBadge,
   VisibilityBadge,
   Avatar,
-  HealthBadge,
 } from "@/components/ui";
-import { fmtDate, fmtShort, fmtRelative, isOverdue } from "@/lib/dates";
+import { fmtDate, fmtShort, isOverdue } from "@/lib/dates";
 import {
   StatusUpdateForm,
   MilestoneToggle,
   AddMilestoneForm,
   AddRiskForm,
-  RiskStatusControl,
+  StatusUpdateItem,
+  RiskItem,
 } from "./overview-forms";
 import { cn } from "@/lib/cn";
 import { staffingRoleLabel } from "@/lib/staffing";
@@ -95,36 +94,12 @@ export default async function ProjectOverviewPage({
           ) : (
             <div className="divide-y divide-border">
               {updates.map((u) => (
-                <div key={u.id} className="px-5 py-4">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <Avatar name={u.author.name} image={u.author.image} size={22} />
-                    <span className="text-[13px] font-medium text-ink">{u.author.name}</span>
-                    <span className="text-[12px] text-ink-3">{fmtRelative(u.publishedAt)}</span>
-                    <HealthBadge health={u.health} />
-                    <VisibilityBadge visibility={u.visibility} />
-                  </div>
-                  <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">
-                    {u.summary}
-                  </p>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                    {[
-                      ["Completed", u.accomplished],
-                      ["Next", u.upcoming],
-                      ["Needs from customer", u.needsFromYou],
-                    ]
-                      .filter(([, v]) => v)
-                      .map(([label, v]) => (
-                        <div key={label as string} className="rounded-lg bg-surface-2 p-2.5">
-                          <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-                            {label}
-                          </div>
-                          <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-snug text-ink-2">
-                            {v}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-                </div>
+                <StatusUpdateItem
+                  key={u.id}
+                  update={u}
+                  currentUserId={actor.id}
+                  currentUserRole={actor.role}
+                />
               ))}
             </div>
           )}
@@ -223,22 +198,12 @@ export default async function ProjectOverviewPage({
           ) : (
             <div className="divide-y divide-border">
               {projectRisks.map((r) => (
-                <div key={r.id} className="px-4 py-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-[13px] text-ink">{r.title}</span>
-                    <SeverityBadge severity={r.severity} />
-                  </div>
-                  {r.description ? (
-                    <p className="mt-1 text-[12.5px] leading-snug text-ink-3">{r.description}</p>
-                  ) : null}
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <RiskStatusControl riskId={r.id} status={r.status} />
-                    {r.owner ? (
-                      <span className="text-[12px] text-ink-3">{r.owner.name}</span>
-                    ) : null}
-                    <VisibilityBadge visibility={r.visibility} />
-                  </div>
-                </div>
+                <RiskItem
+                  key={r.id}
+                  risk={r}
+                  currentUserId={actor.id}
+                  currentUserRole={actor.role}
+                />
               ))}
             </div>
           )}

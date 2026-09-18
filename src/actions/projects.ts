@@ -40,6 +40,12 @@ import { refreshProjectCounters } from "@/lib/rollup";
 import { fillWorkspaceAccessTasks, resolveWorkspaceAccess } from "@/lib/workspace-access-fill";
 import { customFieldsWithoutBookmark } from "@/lib/accessing-pimsy";
 import { notify } from "@/lib/notify";
+import {
+  editStatusUpdateForActor,
+  deleteStatusUpdateForActor,
+  editRiskForActor,
+  deleteRiskForActor,
+} from "@/lib/content-edit";
 import { audit } from "@/lib/audit";
 import { completeHistoricalProjectOnTime } from "@/lib/historical-complete";
 import { parseDateInput, toDateInput } from "@/lib/dates";
@@ -1290,6 +1296,70 @@ export async function publishStatusUpdate(
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/portal/projects/${projectId}`);
   return { ok: true };
+}
+
+function revalidateProjectUpdates(projectId: string) {
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/portal/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/customer-view`);
+  revalidatePath("/reports");
+}
+
+export async function editStatusUpdate(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const updateId = String(formData.get("updateId") ?? "");
+  if (!updateId) return { error: "Missing update." };
+  const health = String(formData.get("health") ?? "") as "GREEN" | "YELLOW" | "RED";
+  try {
+    const { projectId } = await editStatusUpdateForActor(actor, updateId, {
+      summary: String(formData.get("summary") ?? ""),
+      accomplished: formData.get("accomplished")?.toString() ?? null,
+      upcoming: formData.get("upcoming")?.toString() ?? null,
+      needsFromYou: formData.get("needsFromYou")?.toString() ?? null,
+      health,
+    });
+    revalidateProjectUpdates(projectId);
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Could not save that update." };
+  }
+}
+
+export async function deleteStatusUpdate(updateId: string) {
+  const actor = await requireStaff();
+  const { projectId } = await deleteStatusUpdateForActor(actor, updateId);
+  revalidateProjectUpdates(projectId);
+}
+
+export async function editRisk(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const actor = await requireStaff();
+  const riskId = String(formData.get("riskId") ?? "");
+  if (!riskId) return { error: "Missing risk." };
+  const severity = String(formData.get("severity") ?? "") as
+    | "LOW"
+    | "MEDIUM"
+    | "HIGH"
+    | "CRITICAL";
+  try {
+    const { projectId } = await editRiskForActor(actor, riskId, {
+      title: String(formData.get("title") ?? ""),
+      description: formData.get("description")?.toString() ?? null,
+      severity,
+    });
+    revalidateProjectUpdates(projectId);
+    return { ok: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Could not save that risk." };
+  }
+}
+
+export async function deleteRisk(riskId: string) {
+  const actor = await requireStaff();
+  const { projectId } = await deleteRiskForActor(actor, riskId);
+  revalidateProjectUpdates(projectId);
 }
 
 // ---------------------------------------------------------------------------

@@ -280,6 +280,7 @@ export default async function PortalProjectPage({
                       <Avatar name={u.author.name} image={u.author.image} size={24} />
                       <span className="text-[13px] font-medium text-ink">{u.author.name}</span>
                       <span className="text-[12px] text-ink-3">{fmtRelative(u.publishedAt)}</span>
+                    {u.editedAt ? <span className="text-[11.5px] text-ink-3">edited</span> : null}
                     </div>
                     <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">
                       {u.summary}

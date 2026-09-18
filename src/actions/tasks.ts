@@ -25,6 +25,7 @@ import { fmtDate, parseSessionDateTime } from "@/lib/dates";
 import { setTaskNotApplicable } from "@/lib/playbook";
 import { isSpecialistSubtask, liveTaskCreateDefaults } from "@/lib/task-visibility";
 import { customerMayChangeAssignee } from "@/lib/task-role-match";
+import { editTaskCommentForActor, deleteTaskCommentForActor } from "@/lib/content-edit";
 import { exposePhaseFromCompletedTask } from "@/lib/expose-phase";
 import { applyTaskMove } from "@/lib/task-relink";
 import { syncMilestonesFromTaskCompletion } from "@/lib/milestone-rollup";
@@ -770,6 +771,26 @@ export async function addTaskComment(
   revalidatePath(`/portal/projects/${task.projectId}/tasks/${taskId}`);
   revalidatePath(`/portal/projects/${task.projectId}`);
   return { ok: true };
+}
+
+function revalidateTaskComments(projectId: string, taskId: string) {
+  revalidatePath(`/projects/${projectId}/tasks/${taskId}`);
+  revalidatePath(`/projects/${projectId}/tasks`);
+  revalidatePath(`/portal/projects/${projectId}/tasks/${taskId}`);
+  revalidatePath(`/portal/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/customer-view/tasks/${taskId}`);
+}
+
+export async function editTaskComment(commentId: string, body: string) {
+  const actor = await requireUser();
+  const { projectId, taskId } = await editTaskCommentForActor(actor, commentId, body);
+  revalidateTaskComments(projectId, taskId);
+}
+
+export async function deleteTaskComment(commentId: string) {
+  const actor = await requireUser();
+  const { projectId, taskId } = await deleteTaskCommentForActor(actor, commentId);
+  revalidateTaskComments(projectId, taskId);
 }
 
 /**
