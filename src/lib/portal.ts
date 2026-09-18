@@ -16,6 +16,7 @@ import { loadProjectAbout } from "./about-query";
 import { toPortalAbout } from "./about-profile";
 import type { PortalAboutPayload } from "./about-profile";
 import { bookmarkFromCustomFields } from "./accessing-pimsy";
+import { projectHasRcmTrack } from "./add-rcm";
 
 export type CustomerActor = Actor & { customerAccountId: string };
 
@@ -264,6 +265,10 @@ export async function portalAbout(actor: CustomerActor, projectId: string): Prom
     zoomBookingUrl: loaded.project.zoomBookingUrl,
     bookingUrls: loaded.project.bookingUrls,
     aboutNotes: loaded.project.aboutNotes,
+    hasRcm: projectHasRcmTrack({
+      playbookPath: loaded.project.playbookPath,
+      rcmTaskCountTotal: loaded.project.rcmTaskCountTotal,
+    }),
     kickoff: loaded.kickoff,
     implementationTeam: loaded.implementationTeam,
     customerContacts: loaded.customerInputs,

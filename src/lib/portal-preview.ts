@@ -18,6 +18,7 @@ import { sortPhaseSections } from "./task-list-filter";
 import { loadProjectAbout } from "./about-query";
 import { toPortalAbout, type PortalAboutPayload } from "./about-profile";
 import { bookmarkFromCustomFields } from "./accessing-pimsy";
+import { projectHasRcmTrack } from "./add-rcm";
 
 export async function previewPortalAbout(projectId: string): Promise<PortalAboutPayload | null> {
   const project = await previewPortalProject(projectId);
@@ -34,6 +35,10 @@ export async function previewPortalAbout(projectId: string): Promise<PortalAbout
     zoomBookingUrl: loaded.project.zoomBookingUrl,
     bookingUrls: loaded.project.bookingUrls,
     aboutNotes: loaded.project.aboutNotes,
+    hasRcm: projectHasRcmTrack({
+      playbookPath: loaded.project.playbookPath,
+      rcmTaskCountTotal: loaded.project.rcmTaskCountTotal,
+    }),
     kickoff: loaded.kickoff,
     implementationTeam: loaded.implementationTeam,
     customerContacts: loaded.customerInputs,

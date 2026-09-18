@@ -61,6 +61,7 @@ export type PortalAboutPayload = {
   zoomBookingUrl: string | null;
   bookingUrls?: unknown;
   aboutNotes: string | null;
+  hasRcm?: boolean;
   kickoff: KickoffSnapshot;
   implementationTeam: AboutContactCard[];
   customerContacts: AboutContactCard[];
@@ -260,6 +261,7 @@ export function toPortalAbout(input: {
   zoomBookingUrl: string | null;
   bookingUrls?: unknown;
   aboutNotes: string | null;
+  hasRcm?: boolean;
   kickoff: KickoffSnapshot;
   implementationTeam: AboutContactCard[];
   customerContacts: AboutContactInput[];
@@ -277,6 +279,7 @@ export function toPortalAbout(input: {
     zoomBookingUrl: input.zoomBookingUrl,
     bookingUrls: input.bookingUrls,
     aboutNotes: input.aboutNotes,
+    hasRcm: Boolean(input.hasRcm),
     kickoff: {
       phaseName: isKickoffPhaseVisibleToPortal(input.kickoff) ? input.kickoff.phaseName : null,
       phaseVisibility: input.kickoff.phaseVisibility,
@@ -295,6 +298,7 @@ export function portalAboutHasContent(payload: PortalAboutPayload): boolean {
       payload.goLiveDate ||
       payload.zoomBookingUrl ||
       payload.aboutNotes ||
+      payload.hasRcm ||
       payload.kickoff.items.length > 0 ||
       payload.implementationTeam.length > 0 ||
       payload.customerContacts.length > 0,

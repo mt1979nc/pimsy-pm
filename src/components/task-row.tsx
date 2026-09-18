@@ -8,6 +8,7 @@ import { Badge, PriorityBadge, VisibilityBadge, Avatar, AvatarStack, ReviewRequi
 import { showReviewRequiredBadge } from "@/lib/discovery-config-review";
 import { TaskActionButtons } from "@/components/task-action-buttons";
 import { AddAttachment } from "@/components/attachments";
+import { CommentCountBadge } from "@/components/comment-count-badge";
 import type { ChecklistItemView } from "@/components/task-checklist";
 import { MoveTaskDialog, type MoveTaskPhaseOption } from "@/components/move-task-dialog";
 import { AddTaskInline } from "@/app/(app)/projects/[id]/tasks/task-forms";
@@ -50,6 +51,7 @@ export type TaskRowData = {
   reviewRequired?: boolean;
   connectKey?: string | null;
   connectedNote?: string | null;
+  commentCount?: number;
 };
 
 type StaffOption = { id: string; name: string | null };
@@ -226,6 +228,7 @@ export function TaskRow({
             {na ? <Badge tone="amber">N/A</Badge> : null}
             {task.workTrack === "RCM" ? <Badge tone="violet">RCM</Badge> : null}
             {task.connectedNote ? <Badge tone="green">{task.connectedNote}</Badge> : null}
+            <CommentCountBadge count={task.commentCount ?? 0} href={href} />
           </div>
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-3">

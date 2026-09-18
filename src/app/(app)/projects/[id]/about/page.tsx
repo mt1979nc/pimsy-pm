@@ -16,6 +16,7 @@ import { KickoffFacts } from "@/components/kickoff-facts";
 import { extraKickoffFacts } from "@/lib/kickoff-about";
 import { CollapsedSection } from "@/components/collapsed-section";
 import { bookmarkFromCustomFields } from "@/lib/accessing-pimsy";
+import { projectHasRcmTrack } from "@/lib/add-rcm";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "About" };
@@ -67,6 +68,10 @@ export default async function ProjectAboutPage({
           staffLinks
           bookingUrls={project.bookingUrls}
           specialistName={project.lead?.name}
+          hasRcm={projectHasRcmTrack({
+            playbookPath: project.playbookPath,
+            rcmTaskCountTotal: project.rcmTaskCountTotal,
+          })}
         />
         {extraFacts.length > 0 ? (
           <div className="border-t border-border px-5 py-4">

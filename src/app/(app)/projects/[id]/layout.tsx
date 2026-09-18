@@ -10,6 +10,7 @@ import { fmtDate, daysUntil } from "@/lib/dates";
 import { SubNavLink } from "@/components/nav-link";
 import { HealthBadge, ProjectStatusBadge, ProgressBar, Avatar, Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { projectHasRcmTrack } from "@/lib/add-rcm";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,10 @@ export default async function ProjectLayout({
   const pct = pctComplete(project.taskCountDone, project.taskCountTotal);
   const days = daysUntil(project.targetGoLiveDate);
   const late = days !== null && days < 0 && project.status !== "COMPLETED";
+  const hasRcm = projectHasRcmTrack({
+    playbookPath: project.playbookPath,
+    rcmTaskCountTotal: project.rcmTaskCountTotal,
+  });
 
   return (
     <>
@@ -72,6 +77,7 @@ export default async function ProjectLayout({
               <span className="font-mono text-[12px] text-ink-3">{project.code}</span>
               <HealthBadge health={project.health} />
               <ProjectStatusBadge status={project.status} />
+              {hasRcm ? <Badge tone="violet">RCM</Badge> : null}
               {!project.portalEnabled ? <Badge tone="amber">Portal off</Badge> : null}
               {project.onboarded ? <Badge tone="green">Onboarded</Badge> : null}
               {project.excludeFromAnalytics || project.customerAccount?.excludeFromAnalytics ? (

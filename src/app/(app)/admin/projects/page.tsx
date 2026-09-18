@@ -5,6 +5,7 @@ import { Card, EmptyState, Badge, HealthBadge, ProjectStatusBadge, ProgressBar, 
 import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate, daysUntil } from "@/lib/dates";
 import { cn } from "@/lib/cn";
+import { projectHasRcmTrack } from "@/lib/add-rcm";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "All projects" };
@@ -94,12 +95,19 @@ export default async function AdminProjectsPage({
                 {rows.map((p) => {
                   const d = daysUntil(p.targetGoLiveDate);
                   const late = d !== null && d < 0 && p.status !== "COMPLETED";
+                  const hasRcm = projectHasRcmTrack({
+                    playbookPath: p.playbookPath,
+                    rcmTaskCountTotal: p.rcmTaskCountTotal,
+                  });
                   return (
                     <tr key={p.id} className="border-b border-border last:border-0 hover:bg-surface-2">
                       <td className="px-4 py-2.5">
                         <Link href={`/projects/${p.id}`} className="block max-w-[280px]">
-                          <span className="block truncate font-medium text-ink hover:text-brand">
-                            {p.customerAccount?.name ?? "Internal"}
+                          <span className="flex items-center gap-1.5">
+                            <span className="block truncate font-medium text-ink hover:text-brand">
+                              {p.customerAccount?.name ?? "Internal"}
+                            </span>
+                            {hasRcm ? <Badge tone="violet">RCM</Badge> : null}
                           </span>
                           <span className="block truncate text-[12px] text-ink-3">{p.name}</span>
                         </Link>

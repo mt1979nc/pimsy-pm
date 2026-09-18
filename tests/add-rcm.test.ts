@@ -45,6 +45,11 @@ describe("Add RCM eligibility (mid-implementation)", () => {
     ).toEqual({ ok: false, reason: "already-on" });
     expect(addRcmBlockedMessage("already-on")).toBe(RCM_TRACK_ALREADY_ON);
     expect(projectHasRcmTrack({ playbookPath: "EHR", rcmTaskCountTotal: 0 })).toBe(false);
+    expect(projectHasRcmTrack({ playbookPath: "EHR_RCM" })).toBe(true);
+    expect(projectHasRcmTrack({ playbookPath: "RCM_LEGACY" })).toBe(true);
+    expect(
+      addRcmEligibility({ playbookPath: "EHR_RCM", rcmTaskCountTotal: 0, status: "IN_PROGRESS" }),
+    ).toEqual({ ok: false, reason: "already-on" });
   });
 
   it("blocks Hand-off / COMPLETED / Onboarded / archived / cancelled / non-implementation", () => {
@@ -99,6 +104,27 @@ describe("Add RCM eligibility (mid-implementation)", () => {
     expect(settings).not.toMatch(/AddRcmAlreadyOnNote/);
     expect(form).toMatch(/AddRcmOnSummary/);
     expect(form).toMatch(/view === "trigger"/);
+  });
+
+  it("shows an RCM chip on the Projects list and About when the track is on", () => {
+    const list = readFileSync(resolve(process.cwd(), "src/components/project-row.tsx"), "utf8");
+    const about = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/projects/[id]/about/page.tsx"),
+      "utf8",
+    );
+    const kickoff = readFileSync(resolve(process.cwd(), "src/components/about-kickoff-panel.tsx"), "utf8");
+    const layout = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/projects/[id]/layout.tsx"),
+      "utf8",
+    );
+    expect(list).toMatch(/projectHasRcmTrack/);
+    expect(list).toMatch(/Badge tone="violet">RCM/);
+    expect(about).toMatch(/projectHasRcmTrack/);
+    expect(about).toMatch(/hasRcm=/);
+    expect(kickoff).toMatch(/hasRcm/);
+    expect(kickoff).toMatch(/Badge tone="violet">On/);
+    expect(layout).toMatch(/projectHasRcmTrack/);
+    expect(layout).toMatch(/Badge tone="violet">RCM/);
   });
 
   it("detects a finished Workflow & Handoff phase", () => {

@@ -22,6 +22,7 @@ import {
 import {
   addRcmBlockedMessage,
   billingRcmAssignmentsFromMembers,
+  projectHasRcmTrack,
 } from "@/lib/add-rcm";
 import { refreshProjectCounters } from "@/lib/rollup";
 import { db } from "@/db";
@@ -353,6 +354,12 @@ describe.skipIf(!dbOk)("materialize + N/A + RCM attach (postgres)", () => {
     expect(after?.playbookPath).toBe("RCM_PRISM");
     expect(after?.targetGoLiveDate?.toISOString()).toBe(before?.targetGoLiveDate?.toISOString() ?? after?.targetGoLiveDate?.toISOString());
     expect(after?.rcmTaskCountTotal).toBeGreaterThan(0);
+    expect(
+      projectHasRcmTrack({
+        playbookPath: after?.playbookPath,
+        rcmTaskCountTotal: after?.rcmTaskCountTotal,
+      }),
+    ).toBe(true);
 
     const all = await db.query.tasks.findMany({ where: eq(tasks.projectId, project.id) });
     const claimMd = all.filter((t) => /claimmd/i.test(t.title));

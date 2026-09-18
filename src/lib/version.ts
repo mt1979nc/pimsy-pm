@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.1";
+export const APP_VERSION = "1.18.2";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.2",
+    date: "2026-09-18",
+    summary:
+      "Projects list and About show an RCM chip when the RCM track is on (create-time EHR+RCM or Add RCM). Staff task list shows a comment count so back-and-forth is visible without opening the task. No schema migrate.",
+    highlights: [
+      "Projects tab: violet RCM chip next to the site acronym when playbook is EHR+RCM / RCM legacy / RCM_PRISM, RCM task counters are > 0, or an RCM work track exists.",
+      "About (staff header + Kickoff & site, portal About): same RCM On tag. Add RCM already sets playbook_path to RCM_PRISM and refreshes rcm_task_count_*; detection now also treats create-time EHR_RCM.",
+      "Staff project task list: speech-bubble count from live task_comment rows (not deleted). Portal already had the same badge from loaded SHARED comments.",
+      "No schema migrate — counts aggregate from existing comments. No @mentions, edit/delete, recordings, or weekly reminders in this slice.",
+      "PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.1",
     date: "2026-09-18",

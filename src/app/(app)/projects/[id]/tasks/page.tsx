@@ -17,6 +17,7 @@ import type { TaskActionAsset } from "@/lib/playbook-resources";
 import type { ChecklistItemView } from "@/components/task-checklist";
 import { loadAssigneesByTaskIds } from "@/lib/task-assignees";
 import { resolveProjectBookingUrls } from "@/lib/booking-urls";
+import { commentCountsByTaskIds } from "@/lib/comment-counts";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +77,7 @@ export default async function ProjectTasksPage({
   if (!project) notFound();
 
   const taskIds = allTasks.map((t) => t.id);
-  const [attachmentRows, checklistRows, assigneesByTask] = await Promise.all([
+  const [attachmentRows, checklistRows, assigneesByTask, commentCounts] = await Promise.all([
     taskIds.length
       ? db.query.fileAssets.findMany({
           where: eq(fileAssets.projectId, id),
@@ -98,6 +99,7 @@ export default async function ProjectTasksPage({
         })
       : Promise.resolve([]),
     loadAssigneesByTaskIds(taskIds),
+    commentCountsByTaskIds(taskIds),
   ]);
 
   const assetsByTaskId: Record<string, TaskActionAsset[]> = {};
@@ -181,6 +183,7 @@ export default async function ProjectTasksPage({
         connectedNote,
         order: t.order,
         projectCode: project?.code,
+        commentCount: commentCounts.get(t.id) ?? 0,
       };
     });
   }
