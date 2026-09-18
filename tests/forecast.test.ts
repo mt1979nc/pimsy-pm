@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   applyPrimaryAverageExclusions,
@@ -361,5 +363,38 @@ describe("Forecast+ weights (estimator)", () => {
     expect(result.scenarios).toHaveLength(3);
     expect(result.scenarios[0]!.calendarDays).toBeLessThan(result.scenarios[2]!.calendarDays);
     expect(result.hours.totalHours).toBeGreaterThan(0);
+  });
+});
+
+describe("Forecast+ weights card and scope pickers", () => {
+  it("lists the confirmed weights, add-ons, and service-line hours on /management/forecast", () => {
+    const page = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/management/forecast/page.tsx"),
+      "utf8",
+    );
+    expect(page).toMatch(/minutesPerLocation/);
+    expect(page).toMatch(/intakeAssistantHours/);
+    expect(page).toMatch(/trainingSessionHours/);
+    expect(page).toMatch(/trainingPrepHours/);
+    expect(page).toMatch(/payrollTrainingHours/);
+    expect(page).toMatch(/maxConfigHoursPerDay/);
+    expect(page).toMatch(/SERVICE_LINE_HOURS/);
+    expect(page).toMatch(/SERVICE_LINE_LABELS/);
+  });
+
+  it("exposes Intake Assistant and service-line labels on New project and Add to roster", () => {
+    const create = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/management/_components/engagement-create-form.tsx"),
+      "utf8",
+    );
+    const neu = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/projects/new/new-project-form.tsx"),
+      "utf8",
+    );
+    for (const src of [create, neu]) {
+      expect(src).toMatch(/SERVICE_LINE_LABELS/);
+      expect(src).toMatch(/Intake Assistant/);
+      expect(src).toMatch(/intakeAssistant/);
+    }
   });
 });
