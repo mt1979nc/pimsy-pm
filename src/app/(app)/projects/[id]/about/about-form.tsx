@@ -67,7 +67,7 @@ export function ProjectAboutForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="CRM acronym" htmlFor="crmAcronym">
+        <Field label="CRM acronym" htmlFor="crmAcronym" hint="Auto-create and About account.">
           <input
             id="crmAcronym"
             name="crmAcronym"
@@ -87,7 +87,11 @@ export function ProjectAboutForm({
         </Field>
       </div>
 
-      <Field label="Bookmark" htmlFor="bookmarkUrl">
+      <Field
+        label="Live site"
+        htmlFor="bookmarkUrl"
+        hint="Practice PIMSY web link. Shown on About and Accessing Pimsy."
+      >
         <input
           id="bookmarkUrl"
           name="bookmarkUrl"
@@ -98,7 +102,11 @@ export function ProjectAboutForm({
         />
       </Field>
 
-      <Field label="HubSpot deal URL" htmlFor="hubspotDealUrl">
+      <Field
+        label="HubSpot deal URL"
+        htmlFor="hubspotDealUrl"
+        hint="CRM auto-create. Staff only — not the live site."
+      >
         <input
           id="hubspotDealUrl"
           name="hubspotDealUrl"

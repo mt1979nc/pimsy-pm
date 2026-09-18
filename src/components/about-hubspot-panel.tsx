@@ -5,9 +5,10 @@ export function AboutHubSpotPanel({ summary }: { summary: HubSpotDealSummary }) 
   if (!deal && !summary.error) {
     return (
       <p className="px-5 pb-4 text-[13px] text-ink-3">
-        No HubSpot deal linked. Paste the deal URL in the form — PATH stores a clear outbound
-        link. Optional pull needs <code className="font-mono text-[12px]">HUBSPOT_ACCESS_TOKEN</code>{" "}
-        (private app). The portal never sees this.
+        No HubSpot deal linked. Paste the deal URL in Edit site profile for CRM auto-create —
+        not the practice live site. Optional pull needs{" "}
+        <code className="font-mono text-[12px]">HUBSPOT_ACCESS_TOKEN</code> (private app). The
+        portal never sees this.
       </p>
     );
   }

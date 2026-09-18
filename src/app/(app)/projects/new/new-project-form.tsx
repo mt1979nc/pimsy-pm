@@ -241,7 +241,7 @@ export function NewProjectForm({
               <Field
                 label="HubSpot deal URL"
                 htmlFor="hubspotDealUrl"
-                hint="Optional. Shown as a clear outbound link on About. Portal never sees it."
+                hint="CRM auto-create. Staff only — not the live site."
               >
                 <input
                   id="hubspotDealUrl"
@@ -251,23 +251,10 @@ export function NewProjectForm({
                   className={inputClass}
                 />
               </Field>
-              <Field label="CRM acronym" htmlFor="crmAcronym" hint="Optional. Shown on portal About.">
-                <input
-                  id="crmAcronym"
-                  name="crmAcronym"
-                  placeholder="e.g. ACME"
-                  className={inputClass}
-                />
-              </Field>
-            </div>
-
-            <AnalyticsExcludeToggle />
-
-            <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 label="CRM acronym"
                 htmlFor="crmAcronym"
-                hint="Copied onto Accessing Pimsy when present."
+                hint="Auto-create and About account. Copied onto Accessing Pimsy when present."
               >
                 <input
                   id="crmAcronym"
@@ -276,24 +263,27 @@ export function NewProjectForm({
                   className={inputClass}
                 />
               </Field>
-              <Field
-                label="Security key"
-                htmlFor="crmKey"
-                hint="Practice desktop-install key. Leave blank if you do not have it yet."
-              >
-                <input
-                  id="crmKey"
-                  name="crmKey"
-                  placeholder="Only if already issued"
-                  className={inputClass}
-                />
-              </Field>
             </div>
 
+            <AnalyticsExcludeToggle />
+
             <Field
-              label="Bookmark / CRM link"
+              label="Security key"
+              htmlFor="crmKey"
+              hint="Practice desktop-install key. Leave blank if you do not have it yet."
+            >
+              <input
+                id="crmKey"
+                name="crmKey"
+                placeholder="Only if already issued"
+                className={inputClass}
+              />
+            </Field>
+
+            <Field
+              label="Live site"
               htmlFor="bookmarkUrl"
-              hint="PIMSY web bookmark for this practice. Not HubSpot. Blank fields inherit from this customer’s other sites when they exist."
+              hint="Practice PIMSY web link. Shown on About and Accessing Pimsy. Blank inherits from this customer’s other sites."
             >
               <input
                 id="bookmarkUrl"

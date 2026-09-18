@@ -15,6 +15,7 @@ import { AboutContactCardGrid } from "@/components/about-contact-card";
 import { KickoffFacts } from "@/components/kickoff-facts";
 import { extraKickoffFacts } from "@/lib/kickoff-about";
 import { CollapsedSection } from "@/components/collapsed-section";
+import { bookmarkFromCustomFields } from "@/lib/accessing-pimsy";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "About" };
@@ -60,6 +61,7 @@ export default async function ProjectAboutPage({
           goLiveDate={project.targetGoLiveDate}
           zoomBookingUrl={project.zoomBookingUrl}
           crmAcronym={project.crmAcronym}
+          liveSiteUrl={bookmarkFromCustomFields(project.customFields ?? {})}
           kickoff={kickoff}
           projectId={project.id}
           staffLinks

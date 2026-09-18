@@ -128,7 +128,8 @@ describe.skipIf(!dbOk)("workspace Accessing Pimsy + Zendesk fill (postgres)", ()
     ).find((t) => t.title === "Accessing Pimsy");
     expect(accessingRow?.description).toContain("Practice acronym: CEDAR");
     expect(accessingRow?.description).toContain("Security key: site-key-cedar");
-    expect(accessingRow?.description).toContain("Bookmark / CRM link:");
+    expect(accessingRow?.description).toContain("Live site:");
+    expect(accessingRow?.description).not.toMatch(/Bookmark \/ CRM link:/);
     expect(accessingRow?.description).toContain(PIMSY_DESKTOP_INSTALL_URL);
 
     const links = await db.query.fileAssets.findMany({
@@ -137,7 +138,9 @@ describe.skipIf(!dbOk)("workspace Accessing Pimsy + Zendesk fill (postgres)", ()
     });
     expect(links.every((l) => l.kind === "LINK")).toBe(true);
     expect(links.some((l) => l.url === PIMSY_DESKTOP_INSTALL_URL)).toBe(true);
-    expect(links.some((l) => l.url?.includes("cedar.pimsyehr.com"))).toBe(true);
+    expect(links.some((l) => l.url?.includes("cedar.pimsyehr.com") && l.name === "Live site")).toBe(
+      true,
+    );
     const zdOrg = links.find((l) => l.name === "Zendesk organization search");
     expect(zdOrg?.visibility).toBe("INTERNAL");
     expect(zdOrg?.url).toContain("pimsyemr.zendesk.com/agent/search/1");

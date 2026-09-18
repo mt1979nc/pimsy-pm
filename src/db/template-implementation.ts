@@ -149,7 +149,7 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
   {
     name: "Accessing Pimsy",
     description:
-      "Bookmark / CRM link, desktop application, practice acronym, and security key. Hidden until logins are ready — staff expose this tab (Dock eyelid).",
+      "Live site, desktop application, practice acronym, and security key. Hidden until logins are ready — staff expose this tab (Dock eyelid).",
     visibility: dockDefaultPhaseVisibility("Accessing Pimsy"),
     offsetDays: 14,
     durationDays: 7,

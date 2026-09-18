@@ -55,6 +55,7 @@ export type PortalAboutPayload = {
   projectName: string;
   customerName: string | null;
   crmAcronym: string | null;
+  liveSiteUrl: string | null;
   kickoffDate: string | null;
   goLiveDate: string | null;
   zoomBookingUrl: string | null;
@@ -253,6 +254,7 @@ export function toPortalAbout(input: {
   projectName: string;
   customerName: string | null;
   crmAcronym: string | null;
+  liveSiteUrl?: string | null;
   kickoffDate: Date | string | null;
   goLiveDate: Date | string | null;
   zoomBookingUrl: string | null;
@@ -269,6 +271,7 @@ export function toPortalAbout(input: {
     projectName: input.projectName,
     customerName: input.customerName,
     crmAcronym: input.crmAcronym,
+    liveSiteUrl: input.liveSiteUrl ?? null,
     kickoffDate: isoDateOrNull(input.kickoffDate),
     goLiveDate: isoDateOrNull(input.goLiveDate),
     zoomBookingUrl: input.zoomBookingUrl,
@@ -287,6 +290,7 @@ export function toPortalAbout(input: {
 export function portalAboutHasContent(payload: PortalAboutPayload): boolean {
   return Boolean(
     payload.crmAcronym ||
+      payload.liveSiteUrl ||
       payload.kickoffDate ||
       payload.goLiveDate ||
       payload.zoomBookingUrl ||

@@ -36,7 +36,11 @@ import {
   type DockTaskActionKind,
 } from "@/db/dock-task-buttons";
 import { isZendeskAgentUrl } from "@/lib/zendesk";
-import { PIMSY_DESKTOP_INSTALL_URL } from "@/lib/accessing-pimsy";
+import {
+  isLiveSiteAttachmentName,
+  normalizeLiveSiteUrl,
+  PIMSY_DESKTOP_INSTALL_URL,
+} from "@/lib/accessing-pimsy";
 
 export const DOWNLOAD_COMPLETE_UPLOAD_HINT =
   "Download, complete, then Upload files here.";
@@ -193,9 +197,9 @@ function resolveLinkHref(
   if (action.id === "pimsy-bookmark") {
     const attached = matchingNamedLink(
       assets,
-      (a) => /bookmark|crm link|crmlink/i.test(a.name) && !isZendeskAgentUrl(a.url),
+      (a) => isLiveSiteAttachmentName(a.name) && Boolean(normalizeLiveSiteUrl(a.url)),
     );
-    return attached?.url?.trim() || null;
+    return attached?.url ? normalizeLiveSiteUrl(attached.url) : null;
   }
   return action.url || wizardHref(assets);
 }

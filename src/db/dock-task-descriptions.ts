@@ -87,7 +87,7 @@ export const DOCK_OPERATIONAL_DESCRIPTIONS: Record<string, string> = entries([
   ],
   [
     "Accessing Pimsy",
-    "Bookmark / CRM link, desktop application, practice acronym, and security key. New workspaces fill those fields when they already exist on the project or customer. Hidden from the customer until staff expose this tab.",
+    "Live site, desktop application, practice acronym, and security key. New workspaces fill those fields when they already exist on the project or customer. Hidden from the customer until staff expose this tab.",
   ],
   ["Organization Setup", PARENT],
   [

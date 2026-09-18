@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.17.3");
+    expect(APP_VERSION).toBe("1.17.4");
     expect(APP_VERSION).toMatch(/^1\.17\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,20 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.17.4 live site vs CRM display on About and Accessing Pimsy", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.17.4");
+    expect(note?.summary).toMatch(/live PIMSY site|Live site/i);
+    expect(note?.summary).toMatch(/HubSpot|CRM/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /About/.test(h) && /Live site/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Accessing Pimsy/.test(h) && /live site|Open live site/i.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /CRM acronym/.test(h) && /Live site/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.17.3")).toBeTruthy();
   });
 
   it("documents v1.17.3 PATH task-complete lag", () => {

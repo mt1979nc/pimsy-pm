@@ -13,9 +13,11 @@ import {
   bookmarkFromCustomFields,
   bookmarkFromWebsite,
   formatAccessingPimsyDescription,
+  isLiveSiteAttachmentName,
   isReplaceableAccessingPimsyDescription,
+  LIVE_SITE_ATTACHMENT_NAME,
   mergeBookmarkIntoCustomFields,
-  normalizeBookmarkUrl,
+  normalizeLiveSiteUrl,
   pickPracticeAcronym,
   pickSecurityKey,
   PIMSY_DESKTOP_INSTALL_URL,
@@ -101,11 +103,11 @@ export async function resolveWorkspaceAccess(opts: {
   }
 
   const bookmarkUrl = inherit
-    ? normalizeBookmarkUrl(opts.form.bookmarkUrl) ||
+    ? normalizeLiveSiteUrl(opts.form.bookmarkUrl) ||
       bookmarkFromCustomFields(opts.existingCustomFields) ||
       siblingBookmark ||
       bookmarkFromWebsite(website)
-    : normalizeBookmarkUrl(opts.form.bookmarkUrl) ||
+    : normalizeLiveSiteUrl(opts.form.bookmarkUrl) ||
       bookmarkFromCustomFields(opts.existingCustomFields);
 
   const crmAcronym = inherit
@@ -148,7 +150,7 @@ async function attachLink(
 ): Promise<boolean> {
   const existing = await tx.query.fileAssets.findMany({
     where: eq(fileAssets.taskId, opts.taskId),
-    columns: { id: true, kind: true, url: true },
+    columns: { id: true, kind: true, url: true, name: true },
   });
   const want = normalizeAttachmentUrl(opts.url);
   if (
@@ -162,6 +164,49 @@ async function attachLink(
     name: opts.name,
     kind: "LINK",
     url: opts.url,
+    visibility: opts.visibility,
+    taskId: opts.taskId,
+    projectId: opts.projectId,
+    uploadedById: opts.actorId,
+  });
+  return true;
+}
+
+async function attachLiveSiteLink(
+  tx: Tx,
+  opts: {
+    taskId: string;
+    projectId: string;
+    actorId: string | null;
+    url: string;
+    visibility: "INTERNAL" | "SHARED";
+  },
+): Promise<boolean> {
+  const live = normalizeLiveSiteUrl(opts.url);
+  if (!live) return false;
+  const existing = await tx.query.fileAssets.findMany({
+    where: eq(fileAssets.taskId, opts.taskId),
+    columns: { id: true, kind: true, url: true, name: true },
+  });
+  const want = normalizeAttachmentUrl(live);
+  const match = existing.find((f) => {
+    if (f.kind !== "LINK") return false;
+    if (f.url && normalizeAttachmentUrl(f.url) === want) return true;
+    return isLiveSiteAttachmentName(f.name);
+  });
+  if (match) {
+    const alreadyLive = match.url ? normalizeLiveSiteUrl(match.url) === live : false;
+    if (match.name === LIVE_SITE_ATTACHMENT_NAME && alreadyLive) return false;
+    await tx
+      .update(fileAssets)
+      .set({ name: LIVE_SITE_ATTACHMENT_NAME, url: live })
+      .where(eq(fileAssets.id, match.id));
+    return true;
+  }
+  await tx.insert(fileAssets).values({
+    name: LIVE_SITE_ATTACHMENT_NAME,
+    kind: "LINK",
+    url: live,
     visibility: opts.visibility,
     taskId: opts.taskId,
     projectId: opts.projectId,
@@ -216,11 +261,10 @@ export async function fillWorkspaceAccessTasks(
       }
       if (opts.access.fields.bookmarkUrl) {
         if (
-          await attachLink(tx, {
+          await attachLiveSiteLink(tx, {
             taskId: row.id,
             projectId: opts.projectId,
             actorId: opts.actorId,
-            name: "Bookmark / CRM link",
             url: opts.access.fields.bookmarkUrl,
             visibility: vis,
           })
