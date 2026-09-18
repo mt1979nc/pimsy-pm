@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   ACCESSING_PIMSY_CATALOG_BLURB,
   ACCESSING_PIMSY_HEADING,
@@ -27,7 +29,9 @@ describe("Accessing Pimsy field auto-fill", () => {
     expect(text).toContain(PIMSY_DESKTOP_INSTALL_URL);
     expect(text).not.toMatch(/Security key:/);
     expect(text).not.toMatch(/Practice acronym:/);
+    expect(text).not.toMatch(/Live site:/);
     expect(text).not.toMatch(/Bookmark \/ CRM link:/);
+    expect(text).not.toMatch(/hubspot/i);
   });
 
   it("fills acronym, key, and bookmark only when they already exist", () => {
@@ -42,7 +46,9 @@ describe("Accessing Pimsy field auto-fill", () => {
     const text = formatAccessingPimsyDescription(fields);
     expect(text).toContain("Practice acronym: CEDAR");
     expect(text).toContain("Security key: issued-key-1");
-    expect(text).toContain("Bookmark / CRM link: https://cedar.pimsyehr.com/");
+    expect(text).toContain("Live site: https://cedar.pimsyehr.com/");
+    expect(text).not.toMatch(/Bookmark \/ CRM link:/);
+    expect(text).not.toMatch(/hubspot/i);
   });
 
   it("rejects generated project codes and HubSpot/Zendesk as the PIMSY bookmark", () => {
@@ -52,8 +58,9 @@ describe("Accessing Pimsy field auto-fill", () => {
     expect(bookmarkFromWebsite("https://www.trianglehealth.org")).toBeNull();
     expect(bookmarkFromWebsite("https://ths.pimsyehr.com")).toBe("https://ths.pimsyehr.com/");
     expect(bookmarkFromCustomFields({ hubspot: "https://app.hubspot.com/x" })).toBeNull();
-    expect(bookmarkFromCustomFields({ bookmark: "https://app.hubspot.com/x" })).toBe(
-      "https://app.hubspot.com/x",
+    expect(bookmarkFromCustomFields({ bookmark: "https://app.hubspot.com/x" })).toBeNull();
+    expect(bookmarkFromCustomFields({ bookmark: "https://cedar.pimsyehr.com" })).toBe(
+      "https://cedar.pimsyehr.com/",
     );
     expect(bookmarkFromWebsite("https://pimsyemr.zendesk.com/hc")).toBeNull();
   });
@@ -72,5 +79,31 @@ describe("Accessing Pimsy field auto-fill", () => {
     const next = mergeBookmarkIntoCustomFields({ timezone: "America/Chicago" }, null);
     expect(next.bookmark).toBeUndefined();
     expect(next.timezone).toBe("America/Chicago");
+    const hubspot = mergeBookmarkIntoCustomFields({}, "https://app.hubspot.com/contacts/1");
+    expect(hubspot.bookmark).toBeUndefined();
+    expect(accessingPimsyFields({ bookmarkUrl: "https://app.hubspot.com/contacts/1" }).bookmarkUrl).toBeNull();
+  });
+
+  it("keeps one CRM acronym field on New project and labels the live site separately", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/projects/new/new-project-form.tsx"),
+      "utf8",
+    );
+    expect(src.match(/id="crmAcronym"/g)?.length).toBe(1);
+    expect(src.match(/label="CRM acronym"/g)?.length).toBe(1);
+    expect(src).toContain('label="Live site"');
+    expect(src).not.toContain("Bookmark / CRM link");
+    expect(src).toContain("HubSpot deal URL");
+  });
+
+  it("treats the legacy Bookmark / CRM generated block as replaceable", () => {
+    const legacy = [
+      "Bookmark the live site, install the desktop app, and keep the practice acronym and security key handy.",
+      "",
+      ACCESSING_PIMSY_HEADING,
+      `Desktop application: ${PIMSY_DESKTOP_INSTALL_URL}`,
+      "Bookmark / CRM link: https://cedar.pimsyehr.com/",
+    ].join("\n");
+    expect(isReplaceableAccessingPimsyDescription(legacy)).toBe(true);
   });
 });

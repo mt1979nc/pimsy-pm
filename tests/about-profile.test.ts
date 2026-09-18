@@ -160,6 +160,7 @@ describe("portal About payload", () => {
       projectName: "Acme implementation",
       customerName: "Acme Behavioral",
       crmAcronym: "ACME",
+      liveSiteUrl: "https://cedar.pimsyehr.com/",
       kickoffDate: "2026-09-15T12:00:00.000Z",
       goLiveDate: "2026-11-19T12:00:00.000Z",
       zoomBookingUrl: "https://book.example.com/kickoff",
@@ -191,6 +192,7 @@ describe("portal About payload", () => {
       ],
     });
     expect(payload.crmAcronym).toBe("ACME");
+    expect(payload.liveSiteUrl).toBe("https://cedar.pimsyehr.com/");
     expect(payload.kickoff.items.map((i) => i.title)).toEqual(["Dock Overview & Threads"]);
     expect(payload.implementationTeam).toHaveLength(1);
     expect(payload.customerContacts).toHaveLength(1);
@@ -212,6 +214,7 @@ describe("portal About payload", () => {
       customerContacts: [],
     });
     expect(payload.kickoff.items).toEqual([]);
+    expect(payload.liveSiteUrl).toBeNull();
     expect(portalAboutHasContent(payload)).toBe(false);
   });
 });

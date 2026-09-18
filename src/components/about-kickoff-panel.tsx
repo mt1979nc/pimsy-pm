@@ -4,6 +4,7 @@ import { fmtDate } from "@/lib/dates";
 import type { KickoffSnapshot } from "@/lib/about-profile";
 import { AboutBookingLinks } from "@/components/about-booking-links";
 import { resolveProjectBookingUrls, type BookingUrlMap } from "@/lib/booking-urls";
+import { LIVE_SITE_LABEL, liveSiteDisplayHost, normalizeLiveSiteUrl } from "@/lib/accessing-pimsy";
 
 const STATUS_LABEL: Record<string, string> = {
   TODO: "Not started",
@@ -19,6 +20,7 @@ export function AboutKickoffPanel({
   goLiveDate,
   zoomBookingUrl,
   crmAcronym,
+  liveSiteUrl,
   kickoff,
   projectId,
   staffLinks,
@@ -29,6 +31,7 @@ export function AboutKickoffPanel({
   goLiveDate: Date | string | null;
   zoomBookingUrl: string | null;
   crmAcronym: string | null;
+  liveSiteUrl?: string | null;
   kickoff: KickoffSnapshot;
   projectId: string;
   staffLinks: boolean;
@@ -39,6 +42,7 @@ export function AboutKickoffPanel({
     bookingUrls,
     zoomBookingUrl,
   });
+  const liveSite = normalizeLiveSiteUrl(liveSiteUrl);
   return (
     <div className="space-y-3 p-4">
       <dl className="grid gap-4 sm:grid-cols-2">
@@ -54,6 +58,21 @@ export function AboutKickoffPanel({
           <div>
             <dt className="text-[11.5px] uppercase tracking-wide text-ink-3">Account</dt>
             <dd className="mt-0.5 text-[14px] font-medium text-ink">{crmAcronym}</dd>
+          </div>
+        ) : null}
+        {liveSite ? (
+          <div>
+            <dt className="text-[11.5px] uppercase tracking-wide text-ink-3">{LIVE_SITE_LABEL}</dt>
+            <dd className="mt-0.5 text-[14px] font-medium text-ink">
+              <a
+                href={liveSite}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand hover:underline"
+              >
+                {liveSiteDisplayHost(liveSite)}
+              </a>
+            </dd>
           </div>
         ) : null}
       </dl>

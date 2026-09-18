@@ -290,7 +290,7 @@ describe("Dock task action buttons (PWMI Discovery)", () => {
     expect(users[0]?.href).toMatch(/pimsyemr\.zendesk\.com/);
   });
 
-  it("Accessing Pimsy always offers the documented desktop installer; bookmark only when attached", () => {
+  it("Accessing Pimsy always offers the documented desktop installer; live site only when attached", () => {
     const bare = resolveTaskActionButtons({ title: "Accessing Pimsy" });
     expect(bare).toEqual([
       expect.objectContaining({
@@ -300,18 +300,46 @@ describe("Dock task action buttons (PWMI Discovery)", () => {
         popup: true,
       }),
     ]);
-    const withBookmark = resolveTaskActionButtons({
+    const withLiveSite = resolveTaskActionButtons({
       title: "Accessing Pimsy",
       assets: [
         {
           id: "bm-1",
           kind: "LINK",
-          name: "Bookmark / CRM link",
+          name: "Live site",
           url: "https://cedar.pimsyehr.com/",
         },
       ],
     });
-    expect(withBookmark.map((b) => b.label)).toEqual(["Install desktop app", "Open bookmark"]);
-    expect(withBookmark[1]?.href).toBe("https://cedar.pimsyehr.com/");
+    expect(withLiveSite.map((b) => b.label)).toEqual(["Install desktop app", "Open live site"]);
+    expect(withLiveSite[1]?.href).toBe("https://cedar.pimsyehr.com/");
+    expect(withLiveSite[1]?.resourceName).toBe("Live site");
+
+    const legacyName = resolveTaskActionButtons({
+      title: "Accessing Pimsy",
+      assets: [
+        {
+          id: "bm-legacy",
+          kind: "LINK",
+          name: "Bookmark / CRM link",
+          url: "https://ths.pimsyehr.com/",
+        },
+      ],
+    });
+    expect(legacyName.map((b) => b.label)).toEqual(["Install desktop app", "Open live site"]);
+    expect(legacyName[1]?.href).toBe("https://ths.pimsyehr.com/");
+
+    const hubspotAsBookmark = resolveTaskActionButtons({
+      title: "Accessing Pimsy",
+      assets: [
+        {
+          id: "bm-crm",
+          kind: "LINK",
+          name: "Bookmark / CRM link",
+          url: "https://app.hubspot.com/contacts/1/record/0-3/9",
+        },
+      ],
+    });
+    expect(hubspotAsBookmark.map((b) => b.label)).toEqual(["Install desktop app"]);
   });
 });

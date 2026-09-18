@@ -571,9 +571,9 @@ export const projects = pgTable(
     /**
      * Site / About profile — kickoff dates live on the project row; per-meeting
      * booking links, notes, and custom fields are edited on About. HubSpot /
-     * Prism / CRM key are staff-only. The customer About tab shows kickoff,
-     * go-live, specialist, booking links, notes, and a small set of custom-field
-     * keys — never HubSpot.
+     * Prism / CRM key are staff-only (auto-create). The outbound site link on
+     * About and Accessing Pimsy is the live PIMSY bookmark in custom_fields
+     * (`bookmark`) — never the HubSpot deal. Portal About never receives HubSpot.
      */
     hubspotDealUrl: text("hubspot_deal_url"),
     prismClientId: text("prism_client_id"),

@@ -115,7 +115,7 @@ export function EngagementCreateForm({
           <Field
             label="HubSpot deal URL"
             htmlFor="hubspotDealUrl"
-            hint="Optional. PATH stores a clear outbound link on About. Pull needs HUBSPOT_ACCESS_TOKEN."
+            hint="CRM auto-create. Staff only — not the live site. Pull needs HUBSPOT_ACCESS_TOKEN."
           >
             <input
               id="hubspotDealUrl"

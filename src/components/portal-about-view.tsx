@@ -40,6 +40,7 @@ export function PortalAboutView({
           goLiveDate={payload.goLiveDate}
           zoomBookingUrl={payload.zoomBookingUrl}
           crmAcronym={payload.crmAcronym}
+          liveSiteUrl={payload.liveSiteUrl}
           kickoff={payload.kickoff}
           projectId={projectId}
           staffLinks={false}

@@ -23,6 +23,7 @@ import {
 } from "@/db/dock-default-attachments";
 import { ZENDESK_AGENT_SEARCH } from "@/lib/zendesk";
 import { normalizeOverlapTitle } from "@/lib/playbook-meta";
+import { LIVE_SITE_ATTACHMENT_NAME, LIVE_SITE_OPEN_LABEL } from "@/lib/accessing-pimsy";
 
 /** Dock PWMI Organization Details Form Action label (capital H). */
 export const DOCK_TASK_ACTION_LABEL = "Click Here";
@@ -137,7 +138,7 @@ export function isAccessingPimsyTitle(title: string): boolean {
 
 export const DOCK_ZENDESK_OPEN_LABEL = "Open Zendesk";
 export const DOCK_DESKTOP_INSTALL_LABEL = "Install desktop app";
-export const DOCK_BOOKMARK_LABEL = "Open bookmark";
+export const DOCK_BOOKMARK_LABEL = LIVE_SITE_OPEN_LABEL;
 
 const WIZARD_ACTION: DockTaskActionDef = {
   id: "discovery-wizard",
@@ -207,7 +208,7 @@ const BOOKMARK_ACTION: DockTaskActionDef = {
   id: "pimsy-bookmark",
   kind: "link",
   label: DOCK_BOOKMARK_LABEL,
-  resourceName: "Bookmark / CRM link",
+  resourceName: LIVE_SITE_ATTACHMENT_NAME,
 };
 
 function downloadAction(slug: string): DockTaskActionDef | null {

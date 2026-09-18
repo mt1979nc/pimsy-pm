@@ -14,6 +14,7 @@ import { isCustomerVisiblePhase, portalFacingTaskSql } from "./task-visibility";
 import { loadProjectAbout } from "./about-query";
 import { toPortalAbout } from "./about-profile";
 import type { PortalAboutPayload } from "./about-profile";
+import { bookmarkFromCustomFields } from "./accessing-pimsy";
 
 export type CustomerActor = Actor & { customerAccountId: string };
 
@@ -248,6 +249,7 @@ export async function portalAbout(actor: CustomerActor, projectId: string): Prom
     projectName: loaded.project.name,
     customerName: loaded.project.customerAccount?.name ?? null,
     crmAcronym: loaded.project.crmAcronym,
+    liveSiteUrl: bookmarkFromCustomFields(loaded.project.customFields ?? {}),
     kickoffDate: loaded.project.startDate,
     goLiveDate: loaded.project.targetGoLiveDate,
     zoomBookingUrl: loaded.project.zoomBookingUrl,

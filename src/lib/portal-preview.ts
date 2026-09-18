@@ -16,6 +16,7 @@ import {
 import { isCustomerVisiblePhase, portalFacingTaskSql } from "./task-visibility";
 import { loadProjectAbout } from "./about-query";
 import { toPortalAbout, type PortalAboutPayload } from "./about-profile";
+import { bookmarkFromCustomFields } from "./accessing-pimsy";
 
 export async function previewPortalAbout(projectId: string): Promise<PortalAboutPayload | null> {
   const project = await previewPortalProject(projectId);
@@ -26,6 +27,7 @@ export async function previewPortalAbout(projectId: string): Promise<PortalAbout
     projectName: loaded.project.name,
     customerName: loaded.project.customerAccount?.name ?? null,
     crmAcronym: loaded.project.crmAcronym,
+    liveSiteUrl: bookmarkFromCustomFields(loaded.project.customFields ?? {}),
     kickoffDate: loaded.project.startDate,
     goLiveDate: loaded.project.targetGoLiveDate,
     zoomBookingUrl: loaded.project.zoomBookingUrl,

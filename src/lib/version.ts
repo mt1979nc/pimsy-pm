@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.17.3";
+export const APP_VERSION = "1.17.4";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.17.4",
+    date: "2026-09-18",
+    summary:
+      "About and Accessing Pimsy show the live PIMSY site link, not the HubSpot deal. CRM fields stay on create/edit for auto-create. No schema migrate.",
+    highlights: [
+      "About (staff, portal, Customer view): outbound site link is Live site from custom_fields.bookmark. HubSpot stays on Edit site profile / New project for CRM auto-create.",
+      "Accessing Pimsy description and Open live site use the practice web URL. HubSpot/Zendesk URLs are never the live site. Legacy Bookmark / CRM attachments still match.",
+      "New project: CRM acronym once (auto-create / About account). Live site labeled separately. HubSpot deal URL kept.",
+      "Short labels. No schema migrate. No playbook resync — replaceable Accessing Pimsy copy rewrites on create/About save.",
+    ],
+  },
   {
     version: "1.17.3",
     date: "2026-09-18",
