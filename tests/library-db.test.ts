@@ -141,6 +141,28 @@ describe.skipIf(!dbOk)("file library create / list / attach (postgres)", () => {
     const listed = await listLibraryAssets();
     expect(listed.some((a) => a.id === fileId && a.kind === "FILE")).toBe(true);
     expect(listed.some((a) => a.id === linkId && a.kind === "LINK")).toBe(true);
+
+    const imageKey = await putFile("library-shot.png", Buffer.from("png-bytes"));
+    const image = await createLibraryFile(db, {
+      name: "Site screenshot",
+      storageKey: imageKey,
+      mimeType: "image/png",
+      sizeBytes: 9,
+    });
+    expect(image).toMatchObject({ ok: true });
+    if (!("asset" in image) || !image.asset) throw new Error("image create failed");
+    expect(image.asset.kind).toBe("IMAGE");
+  });
+
+  it("names a link from the URL when staff skip the title", async () => {
+    const link = await createLibraryLink(db, {
+      name: "  ",
+      url: "https://example.com/forms/intake",
+    });
+    expect(link).toMatchObject({ ok: true });
+    if (!("asset" in link) || !link.asset) throw new Error("untitled link failed");
+    expect(link.asset.name).toBe("example.com/forms/intake");
+    expect(link.asset.kind).toBe("LINK");
   });
 
   it("rejects a javascript: library URL", async () => {

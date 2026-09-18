@@ -7,16 +7,28 @@ import {
   fileAssetOpenHref,
   libraryAssetOpenHref,
   libraryKindLabel,
+  libraryUploadKind,
   slugifyLibraryName,
 } from "@/lib/library-meta";
 import { resolveTaskActionButtons } from "@/lib/playbook-resources";
 
 describe("file library kinds and URLs", () => {
-  it("labels File vs Link/Form", () => {
+  it("labels File vs Image vs Link", () => {
     expect(libraryKindLabel("FILE")).toBe("File");
-    expect(libraryKindLabel("LINK")).toBe("Link/Form");
+    expect(libraryKindLabel("LINK")).toBe("Link");
     expect(libraryKindLabel("IMAGE")).toBe("Image");
     expect(libraryKindLabel(null)).toBe("File");
+  });
+
+  it("File library add UI offers File, Image, and Link", () => {
+    const form = readFileSync(resolve(process.cwd(), "src/app/(app)/library/library-form.tsx"), "utf8");
+    expect(form).toMatch(/const MODES = \["file", "image", "link"\]/);
+    expect(form).toMatch(/Add link/);
+    expect(form).toMatch(/Add image/);
+    expect(form).toMatch(/Add file/);
+    expect(form).toMatch(/placeholder="Title"/);
+    expect(form).toMatch(/placeholder="https:\/\//);
+    expect(form).not.toMatch(/Storylane|essay|Discovery Wizard/);
   });
 
   it("slugifies staff names without inventing form hosts", () => {
@@ -67,6 +79,15 @@ describe("file library kinds and URLs", () => {
     expect(fileAssetOpenHref({ id: "fa-missing", kind: "FILE", url: null })).toBeNull();
   });
 
+  it("classifies library uploads as File or Image", () => {
+    expect(libraryUploadKind("application/pdf")).toMatchObject({ ok: true, kind: "FILE" });
+    expect(libraryUploadKind("image/png")).toMatchObject({ ok: true, kind: "IMAGE" });
+    expect(libraryUploadKind("", "IMAGE", "shot.png")).toMatchObject({ ok: true, kind: "IMAGE" });
+    expect(libraryUploadKind("application/pdf", "IMAGE")).toMatchObject({
+      error: expect.stringMatching(/image/i),
+    });
+  });
+
   it("uses a hostname fallback label when staff skip the name", () => {
     const parsed = parseHttpUrl("https://example.com/forms/intake/");
     expect(parsed.ok).toBe(true);
@@ -115,6 +136,7 @@ describe("file library kinds and URLs", () => {
   it("keeps client attachment UI off the Postgres client", () => {
     const files = [
       "src/components/attachments.tsx",
+      "src/app/(app)/library/library-form.tsx",
       "src/app/(app)/templates/[id]/template-editor.tsx",
       "src/lib/library-meta.ts",
       "src/lib/http-url.ts",

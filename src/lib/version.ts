@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.17.0";
+export const APP_VERSION = "1.17.1";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.17.1",
+    date: "2026-09-18",
+    summary:
+      "File library add is File, Image, or Link. Staff paste a title and URL; customers can open shared links. No schema migrate.",
+    highlights: [
+      "File library: File, Image, and Link as the add choices. Link is title + URL.",
+      "Images store as IMAGE so they thumbnail on staff and portal when the item is shared.",
+      "Shared links open in a new tab on portal Links & files (same visibility rules as before).",
+      "Short labels. No schema migrate — library_asset already has kind FILE | IMAGE | LINK.",
+    ],
+  },
   {
     version: "1.17.0",
     date: "2026-09-17",

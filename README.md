@@ -92,7 +92,7 @@ Configuration / Accessing Pimsy / Training / Billing Configuration hidden until 
 Billing Configuration is the billing-team tab; Discovery and Configuration copies stay **connected** (complete in one reflects in the other). EHR+RCM moves overlapping payer / ClaimMD / workflow rows to the RCM tab.
 Canonical path playbooks lock; Duplicate to customize. Re-import:
 `npm run db:seed -- --templates-only`. File library (`/library`) holds
-uploaded files and staff-pasted Link/Form URLs.
+uploaded files, images, and staff-pasted links.
 Existing WIP: `npm run db:resync:playbook-from-dock` then `--apply` (progress
 + timeout; Azure Cloud Shell; no Dock API). Use the task-list eyelid to
 hide/expose tabs on live sites — resync does not rewrite phase visibility.
@@ -349,8 +349,8 @@ That backfills blank/stale Dock playbook copy, missing area-to-cover
 checklists, Discovery Wizard LINKs, and billing-sheet defaults onto matching
 live tasks. Drop real Dock binaries in `content/template-attachments/` and
 run `npm run db:upload:template-attachments -- --apply`, or replace them at
-**Templates → File library**. Staff can also add a new file or paste an
-online-form hyperlink there (no invented Dock/Storylane URLs). Runbook:
+**Templates → File library**. Staff can add a file, an image, or a
+hyperlink (title + URL) there. Runbook:
 `v1.13-TEMPLATES.md`. Billing Configuration connected tasks / RCM move /
 Add RCM on existing Implementation WIP: `v1.14-BILLING-RCM.md` (templates-only
 seed + resync; HOLD from live).
