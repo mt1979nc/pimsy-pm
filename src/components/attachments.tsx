@@ -450,7 +450,7 @@ export function AddAttachment({
         <input type="hidden" name="taskId" value={taskId} />
         <FormError error={libState.error} />
         <select name="libraryAssetId" required className={inputClass}>
-          <option value="">Attach a library file or Link/Form…</option>
+          <option value="">Attach a library file, image, or link…</option>
           {attachable.map((l) => (
             <option key={l.id} value={l.id}>
               {l.name} ({libraryKindLabel(l.kind)}

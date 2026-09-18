@@ -19,26 +19,18 @@ export default async function LibraryPage() {
 
   return (
     <>
-      <PageHeader
-        title="File library"
-        subtitle="Reusable playbook items: uploaded files and hyperlinks to online forms (Dock forms, Discovery Wizard, questionnaires). Staff paste the real URL — PATH does not invent form addresses. Attach either type to a playbook task from Templates → Edit task, or to a live task from Links & files. New workspaces copy them onto matching tasks."
-      />
+      <PageHeader title="File library" subtitle="Files, images, and links." />
       <TemplateHubNav current="/library" />
       <div className="space-y-4">
         <Card>
-          <CardHeader
-            title="Add to library"
-            subtitle="File = upload a binary. Link/Form = paste an https URL that should open in a new tab."
-          />
+          <CardHeader title="Add" />
           <div className="px-5 py-4">
             <AddLibraryItemForms />
           </div>
         </Card>
         {assets.length === 0 ? (
           <Card>
-            <p className="px-5 py-4 text-[13px] text-ink-3">
-              Nothing in the library yet. Add a file or a Link/Form above.
-            </p>
+            <p className="px-5 py-4 text-[13px] text-ink-3">Nothing yet. Add a file, image, or link above.</p>
           </Card>
         ) : null}
         {assets.map((asset) => (
@@ -58,7 +50,7 @@ export default async function LibraryPage() {
               action={
                 asset.kind === "LINK" && asset.url ? (
                   <LinkButton href={asset.url} size="sm" target="_blank" rel="noopener noreferrer">
-                    Open link
+                    Open
                   </LinkButton>
                 ) : asset.storageKey ? (
                   <LinkButton href={`/api/library/${asset.id}`} size="sm">
@@ -78,7 +70,7 @@ export default async function LibraryPage() {
                 <p className="break-all text-[12.5px] text-ink-3">{asset.url}</p>
               ) : null}
               <p className="text-[12.5px] text-ink-3">
-                Auto-attached on {asset.templateAttachments.length} template task
+                On {asset.templateAttachments.length} playbook task
                 {asset.templateAttachments.length === 1 ? "" : "s"}.
               </p>
               {asset.kind === "LINK" ? (

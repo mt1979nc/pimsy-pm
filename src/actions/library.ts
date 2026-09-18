@@ -11,6 +11,7 @@ import {
   createLibraryLink,
   updateLibraryLink,
 } from "@/lib/library";
+import { libraryUploadKind } from "@/lib/library-meta";
 import { checkUpload, putFile } from "@/lib/storage";
 import { propagateLibraryFileToCopies } from "@/lib/template-attachments";
 import type { ActionState } from "./messages";
@@ -61,6 +62,9 @@ export async function addLibraryFile(
     return { error: "Could not save that file. Please try again." };
   }
 
+  const kind = libraryUploadKind(file.type, formData.get("kind")?.toString(), file.name);
+  if ("error" in kind) return { error: kind.error };
+
   const name = formData.get("name")?.toString()?.trim() || file.name;
   const result = await createLibraryFile(db, {
     name,
@@ -70,6 +74,7 @@ export async function addLibraryFile(
     description: formData.get("description")?.toString() || null,
     adminNotes: formData.get("adminNotes")?.toString() || null,
     visibility: visibilityFromForm(formData),
+    kind: kind.kind,
   });
   if ("error" in result) return { error: result.error };
   revalidateLibrary();
@@ -108,7 +113,7 @@ export async function uploadLibraryFile(
     where: eq(libraryAssets.id, assetId),
   });
   if (!asset) return { error: "Library file not found." };
-  if (asset.kind === "LINK") return { error: "Replace the URL on a Link/Form item, not a file." };
+  if (asset.kind === "LINK") return { error: "Replace the URL on a link, not a file." };
 
   const check = checkUpload(file.name, file.type, file.size);
   if (!check.ok) return { error: check.reason };
@@ -116,6 +121,8 @@ export async function uploadLibraryFile(
   const bytes = Buffer.from(await file.arrayBuffer());
   const key = await putFile(file.name, bytes);
   const mimeType = file.type || asset.mimeType;
+  const kind = libraryUploadKind(mimeType, null, file.name);
+  if ("error" in kind) return { error: kind.error };
   const name = asset.name;
 
   await db
@@ -125,7 +132,7 @@ export async function uploadLibraryFile(
       mimeType,
       sizeBytes: file.size,
       isPlaceholder: false,
-      kind: "FILE",
+      kind: kind.kind,
       url: null,
       name,
       updatedAt: new Date(),
@@ -138,7 +145,7 @@ export async function uploadLibraryFile(
     mimeType,
     sizeBytes: file.size,
     url: null,
-    kind: "FILE",
+    kind: kind.kind,
     name,
     description: asset.description,
   });

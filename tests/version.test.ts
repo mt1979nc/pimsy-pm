@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.17.0");
+    expect(APP_VERSION).toBe("1.17.1");
     expect(APP_VERSION).toMatch(/^1\.17\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,21 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.17.1 file library File / Image / Link add", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.17.1");
+    expect(note?.summary).toMatch(/File library/i);
+    expect(note?.summary).toMatch(/Link|hyperlink/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /File/.test(h) && /Image/.test(h) && /Link/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /title|URL/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /portal|customer/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.every((h) => !/\bCRM\b/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.17.0")).toBeTruthy();
   });
 
   it("documents v1.17.0 PATH visual cleanup for adoption", () => {

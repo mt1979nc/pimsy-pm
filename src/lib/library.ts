@@ -1,14 +1,16 @@
 /**
- * Staff file library: reusable FILE uploads and LINK/Form hyperlinks.
+ * Staff file library: reusable FILE / IMAGE uploads and LINK hyperlinks.
  * Schema already has kind FILE | IMAGE | LINK on library_asset — no migrate.
  */
 import { and, asc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { libraryAssets, templateTaskAttachments } from "@/db/schema";
-import { parseHttpUrl } from "@/lib/http-url";
-import { slugifyLibraryName } from "@/lib/library-meta";
+import { defaultLinkLabel, parseHttpUrl } from "@/lib/http-url";
+import { libraryUploadKind, slugifyLibraryName } from "@/lib/library-meta";
 import { copyLibraryAssetToTask, propagateLibraryFileToCopies } from "@/lib/template-attachments";
+
+export { libraryUploadKind } from "@/lib/library-meta";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
 
@@ -46,10 +48,9 @@ export type CreateLibraryLinkInput = {
 };
 
 export async function createLibraryLink(tx: Tx, input: CreateLibraryLinkInput) {
-  const name = input.name.trim();
-  if (!name) return { error: "Give the link a name." } as const;
   const parsed = parseHttpUrl(input.url);
   if (!parsed.ok) return { error: parsed.error } as const;
+  const name = defaultLinkLabel(parsed.url, input.name);
 
   const slug = await uniqueLibrarySlug(tx, name);
   const [row] = await tx
@@ -76,12 +77,15 @@ export type CreateLibraryFileInput = {
   description?: string | null;
   adminNotes?: string | null;
   visibility?: LibraryVisibility;
+  kind?: "FILE" | "IMAGE";
 };
 
 export async function createLibraryFile(tx: Tx, input: CreateLibraryFileInput) {
   const name = input.name.trim();
   if (!name) return { error: "Give the file a name." } as const;
   if (!input.storageKey) return { error: "Choose a file." } as const;
+  const kind = libraryUploadKind(input.mimeType, input.kind);
+  if ("error" in kind) return kind;
 
   const slug = await uniqueLibrarySlug(tx, name);
   const [row] = await tx
@@ -91,7 +95,7 @@ export async function createLibraryFile(tx: Tx, input: CreateLibraryFileInput) {
       name: name.slice(0, 200),
       description: input.description?.trim() || null,
       adminNotes: input.adminNotes?.trim() || null,
-      kind: "FILE",
+      kind: kind.kind,
       url: null,
       storageKey: input.storageKey,
       mimeType: input.mimeType ?? null,
