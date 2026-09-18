@@ -65,7 +65,7 @@ Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shi
 | Status updates feed | **Shipped** (v1.14 + v1.18.5) — Thursday standing instruction; Imp Spec reminder when this week’s update is missing |
 | Zoom recordings sync | **Partial (Wave B, shipped)** | Manual paste still; one link now lands on Recordings **and** the Training N task. No Zoom API pull. |
 | Template reseed | Planned — `--templates-only` still the ops path; v1.13 duplicate is an in-app copy, not a live Dock pull |
-| Mentions / notify | Partial — customer due-soon / overdue / staff-message **email** is batched; in-app stays per item |
+| Mentions / notify | **Shipped** (v1.18.6) | Type @ in comments and project updates; chips + MENTIONED in-app/email. Message email-handle mentions remain. Customer due-soon / overdue / staff-message **email** is still batched. |
 | File library by area | **Shipped** (v1.12, LC v1.16.5) | Reusable library + Learning Center **PIMSY how-to** groups; named Storylanes and public Getting Started / Tips PDFs wired from Dock inventory. Customer Guide PDF omitted until PATH re-hosts. |
 
 ## Ops

@@ -42,7 +42,7 @@ describe("Thursday Updates standing instruction", () => {
     expect(forms).toMatch(/WeeklyUpdateInstruction/);
     expect(forms).toMatch(/PROJECT_UPDATES_THURSDAY_HEADLINE/);
     expect(forms).toMatch(/PROJECT_UPDATES_THURSDAY_ITEMS/);
-    expect(forms).not.toMatch(/@mention/i);
+    expect(forms).toMatch(/MentionTextarea/);
 
     const staff = readFileSync(
       resolve(process.cwd(), "src/app/(app)/projects/[id]/page.tsx"),

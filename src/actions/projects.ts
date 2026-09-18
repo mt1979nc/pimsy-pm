@@ -40,6 +40,8 @@ import { refreshProjectCounters } from "@/lib/rollup";
 import { fillWorkspaceAccessTasks, resolveWorkspaceAccess } from "@/lib/workspace-access-fill";
 import { customFieldsWithoutBookmark } from "@/lib/accessing-pimsy";
 import { notify } from "@/lib/notify";
+import { notifyBodyMentions } from "@/lib/mention-notify";
+import { mentionPlainText } from "@/lib/mentions";
 import {
   editStatusUpdateForActor,
   deleteStatusUpdateForActor,
@@ -1287,11 +1289,28 @@ export async function publishStatusUpdate(
       userIds: contacts.map((c) => c.id),
       type: "STATUS_UPDATE_PUBLISHED",
       title: `${project.name}: new project update`,
-      body: summary.slice(0, 240),
+      body: mentionPlainText(summary).slice(0, 240),
       linkUrl: `/portal/projects/${projectId}`,
       email: true,
     });
   }
+
+  await notifyBodyMentions({
+    actor,
+    projectId,
+    texts: [
+      summary,
+      formData.get("accomplished")?.toString() ?? "",
+      formData.get("upcoming")?.toString() ?? "",
+      formData.get("needsFromYou")?.toString() ?? "",
+    ],
+    visibility,
+    quote: summary,
+    linkUrl: `/projects/${projectId}`,
+    portalLinkUrl: `/portal/projects/${projectId}`,
+    ctaLabel: "Open update",
+    projectName: project.name,
+  });
 
   revalidatePath(`/projects/${projectId}`);
   revalidatePath(`/portal/projects/${projectId}`);
@@ -1314,12 +1333,23 @@ export async function editStatusUpdate(
   if (!updateId) return { error: "Missing update." };
   const health = String(formData.get("health") ?? "") as "GREEN" | "YELLOW" | "RED";
   try {
-    const { projectId } = await editStatusUpdateForActor(actor, updateId, {
+    const { projectId, visibility, previousTexts, nextTexts } = await editStatusUpdateForActor(actor, updateId, {
       summary: String(formData.get("summary") ?? ""),
       accomplished: formData.get("accomplished")?.toString() ?? null,
       upcoming: formData.get("upcoming")?.toString() ?? null,
       needsFromYou: formData.get("needsFromYou")?.toString() ?? null,
       health,
+    });
+    await notifyBodyMentions({
+      actor,
+      projectId,
+      texts: nextTexts,
+      previousTexts,
+      visibility,
+      quote: nextTexts[0],
+      linkUrl: `/projects/${projectId}`,
+      portalLinkUrl: `/portal/projects/${projectId}`,
+      ctaLabel: "Open update",
     });
     revalidateProjectUpdates(projectId);
     return { ok: true };

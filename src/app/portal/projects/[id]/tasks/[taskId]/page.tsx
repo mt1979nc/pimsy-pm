@@ -21,6 +21,7 @@ import { TaskCompleteControl } from "@/components/task-complete-control";
 import { CustomerAssigneePicker } from "@/components/customer-assignee-picker";
 import { listCustomerProjectTeam, assigneesOf } from "@/lib/task-assignees";
 import { resolveProjectBookingUrls } from "@/lib/booking-urls";
+import { listMentionCandidates } from "@/lib/mention-candidates";
 import {
   isTrainingSessionParent,
   scheduledSessionLabel,
@@ -59,7 +60,7 @@ export default async function PortalTaskPage({
   if (isSpecialistSubtask(task)) notFound();
   if (task.phase && (task.phase.visibility !== "SHARED" || task.phase.notApplicable)) notFound();
 
-  const [comments, attachments, checklist] = await Promise.all([
+  const [comments, attachments, checklist, mentionCandidates] = await Promise.all([
     db.query.taskComments.findMany({
       where: and(
         eq(taskComments.taskId, taskId),
@@ -74,6 +75,7 @@ export default async function PortalTaskPage({
       where: and(eq(taskChecklistItems.taskId, taskId), eq(taskChecklistItems.visibility, "SHARED")),
       orderBy: [asc(taskChecklistItems.order)],
     }),
+    listMentionCandidates(id, "portal"),
   ]);
 
   const people = assigneesOf(task);
@@ -256,6 +258,7 @@ export default async function PortalTaskPage({
               currentUserRole={actor.role}
               canChooseVisibility={false}
               taskIsInternal={false}
+              mentionCandidates={mentionCandidates}
             />
           </Card>
         </div>

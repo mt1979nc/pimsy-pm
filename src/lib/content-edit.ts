@@ -92,7 +92,12 @@ export async function editTaskCommentForActor(actor: Actor, commentId: string, r
     });
   }
 
-  return { projectId: comment.task.projectId, taskId: comment.taskId };
+  return {
+    projectId: comment.task.projectId,
+    taskId: comment.taskId,
+    previousBody: comment.body,
+    visibility: comment.visibility,
+  };
 }
 
 export async function deleteTaskCommentForActor(actor: Actor, commentId: string) {
@@ -179,7 +184,12 @@ export async function editStatusUpdateForActor(
     });
   }
 
-  return { projectId: row.projectId };
+  return {
+    projectId: row.projectId,
+    visibility: row.visibility,
+    previousTexts: [row.summary, row.accomplished ?? "", row.upcoming ?? "", row.needsFromYou ?? ""],
+    nextTexts: [summary, accomplished ?? "", upcoming ?? "", needsFromYou ?? ""],
+  };
 }
 
 export async function deleteStatusUpdateForActor(actor: Actor, updateId: string) {

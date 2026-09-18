@@ -3,9 +3,12 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { addTaskComment, deleteTaskComment, editTaskComment } from "@/actions/tasks";
 import { SubmitButton, FormError } from "@/components/submit-button";
-import { inputClass, VisibilityBadge, Avatar, Badge, EmptyState } from "@/components/ui";
+import { VisibilityBadge, Avatar, Badge, EmptyState } from "@/components/ui";
+import { MentionBody } from "@/components/mention-body";
+import { MentionTextarea } from "@/components/mention-textarea";
 import { fmtRelative } from "@/lib/dates";
 import { canEditAuthoredRecord } from "@/lib/authored-content";
+import type { MentionCandidate } from "@/lib/mentions";
 
 type Comment = {
   id: string;
@@ -24,6 +27,7 @@ export function TaskComments({
   canChooseVisibility,
   taskIsInternal,
   readOnly = false,
+  mentionCandidates = [],
 }: {
   taskId: string;
   comments: Comment[];
@@ -33,6 +37,7 @@ export function TaskComments({
   taskIsInternal: boolean;
   /** Customer view / portal preview: show SHARED comments without posting. */
   readOnly?: boolean;
+  mentionCandidates?: MentionCandidate[];
 }) {
   const [state, action] = useActionState(addTaskComment, {});
   const [visibility, setVisibility] = useState<"INTERNAL" | "SHARED">(
@@ -73,6 +78,7 @@ export function TaskComments({
               currentUserRole={currentUserRole}
               canChooseVisibility={canChooseVisibility}
               readOnly={readOnly}
+              mentionCandidates={mentionCandidates}
             />
           ))}
         </div>
@@ -83,17 +89,18 @@ export function TaskComments({
         <input type="hidden" name="taskId" value={taskId} />
         <input type="hidden" name="visibility" value={effective} />
         <FormError error={state.error} />
-        <textarea
+        <MentionTextarea
           ref={taRef}
           name="body"
           rows={3}
           required
+          candidates={mentionCandidates}
+          visibility={effective}
           placeholder={
             effective === "SHARED"
-              ? "Write a comment — the customer will see this."
-              : "Write a comment — internal only."
+              ? "Write a comment — the customer will see this. Type @ to mention."
+              : "Write a comment — internal only. Type @ to mention."
           }
-          className={inputClass}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
               e.currentTarget.form?.requestSubmit();
@@ -139,12 +146,14 @@ function CommentItem({
   currentUserRole,
   canChooseVisibility,
   readOnly,
+  mentionCandidates,
 }: {
   comment: Comment;
   currentUserId: string;
   currentUserRole: string;
   canChooseVisibility: boolean;
   readOnly: boolean;
+  mentionCandidates: MentionCandidate[];
 }) {
   const canManage = !readOnly && canEditAuthoredRecord(
     { id: currentUserId, role: currentUserRole },
@@ -210,11 +219,12 @@ function CommentItem({
         {editing ? (
           <div className="mt-2 space-y-2">
             {error ? <p className="text-[12px] text-red">{error}</p> : null}
-            <textarea
+            <MentionTextarea
               rows={3}
               value={body}
-              onChange={(e) => setBody(e.target.value)}
-              className={inputClass}
+              onChange={setBody}
+              candidates={mentionCandidates}
+              visibility={comment.visibility}
               autoFocus
             />
             <div className="flex justify-end gap-2">
@@ -251,9 +261,10 @@ function CommentItem({
         ) : (
           <>
             {error ? <p className="mt-1 text-[12px] text-red">{error}</p> : null}
-            <p className="mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">
-              {comment.body}
-            </p>
+            <MentionBody
+              text={comment.body}
+              className="mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink"
+            />
           </>
         )}
       </div>

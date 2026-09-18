@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.5");
+    expect(APP_VERSION).toBe("1.18.6");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,21 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.6 @mentions in comments and project updates", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.6");
+    expect(note?.summary).toMatch(/@/);
+    expect(note?.summary).toMatch(/comment/i);
+    expect(note?.summary).toMatch(/update/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /short name/i.test(h) && /user:id/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /staff composer/.test(h) && /customer contacts/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /MENTIONED/.test(h) && /digest/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.5")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.4")).toBeTruthy();
   });
 
   it("documents v1.18.5 Thursday Updates instruction and Imp Spec reminder", () => {
