@@ -217,7 +217,7 @@ export function TaskRow({
             {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
             {specialistSub ? <Badge tone="amber">Specialist</Badge> : null}
             {showReviewRequiredBadge(task) ? <ReviewRequiredBadge /> : null}
-            {task.status === "BLOCKED" ? <Badge tone="red">Blocked</Badge> : null}
+            {optimisticStatus === "BLOCKED" ? <Badge tone="red">Blocked</Badge> : null}
             {na ? <Badge tone="amber">N/A</Badge> : null}
             {task.workTrack === "RCM" ? <Badge tone="violet">RCM</Badge> : null}
             {task.connectedNote ? <Badge tone="green">{task.connectedNote}</Badge> : null}

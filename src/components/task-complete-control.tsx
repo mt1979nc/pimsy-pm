@@ -47,7 +47,8 @@ export function TaskCompleteControl({
           done
             ? "border-green bg-green/15 text-green"
             : "border-border-strong bg-surface text-ink hover:border-brand",
-          (!canEdit || pending) && "cursor-default opacity-60",
+          !canEdit && "cursor-default opacity-60",
+          pending && "cursor-default",
         )}
       >
         <span
