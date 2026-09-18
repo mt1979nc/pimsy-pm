@@ -107,6 +107,54 @@ export async function createLibraryFile(tx: Tx, input: CreateLibraryFileInput) {
   return { ok: true as const, asset: row };
 }
 
+export type ReplaceLibraryWithLinkInput = {
+  id: string;
+  url: string;
+  /** When omitted, the existing card title is kept. */
+  name?: string;
+};
+
+/** Turn a FILE / IMAGE / placeholder (or existing LINK) into a LINK. Visibility stays. */
+export async function replaceLibraryAssetWithLink(tx: Tx, input: ReplaceLibraryWithLinkInput) {
+  const existing = await tx.query.libraryAssets.findFirst({
+    where: eq(libraryAssets.id, input.id),
+  });
+  if (!existing) return { error: "Library item not found." } as const;
+
+  const parsed = parseHttpUrl(input.url);
+  if (!parsed.ok) return { error: parsed.error } as const;
+
+  const name = (input.name?.trim() || existing.name).slice(0, 200);
+  const url = parsed.url.toString();
+
+  await tx
+    .update(libraryAssets)
+    .set({
+      kind: "LINK",
+      url,
+      name,
+      storageKey: null,
+      mimeType: null,
+      sizeBytes: null,
+      isPlaceholder: false,
+      updatedAt: new Date(),
+    })
+    .where(eq(libraryAssets.id, existing.id));
+
+  await propagateLibraryFileToCopies(tx, {
+    libraryAssetId: existing.id,
+    storageKey: null,
+    mimeType: null,
+    sizeBytes: null,
+    url,
+    kind: "LINK",
+    name,
+    description: existing.description,
+  });
+
+  return { ok: true as const };
+}
+
 export type UpdateLibraryLinkInput = {
   id: string;
   url?: string;

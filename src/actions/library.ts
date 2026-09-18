@@ -9,6 +9,7 @@ import { requireAdmin } from "@/lib/guard";
 import {
   createLibraryFile,
   createLibraryLink,
+  replaceLibraryAssetWithLink,
   updateLibraryLink,
 } from "@/lib/library";
 import { libraryUploadKind } from "@/lib/library-meta";
@@ -93,6 +94,22 @@ export async function saveLibraryLink(
     url: formData.get("url")?.toString(),
     name: formData.get("name")?.toString(),
     description: formData.get("description")?.toString(),
+  });
+  if ("error" in result) return { error: result.error };
+  revalidateLibrary();
+  return { ok: true };
+}
+
+export async function replaceLibraryWithLink(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireAdmin();
+  const assetId = formData.get("assetId")?.toString();
+  if (!assetId) return { error: "Missing library item." };
+  const result = await replaceLibraryAssetWithLink(db, {
+    id: assetId,
+    url: formData.get("url")?.toString() ?? "",
   });
   if ("error" in result) return { error: result.error };
   revalidateLibrary();
