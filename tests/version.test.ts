@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.2");
+    expect(APP_VERSION).toBe("1.18.3");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,20 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.3 comment/update/risk edit and delete", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.3");
+    expect(note?.summary).toMatch(/edit or delete/i);
+    expect(note?.summary).toMatch(/comment/i);
+    expect(note?.summary).toMatch(/0024_content_edited_at/);
+    expect(note?.highlights?.some((h) => /OWNER\/ADMIN/.test(h) && /author/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /health/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /edited/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /0024_content_edited_at/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.2")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.1")).toBeTruthy();
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.0")).toBeTruthy();
   });
 
   it("documents v1.18.2 RCM chips and task-list comment counts", () => {

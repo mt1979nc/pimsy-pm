@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.2";
+export const APP_VERSION = "1.18.3";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.3",
+    date: "2026-09-18",
+    summary:
+      "Authors can edit or delete their comments, project updates, and risks; owners/admins can edit any. Updates include health. Soft edited mark. Migrate 0024_content_edited_at.",
+    highlights: [
+      "Comment, update, and risk text: author or OWNER/ADMIN. Covering specialists cannot rewrite someone else’s note.",
+      "Project updates also edit health (on track / needs attention / at risk) and can update site health.",
+      "Risks also edit severity. Short Edit / Delete with confirm. Soft “edited” when content changed. No revision log.",
+      "Comments keep soft-delete (deleted_at). Updates and risks hard-delete. Does not change RCM chips or task-list comment counts from 1.18.2.",
+      "Migrate 0024_content_edited_at: status_update.edited_at and risk.edited_at. task_comment already had edited_at / deleted_at.",
+    ],
+  },
   {
     version: "1.18.2",
     date: "2026-09-18",

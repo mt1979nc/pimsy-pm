@@ -1,16 +1,18 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { addTaskComment } from "@/actions/tasks";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { addTaskComment, deleteTaskComment, editTaskComment } from "@/actions/tasks";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { inputClass, VisibilityBadge, Avatar, Badge, EmptyState } from "@/components/ui";
 import { fmtRelative } from "@/lib/dates";
+import { canEditAuthoredRecord } from "@/lib/authored-content";
 
 type Comment = {
   id: string;
   body: string;
   visibility: "INTERNAL" | "SHARED";
   createdAt: Date | string;
+  editedAt?: Date | string | null;
   author: { id: string; name: string | null; image?: string | null; role: string };
 };
 
@@ -18,6 +20,7 @@ export function TaskComments({
   taskId,
   comments,
   currentUserId,
+  currentUserRole,
   canChooseVisibility,
   taskIsInternal,
   readOnly = false,
@@ -25,6 +28,7 @@ export function TaskComments({
   taskId: string;
   comments: Comment[];
   currentUserId: string;
+  currentUserRole: string;
   canChooseVisibility: boolean;
   taskIsInternal: boolean;
   /** Customer view / portal preview: show SHARED comments without posting. */
@@ -62,25 +66,14 @@ export function TaskComments({
       ) : (
         <div className="divide-y divide-border">
           {comments.map((c) => (
-            <div key={c.id} className="flex gap-3 px-5 py-3.5">
-              <Avatar name={c.author.name} image={c.author.image} size={28} className="mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[13px] font-semibold text-ink">
-                    {c.author.name}
-                    {c.author.id === currentUserId ? (
-                      <span className="ml-1 font-normal text-ink-3">(you)</span>
-                    ) : null}
-                  </span>
-                  {c.author.role === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
-                  <span className="text-[12px] text-ink-3">{fmtRelative(c.createdAt)}</span>
-                  {canChooseVisibility ? <VisibilityBadge visibility={c.visibility} /> : null}
-                </div>
-                <p className="mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">
-                  {c.body}
-                </p>
-              </div>
-            </div>
+            <CommentItem
+              key={c.id}
+              comment={c}
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
+              canChooseVisibility={canChooseVisibility}
+              readOnly={readOnly}
+            />
           ))}
         </div>
       )}
@@ -136,6 +129,134 @@ export function TaskComments({
         </div>
       </form>
       )}
+    </div>
+  );
+}
+
+function CommentItem({
+  comment,
+  currentUserId,
+  currentUserRole,
+  canChooseVisibility,
+  readOnly,
+}: {
+  comment: Comment;
+  currentUserId: string;
+  currentUserRole: string;
+  canChooseVisibility: boolean;
+  readOnly: boolean;
+}) {
+  const canManage = !readOnly && canEditAuthoredRecord(
+    { id: currentUserId, role: currentUserRole },
+    comment.author.id,
+  );
+  const [editing, setEditing] = useState(false);
+  const [body, setBody] = useState(comment.body);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  useEffect(() => {
+    setBody(comment.body);
+  }, [comment.body]);
+
+  return (
+    <div className="flex gap-3 px-5 py-3.5">
+      <Avatar name={comment.author.name} image={comment.author.image} size={28} className="mt-0.5" />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[13px] font-semibold text-ink">
+            {comment.author.name}
+            {comment.author.id === currentUserId ? (
+              <span className="ml-1 font-normal text-ink-3">(you)</span>
+            ) : null}
+          </span>
+          {comment.author.role === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
+          <span className="text-[12px] text-ink-3">{fmtRelative(comment.createdAt)}</span>
+          {comment.editedAt ? <span className="text-[11.5px] text-ink-3">edited</span> : null}
+          {canChooseVisibility ? <VisibilityBadge visibility={comment.visibility} /> : null}
+          {canManage && !editing ? (
+            <span className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                className="text-[12px] text-ink-3 hover:text-ink hover:underline"
+                onClick={() => {
+                  setError(null);
+                  setEditing(true);
+                }}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                className="text-[12px] text-ink-3 hover:text-red hover:underline"
+                onClick={() => {
+                  if (!confirm("Delete this comment?")) return;
+                  setError(null);
+                  start(async () => {
+                    try {
+                      await deleteTaskComment(comment.id);
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : "Could not delete.");
+                    }
+                  });
+                }}
+              >
+                Delete
+              </button>
+            </span>
+          ) : null}
+        </div>
+        {editing ? (
+          <div className="mt-2 space-y-2">
+            {error ? <p className="text-[12px] text-red">{error}</p> : null}
+            <textarea
+              rows={3}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              className={inputClass}
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="text-[12.5px] text-ink-3 hover:underline"
+                onClick={() => {
+                  setBody(comment.body);
+                  setEditing(false);
+                  setError(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={pending || !body.trim()}
+                className="rounded-lg bg-[#113c64] px-2.5 py-1 text-[13px] font-medium text-white disabled:opacity-50"
+                onClick={() =>
+                  start(async () => {
+                    try {
+                      await editTaskComment(comment.id, body);
+                      setEditing(false);
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : "Could not save.");
+                    }
+                  })
+                }
+              >
+                {pending ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {error ? <p className="mt-1 text-[12px] text-red">{error}</p> : null}
+            <p className="mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">
+              {comment.body}
+            </p>
+          </>
+        )}
+      </div>
     </div>
   );
 }

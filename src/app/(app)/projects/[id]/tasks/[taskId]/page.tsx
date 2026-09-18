@@ -458,6 +458,7 @@ export default async function TaskDetailPage({
               taskId={task.id}
               comments={comments}
               currentUserId={actor.id}
+              currentUserRole={actor.role}
               canChooseVisibility
               taskIsInternal={task.visibility === "INTERNAL"}
             />

@@ -157,6 +157,7 @@ export default async function CustomerViewTaskPage({
           taskId={task.id}
           comments={comments}
           currentUserId={actor.id}
+          currentUserRole={actor.role}
           canChooseVisibility={false}
           taskIsInternal={false}
           readOnly

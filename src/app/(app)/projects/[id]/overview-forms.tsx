@@ -1,11 +1,22 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
-import { publishStatusUpdate, createRisk, setRiskStatus } from "@/actions/projects";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import {
+  publishStatusUpdate,
+  createRisk,
+  setRiskStatus,
+  editStatusUpdate,
+  deleteStatusUpdate,
+  editRisk,
+  deleteRisk,
+} from "@/actions/projects";
 import { toggleMilestone, createMilestone } from "@/actions/tasks";
 import { SubmitButton, FormError } from "@/components/submit-button";
-import { Field, inputClass, Button, VisibilityBadge } from "@/components/ui";
+import { Field, inputClass, Button, VisibilityBadge, HealthBadge, SeverityBadge, Avatar } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { fmtRelative } from "@/lib/dates";
+import { canEditAuthoredRecord } from "@/lib/authored-content";
+import type { ActionState } from "@/actions/messages";
 
 // ---------------------------------------------------------------------------
 // Status update composer — replaces the weekly "where are we?" email
@@ -248,5 +259,283 @@ export function RiskStatusControl({ riskId, status }: { riskId: string; status: 
       <option value="RESOLVED">Resolved</option>
       <option value="ACCEPTED">Accepted</option>
     </select>
+  );
+}
+
+function EditDeleteLinks({
+  onEdit,
+  onDelete,
+  deleting,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+  deleting?: boolean;
+}) {
+  return (
+    <span className="ml-auto flex items-center gap-2">
+      <button type="button" className="text-[12px] text-ink-3 hover:text-ink hover:underline" onClick={onEdit}>
+        Edit
+      </button>
+      <button
+        type="button"
+        disabled={deleting}
+        className="text-[12px] text-ink-3 hover:text-red hover:underline"
+        onClick={onDelete}
+      >
+        Delete
+      </button>
+    </span>
+  );
+}
+
+export function StatusUpdateItem({
+  update,
+  currentUserId,
+  currentUserRole,
+}: {
+  update: {
+    id: string;
+    summary: string;
+    accomplished: string | null;
+    upcoming: string | null;
+    needsFromYou: string | null;
+    health: "GREEN" | "YELLOW" | "RED";
+    visibility: "INTERNAL" | "SHARED";
+    publishedAt: Date | string | null;
+    editedAt: Date | string | null;
+    authorId: string;
+    author: { id: string; name: string | null; image?: string | null };
+  };
+  currentUserId: string;
+  currentUserRole: string;
+}) {
+  const canManage = canEditAuthoredRecord({ id: currentUserId, role: currentUserRole }, update.authorId);
+  const [editing, setEditing] = useState(false);
+  const [state, action] = useActionState(editStatusUpdate, {} as ActionState);
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (state.ok) setEditing(false);
+  }, [state]);
+
+  if (editing) {
+    return (
+      <form action={action} className="space-y-3 px-5 py-4">
+        <input type="hidden" name="updateId" value={update.id} />
+        <FormError error={state.error} />
+        <Field label="Summary" htmlFor={`summary-${update.id}`}>
+          <textarea
+            id={`summary-${update.id}`}
+            name="summary"
+            rows={2}
+            required
+            defaultValue={update.summary}
+            className={inputClass}
+          />
+        </Field>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Done this period" htmlFor={`accomplished-${update.id}`}>
+            <textarea
+              id={`accomplished-${update.id}`}
+              name="accomplished"
+              rows={3}
+              defaultValue={update.accomplished ?? ""}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Coming up next" htmlFor={`upcoming-${update.id}`}>
+            <textarea
+              id={`upcoming-${update.id}`}
+              name="upcoming"
+              rows={3}
+              defaultValue={update.upcoming ?? ""}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="What we need from you" htmlFor={`needs-${update.id}`}>
+            <textarea
+              id={`needs-${update.id}`}
+              name="needsFromYou"
+              rows={3}
+              defaultValue={update.needsFromYou ?? ""}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <Field label="Health" htmlFor={`health-${update.id}`} className="w-[190px]">
+            <select
+              id={`health-${update.id}`}
+              name="health"
+              defaultValue={update.health}
+              className={inputClass}
+            >
+              <option value="GREEN">On track</option>
+              <option value="YELLOW">Needs attention</option>
+              <option value="RED">At risk</option>
+            </select>
+          </Field>
+          <div className="flex items-center gap-2">
+            <Button size="sm" type="button" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+            <SubmitButton size="sm" pendingLabel="Saving…">
+              Save
+            </SubmitButton>
+          </div>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <div className="px-5 py-4">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <Avatar name={update.author.name} image={update.author.image} size={22} />
+        <span className="text-[13px] font-medium text-ink">{update.author.name}</span>
+        <span className="text-[12px] text-ink-3">{fmtRelative(update.publishedAt)}</span>
+        {update.editedAt ? <span className="text-[11.5px] text-ink-3">edited</span> : null}
+        <HealthBadge health={update.health} />
+        <VisibilityBadge visibility={update.visibility} />
+        {canManage ? (
+          <EditDeleteLinks
+            onEdit={() => setEditing(true)}
+            deleting={pending}
+            onDelete={() => {
+              if (!confirm("Delete this update?")) return;
+              setError(null);
+              start(async () => {
+                try {
+                  await deleteStatusUpdate(update.id);
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : "Could not delete.");
+                }
+              });
+            }}
+          />
+        ) : null}
+      </div>
+      {error ? <p className="mb-2 text-[12px] text-red">{error}</p> : null}
+      <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">{update.summary}</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        {[
+          ["Completed", update.accomplished],
+          ["Next", update.upcoming],
+          ["Needs from customer", update.needsFromYou],
+        ]
+          .filter(([, v]) => v)
+          .map(([label, v]) => (
+            <div key={label as string} className="rounded-lg bg-surface-2 p-2.5">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+                {label}
+              </div>
+              <p className="mt-1 whitespace-pre-wrap text-[12.5px] leading-snug text-ink-2">{v}</p>
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
+
+export function RiskItem({
+  risk,
+  currentUserId,
+  currentUserRole,
+}: {
+  risk: {
+    id: string;
+    title: string;
+    description: string | null;
+    severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+    status: string;
+    visibility: "INTERNAL" | "SHARED";
+    ownerId: string | null;
+    editedAt: Date | string | null;
+    owner: { id: string; name: string | null } | null;
+  };
+  currentUserId: string;
+  currentUserRole: string;
+}) {
+  const canManage = canEditAuthoredRecord({ id: currentUserId, role: currentUserRole }, risk.ownerId);
+  const [editing, setEditing] = useState(false);
+  const [state, action] = useActionState(editRisk, {} as ActionState);
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (state.ok) setEditing(false);
+  }, [state]);
+
+  if (editing) {
+    return (
+      <form action={action} className="space-y-2.5 px-4 py-2.5">
+        <input type="hidden" name="riskId" value={risk.id} />
+        <FormError error={state.error} />
+        <input name="title" required defaultValue={risk.title} className={inputClass} />
+        <textarea
+          name="description"
+          rows={2}
+          defaultValue={risk.description ?? ""}
+          className={inputClass}
+        />
+        <select name="severity" defaultValue={risk.severity} className={inputClass}>
+          <option value="LOW">Low</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="HIGH">High</option>
+          <option value="CRITICAL">Critical</option>
+        </select>
+        <div className="flex justify-end gap-2">
+          <Button size="sm" type="button" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+          <SubmitButton size="sm" pendingLabel="Saving…">
+            Save
+          </SubmitButton>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <div className="px-4 py-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-[13px] text-ink">
+          {risk.title}
+          {risk.editedAt ? (
+            <span className="ml-2 text-[11.5px] font-normal text-ink-3">edited</span>
+          ) : null}
+        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <SeverityBadge severity={risk.severity} />
+          {canManage ? (
+            <EditDeleteLinks
+              onEdit={() => setEditing(true)}
+              deleting={pending}
+              onDelete={() => {
+                if (!confirm("Delete this risk?")) return;
+                setError(null);
+                start(async () => {
+                  try {
+                    await deleteRisk(risk.id);
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "Could not delete.");
+                  }
+                });
+              }}
+            />
+          ) : null}
+        </div>
+      </div>
+      {risk.description ? (
+        <p className="mt-1 text-[12.5px] leading-snug text-ink-3">{risk.description}</p>
+      ) : null}
+      {error ? <p className="mt-1 text-[12px] text-red">{error}</p> : null}
+      <div className="mt-1.5 flex items-center gap-2">
+        <RiskStatusControl riskId={risk.id} status={risk.status} />
+        {risk.owner ? <span className="text-[12px] text-ink-3">{risk.owner.name}</span> : null}
+        <VisibilityBadge visibility={risk.visibility} />
+      </div>
+    </div>
   );
 }
