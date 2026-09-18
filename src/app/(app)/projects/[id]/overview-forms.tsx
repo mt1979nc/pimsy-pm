@@ -17,6 +17,33 @@ import { cn } from "@/lib/cn";
 import { fmtRelative } from "@/lib/dates";
 import { canEditAuthoredRecord } from "@/lib/authored-content";
 import type { ActionState } from "@/actions/messages";
+import {
+  PROJECT_UPDATES_DUE_TODAY_LABEL,
+  PROJECT_UPDATES_THURSDAY_HEADLINE,
+  PROJECT_UPDATES_THURSDAY_ITEMS,
+} from "@/lib/project-updates";
+import { isWeeklyUpdateReminderDay } from "@/lib/weekly-status-update";
+
+function WeeklyUpdateInstruction() {
+  const dueToday = isWeeklyUpdateReminderDay(new Date());
+  return (
+    <div className="border-b border-border px-4 py-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-[12.5px] font-medium text-ink">{PROJECT_UPDATES_THURSDAY_HEADLINE}</p>
+        {dueToday ? (
+          <span className="rounded-full bg-amber-soft px-2 py-0.5 text-[11px] font-medium text-amber">
+            {PROJECT_UPDATES_DUE_TODAY_LABEL}
+          </span>
+        ) : null}
+      </div>
+      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] leading-snug text-ink-3">
+        {PROJECT_UPDATES_THURSDAY_ITEMS.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Status update composer — replaces the weekly "where are we?" email
@@ -33,72 +60,73 @@ export function StatusUpdateForm({
   const [open, setOpen] = useState(false);
   const [visibility, setVisibility] = useState<"SHARED" | "INTERNAL">("SHARED");
 
-  if (!open) {
-    return (
-      <div className="flex justify-end border-b border-border px-4 py-2">
-        <Button size="sm" variant="primary" onClick={() => setOpen(true)}>
-          Post update
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <form action={action} className="space-y-3 border-b border-border p-4">
-      <input type="hidden" name="projectId" value={projectId} />
-      <input type="hidden" name="visibility" value={visibility} />
-      <FormError error={state.error} />
+    <div>
+      <WeeklyUpdateInstruction />
+      {open ? (
+        <form action={action} className="space-y-3 border-b border-border p-4">
+          <input type="hidden" name="projectId" value={projectId} />
+          <input type="hidden" name="visibility" value={visibility} />
+          <FormError error={state.error} />
 
-      <Field label="Summary" htmlFor="summary">
-        <textarea
-          id="summary"
-          name="summary"
-          rows={2}
-          required
-          autoFocus
-          placeholder="Config is complete and we start staff training Monday."
-          className={inputClass}
-        />
-      </Field>
+          <Field label="Summary" htmlFor="summary">
+            <textarea
+              id="summary"
+              name="summary"
+              rows={2}
+              required
+              autoFocus
+              placeholder="Config is complete and we start staff training Monday."
+              className={inputClass}
+            />
+          </Field>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Field label="Done this period" htmlFor="accomplished">
-          <textarea id="accomplished" name="accomplished" rows={3} className={inputClass} />
-        </Field>
-        <Field label="Coming up next" htmlFor="upcoming">
-          <textarea id="upcoming" name="upcoming" rows={3} className={inputClass} />
-        </Field>
-        <Field label="What we need from you" htmlFor="needsFromYou">
-          <textarea id="needsFromYou" name="needsFromYou" rows={3} className={inputClass} />
-        </Field>
-      </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Done this period" htmlFor="accomplished">
+              <textarea id="accomplished" name="accomplished" rows={3} className={inputClass} />
+            </Field>
+            <Field label="Coming up next" htmlFor="upcoming">
+              <textarea id="upcoming" name="upcoming" rows={3} className={inputClass} />
+            </Field>
+            <Field label="What we need from you" htmlFor="needsFromYou">
+              <textarea id="needsFromYou" name="needsFromYou" rows={3} className={inputClass} />
+            </Field>
+          </div>
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <Field label="Health" htmlFor="health" className="w-[190px]">
-          <select id="health" name="health" defaultValue={currentHealth} className={inputClass}>
-            <option value="GREEN">On track</option>
-            <option value="YELLOW">Needs attention</option>
-            <option value="RED">At risk</option>
-          </select>
-        </Field>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <Field label="Health" htmlFor="health" className="w-[190px]">
+              <select id="health" name="health" defaultValue={currentHealth} className={inputClass}>
+                <option value="GREEN">On track</option>
+                <option value="YELLOW">Needs attention</option>
+                <option value="RED">At risk</option>
+              </select>
+            </Field>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setVisibility(visibility === "SHARED" ? "INTERNAL" : "SHARED")}
-            title="Toggle who sees this update"
-          >
-            <VisibilityBadge visibility={visibility} />
-          </button>
-          <Button size="sm" type="button" onClick={() => setOpen(false)}>
-            Cancel
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setVisibility(visibility === "SHARED" ? "INTERNAL" : "SHARED")}
+                title="Toggle who sees this update"
+              >
+                <VisibilityBadge visibility={visibility} />
+              </button>
+              <Button size="sm" type="button" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <SubmitButton size="sm" pendingLabel="Publishing…">
+                {visibility === "SHARED" ? "Publish to customer" : "Save internal note"}
+              </SubmitButton>
+            </div>
+          </div>
+        </form>
+      ) : (
+        <div className="flex justify-end border-b border-border px-4 py-2">
+          <Button size="sm" variant="primary" onClick={() => setOpen(true)}>
+            Post update
           </Button>
-          <SubmitButton size="sm" pendingLabel="Publishing…">
-            {visibility === "SHARED" ? "Publish to customer" : "Save internal note"}
-          </SubmitButton>
         </div>
-      </div>
-    </form>
+      )}
+    </div>
   );
 }
 

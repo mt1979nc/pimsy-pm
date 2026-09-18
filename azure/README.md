@@ -223,6 +223,40 @@ Does **not** send the batched customer digest — that remains the separate
 from a Logic App recurrence (every 15 minutes is plenty; the cooldown is
 ~20 hours per user+task). Migration `0017_task_assignees`.
 
+**Thursday Imp Spec account updates (v1.18.5).** `POST`/`GET`
+`/api/cron/weekly-status-update-reminder` with `Authorization: Bearer <CRON_SECRET>`
+emails each implementation lead whose sites still need this week’s account
+update. Title: `Due today: Provide account updates for sites X, Y, Z`. In-app
+row uses `STATUS_UPDATE_DUE` (staff email default on). Customers never get it.
+
+Missing this week = no `status_update` **authored by the project lead** with
+`published_at` on or after **Thursday 00:00** in the lead’s `user.time_zone`
+(default **America/Chicago**). Covering-specialist posts do not count. Open
+implementation sites only (not completed / cancelled / archived / onboarded /
+analytics-excluded).
+
+The job no-ops except Thursday at/after 08:00 local, so it is safe to add
+this URI to the existing 15-minute Logic Apps (`pimsy-customer-digest` /
+`pimsy-cron-task-due-reminders`) **or** (preferred) create a dedicated
+Consumption Logic App:
+
+| Field | Value |
+|---|---|
+| Name | `pimsy-cron-weekly-status-updates` |
+| Trigger | Recurrence, **Thursday 08:00**, time zone **Central Time (Chicago)** |
+| Method | POST |
+| URI | `https://<AZURE_WEBAPP_NAME>.azurewebsites.net/api/cron/weekly-status-update-reminder` |
+| Headers | `Authorization` = `Bearer <CRON_SECRET>` |
+
+Same App Setting `CRON_SECRET` — do not invent a second secret. Unset or wrong
+secret → 404. Optional GitHub Actions fallback:
+`.github/workflows/weekly-status-update-reminder.yml` (repo secrets
+`PATH_APP_URL` + `PATH_CRON_SECRET`). Prefer the Logic App.
+
+Migration `0025_status_update_due` (`ALTER TYPE notification_type ADD VALUE
+'STATUS_UPDATE_DUE'`). Deploy-to-main already runs `npm run db:migrate`. No
+playbook resync. No new App Setting besides the existing `CRON_SECRET`.
+
 See `v1.10-REPORT.md` in the repo root.
 
 **v1.9.0** added `0010_playbook_staffing`. To refresh the four standard

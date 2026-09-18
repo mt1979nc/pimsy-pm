@@ -62,7 +62,7 @@ Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shi
 
 | Epic | Status |
 |------|--------|
-| Status updates feed | **Shipped** (v1.14) — in-app purpose copy; composer still the weekly snapshot |
+| Status updates feed | **Shipped** (v1.14 + v1.18.5) — Thursday standing instruction; Imp Spec reminder when this week’s update is missing |
 | Zoom recordings sync | **Partial (Wave B, shipped)** | Manual paste still; one link now lands on Recordings **and** the Training N task. No Zoom API pull. |
 | Template reseed | Planned — `--templates-only` still the ops path; v1.13 duplicate is an in-app copy, not a live Dock pull |
 | Mentions / notify | Partial — customer due-soon / overdue / staff-message **email** is batched; in-app stays per item |
@@ -78,7 +78,7 @@ Sequence: **v1.7 About + waiting-on (shipped)** → **v1.8 Prism Management (shi
 | Prism sync | **Cutover (v1.11)** — one-time import; runtime reads PATH only (`/api/prism/snapshot`) |
 | Permissions | Partial (role + membership; **v1.14.0** specialists share the implementation book) |
 | Mobile portal | Planned |
-| Cron Logic Apps | **Shipped** — `pimsy-customer-digest` and `pimsy-cron-task-due-reminders`, every 15 minutes, Bearer `CRON_SECRET` |
+| Cron Logic Apps | **Shipped** — `pimsy-customer-digest` and `pimsy-cron-task-due-reminders`, every 15 minutes, Bearer `CRON_SECRET`. **v1.18.5:** add `pimsy-cron-weekly-status-updates` (Thursday 08:00 America/Chicago) or point an existing 15-minute app at `/api/cron/weekly-status-update-reminder`. |
 
 ## Later
 

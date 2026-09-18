@@ -1,0 +1,34 @@
+name: Weekly status-update reminder
+
+# Optional fallback if Azure Logic App is not wired yet.
+# Prefer Logic App `pimsy-cron-weekly-status-updates` (Thursday 08:00
+# America/Chicago) in azure/README.md. No-ops when PATH_APP_URL or
+# PATH_CRON_SECRET are unset. The job itself no-ops off Thursday.
+
+on:
+  schedule:
+    # 13:00 UTC ≈ 08:00 America/Chicago during CDT.
+    - cron: "0 13 * * 4"
+  workflow_dispatch: {}
+
+concurrency:
+  group: weekly-status-update-reminder
+  cancel-in-progress: true
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /api/cron/weekly-status-update-reminder
+        env:
+          PATH_APP_URL: ${{ secrets.PATH_APP_URL }}
+          PATH_CRON_SECRET: ${{ secrets.PATH_CRON_SECRET }}
+        run: |
+          if [ -z "$PATH_APP_URL" ] || [ -z "$PATH_CRON_SECRET" ]; then
+            echo "PATH_APP_URL / PATH_CRON_SECRET not set — skip (wire Azure Logic App instead)."
+            exit 0
+          fi
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${PATH_CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            "${PATH_APP_URL%/}/api/cron/weekly-status-update-reminder"
