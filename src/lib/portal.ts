@@ -17,6 +17,8 @@ import { toPortalAbout } from "./about-profile";
 import type { PortalAboutPayload } from "./about-profile";
 import { bookmarkFromCustomFields } from "./accessing-pimsy";
 import { projectHasRcmTrack } from "./add-rcm";
+import { loadProjectRecordingAggregate } from "./recordings-query";
+import type { AggregatedRecording } from "./recordings";
 
 export type CustomerActor = Actor & { customerAccountId: string };
 
@@ -215,18 +217,13 @@ export async function portalFiles(actor: CustomerActor, projectId: string) {
 }
 
 /** Shared training-session recordings for one project — the Recordings tab. */
-export async function portalRecordings(actor: CustomerActor, projectId: string) {
+export async function portalRecordings(
+  actor: CustomerActor,
+  projectId: string,
+): Promise<AggregatedRecording[]> {
   const ids = await portalProjectIds(actor);
   if (!ids.includes(projectId)) return [];
-  return db.query.fileAssets.findMany({
-    where: and(
-      eq(fileAssets.projectId, projectId),
-      eq(fileAssets.visibility, "SHARED"),
-      eq(fileAssets.isRecording, true),
-    ),
-    orderBy: [desc(fileAssets.createdAt)],
-    limit: 100,
-  });
+  return loadProjectRecordingAggregate(projectId, { sharedOnly: true });
 }
 
 /** One SHARED task the customer may open. Null if hidden, internal, or other project. */

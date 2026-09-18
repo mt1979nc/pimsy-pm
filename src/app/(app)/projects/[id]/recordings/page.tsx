@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, ForbiddenError, NotFoundError } from "@/lib/authz";
-import { previewPortalRecordings } from "@/lib/portal-preview";
+import { loadProjectRecordingAggregate } from "@/lib/recordings-query";
 import { RecordingsList } from "@/components/recordings-list";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Customer view · Recordings" };
+export const metadata = { title: "Recordings" };
 
-export default async function CustomerViewRecordingsPage({
+export default async function ProjectRecordingsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -21,14 +21,16 @@ export default async function CustomerViewRecordingsPage({
     throw err;
   }
 
-  const recordings = await previewPortalRecordings(id);
+  const recordings = await loadProjectRecordingAggregate(id);
 
   return (
     <RecordingsList
       recordings={recordings}
-      subtitle="Shared training links the customer can open"
-      emptyTitle="No recordings shared"
-      emptyDescription="Attach the Zoom link on the training task. Shared recordings show here."
+      subtitle="Links attached on each training task"
+      emptyTitle="No recordings yet"
+      emptyDescription="Attach the Zoom link on the training task after the session. This list gathers those same links."
+      taskHref={(taskId) => `/projects/${id}/tasks/${taskId}`}
+      showVisibility
     />
   );
 }

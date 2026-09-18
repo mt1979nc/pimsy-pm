@@ -268,8 +268,9 @@ export type MirrorRecordingResult = {
 };
 
 /**
- * One recording row: Recordings tab (`isRecording`) and, when a session
- * matches, the Training N task (`taskId`). Dedupes on project + URL.
+ * One recording row: flagged `isRecording` and, when a session matches, the
+ * Training N task (`taskId`). The Recordings tab aggregates that same row.
+ * Dedupes on project + URL.
  */
 export async function mirrorRecordingToSession(
   input: MirrorRecordingInput,

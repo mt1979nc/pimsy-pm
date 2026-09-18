@@ -19,6 +19,8 @@ import { loadProjectAbout } from "./about-query";
 import { toPortalAbout, type PortalAboutPayload } from "./about-profile";
 import { bookmarkFromCustomFields } from "./accessing-pimsy";
 import { projectHasRcmTrack } from "./add-rcm";
+import { loadProjectRecordingAggregate } from "./recordings-query";
+import type { AggregatedRecording } from "./recordings";
 
 export async function previewPortalAbout(projectId: string): Promise<PortalAboutPayload | null> {
   const project = await previewPortalProject(projectId);
@@ -133,16 +135,8 @@ export async function previewPortalFiles(projectId: string) {
   });
 }
 
-export async function previewPortalRecordings(projectId: string) {
-  return db.query.fileAssets.findMany({
-    where: and(
-      eq(fileAssets.projectId, projectId),
-      eq(fileAssets.visibility, "SHARED"),
-      eq(fileAssets.isRecording, true),
-    ),
-    orderBy: [desc(fileAssets.createdAt)],
-    limit: 100,
-  });
+export async function previewPortalRecordings(projectId: string): Promise<AggregatedRecording[]> {
+  return loadProjectRecordingAggregate(projectId, { sharedOnly: true });
 }
 
 export async function previewPortalPhaseTabs(projectId: string) {

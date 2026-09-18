@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/guard";
-import { portalProject, portalPhaseTabs, portalRecordings } from "@/lib/portal";
+import { portalProject, portalPhaseTabs } from "@/lib/portal";
 import { Badge } from "@/components/ui";
 import { SideNavLink } from "@/components/nav-link";
 import { fmtDate, daysUntil } from "@/lib/dates";
@@ -21,10 +21,7 @@ export default async function PortalProjectLayout({
   const project = await portalProject(actor, id);
   if (!project) notFound();
 
-  const [phaseTabs, recordings] = await Promise.all([
-    portalPhaseTabs(actor, id),
-    portalRecordings(actor, id),
-  ]);
+  const phaseTabs = await portalPhaseTabs(actor, id);
 
   const days = daysUntil(project.targetGoLiveDate);
 
@@ -71,9 +68,7 @@ export default async function PortalProjectLayout({
               </SideNavLink>
             ))}
             <div className="my-2 border-t border-border" />
-            {recordings.length > 0 ? (
-              <SideNavLink href={`/portal/projects/${id}/recordings`}>Recordings</SideNavLink>
-            ) : null}
+            <SideNavLink href={`/portal/projects/${id}/recordings`}>Recordings</SideNavLink>
             <SideNavLink href={`/portal/projects/${id}/messages`}>Messages</SideNavLink>
           </nav>
         </aside>

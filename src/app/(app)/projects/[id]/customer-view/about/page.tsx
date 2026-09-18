@@ -35,7 +35,11 @@ export default async function CustomerViewAboutPage({
       leadName: payload.implementationTeam[0]?.name,
       leadTitle: payload.implementationTeam[0]?.title,
       customFields: {},
-      recordings,
+      recordings: recordings.map((r) => ({
+        name: r.title,
+        url: r.url,
+        visibility: r.visibility,
+      })),
     },
     "portal",
   );

@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
 import { and, eq, ne, asc, desc } from "drizzle-orm";
 import { db } from "@/db";
-import { projects, users, customerAccounts, phases, fileAssets, slipEvents, tasks } from "@/db/schema";
+import { projects, users, customerAccounts, phases, slipEvents } from "@/db/schema";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, canDeletePortfolioRecords } from "@/lib/authz";
 import { toDateInput } from "@/lib/dates";
-import { trainingSessionsFromTasks } from "@/lib/training-session";
-import { Card, CardHeader, Badge, Avatar, VisibilityBadge } from "@/components/ui";
+import { Card, CardHeader, Badge, Avatar, VisibilityBadge, LinkButton } from "@/components/ui";
 import {
   ProjectSettingsForm,
   AddMemberForm,
@@ -15,7 +14,6 @@ import {
   DeleteProjectForm,
   CompleteHistoricalOnTimeForm,
   PhaseVisibilityList,
-  RecordingsManager,
 } from "./settings-forms";
 import { ProjectContacts } from "./contacts";
 import { SlipHistoryList } from "@/components/slip-history";
@@ -108,22 +106,6 @@ export default async function ProjectSettingsPage({
     columns: { id: true, name: true, visibility: true, status: true, notApplicable: true },
     orderBy: [asc(phases.order)],
   });
-
-  const recordings = await db.query.fileAssets.findMany({
-    where: and(eq(fileAssets.projectId, id), eq(fileAssets.isRecording, true)),
-    columns: { id: true, name: true, description: true, visibility: true, taskId: true },
-    orderBy: [desc(fileAssets.createdAt)],
-  });
-
-  const trainingRows = await db.query.tasks.findMany({
-    where: eq(tasks.projectId, id),
-    columns: { id: true, title: true },
-  });
-  const trainingSessions = trainingSessionsFromTasks(trainingRows).map((t) => ({
-    id: t.id,
-    title: t.title,
-    label: t.ref.sessionLabel,
-  }));
 
   const projectSlips = await db.query.slipEvents.findMany({
     where: eq(slipEvents.projectId, id),
@@ -277,8 +259,18 @@ export default async function ProjectSettingsPage({
         </Card>
 
         <Card>
-          <CardHeader title="Recordings" />
-          <RecordingsManager projectId={id} recordings={recordings} sessions={trainingSessions} />
+          <CardHeader
+            title="Recordings"
+            action={
+              <LinkButton href={`/projects/${id}/recordings`} size="sm">
+                Recordings
+              </LinkButton>
+            }
+          />
+          <p className="px-4 py-3 text-[13px] text-ink-2">
+            Attach Zoom links on each training task. The Recordings tab lists those same links — there
+            is no separate upload here.
+          </p>
         </Card>
 
         <Card>

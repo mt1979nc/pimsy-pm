@@ -20,7 +20,7 @@ const PARENT =
   "Work the nested items on this list. Check each one off as you go — you do not need to open a separate screen for every line. The customer sees this parent’s status, not the specialist checklist.";
 
 const RECORDING =
-  "After the session, attach the Zoom recording URL on this task (or Settings → Recordings). PATH posts it on the Recordings tab and on the Training N task.";
+  "After the session, attach the Zoom recording URL on this task. The Recordings tab lists that same link for the practice.";
 
 const SCHEDULE_TRAINING =
   "Book the session from the matching Training 1 / 2 / 3 booking page on About (Book Training on this task when the URL is set). Save the Outlook date/time on this task so PATH copies that slot onto the Training N parent. The practice completes this item when the slot is confirmed.";
