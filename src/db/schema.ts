@@ -648,6 +648,8 @@ export const projectScopes = pgTable("project_scope", {
   serviceLines: jsonb("service_lines").$type<string[]>().notNull().default([]),
   stateCompliance: boolean("state_compliance").notNull().default(false),
   minimalOrgStructure: boolean("minimal_org_structure").notNull().default(false),
+  /** Add-on flag (not a service line). Forecast+ Intake Assistant, 2h. */
+  intakeAssistant: boolean("intake_assistant").notNull().default(false),
   complexityTier: complexityTierEnum("complexity_tier").notNull().default("STANDARD"),
   /** Total estimated staff hours from the estimator at scoping time. */
   estimatedHours: real("estimated_hours"),

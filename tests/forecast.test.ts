@@ -17,7 +17,14 @@ import {
   type ForecastStaffMember,
   type WeekAllocation,
 } from "@/lib/forecast";
-import { complexityTier, estimateHours, FORECAST_WEIGHTS, forecastImplementation } from "@/lib/estimator";
+import {
+  complexityTier,
+  configCalendarDays,
+  configHoursPerDay,
+  estimateHours,
+  FORECAST_WEIGHTS,
+  forecastImplementation,
+} from "@/lib/estimator";
 
 function d(iso: string) {
   return new Date(`${iso}T12:00:00.000Z`);
@@ -240,12 +247,19 @@ describe("Analysis primary-average exclusions", () => {
 });
 
 describe("Forecast+ weights (estimator)", () => {
-  it("keeps the Prism service-line and minute weights", () => {
-    expect(FORECAST_WEIGHTS.minutesPerUser).toBe(30);
+  it("keeps the confirmed service-line and minute weights", () => {
+    expect(FORECAST_WEIGHTS.minutesPerUser).toBe(15);
+    expect(FORECAST_WEIGHTS.minutesPerLocation).toBe(30);
     expect(FORECAST_WEIGHTS.minutesPerFormPage).toBe(25);
     expect(FORECAST_WEIGHTS.stateComplianceHours).toBe(2);
     expect(FORECAST_WEIGHTS.minimalOrgHours).toBe(10);
-    expect(FORECAST_WEIGHTS.trainingHoursPerSession).toBe(2.5);
+    expect(FORECAST_WEIGHTS.intakeAssistantHours).toBe(2);
+    expect(FORECAST_WEIGHTS.trainingSessionHours).toBe(1);
+    expect(FORECAST_WEIGHTS.trainingPrepHours).toBe(0.5);
+    expect(FORECAST_WEIGHTS.trainingHoursPerSession).toBe(1.5);
+    expect(FORECAST_WEIGHTS.payrollTrainingHours).toBe(1);
+    expect(FORECAST_WEIGHTS.configDays).toBe(14);
+    expect(FORECAST_WEIGHTS.maxConfigHoursPerDay).toBe(4);
   });
 
   it("scores a small outpatient site as Standard", () => {
@@ -258,6 +272,7 @@ describe("Forecast+ weights (estimator)", () => {
         serviceLines: ["OUTPATIENT_THERAPY"],
         stateCompliance: false,
         minimalOrgStructure: false,
+        intakeAssistant: false,
       }),
     ).toBe("STANDARD");
   });
@@ -271,11 +286,62 @@ describe("Forecast+ weights (estimator)", () => {
       serviceLines: ["OUTPATIENT_THERAPY", "MEDICATION_MANAGEMENT"],
       stateCompliance: true,
       minimalOrgStructure: false,
+      intakeAssistant: false,
     });
     expect(hours.totalHours).toBeGreaterThan(10);
     expect(hours.trainingHours).toBeGreaterThan(0);
     expect(hours.lineItems.some((l) => l.label === "Medication Management")).toBe(true);
     expect(hours.lineItems.some((l) => l.label === "State compliance")).toBe(true);
+    expect(hours.lineItems.some((l) => l.label.startsWith("Location setup"))).toBe(true);
+  });
+
+  it("charges location hours, Intake Assistant, new lines, and payroll training without an extra session", () => {
+    const hours = estimateHours({
+      userCount: 3,
+      locationCount: 2,
+      formPageCount: 25,
+      trainingsPerWeek: 2,
+      serviceLines: ["OUTPATIENT_THERAPY", "GROUP_THERAPY", "PAYROLL", "EATING_DISORDER", "COURT_ORDERED_SERVICES"],
+      stateCompliance: false,
+      minimalOrgStructure: false,
+      intakeAssistant: true,
+    });
+    expect(hours.lineItems.some((l) => l.label.startsWith("Location setup") && l.hours === 1)).toBe(true);
+    expect(hours.lineItems.some((l) => l.label === "Intake Assistant" && l.hours === 2)).toBe(true);
+    expect(hours.lineItems.some((l) => l.label === "Group Therapy" && l.hours === 1)).toBe(true);
+    expect(hours.lineItems.some((l) => l.label === "Eating Disorder" && l.hours === 2)).toBe(true);
+    expect(hours.lineItems.some((l) => l.label === "Court Ordered Services" && l.hours === 1)).toBe(true);
+    expect(hours.lineItems.some((l) => l.label === "Payroll training" && l.hours === 1)).toBe(true);
+    expect(hours.trainingSessions).toBe(7);
+    expect(hours.trainingHours).toBe(7 * 1.5 + 1);
+  });
+
+  it("extends config days only when config hours would exceed 4h/day over 14 days", () => {
+    expect(configCalendarDays(0)).toBe(14);
+    expect(configCalendarDays(42)).toBe(14);
+    expect(configCalendarDays(56)).toBe(14);
+    expect(configCalendarDays(56.1)).toBe(15);
+    expect(configCalendarDays(80)).toBe(20);
+    expect(configHoursPerDay(42)).toBe(3);
+
+    const heavy = forecastImplementation(
+      {
+        userCount: 200,
+        locationCount: 1,
+        formPageCount: 25,
+        trainingsPerWeek: 2,
+        serviceLines: ["OUTPATIENT_THERAPY"],
+        stateCompliance: false,
+        minimalOrgStructure: false,
+        intakeAssistant: false,
+      },
+      d("2026-09-14"),
+      { skipUsFederalHolidays: false },
+    );
+    const configPhase = heavy.scenarios[1]!.phases.find((p) => p.name === "Config");
+    expect(heavy.hours.configHours).toBeGreaterThan(56);
+    expect(configPhase?.calendarDays).toBe(configCalendarDays(heavy.hours.configHours));
+    expect(configPhase!.calendarDays).toBeGreaterThan(14);
   });
 
   it("projects three discovery scenarios from a kickoff date", () => {
@@ -288,6 +354,7 @@ describe("Forecast+ weights (estimator)", () => {
         serviceLines: ["OUTPATIENT_THERAPY"],
         stateCompliance: false,
         minimalOrgStructure: false,
+        intakeAssistant: false,
       },
       d("2026-09-14"),
     );

@@ -405,6 +405,15 @@ export function NewProjectForm({
                   />
                   Minimal org structure (+10h)
                 </label>
+                <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-ink-2">
+                  <input
+                    type="checkbox"
+                    checked={scope.intakeAssistant}
+                    onChange={(e) => setScope((s) => ({ ...s, intakeAssistant: e.target.checked }))}
+                    className="size-4 shrink-0 accent-[var(--color-brand)]"
+                  />
+                  Intake Assistant (+2h)
+                </label>
               </div>
 
               <div>
@@ -441,7 +450,7 @@ export function NewProjectForm({
                 </div>
                 <div className="text-[11.5px] tabular-nums text-ink-3">
                   {forecast.hours.configHours.toFixed(1)}h config + {forecast.hours.trainingHours.toFixed(1)}h
-                  training · same total as Prism Forecast+
+                  training
                 </div>
               </div>
             </div>
@@ -452,7 +461,7 @@ export function NewProjectForm({
       <div className="space-y-5">
         {scoped ? (
           <Card>
-            <CardHeader title="Projected go-live" subtitle="Pick a discovery-responsiveness band — same 10 / 14 / 21d + 21d config + training as Prism Forecast+. Federal holidays are skipped when the toggle is on." />
+            <CardHeader title="Projected go-live" subtitle="Pick a discovery-responsiveness band — same 10 / 14 / 21d discovery + 14d config (extends if hours would exceed 4h/day) + training as Forecast+. Federal holidays are skipped when the toggle is on." />
             <div className="space-y-2 p-4">
               <div className="rounded-lg border border-border bg-surface-2/50 px-3 py-2.5">
                 <UsFederalHolidayToggle

@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.17.4";
+export const APP_VERSION = "1.18.0";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,22 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.0",
+    date: "2026-09-18",
+    summary:
+      "Forecast+ weights from Alexander: 15 min/user, 30 min/location, 14d config with 4h/day scaling, 1.5h training sessions, new service lines, Intake Assistant. Existing snapshots stay until next save. Migrate 0023_intake_assistant.",
+    highlights: [
+      "Minutes / user 15 (was 30). Locations now add hours: locationCount × 30 min, not only complexity banding.",
+      "Config calendar 14d base. Display load is configHours / 14. If that would exceed 4h/day, days = max(14, ceil(configHours / 4)). Never shorter than 14.",
+      "Training: 1.0h session + 0.5h prep = 1.5h per curriculum session (was 2.5). Core sessions stay 7; MM/MAT/Psych Testing still add one advanced-clinical session.",
+      "Payroll is 2h config plus +1h training allotment when selected — not an extra core session.",
+      "Service-line hours: Group Therapy 1, Inpatient / Residential 5, Labs 2, EVV 2. New lines: Eating Disorder 2, Court Ordered Services 1. On New project / Add to roster / Edit engagement.",
+      "Intake Assistant is a 2h add-on checkbox (not a service line), same pattern as state compliance. Column project_scope.intake_assistant via drizzle/0023_intake_assistant.sql. Default false.",
+      "Existing stored project_scope snapshots are not bulk re-estimated. New scopes and Forecast use the new weights; hours refresh on the next save.",
+      "No seed. Org setup 2 / billing 3 / other 2, 25 min/form page, core sessions 7, state compliance 2h, minimal org 10h, scheduling buffer 2d unchanged.",
+    ],
+  },
   {
     version: "1.17.4",
     date: "2026-09-18",

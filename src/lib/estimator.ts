@@ -8,11 +8,11 @@
  * tier, and a projected go-live under three discovery-responsiveness
  * scenarios.
  *
- * Weights and phase lengths are pinned to standalone Prism Forecast+
- * (nice-rock) so PATH New project / Add to roster / Forecast show the same
- * staff hours and go-live as Prism for the same scope. Training hours are
- * part of the total. Playbook template duration is a separate schedule
- * scale and is not this estimate.
+ * Weights and phase lengths are Alexander’s confirmed Forecast+ model
+ * (PATH-native). New project / Add to roster / Forecast use these constants.
+ * Stored project_scope snapshots are not bulk re-estimated — hours refresh
+ * on the next save. Training hours are part of the total. Playbook template
+ * duration is a separate schedule scale and is not this estimate.
  */
 
 import { addDays, utcCalendarDaysBetween } from "@/lib/dates";
@@ -34,16 +34,18 @@ export const SERVICE_LINE_HOURS: Record<string, number> = {
   MAT: 1,
   IOP: 1,
   PHP: 1,
-  GROUP_THERAPY: 0,
-  INPATIENT_RESIDENTIAL: 1,
+  GROUP_THERAPY: 1,
+  INPATIENT_RESIDENTIAL: 5,
   PSYCH_TESTING: 2,
   PSR_PSYCHOSOCIAL_REHAB: 0.5,
   PRP_PSYCHIATRIC_REHAB: 0.5,
   MESSAGING: 0.5,
   EFAX: 0.5,
-  LABS: 1.5,
-  EVV: 1,
-  PAYROLL: 1.5,
+  LABS: 2,
+  EVV: 2,
+  PAYROLL: 2,
+  EATING_DISORDER: 2,
+  COURT_ORDERED_SERVICES: 1,
   OTHER_SERVICES: 0.5,
 };
 
@@ -63,6 +65,8 @@ export const SERVICE_LINE_LABELS: Record<string, string> = {
   LABS: "Labs",
   EVV: "EVV",
   PAYROLL: "Payroll",
+  EATING_DISORDER: "Eating Disorder",
+  COURT_ORDERED_SERVICES: "Court Ordered Services",
   OTHER_SERVICES: "Other Services",
 };
 
@@ -81,6 +85,8 @@ export type ImplementationScope = {
   serviceLines: string[];
   stateCompliance: boolean;
   minimalOrgStructure: boolean;
+  /** Add-on flag (not a service line). 2h config, like state compliance. */
+  intakeAssistant: boolean;
 };
 
 export const DEFAULT_SCOPE: ImplementationScope = {
@@ -91,6 +97,7 @@ export const DEFAULT_SCOPE: ImplementationScope = {
   serviceLines: ["OUTPATIENT_THERAPY"],
   stateCompliance: false,
   minimalOrgStructure: false,
+  intakeAssistant: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -115,12 +122,16 @@ function bandConfigHours(hrs: number) {
   return 0;
 }
 
-/** One-time config-hour adders from service lines + compliance — the "how
+/** One-time config-hour adders from service lines + flags — the "how
  *  fiddly is the setup" component of the complexity score, as distinct from
- *  the base per-user/per-form work every implementation has. */
+ *  the base per-user/per-location/per-form work every implementation has. */
 function serviceLineConfigHours(scope: ImplementationScope) {
   const lines = scope.serviceLines.reduce((sum, s) => sum + (SERVICE_LINE_HOURS[s] ?? 0), 0);
-  return lines + (scope.stateCompliance ? 2 : 0);
+  return (
+    lines +
+    (scope.stateCompliance ? FORECAST_WEIGHTS.stateComplianceHours : 0) +
+    (scope.intakeAssistant ? FORECAST_WEIGHTS.intakeAssistantHours : 0)
+  );
 }
 
 /**
@@ -149,37 +160,59 @@ export type HourEstimate = {
   lineItems: HourLineItem[];
   /** Training sessions the curriculum calls for, before /week is applied. */
   trainingSessions: number;
-  /** Sessions × trainingHoursPerSession — included in totalHours. */
+  /** Sessions × (session + prep) plus payroll training allotment — included in totalHours. */
   trainingHours: number;
   /** totalHours minus training. */
   configHours: number;
 };
 
 /**
- * Forecast+ weights — standalone Prism Forecast+ (nice-rock) constants.
- * Shown on Management → Forecast. Change here (and tests) only to match Prism.
+ * Forecast+ weights — Alexander’s confirmed PATH model.
+ * Shown on Management → Forecast. Existing project_scope snapshots stay as
+ * stored until the next save; these constants apply to new scopes / Forecast.
  */
 export const FORECAST_WEIGHTS = {
   orgSetupHours: 2,
   billingConfigHours: 3,
   otherSettingsHours: 2,
-  minutesPerUser: 30,
+  minutesPerUser: 15,
+  /** Location count now adds hours, not only complexity banding. */
+  minutesPerLocation: 30,
   minutesPerFormPage: 25,
   coreTrainingSessions: 7,
   stateComplianceHours: 2,
   /** Flat add-on when the practice has no org structure to copy. */
   minimalOrgHours: 10,
-  /** Config calendar days after discovery (Prism "Config 21d"). */
-  configDays: 21,
+  /** Intake Assistant add-on (checkbox, not a service line). */
+  intakeAssistantHours: 2,
+  /**
+   * Base config calendar days after discovery. Display load is
+   * configHours / configDays. If that would exceed maxConfigHoursPerDay,
+   * configCalendarDays() extends the window (never shorter than this base).
+   */
+  configDays: 14,
+  /** Cap used to extend config days: days = max(14, ceil(configHours / 4)). */
+  maxConfigHoursPerDay: 4,
   /** Folded into the training span (8 sessions @ 2/wk → 30d, not 28). */
   schedulingBufferDays: 2,
-  trainingHoursPerSession: 2.5,
+  /** Live training session length. */
+  trainingSessionHours: 1,
+  /** Prep folded into each curriculum session. */
+  trainingPrepHours: 0.5,
+  /** Session + prep. 1.0 + 0.5 = 1.5h per core/advanced-clinical session. */
+  trainingHoursPerSession: 1.5,
+  /**
+   * Extra training allotment when PAYROLL is selected — not an extra core
+   * session (COMPLEX_CLINICAL_TRIGGERS unchanged).
+   */
+  payrollTrainingHours: 1,
 } as const;
 
 const ORG_SETUP_HOURS = FORECAST_WEIGHTS.orgSetupHours;
 const BILLING_CONFIG_HOURS = FORECAST_WEIGHTS.billingConfigHours;
 const OTHER_SETTINGS_HOURS = FORECAST_WEIGHTS.otherSettingsHours;
 const MINUTES_PER_USER = FORECAST_WEIGHTS.minutesPerUser;
+const MINUTES_PER_LOCATION = FORECAST_WEIGHTS.minutesPerLocation;
 const MINUTES_PER_FORM_PAGE = FORECAST_WEIGHTS.minutesPerFormPage;
 const CORE_TRAINING_SESSIONS = FORECAST_WEIGHTS.coreTrainingSessions;
 
@@ -187,10 +220,37 @@ export function trainingSessionCount(scope: ImplementationScope): number {
   return CORE_TRAINING_SESSIONS + (scope.serviceLines.some((l) => COMPLEX_CLINICAL_TRIGGERS.has(l)) ? 1 : 0);
 }
 
+function hasPayroll(scope: ImplementationScope) {
+  return scope.serviceLines.includes("PAYROLL");
+}
+
+/**
+ * Config calendar days after discovery.
+ *
+ * Base window is `FORECAST_WEIGHTS.configDays` (14). Display load is
+ * `configHours / 14`. If that would exceed `maxConfigHoursPerDay` (4h),
+ * extend: `days = max(14, ceil(configHours / 4))`. Never shorter than 14.
+ */
+export function configCalendarDays(configHours: number): number {
+  const base = FORECAST_WEIGHTS.configDays;
+  const cap = FORECAST_WEIGHTS.maxConfigHoursPerDay;
+  if (!(configHours > 0) || !(cap > 0)) return base;
+  return Math.max(base, Math.ceil(configHours / cap));
+}
+
+/** Display hrs/day against the 14-day base window (not the possibly extended span). */
+export function configHoursPerDay(configHours: number): number {
+  return round1(configHours / FORECAST_WEIGHTS.configDays);
+}
+
 export function estimateHours(scope: ImplementationScope, _estimatedWeeks?: number): HourEstimate {
   const lineItems: HourLineItem[] = [
     { label: "Org setup", hours: ORG_SETUP_HOURS },
     { label: `User setup (${scope.userCount} × ${MINUTES_PER_USER}min)`, hours: round1((scope.userCount * MINUTES_PER_USER) / 60) },
+    {
+      label: `Location setup (${scope.locationCount} × ${MINUTES_PER_LOCATION}min)`,
+      hours: round1((scope.locationCount * MINUTES_PER_LOCATION) / 60),
+    },
     { label: "Billing config", hours: BILLING_CONFIG_HOURS },
     {
       label: `Forms (${scope.formPageCount}p × ${MINUTES_PER_FORM_PAGE}min)`,
@@ -214,12 +274,21 @@ export function estimateHours(scope: ImplementationScope, _estimatedWeeks?: numb
     });
   }
 
+  if (scope.intakeAssistant) {
+    lineItems.push({ label: "Intake Assistant", hours: FORECAST_WEIGHTS.intakeAssistantHours });
+  }
+
   const trainingSessions = trainingSessionCount(scope);
-  const trainingHours = round1(trainingSessions * FORECAST_WEIGHTS.trainingHoursPerSession);
+  const sessionTrainingHours = round1(trainingSessions * FORECAST_WEIGHTS.trainingHoursPerSession);
+  const payrollTrainingHours = hasPayroll(scope) ? FORECAST_WEIGHTS.payrollTrainingHours : 0;
+  const trainingHours = round1(sessionTrainingHours + payrollTrainingHours);
   lineItems.push({
     label: `Training (${trainingSessions} sessions × ${FORECAST_WEIGHTS.trainingHoursPerSession}h)`,
-    hours: trainingHours,
+    hours: sessionTrainingHours,
   });
+  if (payrollTrainingHours) {
+    lineItems.push({ label: "Payroll training", hours: payrollTrainingHours });
+  }
 
   const totalHours = round1(lineItems.reduce((sum, l) => sum + l.hours, 0));
   const configHours = round1(totalHours - trainingHours);
@@ -242,7 +311,7 @@ export type ScenarioProjection = {
   scenario: DiscoveryScenario;
   label: string;
   discoveryDays: number;
-  /** Prism formula days (discovery + 21d config + training), before holiday skips. */
+  /** Formula days (discovery + configCalendarDays + training), before holiday skips. */
   modelCalendarDays: number;
   /** Kickoff → go-live elapsed calendar days (includes skipped holidays when the toggle is on). */
   calendarDays: number;
@@ -259,7 +328,6 @@ export type ForecastResult = {
   scenarios: ScenarioProjection[];
 };
 
-const CONFIG_DAYS = FORECAST_WEIGHTS.configDays;
 const SCHEDULING_BUFFER_DAYS = FORECAST_WEIGHTS.schedulingBufferDays;
 
 export const DISCOVERY_SCENARIOS = ["OPTIMISTIC", "TYPICAL", "PESSIMISTIC"] as const satisfies readonly DiscoveryScenario[];
@@ -312,10 +380,11 @@ export function trainingDays(sessions: number, perWeek: number) {
 /**
  * Builds the full estimate: hours, complexity tier, and a projected go-live
  * under each of the three discovery-responsiveness scenarios, anchored to a
- * kickoff date. Calendar = discovery + 21d config + training (Prism Forecast+).
- * When `skipUsFederalHolidays` is on (default), those formula days are walked
- * on the calendar with observed US federal holidays skipped, so go-live moves
- * later instead of treating Thanksgiving / Christmas / etc. as work days.
+ * kickoff date. Calendar = discovery + config days (14d base, extended when
+ * config hours would exceed 4h/day) + training. When `skipUsFederalHolidays`
+ * is on (default), those formula days are walked on the calendar with observed
+ * US federal holidays skipped, so go-live moves later instead of treating
+ * Thanksgiving / Christmas / etc. as work days.
  */
 export function forecastImplementation(
   scope: ImplementationScope,
@@ -325,15 +394,16 @@ export function forecastImplementation(
   const tier = complexityTier(scope);
   const hours = estimateHours(scope);
   const skipHolidays = opts?.skipUsFederalHolidays ?? DEFAULT_SKIP_US_FEDERAL_HOLIDAYS;
+  const configDays = configCalendarDays(hours.configHours);
 
   const scenarios: ScenarioProjection[] = DISCOVERY_SCENARIOS.map(
     (scenario) => {
       const discoveryDays = DISCOVERY_DAYS[scenario];
       const trainDays = trainingDays(hours.trainingSessions, scope.trainingsPerWeek);
-      const modelCalendarDays = discoveryDays + CONFIG_DAYS + trainDays;
+      const modelCalendarDays = discoveryDays + configDays + trainDays;
 
       const discoveryEnd = addProjectedDays(kickoffDate, discoveryDays, skipHolidays);
-      const configEnd = addProjectedDays(discoveryEnd, CONFIG_DAYS, skipHolidays);
+      const configEnd = addProjectedDays(discoveryEnd, configDays, skipHolidays);
       const goLiveDate = addProjectedDays(configEnd, trainDays, skipHolidays);
       const calendarDays = skipHolidays
         ? utcCalendarDaysBetween(kickoffDate, goLiveDate)
@@ -349,7 +419,7 @@ export function forecastImplementation(
         },
         {
           name: "Config",
-          calendarDays: skipHolidays ? utcCalendarDaysBetween(discoveryEnd, configEnd) : CONFIG_DAYS,
+          calendarDays: skipHolidays ? utcCalendarDaysBetween(discoveryEnd, configEnd) : configDays,
           staffHours: hours.configHours,
           notes: "Org, billing, forms, service-line setup — finishes after discovery",
         },
