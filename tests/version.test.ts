@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.17.2");
+    expect(APP_VERSION).toBe("1.17.3");
     expect(APP_VERSION).toMatch(/^1\.17\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,19 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.17.3 PATH task-complete lag", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.17.3");
+    expect(note?.summary).toMatch(/task complete|Mark done/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /optimistic|checkbox/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /after\(\)|Resend|email/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /COUNT|unread/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /FILTER|counters/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.17.2")).toBeTruthy();
   });
 
   it("documents v1.17.2 file library replace placeholder with a link", () => {

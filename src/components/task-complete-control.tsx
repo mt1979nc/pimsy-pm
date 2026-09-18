@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { setTaskStatus } from "@/actions/tasks";
 import { cn } from "@/lib/cn";
 
@@ -19,7 +19,8 @@ export function TaskCompleteControl({
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const done = status === "DONE";
+  const [optimisticStatus, setOptimisticStatus] = useOptimistic(status);
+  const done = optimisticStatus === "DONE";
   const box = size === "sm" ? "size-[17px]" : "size-[22px]";
 
   return (
@@ -31,9 +32,11 @@ export function TaskCompleteControl({
         onClick={() => {
           if (!canEdit) return;
           setError(null);
+          const next = done ? "TODO" : "DONE";
           start(async () => {
+            setOptimisticStatus(next);
             try {
-              await setTaskStatus(taskId, done ? "TODO" : "DONE");
+              await setTaskStatus(taskId, next);
             } catch (e) {
               setError(e instanceof Error ? e.message : "Could not update that item.");
             }

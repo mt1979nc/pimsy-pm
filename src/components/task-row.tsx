@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { setTaskStatus, setTaskVisibility, markTaskNotApplicable, deleteTask } from "@/actions/tasks";
@@ -94,10 +94,11 @@ export function TaskRow({
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [optimisticStatus, setOptimisticStatus] = useOptimistic(task.status);
   const projectId = task.projectId ?? task.project?.id;
   const href = projectId ? `/projects/${projectId}/tasks/${task.id}` : null;
   const resolvedBookingUrls = bookingUrls ?? resolveProjectBookingUrls(task.project ?? {});
-  const done = task.status === "DONE";
+  const done = optimisticStatus === "DONE";
   const na = Boolean(task.notApplicable);
   const completedAt = done && task.completedAt ? new Date(task.completedAt) : null;
   const overdue = isOverdue(task.dueDate, completedAt);
@@ -107,9 +108,11 @@ export function TaskRow({
   function toggle() {
     if (!canEdit) return;
     setError(null);
+    const next = done ? "TODO" : "DONE";
     startTransition(async () => {
+      setOptimisticStatus(next);
       try {
-        await setTaskStatus(task.id, done ? "TODO" : "DONE");
+        await setTaskStatus(task.id, next);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not update that item.");
       }
@@ -131,7 +134,7 @@ export function TaskRow({
     <div
       className={cn(
         "group transition-colors hover:bg-surface-2",
-        pending && "opacity-60",
+        pending && optimisticStatus === task.status && "opacity-60",
         na && "opacity-70",
         specialistSub && task.visibility === "INTERNAL" && "bg-amber-soft/40",
       )}

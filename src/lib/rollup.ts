@@ -1,17 +1,9 @@
-import { and, eq, count, ne } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { projects, tasks } from "@/db/schema";
 
 /** Re-export for server callers. Client components must import `@/lib/pct-complete` directly. */
 export { pctComplete } from "@/lib/pct-complete";
-
-function countable(projectId: string) {
-  return and(
-    eq(tasks.projectId, projectId),
-    ne(tasks.status, "CANCELLED"),
-    eq(tasks.notApplicable, false),
-  );
-}
 
 /**
  * Refresh the denormalized task counters on a project. Called after any task
@@ -21,44 +13,32 @@ function countable(projectId: string) {
  * N/A items are excluded — they were removed from this project only.
  * EHR and RCM tracks are counted separately so a reactivated RCM engagement
  * does not rewrite the implementation timeline numbers.
+ *
+ * One grouped `FILTER` query (not six sequential `COUNT`s) — task complete
+ * already has a remote-Postgres RTT budget, and this used to spend six of them.
  */
 export async function refreshProjectCounters(projectId: string) {
-  const [total] = await db.select({ n: count() }).from(tasks).where(countable(projectId));
-
-  const [done] = await db
-    .select({ n: count() })
+  const [row] = await db
+    .select({
+      total: sql<number>`count(*) filter (where ${tasks.status} <> 'CANCELLED' and ${tasks.notApplicable} = false)::int`,
+      done: sql<number>`count(*) filter (where ${tasks.status} = 'DONE' and ${tasks.notApplicable} = false)::int`,
+      ehrTotal: sql<number>`count(*) filter (where ${tasks.status} <> 'CANCELLED' and ${tasks.notApplicable} = false and ${tasks.workTrack} <> 'RCM')::int`,
+      ehrDone: sql<number>`count(*) filter (where ${tasks.status} = 'DONE' and ${tasks.notApplicable} = false and ${tasks.workTrack} <> 'RCM')::int`,
+      rcmTotal: sql<number>`count(*) filter (where ${tasks.status} <> 'CANCELLED' and ${tasks.notApplicable} = false and ${tasks.workTrack} = 'RCM')::int`,
+      rcmDone: sql<number>`count(*) filter (where ${tasks.status} = 'DONE' and ${tasks.notApplicable} = false and ${tasks.workTrack} = 'RCM')::int`,
+    })
     .from(tasks)
-    .where(and(countable(projectId), eq(tasks.status, "DONE")));
-
-  const [ehrTotal] = await db
-    .select({ n: count() })
-    .from(tasks)
-    .where(and(countable(projectId), ne(tasks.workTrack, "RCM")));
-
-  const [ehrDone] = await db
-    .select({ n: count() })
-    .from(tasks)
-    .where(and(countable(projectId), ne(tasks.workTrack, "RCM"), eq(tasks.status, "DONE")));
-
-  const [rcmTotal] = await db
-    .select({ n: count() })
-    .from(tasks)
-    .where(and(countable(projectId), eq(tasks.workTrack, "RCM")));
-
-  const [rcmDone] = await db
-    .select({ n: count() })
-    .from(tasks)
-    .where(and(countable(projectId), eq(tasks.workTrack, "RCM"), eq(tasks.status, "DONE")));
+    .where(eq(tasks.projectId, projectId));
 
   await db
     .update(projects)
     .set({
-      taskCountTotal: total?.n ?? 0,
-      taskCountDone: done?.n ?? 0,
-      ehrTaskCountTotal: ehrTotal?.n ?? 0,
-      ehrTaskCountDone: ehrDone?.n ?? 0,
-      rcmTaskCountTotal: rcmTotal?.n ?? 0,
-      rcmTaskCountDone: rcmDone?.n ?? 0,
+      taskCountTotal: row?.total ?? 0,
+      taskCountDone: row?.done ?? 0,
+      ehrTaskCountTotal: row?.ehrTotal ?? 0,
+      ehrTaskCountDone: row?.ehrDone ?? 0,
+      rcmTaskCountTotal: row?.rcmTotal ?? 0,
+      rcmTaskCountDone: row?.rcmDone ?? 0,
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId));

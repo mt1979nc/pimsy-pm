@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { and, eq, inArray, isNull, desc } from "drizzle-orm";
 import { z } from "zod";
 
@@ -296,21 +297,23 @@ export async function setTaskStatus(taskId: string, status: string) {
     completedAt,
   });
 
-  await refreshProjectCounters(task.projectId);
-  await syncMilestonesFromTaskCompletion(task.projectId);
-  await audit({
-    actor,
-    action: "task.status.changed",
-    entityType: "task",
-    entityId: taskId,
-    summary: `${task.title}: ${task.status} → ${next}`,
-    metadata: {
-      projectId: task.projectId,
-      from: task.status,
-      to: next,
-      connectedTaskIds: syncedIds,
-    },
-  });
+  await Promise.all([
+    refreshProjectCounters(task.projectId),
+    syncMilestonesFromTaskCompletion(task.projectId),
+    audit({
+      actor,
+      action: "task.status.changed",
+      entityType: "task",
+      entityId: taskId,
+      summary: `${task.title}: ${task.status} → ${next}`,
+      metadata: {
+        projectId: task.projectId,
+        from: task.status,
+        to: next,
+        connectedTaskIds: syncedIds,
+      },
+    }),
+  ]);
 
   if (next === "DONE") {
     const exposed = await exposePhaseFromCompletedTask({
@@ -318,10 +321,8 @@ export async function setTaskStatus(taskId: string, status: string) {
       taskTitle: task.title,
     });
     if (exposed) {
-      revalidatePath(`/projects/${task.projectId}/tasks`);
       revalidatePath(`/projects/${task.projectId}/settings`);
       revalidatePath(`/projects/${task.projectId}/customer-view`);
-      revalidatePath(`/portal/projects/${task.projectId}`);
     }
 
     await applySupportHandoffOnComplete({
@@ -337,49 +338,17 @@ export async function setTaskStatus(taskId: string, status: string) {
       revalidatePath("/reports");
     }
 
-    const project = await db.query.projects.findFirst({
-      where: (p, { eq: e }) => e(p.id, task.projectId),
-      columns: { id: true, leadId: true, name: true, code: true },
-    });
-
-    const customerDidIt = isCustomer(actor);
-    const who = actor.name ?? actor.email ?? "Someone";
-
-    // The lead always wants to know. So does whoever the task sits with, if
-    // that isn't the person who just ticked it.
-    const audience = new Set<string>();
-    if (project?.leadId) audience.add(project.leadId);
-    for (const id of await taskAssigneeIds(taskId)) audience.add(id);
-    if (task.assigneeId) audience.add(task.assigneeId);
-
-    // A customer completing their own action item is the single event an
-    // implementation specialist most wants pushed at them — it is what
-    // unblocks the next step. It emails, and it hits the Teams channel.
-    if (audience.size > 0) {
-      await notify({
-        userIds: Array.from(audience),
-        type: "TASK_COMPLETED",
-        title: customerDidIt
-          ? `${project?.name ?? "Project"}: customer completed “${task.title}”`
-          : `Completed: ${task.title}`,
-        body: customerDidIt
-          ? `${who} marked this action item done. Anything waiting on it can move.`
-          : `${who} marked this done.`,
-        facts: [
-          { name: "Project", value: `${project?.name ?? "—"} (${project?.code ?? "—"})` },
-          { name: "Completed by", value: who },
-          { name: "Side", value: customerDidIt ? "Customer" : "Implementation team" },
-        ],
-        linkUrl: `/projects/${task.projectId}/tasks/${taskId}`,
-        portalLinkUrl: `/portal/projects/${task.projectId}/tasks/${taskId}`,
-        ctaLabel: "Open the task",
-        email: true,
-        teams: customerDidIt,
-        teamsTone: "good",
+    // Email / Teams / in-app rows are not needed to paint the checkbox.
+    // Awaiting Resend on B1 App Service is a common multi-second stall.
+    after(() => {
+      void notifyTaskCompleted({
+        actor,
+        taskId,
         projectId: task.projectId,
-        exceptUserId: actor.id,
-      });
-    }
+        title: task.title,
+        assigneeId: task.assigneeId,
+      }).catch((err) => console.error("task completion notify failed", err));
+    });
   }
 
   await applyTrainingStatusSideEffects({
@@ -399,13 +368,55 @@ export async function setTaskStatus(taskId: string, status: string) {
   revalidatePath(`/projects/${task.projectId}`);
   revalidatePath(`/projects/${task.projectId}/tasks`);
   revalidatePath(`/projects/${task.projectId}/tasks/${taskId}`);
-  revalidatePath(`/projects/${task.projectId}/settings`);
-  revalidatePath(`/projects/${task.projectId}/customer-view`);
   revalidatePath(`/portal/projects/${task.projectId}`);
   revalidatePath(`/portal/projects/${task.projectId}/tasks/${taskId}`);
-  revalidatePath(`/portal/projects/${task.projectId}/recordings`);
-  revalidatePath("/portal");
   revalidatePath("/my-work");
+}
+
+async function notifyTaskCompleted(opts: {
+  actor: Actor;
+  taskId: string;
+  projectId: string;
+  title: string;
+  assigneeId: string | null;
+}) {
+  const project = await db.query.projects.findFirst({
+    where: (p, { eq: e }) => e(p.id, opts.projectId),
+    columns: { id: true, leadId: true, name: true, code: true },
+  });
+
+  const customerDidIt = isCustomer(opts.actor);
+  const who = opts.actor.name ?? opts.actor.email ?? "Someone";
+
+  const audience = new Set<string>();
+  if (project?.leadId) audience.add(project.leadId);
+  for (const id of await taskAssigneeIds(opts.taskId)) audience.add(id);
+  if (opts.assigneeId) audience.add(opts.assigneeId);
+  if (audience.size === 0) return;
+
+  await notify({
+    userIds: Array.from(audience),
+    type: "TASK_COMPLETED",
+    title: customerDidIt
+      ? `${project?.name ?? "Project"}: customer completed “${opts.title}”`
+      : `Completed: ${opts.title}`,
+    body: customerDidIt
+      ? `${who} marked this action item done. Anything waiting on it can move.`
+      : `${who} marked this done.`,
+    facts: [
+      { name: "Project", value: `${project?.name ?? "—"} (${project?.code ?? "—"})` },
+      { name: "Completed by", value: who },
+      { name: "Side", value: customerDidIt ? "Customer" : "Implementation team" },
+    ],
+    linkUrl: `/projects/${opts.projectId}/tasks/${opts.taskId}`,
+    portalLinkUrl: `/portal/projects/${opts.projectId}/tasks/${opts.taskId}`,
+    ctaLabel: "Open the task",
+    email: true,
+    teams: customerDidIt,
+    teamsTone: "good",
+    projectId: opts.projectId,
+    exceptUserId: opts.actor.id,
+  });
 }
 
 const updateTaskSchema = z.object({
