@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.17.0");
+    expect(APP_VERSION).toBe("1.17.1");
     expect(APP_VERSION).toMatch(/^1\.17\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,19 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.17.1 New project CRM acronym shown once", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.17.1");
+    expect(note?.summary).toMatch(/CRM acronym/i);
+    expect(note?.summary).toMatch(/once/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /New project/.test(h) && /CRM acronym/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /createProjectSchema|v1\.14\.4/.test(h) && /crmAcronym/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.17.0")).toBeTruthy();
   });
 
   it("documents v1.17.0 PATH visual cleanup for adoption", () => {
