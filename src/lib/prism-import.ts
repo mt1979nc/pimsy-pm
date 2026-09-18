@@ -279,6 +279,7 @@ function scopeFromCustomer(c: PrismDumpCustomer): ImplementationScope {
     serviceLines: c.serviceLines.length ? c.serviceLines : ["OUTPATIENT_THERAPY"],
     stateCompliance: c.stateComp,
     minimalOrgStructure: c.supportStruct === false,
+    intakeAssistant: false,
   };
 }
 
@@ -366,6 +367,7 @@ async function upsertScope(
     serviceLines: scope.serviceLines,
     stateCompliance: scope.stateCompliance,
     minimalOrgStructure: scope.minimalOrgStructure,
+    intakeAssistant: scope.intakeAssistant,
     complexityTier: complexity,
     estimatedHours,
     updatedAt: new Date(),
@@ -599,6 +601,7 @@ async function applyCompleted(
     serviceLines: [],
     stateCompliance: false,
     minimalOrgStructure: false,
+    intakeAssistant: false,
   };
 
   if (!existing) {

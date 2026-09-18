@@ -220,8 +220,16 @@ export async function updateEngagement(
   const plan = await rosterGoLivePlan(scopeInput, kickoffDate, formData, requestedTargetGoLive);
   const tier = complexityTier(scopeInput);
   const estimatedHours = plan.estimatedHours;
-  const { userCount, locationCount, formPageCount, trainingsPerWeek, serviceLines, stateCompliance, minimalOrgStructure } =
-    scopeInput;
+  const {
+    userCount,
+    locationCount,
+    formPageCount,
+    trainingsPerWeek,
+    serviceLines,
+    stateCompliance,
+    minimalOrgStructure,
+    intakeAssistant,
+  } = scopeInput;
 
   const mapped = mapPrismStatusToEnums(prismStatus);
   const excludeFromAnalytics = parseExcludeFromAnalyticsIfPresent(formData);
@@ -238,6 +246,7 @@ export async function updateEngagement(
             serviceLines: before.scope.serviceLines ?? [],
             stateCompliance: before.scope.stateCompliance,
             minimalOrgStructure: before.scope.minimalOrgStructure,
+            intakeAssistant: before.scope.intakeAssistant,
           },
           kickoffDate: before.startDate ?? kickoffOrToday(kickoffDate),
           samples: plan.samples,
@@ -307,6 +316,7 @@ export async function updateEngagement(
     serviceLines,
     stateCompliance,
     minimalOrgStructure,
+    intakeAssistant,
     complexityTier: tier,
     estimatedHours,
     discoveryScenario: plan.scenario,
@@ -411,6 +421,7 @@ function scopeFromForm(formData: FormData): ImplementationScope {
   );
   const stateCompliance = formData.get("stateCompliance") === "on";
   const minimalOrgStructure = formData.get("minimalOrgStructure") === "on";
+  const intakeAssistant = formData.get("intakeAssistant") === "on";
   const serviceLines = formData.getAll("serviceLines").map(String).filter(Boolean);
   return {
     userCount,
@@ -420,6 +431,7 @@ function scopeFromForm(formData: FormData): ImplementationScope {
     serviceLines,
     stateCompliance,
     minimalOrgStructure,
+    intakeAssistant,
   };
 }
 
@@ -509,8 +521,16 @@ export async function createEngagement(
 
   const scopeInput = scopeFromForm(formData);
   const plan = await rosterGoLivePlan(scopeInput, kickoffDate, formData, requestedGoLive);
-  const { userCount, locationCount, formPageCount, trainingsPerWeek, serviceLines, stateCompliance, minimalOrgStructure } =
-    scopeInput;
+  const {
+    userCount,
+    locationCount,
+    formPageCount,
+    trainingsPerWeek,
+    serviceLines,
+    stateCompliance,
+    minimalOrgStructure,
+    intakeAssistant,
+  } = scopeInput;
   const tier = complexityTier(scopeInput);
   const estimatedHours = plan.estimatedHours;
   const targetGoLiveDate = plan.goLive;
@@ -582,6 +602,7 @@ export async function createEngagement(
     serviceLines,
     stateCompliance,
     minimalOrgStructure,
+    intakeAssistant,
     complexityTier: tier,
     estimatedHours,
     discoveryScenario: plan.scenario,

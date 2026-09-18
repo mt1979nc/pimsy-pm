@@ -77,6 +77,7 @@ export function EngagementEditForm({
     serviceLines: string[];
     stateCompliance: boolean;
     minimalOrgStructure: boolean;
+    intakeAssistant: boolean;
     complexityTier: string;
     estimatedHours: number | null;
   } | null;
@@ -107,6 +108,7 @@ export function EngagementEditForm({
     serviceLines: scope?.serviceLines?.length ? scope.serviceLines : [...DEFAULT_SCOPE.serviceLines],
     stateCompliance: scope?.stateCompliance ?? DEFAULT_SCOPE.stateCompliance,
     minimalOrgStructure: scope?.minimalOrgStructure ?? DEFAULT_SCOPE.minimalOrgStructure,
+    intakeAssistant: scope?.intakeAssistant ?? DEFAULT_SCOPE.intakeAssistant,
   });
 
   const customHoursParsed = customHpw.trim() === "" ? null : Number.parseFloat(customHpw);
@@ -261,8 +263,9 @@ export function EngagementEditForm({
           Kickoff and current go-live drive the schedule — incomplete phase/task dates rescale when
           this window changes. A slip must push go-live (new date or +days), not just add a note.
           Picking Optimistic / Typical / Pessimistic fills current go-live from the Forecast+
-          discovery formula (same as Prism: discovery + 21d config + training), with US federal
-          holidays skipped when that toggle is on. Past-site averages are shown as reference only.
+          discovery formula (discovery + 14d config, extended if hours would exceed 4h/day, +
+          training), with US federal holidays skipped when that toggle is on. Past-site averages
+          are shown as reference only.
         </p>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Kickoff" htmlFor="kickoffDate">
@@ -441,6 +444,16 @@ export function EngagementEditForm({
               className="size-4 rounded border-border-strong"
             />
             Minimal org structure (+10h)
+          </label>
+          <label className="flex items-center gap-2 text-[12.5px] text-ink-2">
+            <input
+              type="checkbox"
+              name="intakeAssistant"
+              checked={scopeState.intakeAssistant}
+              onChange={(e) => setScopeState((s) => ({ ...s, intakeAssistant: e.target.checked }))}
+              className="size-4 rounded border-border-strong"
+            />
+            Intake Assistant (+2h)
           </label>
         </div>
         <div>

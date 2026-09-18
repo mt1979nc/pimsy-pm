@@ -57,6 +57,8 @@ describe("Engagements roster vs edit form scope", () => {
     expect(form).toMatch(/Service lines/);
     expect(form).toMatch(/name="serviceLines"/);
     expect(form).toMatch(/SERVICE_LINE_LABELS/);
+    expect(form).toMatch(/name="intakeAssistant"/);
+    expect(form).toMatch(/Intake Assistant/);
   });
 
   it("lets the engagements page opt out of the 1180px content cap", () => {

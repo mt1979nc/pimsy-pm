@@ -286,7 +286,7 @@ export function kickoffOrToday(kickoff: Date | null | undefined, now = new Date(
 
 export function historicalCaption(bands: HistoricalDurationBands): string {
   const formula =
-    "Projected go-live is Forecast+ (discovery + 21d config + training), same as Prism — not the playbook day count.";
+    "Projected go-live is Forecast+ (discovery + 14d config + training; config days extend if hours would exceed 4h/day), not the playbook day count.";
   if (bands.source === "none") {
     const need = HISTORICAL_BAND_MIN_SAMPLE;
     const sample =

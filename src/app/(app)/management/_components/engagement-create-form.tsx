@@ -308,6 +308,15 @@ export function EngagementCreateForm({
               />
               Minimal org structure (+10h)
             </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                name="intakeAssistant"
+                checked={scope.intakeAssistant}
+                onChange={(e) => setScope((s) => ({ ...s, intakeAssistant: e.target.checked }))}
+              />
+              Intake Assistant (+2h)
+            </label>
           </div>
         </section>
 
@@ -322,9 +331,10 @@ export function EngagementCreateForm({
           <GoLiveSourceBadge recommendation={recommendation} />
         </div>
         <p className="mt-1 text-[12.5px] text-ink-3">
-          Same three discovery bands as Prism Forecast+. Go-live is kickoff + discovery + 21d
-          config + training. US federal holidays are skipped when the toggle is on (default).
-          Est. hours are Prism config weights plus training sessions (not playbook duration).
+          Same three discovery bands as Forecast+. Go-live is kickoff + discovery + 14d
+          config (extends if config hours would exceed 4h/day) + training. US federal
+          holidays are skipped when the toggle is on (default).
+          Est. hours are Forecast+ config weights plus training sessions (not playbook duration).
           Pipeline stays off department capacity.
         </p>
         <div className="mt-4 space-y-2">

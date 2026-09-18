@@ -68,6 +68,7 @@ export default async function ManagementEngagementEditPage({
                   serviceLines: project.scope.serviceLines ?? [],
                   stateCompliance: project.scope.stateCompliance,
                   minimalOrgStructure: project.scope.minimalOrgStructure,
+                  intakeAssistant: project.scope.intakeAssistant,
                   complexityTier: project.scope.complexityTier,
                   estimatedHours: project.scope.estimatedHours,
                 }

@@ -14,8 +14,8 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.17.4");
-    expect(APP_VERSION).toMatch(/^1\.17\./);
+    expect(APP_VERSION).toBe("1.18.0");
+    expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
   });
@@ -97,6 +97,23 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.0 Forecast+ weight updates", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.0");
+    expect(note?.summary).toMatch(/Forecast\+/);
+    expect(note?.summary).toMatch(/15 min\/user/);
+    expect(note?.summary).toMatch(/0023_intake_assistant|Intake Assistant/);
+    expect(note?.highlights?.some((h) => /14d/.test(h) && /4h\/day/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /1\.5h/.test(h) && /prep/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Payroll/.test(h) && /\+1h/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Eating Disorder/.test(h) && /Court Ordered/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Intake Assistant/.test(h) && /0023_intake_assistant/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /not bulk re-estimated|next save/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No seed/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.17.4")).toBeTruthy();
   });
 
   it("documents v1.17.4 live site vs CRM display on About and Accessing Pimsy", () => {

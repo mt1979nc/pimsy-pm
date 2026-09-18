@@ -106,6 +106,7 @@ const scopeSchema = z.object({
   serviceLines: z.array(z.string()).max(50),
   stateCompliance: z.boolean(),
   minimalOrgStructure: z.boolean(),
+  intakeAssistant: z.boolean().optional().default(false),
 });
 
 /** Parses and validates the scoping payload from the new-project form. Never
@@ -423,6 +424,7 @@ export async function createProject(
           serviceLines: scope.serviceLines,
           stateCompliance: scope.stateCompliance,
           minimalOrgStructure: scope.minimalOrgStructure,
+          intakeAssistant: scope.intakeAssistant,
           complexityTier: forecast.complexityTier,
           estimatedHours: forecast.hours.totalHours,
           discoveryScenario: d.discoveryScenario ?? "TYPICAL",

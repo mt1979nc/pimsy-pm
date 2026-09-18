@@ -291,12 +291,14 @@ export default async function ManagementForecastPage() {
         <Card>
           <CardHeader
             title="Forecast+ weights"
-            subtitle="Same constants as standalone Prism Forecast+. Tune here only to stay in lockstep with that model."
+            subtitle="Alexander’s confirmed PATH model. Existing site snapshots stay as stored until the next save."
           />
           <div className="px-4 pb-4">
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12.5px]">
               <dt className="text-ink-3">Minutes / user</dt>
               <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.minutesPerUser}</dd>
+              <dt className="text-ink-3">Minutes / location</dt>
+              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.minutesPerLocation}</dd>
               <dt className="text-ink-3">Minutes / form page</dt>
               <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.minutesPerFormPage}</dd>
               <dt className="text-ink-3">Org / billing / other</dt>
@@ -310,14 +312,23 @@ export default async function ManagementForecastPage() {
               <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.stateComplianceHours}h</dd>
               <dt className="text-ink-3">Minimal org structure</dt>
               <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.minimalOrgHours}h</dd>
+              <dt className="text-ink-3">Intake Assistant</dt>
+              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.intakeAssistantHours}h</dd>
               <dt className="text-ink-3">Discovery (opt / typ / pes)</dt>
               <dd className="text-right tabular-nums text-ink">10 / 14 / 21d</dd>
               <dt className="text-ink-3">Config calendar</dt>
-              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.configDays}d</dd>
+              <dd className="text-right tabular-nums text-ink">
+                {FORECAST_WEIGHTS.configDays}d base · extend if &gt;{FORECAST_WEIGHTS.maxConfigHoursPerDay}h/day
+              </dd>
               <dt className="text-ink-3">Core training sessions</dt>
               <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.coreTrainingSessions}</dd>
               <dt className="text-ink-3">Hours / training session</dt>
-              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.trainingHoursPerSession}h</dd>
+              <dd className="text-right tabular-nums text-ink">
+                {FORECAST_WEIGHTS.trainingHoursPerSession}h ({FORECAST_WEIGHTS.trainingSessionHours} +{" "}
+                {FORECAST_WEIGHTS.trainingPrepHours} prep)
+              </dd>
+              <dt className="text-ink-3">Payroll training</dt>
+              <dd className="text-right tabular-nums text-ink">+{FORECAST_WEIGHTS.payrollTrainingHours}h when selected</dd>
             </dl>
             <div className="mt-3 border-t border-border pt-3">
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
