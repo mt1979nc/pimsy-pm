@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/guard";
 import { libraryKindLabel, MISSING_LIBRARY_FILE_STAFF_NOTE } from "@/lib/library-meta";
 import { PageHeader, Card, CardHeader, Badge, LinkButton } from "@/components/ui";
 import { TemplateHubNav } from "@/components/template-hub-nav";
-import { AddLibraryItemForms, LibraryLinkEditForm, LibraryUploadForm } from "./library-form";
+import { AddLibraryItemForms, LibraryLinkEditForm, LibraryReplaceForm } from "./library-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "File library" };
@@ -81,7 +81,7 @@ export default async function LibraryPage() {
                   description={asset.description}
                 />
               ) : (
-                <LibraryUploadForm assetId={asset.id} />
+                <LibraryReplaceForm assetId={asset.id} />
               )}
             </div>
           </Card>

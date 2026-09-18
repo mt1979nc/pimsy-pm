@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import {
   addLibraryFile,
   addLibraryLink,
+  replaceLibraryWithLink,
   saveLibraryLink,
   uploadLibraryFile,
 } from "@/actions/library";
@@ -19,15 +20,50 @@ const MODE_LABEL: Record<Mode, string> = {
   link: "Link",
 };
 
-export function LibraryUploadForm({ assetId }: { assetId: string }) {
-  const [state, action] = useActionState(uploadLibraryFile, {});
+const REPLACE_MODES = ["file", "link"] as const;
+type ReplaceMode = (typeof REPLACE_MODES)[number];
+
+export function LibraryReplaceForm({ assetId }: { assetId: string }) {
+  const [mode, setMode] = useState<ReplaceMode>("file");
+  const [fileState, fileAction] = useActionState(uploadLibraryFile, {});
+  const [linkState, linkAction] = useActionState(replaceLibraryWithLink, {});
+
   return (
-    <form action={action} className="flex flex-wrap items-center gap-2">
-      <input type="hidden" name="assetId" value={assetId} />
-      <input name="file" type="file" required className="text-[13px]" />
-      <SubmitButton size="sm">Replace file</SubmitButton>
-      <FormError error={state.error} />
-    </form>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant={mode === "file" ? "primary" : "secondary"}
+          type="button"
+          onClick={() => setMode("file")}
+        >
+          Replace file
+        </Button>
+        <Button
+          size="sm"
+          variant={mode === "link" ? "primary" : "secondary"}
+          type="button"
+          onClick={() => setMode("link")}
+        >
+          Replace with link
+        </Button>
+      </div>
+      {mode === "file" ? (
+        <form action={fileAction} className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="assetId" value={assetId} />
+          <input name="file" type="file" required className="text-[13px]" />
+          <SubmitButton size="sm">Replace file</SubmitButton>
+          <FormError error={fileState.error} />
+        </form>
+      ) : (
+        <form action={linkAction} className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="assetId" value={assetId} />
+          <input name="url" required className={inputClass} placeholder="https://" />
+          <SubmitButton size="sm">Replace with link</SubmitButton>
+          <FormError error={linkState.error} />
+        </form>
+      )}
+    </div>
   );
 }
 

@@ -20,6 +20,7 @@ import {
   createLibraryFile,
   createLibraryLink,
   listLibraryAssets,
+  replaceLibraryAssetWithLink,
   updateLibraryLink,
 } from "@/lib/library";
 import { putFile } from "@/lib/storage";
@@ -245,5 +246,66 @@ describe.skipIf(!dbOk)("file library create / list / attach (postgres)", () => {
     expect(copies.every((c) => c.url === "https://example.com/forms/billing-questionnaire-v2")).toBe(
       true,
     );
+  });
+
+  it("replaces a FILE placeholder with a link and keeps title + visibility", async () => {
+    const [placeholder] = await db
+      .insert(libraryAssets)
+      .values({
+        slug: "billing-questionnaire-placeholder",
+        name: "Billing questionnaire",
+        description: "Submit the billing questionnaire.",
+        kind: "FILE",
+        url: null,
+        storageKey: null,
+        visibility: "SHARED",
+        isPlaceholder: true,
+        adminNotes: "Replace with the Dock billing questionnaire.",
+      })
+      .returning();
+
+    const live = await attachLibraryToLiveTask(db, {
+      taskId: liveTaskId,
+      projectId,
+      libraryAssetId: placeholder.id,
+      uploadedById: actorId,
+    });
+    expect(live).toMatchObject({ ok: true });
+
+    const rejected = await replaceLibraryAssetWithLink(db, {
+      id: placeholder.id,
+      url: "javascript:alert(1)",
+    });
+    expect(rejected).toMatchObject({ error: expect.stringMatching(/http/i) });
+
+    const replaced = await replaceLibraryAssetWithLink(db, {
+      id: placeholder.id,
+      url: "https://example.com/forms/billing-questionnaire-live",
+    });
+    expect(replaced).toMatchObject({ ok: true });
+
+    const lib = await db.query.libraryAssets.findFirst({
+      where: eq(libraryAssets.id, placeholder.id),
+    });
+    expect(lib?.kind).toBe("LINK");
+    expect(lib?.url).toBe("https://example.com/forms/billing-questionnaire-live");
+    expect(lib?.name).toBe("Billing questionnaire");
+    expect(lib?.visibility).toBe("SHARED");
+    expect(lib?.isPlaceholder).toBe(false);
+    expect(lib?.storageKey).toBeNull();
+    expect(lib?.mimeType).toBeNull();
+    expect(lib?.sizeBytes).toBeNull();
+
+    const copies = await db.query.fileAssets.findMany({
+      where: eq(fileAssets.libraryAssetId, placeholder.id),
+    });
+    expect(copies.length).toBeGreaterThan(0);
+    expect(copies.every((c) => c.kind === "LINK")).toBe(true);
+    expect(copies.every((c) => c.url === "https://example.com/forms/billing-questionnaire-live")).toBe(
+      true,
+    );
+    expect(copies.every((c) => c.name === "Billing questionnaire")).toBe(true);
+    expect(copies.every((c) => c.visibility === "SHARED")).toBe(true);
+    expect(copies.every((c) => c.storageKey === null)).toBe(true);
   });
 });

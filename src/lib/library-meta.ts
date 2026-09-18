@@ -7,7 +7,7 @@ export const MISSING_LIBRARY_FILE_CUSTOMER_NOTE =
   "This file is not available yet. Your implementation team will attach it when it is ready.";
 
 export const MISSING_LIBRARY_FILE_STAFF_NOTE =
-  "This template file is not in the library yet. Upload the real Dock file from Templates → File library.";
+  "This template file is not in the library yet. Replace with a file or a link from Templates → File library.";
 
 export function libraryKindLabel(kind: string | null | undefined): "Link" | "File" | "Image" {
   if (kind === "LINK") return "Link";

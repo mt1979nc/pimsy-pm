@@ -31,6 +31,17 @@ describe("file library kinds and URLs", () => {
     expect(form).not.toMatch(/Storylane|essay|Discovery Wizard/);
   });
 
+  it("File library cards can replace a file with a link", () => {
+    const form = readFileSync(resolve(process.cwd(), "src/app/(app)/library/library-form.tsx"), "utf8");
+    const page = readFileSync(resolve(process.cwd(), "src/app/(app)/library/page.tsx"), "utf8");
+    expect(form).toMatch(/Replace file/);
+    expect(form).toMatch(/Replace with link/);
+    expect(form).toMatch(/replaceLibraryWithLink/);
+    expect(form).toMatch(/LibraryReplaceForm/);
+    expect(page).toMatch(/LibraryReplaceForm/);
+    expect(form).not.toMatch(/Storylane|essay|Discovery Wizard/);
+  });
+
   it("slugifies staff names without inventing form hosts", () => {
     expect(slugifyLibraryName("Billing questionnaire")).toBe("billing-questionnaire");
     expect(slugifyLibraryName("  ")).toBe("library-item");

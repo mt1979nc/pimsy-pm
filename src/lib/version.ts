@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.17.1";
+export const APP_VERSION = "1.17.2";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.17.2",
+    date: "2026-09-18",
+    summary:
+      "File library cards can replace a file or placeholder with a link (URL, keep title). Kind becomes LINK. No schema migrate.",
+    highlights: [
+      "Existing File / Image / Placeholder cards: Replace file or Replace with link.",
+      "Replace with link pastes a URL and keeps the title. Kind becomes LINK; Open matches other links. Shared / Internal is unchanged.",
+      "Short labels. No schema migrate. No playbook or template batch work.",
+    ],
+  },
   {
     version: "1.17.1",
     date: "2026-09-18",
