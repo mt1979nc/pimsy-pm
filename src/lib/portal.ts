@@ -10,7 +10,8 @@ import { and, eq, ne, asc, desc, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { projects, tasks, phases, milestones, statusUpdates, fileAssets, taskComments } from "@/db/schema";
 import type { Actor } from "./authz";
-import { isCustomerVisiblePhase, portalFacingTaskSql } from "./task-visibility";
+import { isCustomerVisiblePhase, portalFacingTaskSql, portalSectionTaskSql } from "./task-visibility";
+import { sortPhaseSections } from "./task-list-filter";
 import { loadProjectAbout } from "./about-query";
 import { toPortalAbout } from "./about-profile";
 import type { PortalAboutPayload } from "./about-profile";
@@ -116,14 +117,15 @@ export async function portalPlan(actor: CustomerActor, projectId: string) {
     },
   });
 
-  return { phases: rows, looseTasks };
+  return { phases: sortPhaseSections(rows), looseTasks };
 }
 
-/** Lightweight phase list for the tab bar — name/order only, SHARED only. */
+/** Lightweight phase list for the tab bar — name/order only, SHARED only.
+ *  Completed areas (all SHARED tasks DONE / N/A / cancelled) drop to the bottom. */
 export async function portalPhaseTabs(actor: CustomerActor, projectId: string) {
   const ids = await portalProjectIds(actor);
   if (!ids.includes(projectId)) return [];
-  return db.query.phases.findMany({
+  const rows = await db.query.phases.findMany({
     where: and(
       eq(phases.projectId, projectId),
       eq(phases.visibility, "SHARED"),
@@ -131,7 +133,14 @@ export async function portalPhaseTabs(actor: CustomerActor, projectId: string) {
     ),
     orderBy: [asc(phases.order)],
     columns: { id: true, name: true, order: true },
+    with: {
+      tasks: {
+        where: portalSectionTaskSql(),
+        columns: { status: true, notApplicable: true },
+      },
+    },
   });
+  return sortPhaseSections(rows).map(({ id, name, order }) => ({ id, name, order }));
 }
 
 /** One SHARED phase with its SHARED tasks, for that phase's own tab. Null if

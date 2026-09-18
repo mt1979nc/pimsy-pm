@@ -24,6 +24,7 @@ import { pctComplete } from "@/lib/pct-complete";
 import { cn } from "@/lib/cn";
 import { orderTasksForNesting } from "@/lib/task-tree";
 import { CommentCountBadge } from "@/components/comment-count-badge";
+import { sortPhaseSections } from "@/lib/task-list-filter";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Customer view" };
@@ -52,9 +53,9 @@ export default async function CustomerViewPreviewPage({
     previewPortalFiles(id),
   ]);
 
-  const areaGroups = phases
-    .map((phase) => ({ phase, tasks: phase.tasks }))
-    .filter((g) => g.tasks.length > 0);
+  const areaGroups = sortPhaseSections(
+    phases.map((phase) => ({ phase, tasks: phase.tasks })).filter((g) => g.tasks.length > 0),
+  );
 
   const openCount =
     areaGroups.reduce((n, g) => n + g.tasks.filter((t) => t.status !== "DONE").length, 0) +

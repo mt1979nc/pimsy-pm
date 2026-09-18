@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.0";
+export const APP_VERSION = "1.18.1";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.1",
+    date: "2026-09-18",
+    summary:
+      "Completed task sections drop to the bottom of the staff project list. Incomplete sections keep original order; finished ones keep theirs as they accumulate. N/A counts as complete. Same sort on portal/customer-view area lists. No schema migrate.",
+    highlights: [
+      "Staff project task list: a phase/section moves under open sections when every task is DONE, N/A, or cancelled.",
+      "Original order stays among open sections, and among completed sections as more drop down.",
+      "N/A (task or whole section) counts as complete for this sort. Empty sections stay put.",
+      "Portal Areas tabs and project / customer-view phase lists use the same rule from already-loaded statuses. No extra round-trip.",
+      "Client-side / optimistic from loaded task statuses. Short Done chip. No schema migrate. No playbook or template batch work.",
+    ],
+  },
   {
     version: "1.18.0",
     date: "2026-09-18",

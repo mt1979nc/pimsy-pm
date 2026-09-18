@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   excludeCollapsedDescendants,
   filterNestedTasks,
+  isSectionComplete,
   partitionCompletedGroups,
+  sortPhaseSections,
   type FilterableTask,
 } from "@/lib/task-list-filter";
 
@@ -68,5 +70,32 @@ describe("task list filter and completed collapse", () => {
     expect(visible.map((r) => r.id)).not.toContain("create-users");
     expect(visible.map((r) => r.id)).not.toContain("user-codes");
     expect(visible.map((r) => r.id)).toContain("user-setup");
+  });
+});
+
+describe("complete sections drop to the bottom", () => {
+  it("treats DONE, N/A, and cancelled as complete; empty stays incomplete", () => {
+    expect(isSectionComplete([{ status: "DONE" }, { status: "TODO", notApplicable: true }])).toBe(true);
+    expect(isSectionComplete([{ status: "CANCELLED" }])).toBe(true);
+    expect(isSectionComplete([{ status: "TODO" }, { status: "DONE" }])).toBe(false);
+    expect(isSectionComplete([])).toBe(false);
+    expect(isSectionComplete([], { sectionNotApplicable: true })).toBe(true);
+  });
+
+  it("keeps original order among open sections, then among completed ones", () => {
+    const sections = [
+      { id: "kickoff", notApplicable: false, tasks: [{ status: "DONE" }] },
+      { id: "discovery", notApplicable: false, tasks: [{ status: "TODO" }] },
+      { id: "config", notApplicable: false, tasks: [{ status: "DONE" }, { status: "TODO", notApplicable: true }] },
+      { id: "training", notApplicable: false, tasks: [{ status: "IN_PROGRESS" }] },
+      { id: "import", notApplicable: true, tasks: [{ status: "TODO" }] },
+    ];
+    expect(sortPhaseSections(sections).map((s) => s.id)).toEqual([
+      "discovery",
+      "training",
+      "kickoff",
+      "config",
+      "import",
+    ]);
   });
 });

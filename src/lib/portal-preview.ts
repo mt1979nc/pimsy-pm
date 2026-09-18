@@ -13,7 +13,8 @@ import {
   fileAssets,
   taskComments,
 } from "@/db/schema";
-import { isCustomerVisiblePhase, portalFacingTaskSql } from "./task-visibility";
+import { isCustomerVisiblePhase, portalFacingTaskSql, portalSectionTaskSql } from "./task-visibility";
+import { sortPhaseSections } from "./task-list-filter";
 import { loadProjectAbout } from "./about-query";
 import { toPortalAbout, type PortalAboutPayload } from "./about-profile";
 import { bookmarkFromCustomFields } from "./accessing-pimsy";
@@ -96,7 +97,7 @@ export async function previewPortalPlan(projectId: string) {
     },
   });
 
-  return { phases: rows, looseTasks };
+  return { phases: sortPhaseSections(rows), looseTasks };
 }
 
 export async function previewPortalMilestones(projectId: string) {
@@ -140,7 +141,7 @@ export async function previewPortalRecordings(projectId: string) {
 }
 
 export async function previewPortalPhaseTabs(projectId: string) {
-  return db.query.phases.findMany({
+  const rows = await db.query.phases.findMany({
     where: and(
       eq(phases.projectId, projectId),
       eq(phases.visibility, "SHARED"),
@@ -148,7 +149,14 @@ export async function previewPortalPhaseTabs(projectId: string) {
     ),
     orderBy: [asc(phases.order)],
     columns: { id: true, name: true, order: true },
+    with: {
+      tasks: {
+        where: portalSectionTaskSql(),
+        columns: { status: true, notApplicable: true },
+      },
+    },
   });
+  return sortPhaseSections(rows).map(({ id, name, order }) => ({ id, name, order }));
 }
 
 export async function previewPortalPhase(projectId: string, phaseId: string) {
