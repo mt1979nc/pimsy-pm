@@ -60,6 +60,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <NavLink href="/management" exact>
                 Overview
               </NavLink>
+              <NavLink href="/management/executive">Executive</NavLink>
               <NavLink href="/management/weekly">Weekly meeting</NavLink>
               <NavLink href="/management/forecast">Forecast</NavLink>
               <NavLink href="/reports/capacity">Team capacity</NavLink>

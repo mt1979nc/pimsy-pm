@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.7";
+export const APP_VERSION = "1.18.8";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.8",
+    date: "2026-10-01",
+    summary:
+      "CEO implementation book at /management/executive. Live name, abbreviation, product, go-live, specialist, and latest update. Contract date, expected ARR, and CEO status are new. Migrate 0026_ceo_executive.",
+    highlights: [
+      "Prism → Executive is the weekly CEO sheet: one table, same columns, empty cells are —.",
+      "Name and abbreviation come from the customer and crm acronym. Product is EHR, RCM, or EHR+RCM from the playbook and RCM track. Assigned IS is the project lead plus IS-role members. Comments are the latest project update.",
+      "Initial, current, and actual go-live stay on the existing project dates. PATH Open replaces the Dock link. No dock URL column.",
+      "Contract date, expected ARR, and status (Not yet started, Paused, In Process - On track, In Process - Off track, Live) are filled on the row. Migrate 0026_ceo_executive.",
+      "Sits on the flatter Prism nav from 1.18.7 (Overview, Executive, Weekly meeting, and the rest). Weekly meeting cards are unchanged.",
+      "PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.7",
     date: "2026-10-01",

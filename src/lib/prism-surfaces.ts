@@ -10,6 +10,7 @@ export function revalidatePrismSurfaces(projectId?: string) {
   revalidatePath("/management/forecast");
   revalidatePath("/management/engagements");
   revalidatePath("/management/weekly");
+  revalidatePath("/management/executive");
   revalidatePath("/management/team");
   revalidatePath("/reports/capacity");
   revalidatePath("/reports/analysis");
