@@ -28,11 +28,9 @@ export default async function ManagementForecastPage() {
 
   return (
     <div className="space-y-5">
-      <p className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] leading-relaxed text-ink-2">
-        Weekly hours from scoped estimates (or custom hrs/wk), spread across kickoff → current
-        go-live. Pipeline is off the load. Capacity-exempt people still show on the grid but are
-        excluded from department headroom and hire-now. Saving an engagement (dates, slip, hours)
-        refreshes this table automatically — PATH Postgres is the only source.
+      <p className="text-[13px] text-ink-2">
+        Weekly hours from kickoff to go-live. Pipeline is not included. Exempt people show here but
+        are left out of the department total.
       </p>
 
       {forecast.hire.hireNow ? (
@@ -102,7 +100,7 @@ export default async function ManagementForecastPage() {
 
       <Card>
         {forecast.staff.length === 0 ? (
-          <EmptyState title="No staff yet" description="Add people under Staffing → Team." />
+          <EmptyState title="No staff yet" description="Add people under Team." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] border-collapse text-[12.5px]">
@@ -196,7 +194,7 @@ export default async function ManagementForecastPage() {
           subtitle="Active and pre-kickoff. A slip stretches the window and drops weekly hours unless custom hrs/wk is set."
           action={
             <Link href="/management/engagements" className="text-[12.5px] font-medium text-brand hover:underline">
-              Roster →
+              Engagements →
             </Link>
           }
         />

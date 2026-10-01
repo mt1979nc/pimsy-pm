@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { requirePortfolioAccess } from "@/lib/guard";
+import { PrismNav } from "@/components/prism-nav";
 import { teamCapacity } from "@/lib/queries";
 import { loadCapacityForecast } from "@/lib/forecast-data";
 import { memberLoadsFromForecast } from "@/lib/forecast";
-import { PageHeader, Card, CardHeader, EmptyState, Badge, Avatar, LinkButton, Stat } from "@/components/ui";
+import { PageHeader, Card, CardHeader, EmptyState, Badge, Avatar, Stat } from "@/components/ui";
 import { HeadroomChart, MemberLoadCards } from "@/components/charts";
 import { fmtShort } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -27,29 +27,14 @@ export default async function CapacityPage() {
 
   return (
     <>
-      <PageHeader
-        title="Team capacity"
-        breadcrumb={
-          <Link href="/management" className="hover:text-ink">
-            Prism
-          </Link>
-        }
-        subtitle="Prism · committed hours against declared weekly capacity, per specialist."
-        actions={
-          <>
-            <LinkButton href="/management/forecast">Forecast</LinkButton>
-            <LinkButton href="/reports/analysis">Analysis</LinkButton>
-            <LinkButton href="/reports">Portfolio</LinkButton>
-          </>
-        }
-      />
+      <PrismNav />
+      <PageHeader title="Team capacity" subtitle="Hours against each person's weekly cap." />
 
-      <p className="mb-4 rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] text-ink-2">
-        Weekly hours below use the v1.10 Forecast model (scoped hours across kickoff → go-live;
-        exempt staff excluded from department headroom). The workload list is still open-task
-        estimates. Edit flags under{" "}
+      <p className="mb-4 text-[13px] text-ink-2">
+        The chart uses scoped hours from kickoff to go-live. The list below is open tasks. Exempt
+        people are left out of the department total. Edit hours on{" "}
         <a href="/management/team" className="font-medium text-brand hover:underline">
-          Staffing → Team
+          Team
         </a>
         .
       </p>
@@ -151,7 +136,7 @@ export default async function CapacityPage() {
         <p className="border-t border-border px-4 py-3 text-[12px] text-ink-3">
           Daily workflow lives under{" "}
           <a href="/management/forecast" className="font-medium text-brand hover:underline">
-            Staffing → Forecast
+            Forecast
           </a>
           . Unscoped projects undercount rather than guessing.
         </p>

@@ -57,9 +57,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <div className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
                 {PRISM_MODULE_NAME}
               </div>
-              <NavLink href="/management">Staffing</NavLink>
+              <NavLink href="/management" exact>
+                Overview
+              </NavLink>
+              <NavLink href="/management/weekly">Weekly meeting</NavLink>
               <NavLink href="/management/forecast">Forecast</NavLink>
               <NavLink href="/reports/capacity">Team capacity</NavLink>
+              <NavLink href="/management/team">Team</NavLink>
+              <NavLink href="/management/engagements">Engagements</NavLink>
               <NavLink href="/reports/analysis">Analysis</NavLink>
             </>
           ) : null}
@@ -114,6 +119,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Inbox
           </NavLink>
           <NavLink href="/my-work">Mine</NavLink>
+          {canSeePortfolio(actor) ? <NavLink href="/management/weekly">Weekly</NavLink> : null}
           <NavLink href="/updates">New</NavLink>
         </nav>
       </div>

@@ -45,7 +45,7 @@ export function RecordSlipForm({
         </p>
       )}
 
-      <div className={cn("grid gap-2", compact ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
+      <div className={cn("grid gap-2", compact ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
         {compact ? null : (
           <Field
             label="New target go-live"

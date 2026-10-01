@@ -7,7 +7,11 @@ import { db } from "@/db";
 import { customerAccounts, projects, slipEvents } from "@/db/schema";
 import { buildFixture } from "./fixtures";
 import { listWeeklyMeetingSites } from "@/lib/weekly-meeting";
-import { isOpenImplementationStatus } from "@/lib/weekly-meeting-types";
+import { isOpenImplementationStatus, type WeeklyMeetingSite } from "@/lib/weekly-meeting-types";
+import {
+  DEFAULT_WEEKLY_MEETING_SORT,
+  sortWeeklyMeetingSites,
+} from "@/lib/weekly-meeting-sort";
 
 const dbOk = await db
   .execute(sql`select 1`)
@@ -15,30 +19,41 @@ const dbOk = await db
   .catch(() => false);
 
 describe("weekly meeting view (source)", () => {
-  it("is a management roster with inline Record slip", () => {
+  it("is a card roster with Record slip behind expand", () => {
     const page = readFileSync(
       resolve(process.cwd(), "src/app/(app)/management/weekly/page.tsx"),
       "utf8",
     );
-    const table = readFileSync(
-      resolve(process.cwd(), "src/app/(app)/management/_components/weekly-meeting-table.tsx"),
+    const board = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/management/_components/weekly-meeting-board.tsx"),
       "utf8",
     );
     const layout = readFileSync(resolve(process.cwd(), "src/app/(app)/management/layout.tsx"), "utf8");
+    const sidebar = readFileSync(resolve(process.cwd(), "src/app/(app)/layout.tsx"), "utf8");
+    const nav = readFileSync(resolve(process.cwd(), "src/components/prism-nav.tsx"), "utf8");
     expect(page).toMatch(/listWeeklyMeetingSites/);
     expect(page).toMatch(/includeExcluded/);
-    expect(page).toMatch(/Show analytics-excluded/);
+    expect(page).toMatch(/Show excluded/);
     expect(page).not.toMatch(/from ["']@\/db["']/);
-    expect(table).toMatch(/RecordSlipForm/);
-    expect(table).toMatch(/source="weekly"/);
-    expect(table).toMatch(/from ["']@\/lib\/weekly-meeting-types["']/);
-    expect(table).not.toMatch(/from ["']@\/lib\/weekly-meeting["']/);
-    expect(table).not.toMatch(/from ["']@\/db["']/);
-    expect(layout).toMatch(/\/management\/weekly/);
-    expect(layout).toMatch(/Weekly meeting/);
+    expect(page).not.toMatch(/WeeklyMeetingTable/);
+    expect(board).toMatch(/RecordSlipForm/);
+    expect(board).toMatch(/source="weekly"/);
+    expect(board).toMatch(/from ["']@\/lib\/weekly-meeting-types["']/);
+    expect(board).toMatch(/Nearest go-live|WEEKLY_MEETING_SORT_OPTIONS/);
+    expect(board).not.toMatch(/<table/);
+    expect(board).not.toMatch(/from ["']@\/lib\/weekly-meeting["']/);
+    expect(board).not.toMatch(/from ["']@\/db["']/);
+    expect(layout).toMatch(/\/management\/weekly|PrismNav/);
+    expect(layout).toMatch(/PrismNav/);
+    expect(nav).toMatch(/Weekly meeting/);
+    expect(nav).toMatch(/\/reports\/capacity/);
+    expect(nav).toMatch(/Analysis/);
+    expect(sidebar).toMatch(/href="\/management\/weekly"/);
+    expect(sidebar).toMatch(/href="\/management" exact/);
     const lib = readFileSync(resolve(process.cwd(), "src/lib/weekly-meeting.ts"), "utf8");
     expect(lib).toMatch(/isExcludedFromAnalytics/);
     expect(lib).toMatch(/includeExcluded/);
+    expect(lib).toMatch(/daysSinceKickoff/);
   });
 
   it("classifies open implementation statuses", () => {
@@ -48,6 +63,119 @@ describe("weekly meeting view (source)", () => {
     expect(isOpenImplementationStatus("BLOCKED")).toBe(true);
     expect(isOpenImplementationStatus("COMPLETED")).toBe(false);
     expect(isOpenImplementationStatus("CANCELLED")).toBe(false);
+  });
+});
+
+function meetingSite(
+  partial: Partial<WeeklyMeetingSite> & Pick<WeeklyMeetingSite, "id" | "acronym">,
+): WeeklyMeetingSite {
+  return {
+    name: partial.acronym,
+    code: partial.acronym,
+    status: "IN_PROGRESS",
+    health: "GREEN",
+    leadName: null,
+    leadId: null,
+    startDate: null,
+    daysSinceKickoff: null,
+    targetGoLiveDate: null,
+    daysToGoLive: null,
+    taskCountDone: 0,
+    taskCountTotal: 0,
+    progressPct: 0,
+    excludeFromAnalytics: false,
+    lastSlip: null,
+    ...partial,
+  };
+}
+
+describe("weekly meeting sort", () => {
+  const rows = [
+    meetingSite({ id: "late", acronym: "LATE", daysToGoLive: 30, daysSinceKickoff: 10, health: "GREEN", leadName: "Zoe" }),
+    meetingSite({ id: "soon", acronym: "SOON", daysToGoLive: 2, daysSinceKickoff: 80, health: "RED", leadName: "Amy" }),
+    meetingSite({ id: "none", acronym: "NONE", daysToGoLive: null, daysSinceKickoff: null, health: "YELLOW", leadName: null }),
+    meetingSite({
+      id: "over",
+      acronym: "OVER",
+      daysToGoLive: -4,
+      daysSinceKickoff: 40,
+      health: "YELLOW",
+      leadName: "Amy",
+      lastSlip: {
+        id: "s1",
+        days: 3,
+        cause: "CUSTOMER",
+        note: null,
+        createdAt: new Date("2026-09-01T12:00:00.000Z"),
+        fromDate: new Date("2026-09-01T12:00:00.000Z"),
+        toDate: new Date("2026-09-04T12:00:00.000Z"),
+      },
+    }),
+    meetingSite({
+      id: "slipped",
+      acronym: "SLIP",
+      daysToGoLive: 9,
+      daysSinceKickoff: 3,
+      health: "GREEN",
+      leadName: "Mia",
+      lastSlip: {
+        id: "s2",
+        days: 14,
+        cause: "PIMSY",
+        note: "waiting",
+        createdAt: new Date("2026-09-20T12:00:00.000Z"),
+        fromDate: new Date("2026-09-20T12:00:00.000Z"),
+        toDate: new Date("2026-10-04T12:00:00.000Z"),
+      },
+    }),
+  ];
+
+  it("defaults to nearest go-live, missing dates last", () => {
+    expect(DEFAULT_WEEKLY_MEETING_SORT).toBe("go-live-asc");
+    expect(sortWeeklyMeetingSites(rows).map((r) => r.acronym)).toEqual([
+      "OVER",
+      "SOON",
+      "SLIP",
+      "LATE",
+      "NONE",
+    ]);
+  });
+
+  it("sorts latest go-live and days since kickoff without mutating the input", () => {
+    const before = rows.map((r) => r.id);
+    expect(sortWeeklyMeetingSites(rows, "go-live-desc").map((r) => r.acronym)).toEqual([
+      "LATE",
+      "SLIP",
+      "SOON",
+      "OVER",
+      "NONE",
+    ]);
+    expect(sortWeeklyMeetingSites(rows, "kickoff-desc").map((r) => r.acronym)).toEqual([
+      "SOON",
+      "OVER",
+      "LATE",
+      "SLIP",
+      "NONE",
+    ]);
+    expect(sortWeeklyMeetingSites(rows, "kickoff-asc").map((r) => r.acronym)).toEqual([
+      "SLIP",
+      "LATE",
+      "OVER",
+      "SOON",
+      "NONE",
+    ]);
+    expect(rows.map((r) => r.id)).toEqual(before);
+  });
+
+  it("sorts last slip, health, and lead", () => {
+    expect(sortWeeklyMeetingSites(rows, "last-slip").map((r) => r.acronym).slice(0, 2)).toEqual([
+      "SLIP",
+      "OVER",
+    ]);
+    expect(sortWeeklyMeetingSites(rows, "health").map((r) => r.health)[0]).toBe("RED");
+    const leads = sortWeeklyMeetingSites(rows, "lead").map((r) => r.leadName);
+    expect(leads.at(-1)).toBeNull();
+    expect(leads.filter(Boolean)).toEqual(["Amy", "Amy", "Mia", "Zoe"]);
   });
 });
 
@@ -63,6 +191,7 @@ describe.skipIf(!dbOk)("weekly meeting list filters (postgres)", () => {
         status: "IN_PROGRESS",
         health: "GREEN",
         targetGoLiveDate: new Date("2026-10-15T12:00:00.000Z"),
+        startDate: new Date("2026-01-15T12:00:00.000Z"),
         excludeFromAnalytics: false,
       })
       .where(eq(projects.id, fixture.projects.a));
@@ -105,6 +234,8 @@ describe.skipIf(!dbOk)("weekly meeting list filters (postgres)", () => {
     expect(site?.status).toBe("IN_PROGRESS");
     expect(site?.health).toBe("GREEN");
     expect(site?.progressPct).toBeGreaterThanOrEqual(0);
+    expect(site?.daysSinceKickoff).toEqual(expect.any(Number));
+    expect(site?.daysSinceKickoff ?? 0).toBeGreaterThan(0);
   });
 
   it("includes analytics-excluded rows when toggled", async () => {

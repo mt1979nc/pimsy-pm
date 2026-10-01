@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.6";
+export const APP_VERSION = "1.18.7";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.7",
+    date: "2026-10-01",
+    summary:
+      "Prism Weekly meeting is a sortable card list (nearest go-live first). Record slip opens on the card. Prism nav puts Weekly meeting, Forecast, Team capacity, and Analysis one click away. No schema migrate.",
+    highlights: [
+      "Weekly meeting (`/management/weekly`): cards show acronym, name, lead, go-live, health, status, progress, days to go-live, days since kickoff, and last slip. Record slip opens on that card.",
+      "Sort on the page: nearest go-live (default), latest go-live, longest since kickoff, newest kickoff, last slip, health, and lead. Kickoff age uses the existing project start date. No schema migrate.",
+      "Prism sidebar and tabs: Overview, Weekly meeting, Forecast, Team capacity, Team, Engagements, Analysis. Overview stays highlighted only on the overview.",
+      "PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.6",
     date: "2026-09-18",

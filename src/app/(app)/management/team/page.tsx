@@ -16,10 +16,10 @@ export default async function ManagementTeamPage() {
 
   return (
     <div className="space-y-4">
-      <p className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] text-ink-2">
-        Department billable capacity (excluding exempt):{" "}
+      <p className="text-[13px] text-ink-2">
+        Department cap{" "}
         <span className="font-semibold text-ink">{deptCap} hrs/wk</span> across {billable.length}{" "}
-        people. Capacity-exempt members still appear below for personal load tracking.
+        people. Exempt people still show below.
       </p>
       {team.length > 0 ? (
         <MemberLoadCards
@@ -42,7 +42,7 @@ export default async function ManagementTeamPage() {
       <Card>
         <CardHeader
           title="Team"
-          subtitle={`${team.length} active staff · edit hrs and Prism flags`}
+          subtitle={`${team.length} active staff · hours, exempt, can-lead`}
         />
         {team.length === 0 ? (
           <EmptyState
