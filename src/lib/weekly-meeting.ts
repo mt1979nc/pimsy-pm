@@ -1,6 +1,6 @@
 /**
- * Weekly-meeting roster: every open Implementation site, with standup columns
- * and a hook for inline slip recording.
+ * Weekly-meeting roster: every open Implementation site for the card list.
+ * Default order is nearest go-live. The page re-sorts on the client.
  *
  * Default hides analytics-excluded (test/E2E) rows; pass includeExcluded to
  * show them. Server-only — do not import from `"use client"` files.
@@ -13,6 +13,7 @@ import { projects, slipEvents } from "@/db/schema";
 import { isExcludedFromAnalytics } from "@/lib/analytics-exclude";
 import { daysUntil } from "@/lib/dates";
 import { pctComplete } from "@/lib/pct-complete";
+import { sortWeeklyMeetingSites } from "@/lib/weekly-meeting-sort";
 import {
   OPEN_IMPLEMENTATION_STATUSES,
   type WeeklyMeetingSite,
@@ -59,7 +60,9 @@ export async function listWeeklyMeetingSites(opts?: {
     .filter((r) => includeExcluded || !isExcludedFromAnalytics(r))
     .map((r) => {
       const last = r.slipEvents[0] ?? null;
-    const target = r.targetGoLiveDate ? new Date(r.targetGoLiveDate) : null;
+      const target = r.targetGoLiveDate ? new Date(r.targetGoLiveDate) : null;
+      const start = r.startDate ? new Date(r.startDate) : null;
+      const daysUntilStart = daysUntil(start);
     return {
       id: r.id,
       name: r.name,
@@ -69,6 +72,8 @@ export async function listWeeklyMeetingSites(opts?: {
       health: r.health,
       leadName: r.lead?.name ?? r.lead?.email ?? null,
       leadId: r.leadId,
+      startDate: start,
+      daysSinceKickoff: daysUntilStart == null ? null : -daysUntilStart,
       targetGoLiveDate: target,
       daysToGoLive: daysUntil(target),
       taskCountDone: r.taskCountDone,
@@ -89,15 +94,5 @@ export async function listWeeklyMeetingSites(opts?: {
     };
     });
 
-  mapped.sort((a, b) => {
-    const ad = a.daysToGoLive;
-    const bd = b.daysToGoLive;
-    if (ad == null && bd == null) return a.acronym.localeCompare(b.acronym);
-    if (ad == null) return 1;
-    if (bd == null) return -1;
-    if (ad !== bd) return ad - bd;
-    return a.acronym.localeCompare(b.acronym);
-  });
-
-  return mapped;
+  return sortWeeklyMeetingSites(mapped);
 }

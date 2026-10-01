@@ -24,6 +24,10 @@ export type WeeklyMeetingSite = {
   health: "GREEN" | "YELLOW" | "RED";
   leadName: string | null;
   leadId: string | null;
+  /** Kickoff. Same column as project start date. */
+  startDate: Date | null;
+  /** Calendar days from kickoff to today. Negative means kickoff is still ahead. */
+  daysSinceKickoff: number | null;
   targetGoLiveDate: Date | null;
   daysToGoLive: number | null;
   taskCountDone: number;

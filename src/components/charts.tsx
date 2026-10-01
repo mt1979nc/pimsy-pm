@@ -183,7 +183,7 @@ export function MemberLoadCards({ members }: { members: MemberLoad[] }) {
   if (members.length === 0) {
     return (
       <p className="px-4 py-6 text-[13px] text-ink-3">
-        No rostered people to show. Add staff under Staffing → Team.
+        No people to show. Add staff under Team.
       </p>
     );
   }

@@ -1,7 +1,7 @@
 import { requirePortfolioAccess } from "@/lib/guard";
 import { PageHeader } from "@/components/ui";
-import { SubNavLink } from "@/components/nav-link";
-import { PRISM_EXPANSION, PRISM_MODULE_NAME } from "@/lib/brand";
+import { PrismNav } from "@/components/prism-nav";
+import { PRISM_MODULE_NAME } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -14,18 +14,8 @@ export default async function ManagementLayout({ children }: { children: React.R
 
   return (
     <>
-      <PageHeader
-        title={PRISM_MODULE_NAME}
-        subtitle={`${PRISM_EXPANSION} — capacity, forecast, and the book of business.`}
-      />
-      <div className="mb-5 flex flex-wrap items-center gap-5 border-b border-border">
-        <SubNavLink href="/management">Overview</SubNavLink>
-        <SubNavLink href="/management/forecast">Forecast</SubNavLink>
-        <SubNavLink href="/management/weekly">Weekly meeting</SubNavLink>
-        <SubNavLink href="/management/team">Team</SubNavLink>
-        <SubNavLink href="/management/engagements">Engagements</SubNavLink>
-        <SubNavLink href="/reports/analysis">Analysis</SubNavLink>
-      </div>
+      <PageHeader title={PRISM_MODULE_NAME} subtitle="Staffing, forecast, and site health." />
+      <PrismNav />
       {children}
     </>
   );

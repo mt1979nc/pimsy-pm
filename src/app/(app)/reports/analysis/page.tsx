@@ -8,8 +8,8 @@ import {
 } from "@/lib/queries";
 import { loadForecastExclusions } from "@/lib/forecast-data";
 import { isExcludedFromPrimaryAverages } from "@/lib/forecast";
-import Link from "next/link";
-import { Card, CardHeader, PageHeader, Stat, EmptyState, Badge, LinkButton } from "@/components/ui";
+import { Card, CardHeader, PageHeader, Stat, EmptyState, Badge } from "@/components/ui";
+import { PrismNav } from "@/components/prism-nav";
 import { RateBar } from "@/components/charts";
 import { cn } from "@/lib/cn";
 import { fmtShort } from "@/lib/dates";
@@ -38,20 +38,10 @@ export default async function AnalysisPage() {
 
   return (
     <>
+      <PrismNav />
       <PageHeader
         title="Analysis"
-        breadcrumb={
-          <Link href="/management" className="hover:text-ink">
-            Prism
-          </Link>
-        }
-        subtitle="Prism · forecast accuracy and delivery patterns across completed implementations"
-        actions={
-          <>
-            <LinkButton href="/management/forecast">Forecast</LinkButton>
-            <LinkButton href="/reports/capacity">Team capacity</LinkButton>
-          </>
-        }
+        subtitle="On-time rate and slip patterns for finished sites."
       />
 
       <p className="mb-4 rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] text-ink-2">
@@ -63,7 +53,7 @@ export default async function AnalysisPage() {
         )}
         . Configure on{" "}
         <a href="/management/forecast" className="font-medium text-brand hover:underline">
-          Staffing → Forecast
+          Forecast
         </a>
         {accuracy.allCompleted > accuracy.completed
           ? ` · all-in sample is ${accuracy.allCompleted} (on-time ${accuracy.allOnTimeRate ?? "—"}%)`

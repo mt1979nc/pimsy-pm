@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.6");
+    expect(APP_VERSION).toBe("1.18.7");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,24 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.7 weekly meeting cards and flatter Prism nav", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.7");
+    expect(note?.summary).toMatch(/Weekly meeting/i);
+    expect(note?.summary).toMatch(/card/i);
+    expect(note?.summary).toMatch(/nearest go-live/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /\/management\/weekly/.test(h) && /Record slip/i.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /kickoff/i.test(h) && /start date/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /nearest go-live/.test(h) && /No schema migrate/i.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /Team capacity/.test(h) && /Analysis/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.6")).toBeTruthy();
   });
 
   it("documents v1.18.6 @mentions in comments and project updates", () => {

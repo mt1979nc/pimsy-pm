@@ -59,14 +59,14 @@ export default async function ManagementEngagementsPage({
           title={filter === "all" ? "Engagements" : PRISM_STATUS_LABELS[filter]}
           subtitle={
             filter === "pipeline"
-              ? "Pipeline is excluded from department weekly load until status moves to pre-kickoff or active."
-              : `${visible.length} implementations`
+              ? "Not counted in weekly hours."
+              : `${visible.length} sites`
           }
         />
         {visible.length === 0 ? (
           <EmptyState
             title="No implementations in this filter"
-            description="Add to roster or run npm run db:import:prism after a Prism dump."
+            description="Add a site, or switch the filter."
           />
         ) : (
           <EngagementRosterTable rows={visible} />

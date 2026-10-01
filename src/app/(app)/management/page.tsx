@@ -1,24 +1,17 @@
 import Link from "next/link";
 import { loadDirectorSnapshot } from "@/lib/prism-snapshot";
-import { Card, CardHeader, LinkButton, Stat, Badge } from "@/components/ui";
+import { Card, CardHeader, Stat, Badge } from "@/components/ui";
 import { HeadroomChart, MemberLoadCards } from "@/components/charts";
 import { fmtShort } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Staffing — Prism" };
+export const metadata = { title: "Overview — Prism" };
 
 export default async function ManagementHubPage() {
   const snap = await loadDirectorSnapshot(12);
 
   return (
     <div className="space-y-5">
-      <p className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] leading-relaxed text-ink-2">
-        <strong className="font-semibold text-ink">Prism lives in PATH.</strong> Capacity, Forecast+,
-        engagement edits, and Analysis all read PATH Postgres. Director / Pipeline / morning snapshot
-        routines should call{" "}
-        <code className="text-[12px]">GET /api/prism/snapshot</code> — not standalone Prism Azure SQL.
-      </p>
-
       {snap.hireNow ? (
         <div className="rounded-xl border border-transparent bg-red-soft px-4 py-3 text-[13px] text-red">
           <strong className="font-semibold">Hire now.</strong> Peak week {snap.peakWeekOf ?? "—"} is
@@ -31,7 +24,7 @@ export default async function ManagementHubPage() {
       ) : null}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        <Stat label="This week load" value={`${snap.thisWeekLoad}h`} hint={`headroom ${snap.thisWeekHeadroom}h`} />
+        <Stat label="This week" value={`${snap.thisWeekLoad}h`} hint={`Headroom ${snap.thisWeekHeadroom}h`} />
         <Stat
           label="Peak week"
           value={`${snap.peakWeekLoad}h`}
@@ -39,7 +32,7 @@ export default async function ManagementHubPage() {
           tone={snap.hireNow ? "red" : snap.nearCapacity ? "amber" : undefined}
         />
         <Stat label="Hire now" value={snap.hireNow ? "Yes" : "No"} tone={snap.hireNow ? "red" : "green"} />
-        <Stat label="Active / pre-KO" value={snap.activeCount} />
+        <Stat label="Active" value={snap.activeCount} hint="Includes pre-kickoff" />
         <Stat
           label="Kickoffs 14d"
           value={snap.kickoffsNext14.length}
@@ -69,7 +62,7 @@ export default async function ManagementHubPage() {
         <div className="space-y-2">
           <h2 className="text-[13.5px] font-semibold text-ink">Team headroom</h2>
           <p className="text-[12.5px] text-ink-3">
-            This-week load vs declared hrs. Exempt people still show; they are left out of department cap.
+            This week vs each person&apos;s cap. Exempt people are left out of the department total.
           </p>
           <MemberLoadCards
             members={snap.team.map((m) => ({
@@ -90,7 +83,7 @@ export default async function ManagementHubPage() {
         <Card>
           <CardHeader
             title="Go-lives next 14 days"
-            subtitle="Morning snapshot — current target dates"
+            subtitle="Current target dates"
             action={
               <Link href="/management/forecast" className="text-[12.5px] font-medium text-brand hover:underline">
                 Forecast →
@@ -118,7 +111,7 @@ export default async function ManagementHubPage() {
         <Card>
           <CardHeader
             title="Kickoffs next 14 days"
-            subtitle="Same book — no extra analytics"
+            subtitle="Scheduled start dates"
           />
           {snap.kickoffsNext14.length === 0 ? (
             <p className="px-4 py-4 text-[13px] text-ink-3">No kickoffs scheduled in the next two weeks.</p>
@@ -140,11 +133,11 @@ export default async function ManagementHubPage() {
         </Card>
         <Card>
           <CardHeader
-            title="Slipped engagements"
-            subtitle="Later go-live dilutes weekly hours unless custom hrs/wk is set"
+            title="Slipped sites"
+            subtitle="Go-live moved later"
           />
           {snap.slipped.length === 0 ? (
-            <p className="px-4 py-4 text-[13px] text-ink-3">No active slips on the book.</p>
+            <p className="px-4 py-4 text-[13px] text-ink-3">No slips right now.</p>
           ) : (
             <ul className="divide-y divide-border">
               {snap.slipped.slice(0, 8).map((e) => (
@@ -168,14 +161,14 @@ export default async function ManagementHubPage() {
       {snap.pipeline.length > 0 ? (
         <Card>
           <CardHeader
-            title="Pipeline (off load)"
-            subtitle={`${snap.pipeline.length} site${snap.pipeline.length === 1 ? "" : "s"} excluded from department hours until status changes`}
+            title="Pipeline"
+            subtitle={`${snap.pipeline.length} site${snap.pipeline.length === 1 ? "" : "s"} not counted in weekly hours`}
             action={
               <Link
                 href="/management/engagements?status=pipeline"
                 className="text-[12.5px] font-medium text-brand hover:underline"
               >
-                Roster →
+                Engagements →
               </Link>
             }
           />
@@ -189,32 +182,6 @@ export default async function ManagementHubPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader title="Weekly meeting" subtitle="Active implementation sites and inline slips." />
-          <div className="px-4 pb-4">
-            <LinkButton href="/management/weekly">Open weekly meeting</LinkButton>
-          </div>
-        </Card>
-        <Card>
-          <CardHeader title="Forecast" subtitle="Weekly hours, peak, hire-now." />
-          <div className="px-4 pb-4">
-            <LinkButton href="/management/forecast">Open forecast</LinkButton>
-          </div>
-        </Card>
-        <Card>
-          <CardHeader title="Team" subtitle="Billable hrs, exempt, can-lead, director." />
-          <div className="px-4 pb-4">
-            <LinkButton href="/management/team">Open team</LinkButton>
-          </div>
-        </Card>
-        <Card>
-          <CardHeader title="Engagements" subtitle="Edit owners, dates, status, scope." />
-          <div className="px-4 pb-4">
-            <LinkButton href="/management/engagements">Open roster</LinkButton>
-          </div>
-        </Card>
-      </div>
     </div>
   );
 }
