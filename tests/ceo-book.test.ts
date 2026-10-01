@@ -169,7 +169,6 @@ describe("CEO executive book", () => {
   ): CeoBookColumnSortRow {
     return {
       name: partial.abbreviation,
-      abbreviation: partial.abbreviation,
       productType: "EHR",
       contractDateInput: "",
       expectedArrInput: "",

@@ -50,9 +50,9 @@ describe("team capacity card order", () => {
     const page = readFileSync(resolve(process.cwd(), "src/app/(app)/reports/capacity/page.tsx"), "utf8");
     const cards = readFileSync(resolve(process.cwd(), "src/components/reorderable-member-cards.tsx"), "utf8");
     const chart = readFileSync(resolve(process.cwd(), "src/components/charts.tsx"), "utf8");
-    expect(page).toMatch(/ReorderableMemberLoadCards/);
+    expect(page).toMatch(/<ReorderableMemberLoadCards /);
     expect(page).toMatch(/memberLoadsFromForecast/);
-    expect(page).not.toMatch(/MemberLoadCards/);
+    expect(page).not.toMatch(/<MemberLoadCards /);
     expect(cards).toMatch(/CAPACITY_MEMBER_CARD_ORDER_KEY/);
     expect(cards).toMatch(/localStorage/);
     expect(cards).toMatch(/Drag to reorder/);
