@@ -209,6 +209,182 @@ export function compareCeoBookRows(a: CeoBookSortRow, b: CeoBookSortRow): number
   return a.abbreviation.localeCompare(b.abbreviation);
 }
 
+/** Columns the executive table can sort. PATH (open link) is not a data column. */
+export const CEO_BOOK_SORT_COLUMNS = [
+  "name",
+  "abbreviation",
+  "productType",
+  "contractDate",
+  "expectedArr",
+  "initialGoLive",
+  "currentGoLive",
+  "actualGoLive",
+  "assignedIs",
+  "status",
+  "comments",
+] as const;
+
+export type CeoBookSortColumn = (typeof CEO_BOOK_SORT_COLUMNS)[number];
+export type CeoBookSortDirection = "asc" | "desc";
+
+export type CeoBookColumnSort = {
+  column: CeoBookSortColumn;
+  direction: CeoBookSortDirection;
+};
+
+/** Fields the column sort reads. Display strings, so the order matches the cells. */
+export type CeoBookColumnSortRow = {
+  name: string;
+  abbreviation: string;
+  productType: string;
+  contractDateInput: string;
+  expectedArrInput: string;
+  initialGoLive: string;
+  currentGoLive: string;
+  actualGoLive: string;
+  assignedIs: string;
+  ceoStatus: CeoStatus | null;
+  commentPreview: string | null;
+  commentFull?: string | null;
+};
+
+const DISPLAY_MONTHS: Record<string, string> = {
+  Jan: "01",
+  Feb: "02",
+  Mar: "03",
+  Apr: "04",
+  May: "05",
+  Jun: "06",
+  Jul: "07",
+  Aug: "08",
+  Sep: "09",
+  Oct: "10",
+  Nov: "11",
+  Dec: "12",
+};
+
+function blankKey(value: string | null | undefined): string | null {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed || trimmed === "—") return null;
+  return trimmed;
+}
+
+/** `YYYY-MM-DD` from a date input, or null when the cell is empty. */
+function isoDateKey(value: string | null | undefined): string | null {
+  const text = blankKey(value);
+  if (!text || !/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+  return text;
+}
+
+/** `YYYY-MM-DD` from a `MMM d, yyyy` cell (`fmtDate`), or null for —. */
+function displayDateKey(value: string | null | undefined): string | null {
+  const text = blankKey(value);
+  if (!text) return null;
+  const match = text.match(/^([A-Za-z]{3}) (\d{1,2}), (\d{4})$/);
+  if (!match) return null;
+  const month = DISPLAY_MONTHS[match[1] ?? ""];
+  if (!month) return null;
+  return `${match[3]}-${month}-${(match[2] ?? "").padStart(2, "0")}`;
+}
+
+function arrKey(value: string | null | undefined): number | null {
+  const parsed = parseExpectedArr(value);
+  if (!parsed.ok || parsed.value == null) return null;
+  const amount = Number(parsed.value);
+  return Number.isFinite(amount) ? amount : null;
+}
+
+/**
+ * Compare two values. Empty stays last in both directions.
+ * `cmp` is the ascending comparison of two present values.
+ */
+function comparePresent(
+  aEmpty: boolean,
+  bEmpty: boolean,
+  cmp: number,
+  direction: CeoBookSortDirection,
+): number {
+  if (aEmpty && bEmpty) return 0;
+  if (aEmpty) return 1;
+  if (bEmpty) return -1;
+  return direction === "asc" ? cmp : -cmp;
+}
+
+function compareTextKeys(
+  a: string | null,
+  b: string | null,
+  direction: CeoBookSortDirection,
+): number {
+  const cmp =
+    a == null || b == null ? 0 : a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
+  return comparePresent(a == null, b == null, cmp, direction);
+}
+
+/** First click sorts ascending. The next click on the same column flips direction. */
+export function nextCeoBookColumnSort(
+  current: CeoBookColumnSort | null,
+  column: CeoBookSortColumn,
+): CeoBookColumnSort {
+  if (!current || current.column !== column) return { column, direction: "asc" };
+  return { column, direction: current.direction === "asc" ? "desc" : "asc" };
+}
+
+/**
+ * Column sort for the executive table.
+ * `sort === null` keeps the incoming order (the CEO sheet order from the server).
+ * Ties keep that order too. Empty / — cells sort last either way.
+ */
+export function sortCeoBookRows<T extends CeoBookColumnSortRow>(
+  rows: readonly T[],
+  sort: CeoBookColumnSort | null,
+): T[] {
+  if (!sort) return [...rows];
+  const copy = [...rows];
+  copy.sort((a, b) => {
+    const dir = sort.direction;
+    switch (sort.column) {
+      case "name":
+        return compareTextKeys(blankKey(a.name), blankKey(b.name), dir);
+      case "abbreviation":
+        return compareTextKeys(blankKey(a.abbreviation), blankKey(b.abbreviation), dir);
+      case "productType":
+        return compareTextKeys(blankKey(a.productType), blankKey(b.productType), dir);
+      case "contractDate":
+        return compareTextKeys(isoDateKey(a.contractDateInput), isoDateKey(b.contractDateInput), dir);
+      case "expectedArr": {
+        const av = arrKey(a.expectedArrInput);
+        const bv = arrKey(b.expectedArrInput);
+        return comparePresent(av == null, bv == null, (av ?? 0) - (bv ?? 0), dir);
+      }
+      case "initialGoLive":
+        return compareTextKeys(displayDateKey(a.initialGoLive), displayDateKey(b.initialGoLive), dir);
+      case "currentGoLive":
+        return compareTextKeys(displayDateKey(a.currentGoLive), displayDateKey(b.currentGoLive), dir);
+      case "actualGoLive":
+        return compareTextKeys(displayDateKey(a.actualGoLive), displayDateKey(b.actualGoLive), dir);
+      case "assignedIs":
+        return compareTextKeys(blankKey(a.assignedIs), blankKey(b.assignedIs), dir);
+      case "status":
+        return compareTextKeys(
+          a.ceoStatus ? CEO_STATUS_LABELS[a.ceoStatus] : null,
+          b.ceoStatus ? CEO_STATUS_LABELS[b.ceoStatus] : null,
+          dir,
+        );
+      case "comments":
+        return compareTextKeys(
+          blankKey(a.commentFull ?? a.commentPreview),
+          blankKey(b.commentFull ?? b.commentPreview),
+          dir,
+        );
+      default: {
+        const _exhaustive: never = sort.column;
+        return _exhaustive;
+      }
+    }
+  });
+  return copy;
+}
+
 export function summarizeCeoBook(rows: Array<{ ceoStatus: CeoStatus | null }>): string {
   const counts = new Map<string, number>();
   for (const status of CEO_STATUSES) counts.set(status, 0);

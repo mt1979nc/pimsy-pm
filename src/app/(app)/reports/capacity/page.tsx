@@ -4,7 +4,8 @@ import { teamCapacity } from "@/lib/queries";
 import { loadCapacityForecast } from "@/lib/forecast-data";
 import { memberLoadsFromForecast } from "@/lib/forecast";
 import { PageHeader, Card, CardHeader, EmptyState, Badge, Avatar, Stat } from "@/components/ui";
-import { HeadroomChart, MemberLoadCards } from "@/components/charts";
+import { HeadroomChart } from "@/components/charts";
+import { ReorderableMemberLoadCards } from "@/components/reorderable-member-cards";
 import { fmtShort } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 
@@ -71,8 +72,11 @@ export default async function CapacityPage() {
       </Card>
       {forecast.staff.length > 0 ? (
         <div className="mb-5 space-y-2">
-          <h2 className="text-[13.5px] font-semibold text-ink">Team headroom</h2>
-          <MemberLoadCards members={memberLoadsFromForecast(forecast)} />
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[13.5px] font-semibold text-ink">Team headroom</h2>
+            <p className="text-[12px] text-ink-3">Drag to reorder. Saved in this browser.</p>
+          </div>
+          <ReorderableMemberLoadCards members={memberLoadsFromForecast(forecast)} />
         </div>
       ) : null}
       <Card className="mb-5">
