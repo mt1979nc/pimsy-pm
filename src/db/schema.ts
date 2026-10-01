@@ -17,6 +17,7 @@ import {
   integer,
   boolean,
   real,
+  numeric,
   jsonb,
   primaryKey,
   uniqueIndex,
@@ -62,6 +63,19 @@ export const projectStatusEnum = pgEnum("project_status", [
   "BLOCKED",
   "COMPLETED",
   "CANCELLED",
+]);
+
+/**
+ * CEO implementation-sheet status. Distinct from project.status and health:
+ * "In Process - On track" / "Off track" is a leadership call, not GREEN/YELLOW.
+ * Null until someone sets it on /management/executive.
+ */
+export const ceoStatusEnum = pgEnum("ceo_status", [
+  "NOT_YET_STARTED",
+  "PAUSED",
+  "IN_PROCESS_ON_TRACK",
+  "IN_PROCESS_OFF_TRACK",
+  "LIVE",
 ]);
 
 export const healthEnum = pgEnum("health", ["GREEN", "YELLOW", "RED"]);
@@ -613,6 +627,17 @@ export const projects = pgTable(
      */
     supportHandoffAt: timestamp("support_handoff_at", { withTimezone: true }),
 
+    /**
+     * CEO book fields that PATH did not already store (v1.18.8).
+     * Go-live stays on initialGoLiveDate / targetGoLiveDate / actualGoLiveDate.
+     * The Dock link is not stored — the PATH project page replaces it.
+     * Null until leadership fills the cell. The executive table shows "—".
+     */
+    contractDate: timestamp("contract_date", { withTimezone: true }),
+    /** Annual recurring revenue in dollars, e.g. 32400.00 or 6973.46. */
+    expectedArr: numeric("expected_arr", { precision: 12, scale: 2 }),
+    ceoStatus: ceoStatusEnum("ceo_status"),
+
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -629,6 +654,7 @@ export const projects = pgTable(
     index("project_onboarded_idx").on(t.onboarded),
     index("project_exclude_analytics_idx").on(t.excludeFromAnalytics),
     index("project_support_handoff_idx").on(t.supportHandoffAt),
+    index("project_ceo_status_idx").on(t.ceoStatus),
   ],
 );
 
@@ -1629,6 +1655,7 @@ export type Visibility = (typeof visibilityEnum.enumValues)[number];
 export type OwnerSide = (typeof ownerSideEnum.enumValues)[number];
 export type TaskStatus = (typeof taskStatusEnum.enumValues)[number];
 export type ProjectStatus = (typeof projectStatusEnum.enumValues)[number];
+export type CeoStatus = (typeof ceoStatusEnum.enumValues)[number];
 export type Health = (typeof healthEnum.enumValues)[number];
 export type Priority = (typeof priorityEnum.enumValues)[number];
 export type ProjectType = (typeof projectTypeEnum.enumValues)[number];

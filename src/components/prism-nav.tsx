@@ -9,6 +9,7 @@ export function PrismNav() {
   return (
     <nav aria-label="Prism" className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-border">
       <SubNavLink href="/management">Overview</SubNavLink>
+      <SubNavLink href="/management/executive">Executive</SubNavLink>
       <SubNavLink href="/management/weekly">Weekly meeting</SubNavLink>
       <SubNavLink href="/management/forecast">Forecast</SubNavLink>
       <SubNavLink href="/reports/capacity">Team capacity</SubNavLink>

@@ -183,6 +183,13 @@
       "when": 1789079000000,
       "tag": "0025_status_update_due",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1789080000000,
+      "tag": "0026_ceo_executive",
+      "breakpoints": true
     }
   ]
 }

@@ -42,6 +42,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **Training calendar / recordings / agenda (Wave B)** | **Shipped** | Book Training N → `session_at` on the session task; Zoom recording mirrors Recordings tab + training task; agenda checkboxes carry incomplete items to the next session. Migration `0022_training_session`. |
 | **Customer email digest (Wave C)** | **Shipped** (#39) | One PATH summary email when several due-soon / overdue tasks or PIMSY-staff messages pile up; in-app still per item; portal deep links. Cron: `POST /api/cron/customer-digest` with Bearer `CRON_SECRET`. Azure Logic Apps **`pimsy-customer-digest`** and **`pimsy-cron-task-due-reminders`** every 15 minutes (same `CRON_SECRET`). No migrate. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |
+| **CEO executive book (v1.18.8)** | **Shipped** | `/management/executive` replaces the weekly CEO sheet. Live name, acronym, product, go-live, IS, and latest update. Contract date, expected ARR, and CEO status are migrate `0026_ceo_executive`. PATH link replaces Dock. |
 
 ## Milestone: Retire standalone Prism
 
