@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.8";
+export const APP_VERSION = "1.18.9";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.9",
+    date: "2026-10-01",
+    summary:
+      "Executive columns sort on click. Team capacity headroom cards can be reordered, and this browser remembers that order. No schema migrate.",
+    highlights: [
+      "Executive (`/management/executive`): click a column heading to sort; click again to flip ascending and descending. The active column shows ↑ or ↓. Name, abbreviation, product type, contract date, expected ARR, initial / current / actual go-live, assigned IS, status, and comments. Empty cells stay last. The CEO sheet order stays until a column is picked. Contract date, expected ARR, and status still save on the row.",
+      "Team capacity (`/reports/capacity`): drag a Team headroom card, or use Up / Down (arrow keys on the grip work too). Order is stored in this browser only. Hours, badges, and capacity math are unchanged. Forecast columns and the workload list stay in their existing order.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.8",
     date: "2026-10-01",

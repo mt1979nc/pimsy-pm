@@ -13,8 +13,11 @@ import {
   expectedArrInputValue,
   formatAssignedIs,
   formatExpectedArr,
+  nextCeoBookColumnSort,
   parseExpectedArr,
+  sortCeoBookRows,
   summarizeCeoBook,
+  type CeoBookColumnSortRow,
 } from "@/lib/ceo-book";
 
 describe("CEO executive book", () => {
@@ -127,6 +130,9 @@ describe("CEO executive book", () => {
     expect(page).toMatch(/listCeoBook/);
     expect(page).toMatch(/\/management\/executive/);
     expect(page).not.toMatch(/from ["']@\/db["']/);
+    expect(table).toMatch(/sortCeoBookRows/);
+    expect(table).toMatch(/aria-sort/);
+    expect(table).toMatch(/nextCeoBookColumnSort/);
     expect(table).toMatch(/Contract Date/);
     expect(table).toMatch(/Expected ARR/);
     expect(table).toMatch(/Initial Go Live Target/);
@@ -156,5 +162,144 @@ describe("CEO executive book", () => {
     expect(schema).toMatch(/expectedArr/);
     expect(schema).toMatch(/ceoStatus/);
     expect(schema).not.toMatch(/dockUrl/);
+  });
+
+  function bookRow(
+    partial: Partial<CeoBookColumnSortRow> & Pick<CeoBookColumnSortRow, "abbreviation">,
+  ): CeoBookColumnSortRow {
+    return {
+      name: partial.abbreviation,
+      abbreviation: partial.abbreviation,
+      productType: "EHR",
+      contractDateInput: "",
+      expectedArrInput: "",
+      initialGoLive: "—",
+      currentGoLive: "—",
+      actualGoLive: "—",
+      assignedIs: "—",
+      ceoStatus: null,
+      commentPreview: null,
+      commentFull: null,
+      ...partial,
+    };
+  }
+
+  it("keeps the CEO sheet order until a column is chosen, then toggles direction", () => {
+    const rows = [bookRow({ abbreviation: "B" }), bookRow({ abbreviation: "A" })];
+    expect(sortCeoBookRows(rows, null).map((row) => row.abbreviation)).toEqual(["B", "A"]);
+    expect(nextCeoBookColumnSort(null, "name")).toEqual({ column: "name", direction: "asc" });
+    expect(nextCeoBookColumnSort({ column: "name", direction: "asc" }, "name")).toEqual({
+      column: "name",
+      direction: "desc",
+    });
+    expect(nextCeoBookColumnSort({ column: "name", direction: "desc" }, "abbreviation")).toEqual({
+      column: "abbreviation",
+      direction: "asc",
+    });
+  });
+
+  it("sorts names and puts an empty name last in both directions", () => {
+    const rows = [
+      bookRow({ abbreviation: "MID", name: "Cedar" }),
+      bookRow({ abbreviation: "EMPTY", name: "—" }),
+      bookRow({ abbreviation: "FIRST", name: "acme" }),
+    ];
+    expect(sortCeoBookRows(rows, { column: "name", direction: "asc" }).map((row) => row.abbreviation)).toEqual([
+      "FIRST",
+      "MID",
+      "EMPTY",
+    ]);
+    expect(sortCeoBookRows(rows, { column: "name", direction: "desc" }).map((row) => row.abbreviation)).toEqual([
+      "MID",
+      "FIRST",
+      "EMPTY",
+    ]);
+  });
+
+  it("sorts go-live and contract dates chronologically, with — last", () => {
+    const rows = [
+      bookRow({
+        abbreviation: "LATE",
+        currentGoLive: "Jan 2, 2026",
+        contractDateInput: "2026-03-01",
+        initialGoLive: "—",
+        actualGoLive: "Mar 1, 2026",
+      }),
+      bookRow({
+        abbreviation: "NONE",
+        currentGoLive: "—",
+        contractDateInput: "",
+        actualGoLive: "—",
+      }),
+      bookRow({
+        abbreviation: "EARLY",
+        currentGoLive: "Dec 1, 2025",
+        contractDateInput: "2025-11-15",
+        initialGoLive: "Oct 1, 2025",
+        actualGoLive: "Jan 9, 2026",
+      }),
+    ];
+    expect(
+      sortCeoBookRows(rows, { column: "currentGoLive", direction: "asc" }).map((row) => row.abbreviation),
+    ).toEqual(["EARLY", "LATE", "NONE"]);
+    expect(
+      sortCeoBookRows(rows, { column: "currentGoLive", direction: "desc" }).map((row) => row.abbreviation),
+    ).toEqual(["LATE", "EARLY", "NONE"]);
+    expect(
+      sortCeoBookRows(rows, { column: "contractDate", direction: "asc" }).map((row) => row.abbreviation),
+    ).toEqual(["EARLY", "LATE", "NONE"]);
+    expect(
+      sortCeoBookRows(rows, { column: "actualGoLive", direction: "desc" }).map((row) => row.abbreviation),
+    ).toEqual(["LATE", "EARLY", "NONE"]);
+  });
+
+  it("sorts expected ARR as a number and status by its label, empty last", () => {
+    const rows = [
+      bookRow({ abbreviation: "BIG", expectedArrInput: "1000", ceoStatus: "LIVE", commentPreview: "Zebra" }),
+      bookRow({ abbreviation: "BLANK", expectedArrInput: "", ceoStatus: null, commentPreview: null }),
+      bookRow({
+        abbreviation: "SMALL",
+        expectedArrInput: "900",
+        ceoStatus: "PAUSED",
+        commentPreview: "alpha",
+        commentFull: "alpha note",
+      }),
+      bookRow({ abbreviation: "OFF", expectedArrInput: "0", ceoStatus: "IN_PROCESS_OFF_TRACK" }),
+    ];
+    expect(
+      sortCeoBookRows(rows, { column: "expectedArr", direction: "asc" }).map((row) => row.abbreviation),
+    ).toEqual(["OFF", "SMALL", "BIG", "BLANK"]);
+    expect(
+      sortCeoBookRows(rows, { column: "expectedArr", direction: "desc" }).map((row) => row.abbreviation),
+    ).toEqual(["BIG", "SMALL", "OFF", "BLANK"]);
+    expect(sortCeoBookRows(rows, { column: "status", direction: "asc" }).map((row) => row.abbreviation)).toEqual([
+      "OFF",
+      "BIG",
+      "SMALL",
+      "BLANK",
+    ]);
+    expect(sortCeoBookRows(rows, { column: "status", direction: "desc" }).map((row) => row.abbreviation)).toEqual([
+      "SMALL",
+      "BIG",
+      "OFF",
+      "BLANK",
+    ]);
+    expect(
+      sortCeoBookRows(rows, { column: "comments", direction: "asc" }).map((row) => row.abbreviation),
+    ).toEqual(["SMALL", "BIG", "BLANK", "OFF"]);
+  });
+
+  it("treats an em dash assigned IS as empty and keeps ties in the incoming order", () => {
+    const rows = [
+      bookRow({ abbreviation: "B", assignedIs: "Morgan", productType: "RCM" }),
+      bookRow({ abbreviation: "A", assignedIs: "—", productType: "EHR" }),
+      bookRow({ abbreviation: "C", assignedIs: "Morgan", productType: "EHR+RCM" }),
+    ];
+    expect(
+      sortCeoBookRows(rows, { column: "assignedIs", direction: "asc" }).map((row) => row.abbreviation),
+    ).toEqual(["B", "C", "A"]);
+    expect(
+      sortCeoBookRows(rows, { column: "productType", direction: "asc" }).map((row) => row.abbreviation),
+    ).toEqual(["A", "C", "B"]);
   });
 });

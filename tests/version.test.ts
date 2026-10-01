@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.8");
+    expect(APP_VERSION).toBe("1.18.9");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,23 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.9 executive column sort and capacity card order", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.9");
+    expect(note?.summary).toMatch(/Executive/);
+    expect(note?.summary).toMatch(/capacity/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /\/management\/executive/.test(h) && /column/i.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /Empty cells stay last/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /\/reports\/capacity/.test(h) && /localStorage|this browser/i.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /No schema migrate/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.8")).toBeTruthy();
   });
 
   it("documents v1.18.8 CEO executive book", () => {

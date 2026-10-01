@@ -1,11 +1,20 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { updateCeoBookFields } from "@/actions/management-executive";
 import { Badge } from "@/components/ui";
-import { CEO_STATUSES, CEO_STATUS_LABELS, parseExpectedArr, type CeoBookRow } from "@/lib/ceo-book";
+import {
+  CEO_STATUSES,
+  CEO_STATUS_LABELS,
+  nextCeoBookColumnSort,
+  parseExpectedArr,
+  sortCeoBookRows,
+  type CeoBookColumnSort,
+  type CeoBookRow,
+  type CeoBookSortColumn,
+} from "@/lib/ceo-book";
 import { cn } from "@/lib/cn";
 
 const th = "sticky top-0 z-10 bg-surface-2 px-2 py-2 text-left align-bottom font-semibold whitespace-normal";
@@ -160,28 +169,82 @@ function ExecutiveRow({ row }: { row: CeoBookRow }) {
   );
 }
 
+const SORT_COLUMNS: { column: CeoBookSortColumn; label: string; className?: string }[] = [
+  { column: "name", label: "Name" },
+  { column: "abbreviation", label: "Abbreviation", className: "w-[7rem]" },
+  { column: "productType", label: "Product type", className: "w-[6.5rem]" },
+  { column: "contractDate", label: "Contract Date", className: "w-[9rem]" },
+  { column: "expectedArr", label: "Expected ARR", className: "w-[7rem]" },
+  { column: "initialGoLive", label: "Initial Go Live Target", className: "w-[8.5rem]" },
+  { column: "currentGoLive", label: "Current Go Live Target", className: "w-[8.5rem]" },
+  { column: "actualGoLive", label: "Actual Go Live", className: "w-[7.5rem]" },
+  { column: "assignedIs", label: "Assigned IS", className: "w-[9rem]" },
+  { column: "status", label: "Status", className: "w-[14rem]" },
+  { column: "comments", label: "Comments", className: "w-[18rem]" },
+];
+
+function SortHeader({
+  label,
+  column,
+  className,
+  sort,
+  onSort,
+}: {
+  label: string;
+  column: CeoBookSortColumn;
+  className?: string;
+  sort: CeoBookColumnSort | null;
+  onSort: (column: CeoBookSortColumn) => void;
+}) {
+  const active = sort?.column === column;
+  const direction = active ? sort.direction : null;
+  return (
+    <th
+      className={cn(th, className)}
+      aria-sort={active ? (direction === "asc" ? "ascending" : "descending") : "none"}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className="inline-flex w-full items-center gap-1 text-left font-semibold uppercase tracking-wide hover:text-ink"
+      >
+        <span>{label}</span>
+        {active ? (
+          <span aria-hidden className="shrink-0 text-[12px] font-semibold text-ink">
+            {direction === "asc" ? "↑" : "↓"}
+          </span>
+        ) : (
+          <span className="sr-only">Sort</span>
+        )}
+      </button>
+    </th>
+  );
+}
+
 export function ExecutiveBookTable({ rows }: { rows: CeoBookRow[] }) {
+  const [sort, setSort] = useState<CeoBookColumnSort | null>(null);
+  const sortedRows = useMemo(() => sortCeoBookRows(rows, sort), [rows, sort]);
+
   return (
     <div className="min-w-0 w-full overflow-x-auto">
       <table className="w-full min-w-[1280px] border-collapse text-[12.5px]">
         <thead>
           <tr className="border-b border-border text-[11px] uppercase tracking-wide text-ink-3">
-            <th className={th}>Name</th>
-            <th className={`${th} w-[7rem]`}>Abbreviation</th>
-            <th className={`${th} w-[6.5rem]`}>Product type</th>
-            <th className={`${th} w-[9rem]`}>Contract Date</th>
-            <th className={`${th} w-[7rem]`}>Expected ARR</th>
-            <th className={`${th} w-[8.5rem]`}>Initial Go Live Target</th>
-            <th className={`${th} w-[8.5rem]`}>Current Go Live Target</th>
-            <th className={`${th} w-[7.5rem]`}>Actual Go Live</th>
-            <th className={`${th} w-[9rem]`}>Assigned IS</th>
-            <th className={`${th} w-[14rem]`}>Status</th>
-            <th className={`${th} w-[18rem]`}>Comments</th>
+            {SORT_COLUMNS.map((col) => (
+              <SortHeader
+                key={col.column}
+                label={col.label}
+                column={col.column}
+                className={col.className}
+                sort={sort}
+                onSort={(column) => setSort((current) => nextCeoBookColumnSort(current, column))}
+              />
+            ))}
             <th className={`${th} w-[4.5rem]`}>PATH</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {rows.map((row) => (
+          {sortedRows.map((row) => (
             <ExecutiveRow
               key={`${row.id}|${row.contractDateInput}|${row.expectedArrInput}|${row.ceoStatus ?? ""}`}
               row={row}
