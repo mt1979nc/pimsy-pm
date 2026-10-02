@@ -14,10 +14,12 @@ import { db } from "@/db";
 import { projects, slipEvents } from "@/db/schema";
 import { audit } from "@/lib/audit";
 import type { Actor } from "@/lib/authz";
-import { fmtDate, parseDateInput, toDateInput } from "@/lib/dates";
+import { fmtDate, parseDateInput, toDateInput, utcCalendarDaysBetween, utcDayKey } from "@/lib/dates";
+import { finalizeGoLiveDate, goLiveDirection } from "@/lib/go-live-weekday";
+import { slipPersistencePlan } from "@/lib/capacity-phase";
 import { resolveSlipPush, shouldCascadeReschedule, cascadeRescheduleProject } from "@/lib/project-timeline";
 
-export type SlipSource = "settings" | "management" | "weekly";
+export type SlipSource = "settings" | "management" | "weekly" | "capacity";
 
 export type ResolvedSlip = {
   nextGoLive: Date;
@@ -59,8 +61,11 @@ export async function commitGoLiveSlip(opts: {
   };
   slip: ResolvedSlip;
   source: SlipSource;
+  /** False records the event and leaves target go-live where it is. */
+  goLiveApplied?: boolean;
 }): Promise<void> {
   const { actor, project, slip, source } = opts;
+  const goLiveApplied = opts.goLiveApplied !== false;
 
   await db.insert(slipEvents).values({
     projectId: project.id,
@@ -69,6 +74,7 @@ export async function commitGoLiveSlip(opts: {
     days: slip.days,
     cause: slip.cause,
     note: slip.note,
+    goLiveApplied,
     createdById: actor.id,
   });
 
@@ -77,8 +83,10 @@ export async function commitGoLiveSlip(opts: {
     action: "project.go_live.slipped",
     entityType: "project",
     entityId: project.id,
-    summary: `${project.code}: go-live moved ${slip.days > 0 ? "+" : ""}${slip.days}d`,
-    metadata: { days: slip.days, cause: slip.cause, source },
+    summary: goLiveApplied
+      ? `${project.code}: go-live moved ${slip.days > 0 ? "+" : ""}${slip.days}d`
+      : `${project.code}: slip recorded, go-live unchanged`,
+    metadata: { days: slip.days, cause: slip.cause, source, goLiveApplied },
   });
 }
 
@@ -94,6 +102,14 @@ export async function applyRequiredProjectSlip(opts: {
   slipCause: string | undefined;
   slipNote: string | undefined;
   source: SlipSource;
+  /**
+   * Capacity / Record slip. Default true so older callers still move the date.
+   * The Record slip form always sends an explicit choice.
+   */
+  approveGoLive?: boolean;
+  /** Snap weekends, and prefer Monday when the push came from +N days. */
+  weekdayGoLive?: boolean;
+  preferMonday?: boolean;
 }): Promise<
   | { ok: false; error: string }
   | {
@@ -125,16 +141,53 @@ export async function applyRequiredProjectSlip(opts: {
     return { ok: false, error: SLIP_REQUIRES_PUSH_ERROR };
   }
 
-  await db
-    .update(projects)
-    .set({
-      targetGoLiveDate: slip.nextGoLive,
-      ...(project.initialGoLiveDate === null && slip.nextGoLive
-        ? { initialGoLiveDate: slip.nextGoLive }
-        : {}),
-      updatedAt: new Date(),
-    })
-    .where(eq(projects.id, opts.projectId));
+  let nextGoLive = slip.nextGoLive;
+  let days = slip.days;
+  let snapNote: string | null = null;
+  if (opts.weekdayGoLive) {
+    const direction = goLiveDirection(slip.fromDate, nextGoLive);
+    const finalized = finalizeGoLiveDate(nextGoLive, {
+      preferMonday: Boolean(opts.preferMonday) && direction === "later",
+      direction,
+    });
+    if (utcDayKey(finalized.date) !== utcDayKey(nextGoLive)) {
+      nextGoLive = finalized.date;
+      days = utcCalendarDaysBetween(slip.fromDate, nextGoLive);
+      snapNote = finalized.snapNote;
+    }
+  }
+  if (days === 0) {
+    return { ok: false, error: "That date does not move the go-live." };
+  }
+
+  const plan = slipPersistencePlan(opts.approveGoLive !== false);
+  const kickoff = project.startDate ? new Date(project.startDate) : null;
+
+  if (plan.updateGoLive) {
+    await db
+      .update(projects)
+      .set({
+        targetGoLiveDate: nextGoLive,
+        ...(project.initialGoLiveDate === null ? { initialGoLiveDate: nextGoLive } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, opts.projectId));
+
+    const cascadePlan = shouldCascadeReschedule({
+      previousKickoff: kickoff,
+      previousGoLive,
+      nextKickoff: kickoff,
+      nextGoLive,
+    });
+    if (cascadePlan.cascade && cascadePlan.next) {
+      await cascadeRescheduleProject({
+        projectId: project.id,
+        templateId: project.templateId,
+        previous: cascadePlan.previous,
+        next: cascadePlan.next,
+      });
+    }
+  }
 
   await commitGoLiveSlip({
     actor: opts.actor,
@@ -143,37 +196,27 @@ export async function applyRequiredProjectSlip(opts: {
       code: project.code,
     },
     slip: {
-      nextGoLive: slip.nextGoLive,
+      nextGoLive,
       fromDate: slip.fromDate,
-      days: slip.days,
+      days,
       cause: slip.cause,
       note: slip.note,
     },
     source: opts.source,
+    goLiveApplied: plan.goLiveApplied,
   });
 
-  const kickoff = project.startDate ? new Date(project.startDate) : null;
-  const cascadePlan = shouldCascadeReschedule({
-    previousKickoff: kickoff,
-    previousGoLive,
-    nextKickoff: kickoff,
-    nextGoLive: slip.nextGoLive,
-  });
-  if (cascadePlan.cascade && cascadePlan.next) {
-    await cascadeRescheduleProject({
-      projectId: project.id,
-      templateId: project.templateId,
-      previous: cascadePlan.previous,
-      next: cascadePlan.next,
-    });
-  }
+  const storedGoLive = plan.updateGoLive ? nextGoLive : (previousGoLive ?? nextGoLive);
+  const message = plan.updateGoLive
+    ? [formatSlipRecordedMessage(days, slip.fromDate, nextGoLive), snapNote].filter(Boolean).join(" ")
+    : [`Slip recorded. Go-live stayed ${fmtDate(slip.fromDate)}.`, snapNote].filter(Boolean).join(" ");
 
   return {
     ok: true,
     slipped: true,
-    nextGoLive: slip.nextGoLive,
-    days: slip.days,
-    message: formatSlipRecordedMessage(slip.days, slip.fromDate, slip.nextGoLive),
-    targetGoLiveDate: toDateInput(slip.nextGoLive),
+    nextGoLive: storedGoLive,
+    days,
+    message,
+    targetGoLiveDate: toDateInput(storedGoLive),
   };
 }

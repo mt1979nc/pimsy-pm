@@ -358,6 +358,7 @@ export type MemberLoadView = {
   image?: string | null;
   capacityHoursPerWeek: number;
   capacityExempt: boolean;
+  canLead?: boolean;
   isDirector?: boolean;
   thisWeekHours: number;
   peakHours: number;
@@ -380,6 +381,7 @@ export function memberLoadsFromForecast(
     image: s.image,
     capacityHoursPerWeek: s.capacityHoursPerWeek,
     capacityExempt: s.capacityExempt,
+    canLead: s.canLead,
     isDirector: s.isDirector,
     thisWeekHours: thisById.get(s.id) ?? 0,
     peakHours: peakById.get(s.id) ?? 0,

@@ -4,9 +4,10 @@
  */
 
 export function sumSlipDays(
-  events: ReadonlyArray<{ days: number | null | undefined }>,
+  events: ReadonlyArray<{ days: number | null | undefined; goLiveApplied?: boolean | null }>,
 ): number {
   return events.reduce((sum, e) => {
+    if (e.goLiveApplied === false) return sum;
     const n = e.days;
     return sum + (typeof n === "number" && Number.isFinite(n) ? n : 0);
   }, 0);

@@ -13,6 +13,8 @@ export type SlipHistoryItem = {
   cause: "CUSTOMER" | "PIMSY" | null;
   note: string | null;
   createdAt: Date | string;
+  /** False when the slip was saved without moving go-live. */
+  goLiveApplied?: boolean;
 };
 
 export function SlipHistoryList({
@@ -45,7 +47,12 @@ export function SlipHistoryList({
               {s.days > 0 ? "+" : ""}
               {s.days}d
             </Badge>
-            {s.cause ? <Badge>{s.cause}</Badge> : <Badge tone="neutral">untagged</Badge>}
+            {s.cause ? (
+              <Badge>{s.cause === "CUSTOMER" ? "Customer" : "PIMSY"}</Badge>
+            ) : (
+              <Badge tone="amber">untagged</Badge>
+            )}
+            {s.goLiveApplied === false ? <Badge tone="neutral">go-live unchanged</Badge> : null}
             {s.note ? <span className="min-w-0 flex-1 text-ink-3">{s.note}</span> : null}
             {allowDelete && s.id === newestId ? <DeleteSlipButton slipId={s.id} /> : null}
           </li>

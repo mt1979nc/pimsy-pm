@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.19";
+export const APP_VERSION = "1.18.20";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.20",
+    date: "2026-10-02",
+    summary:
+      "Team capacity lists each site under the specialist who owns it, with a phase dropdown, special tag, and full slip history. A slip asks before it moves go-live. Suggested go-lives land on Monday. Migrate 0029_capacity_phase.",
+    highlights: [
+      "/management/capacity: specialist cards keep their load bar and list that person's sites underneath (co-leads see their share). Pipeline stays off the cards. Unassigned sites stay in their own group.",
+      "Phase on each site is Kickoff, Discovery, Config, Training, Pre Go-Live, or Complete. Italic text is the model guess and is not saved until someone picks a phase.",
+      "prism_note special shows a purple special badge. Stalled, pre-go-live, and pre-kickoff badges stay on the row. +Nd slip is days past the initial go-live.",
+      "Edit on a site shows every slip (from, to, days, cause, note). Untagged slips stay flagged. Declining the go-live prompt still saves the slip and leaves the date alone.",
+      "Slip days suggest the next Monday. A weekend date moves to Monday (or back to Friday when the date is pulled earlier). An explicit weekday is kept.",
+      "Migration drizzle/0029_capacity_phase.sql adds project.current_phase and slip_event.go_live_applied. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.19",
     date: "2026-10-02",

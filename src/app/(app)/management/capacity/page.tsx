@@ -1,5 +1,6 @@
 import { teamCapacity } from "@/lib/queries";
 import { loadCapacityForecast } from "@/lib/forecast-data";
+import { loadCapacityBoard } from "@/lib/capacity-board";
 import { memberLoadsFromForecast } from "@/lib/forecast";
 import { Card, CardHeader, EmptyState, Badge, Avatar, Stat } from "@/components/ui";
 import { HeadroomChart } from "@/components/charts";
@@ -19,6 +20,7 @@ function utilizationTone(pct: number) {
 
 export default async function CapacityPage() {
   const [team, forecast] = await Promise.all([teamCapacity(), loadCapacityForecast(12)]);
+  const board = await loadCapacityBoard(forecast);
 
   const over = team.filter((t) => t.utilization > 110);
   const idle = team.filter((t) => t.utilization < 40);
@@ -26,13 +28,8 @@ export default async function CapacityPage() {
   return (
     <>
       <p className="mb-4 text-[13px] text-ink-2">
-        Hours against each person&apos;s weekly cap. The chart uses scoped hours from kickoff to
-        go-live. The list below is open tasks. Exempt people are left out of the department total.
-        Edit hours on{" "}
-        <a href="/management/team" className="font-medium text-brand hover:underline">
-          Team
-        </a>
-        .
+        Sites sit under the specialist who owns them. Green is under 85%, amber is 85–100%, red is
+        over the weekly cap.
       </p>
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -54,6 +51,18 @@ export default async function CapacityPage() {
           href="/management/forecast"
         />
       </div>
+      {forecast.staff.length > 0 ? (
+        <div className="mb-5 space-y-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[13.5px] font-semibold text-ink">Team capacity</h2>
+            <p className="text-[12px] text-ink-3">Drag to reorder. Saved in this browser.</p>
+          </div>
+          <ReorderableMemberLoadCards members={memberLoadsFromForecast(forecast)}
+            sitesByMember={board.sitesByMember}
+            unassignedSites={board.unassigned}
+          />
+        </div>
+      ) : null}
       <Card className="mb-5">
         <CardHeader
           title="Load vs capacity"
@@ -65,15 +74,6 @@ export default async function CapacityPage() {
           peakWeekOf={forecast.peakWeek?.weekOf ?? null}
         />
       </Card>
-      {forecast.staff.length > 0 ? (
-        <div className="mb-5 space-y-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-[13.5px] font-semibold text-ink">Team headroom</h2>
-            <p className="text-[12px] text-ink-3">Drag to reorder. Saved in this browser.</p>
-          </div>
-          <ReorderableMemberLoadCards members={memberLoadsFromForecast(forecast)} />
-        </div>
-      ) : null}
       <Card className="mb-5">
         <CardHeader
           title="Weekly capacity forecast"

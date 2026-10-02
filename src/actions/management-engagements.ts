@@ -67,7 +67,7 @@ export async function listEngagements() {
       scope: true,
       lead: { columns: { id: true, name: true, email: true } },
       coLead: { columns: { id: true, name: true, email: true } },
-      slipEvents: { columns: { days: true } },
+      slipEvents: { columns: { days: true, goLiveApplied: true } },
     },
     orderBy: [asc(projects.code)],
   });
