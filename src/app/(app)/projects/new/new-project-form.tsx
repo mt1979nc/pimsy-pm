@@ -14,7 +14,7 @@ import {
   type ImplementationScope,
 } from "@/lib/estimator";
 import type { ComplexityTier, DiscoveryScenario, PlaybookPath } from "@/db/schema";
-import { PLAYBOOK_PATHS, PLAYBOOK_PATH_META } from "@/lib/playbook-meta";
+import { PLAYBOOK_PATHS, PLAYBOOK_PATH_META, playbookDayCount } from "@/lib/playbook-meta";
 import { STAFFING_ROLES, STAFFING_ROLE_LABELS, MANAGER_OVERVIEW_ROLES } from "@/lib/staffing";
 import { UsFederalHolidayToggle } from "@/components/us-federal-holiday-toggle";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
@@ -575,7 +575,12 @@ export function NewProjectForm({
                           <Badge tone="violet">{tpl.customerTaskCount} customer</Badge>
                         ) : null}
                         <Badge>
-                          {scoped && chosen && path === "EHR" ? chosen.calendarDays : tpl.durationDays} days
+                          {playbookDayCount({
+                            path,
+                            templateDurationDays: tpl.durationDays,
+                            forecastCalendarDays: scoped && chosen ? chosen.calendarDays : null,
+                          })}{" "}
+                          days
                         </Badge>
                       </span>
                     ) : (

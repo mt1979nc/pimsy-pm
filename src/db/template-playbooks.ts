@@ -147,17 +147,19 @@ function annotatePhases(phases: SeedPhase[], track: "EHR" | "RCM" | "SHARED"): S
   });
 }
 
+/**
+ * Move a track later on the same timeline. Task `offsetDays` stay
+ * phase-relative so a shared title keeps the same day count on EHR and EHR+RCM.
+ */
 function shiftPhases(phases: SeedPhase[], offsetDays: number): SeedPhase[] {
   return phases.map((p) => ({
     ...p,
     offsetDays: p.offsetDays + offsetDays,
-    tasks: p.tasks.map((t) => ({
-      ...t,
-      offsetDays: (t.offsetDays ?? 0) + (offsetDays > 0 ? 0 : 0),
-      children: t.children?.map((c) => ({ ...c })),
-    })),
   }));
 }
+
+/** Go-live scale anchor. Both full-implementation paths use this duration. */
+const EHR_SCHEDULE_DAYS = 90;
 
 const RCM_PHASES: SeedPhase[] = RCM_TEMPLATE.phases.map((p) => ({
   ...p,
@@ -213,7 +215,7 @@ export const EHR_PLAYBOOK: PlaybookSeed = {
   description:
     "The standard PIMSY EHR go-live playbook, ported from Dock. Kickoff through post-go-live Tier 2 training, with customer action items surfaced in the portal.",
   type: "IMPLEMENTATION",
-  durationDays: 90,
+  durationDays: EHR_SCHEDULE_DAYS,
   code: "ehr",
   playbookPath: "EHR",
   phases: EHR_PHASES,
@@ -225,7 +227,7 @@ export const EHR_RCM_PLAYBOOK: PlaybookSeed = {
   description:
     "Full EHR implementation plus the RCM onboarding track on the same site. RCM work runs alongside billing.",
   type: "IMPLEMENTATION",
-  durationDays: 120,
+  durationDays: EHR_SCHEDULE_DAYS,
   code: "ehr_rcm",
   playbookPath: "EHR_RCM",
   phases: [

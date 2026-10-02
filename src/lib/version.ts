@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.12";
+export const APP_VERSION = "1.18.13";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.13",
+    date: "2026-10-02",
+    summary:
+      "EHR and EHR+RCM share the 90-day schedule. Accessing Pimsy sits after Site Configuration. Template tabs drop the extra New project chip and the repeated Learning Center sections. No schema migrate.",
+    highlights: [
+      "EHR+RCM uses the same 90-day go-live scale as EHR, so shared phase and task day counts match. RCM tabs on that path stay on their own offsets and no longer stretch Forecast config or training windows.",
+      "Playbook tab order: Site Configuration, Accessing Pimsy, Billing Configuration. Connected billing copies stay. New project is a button, not a template tab.",
+      "Learning Center edit sits on the section. The second copy of each section is gone.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.12",
     date: "2026-10-02",

@@ -11,6 +11,7 @@ import {
   learningPlaceholderLabel,
   type LearningAudience,
 } from "@/db/learning-center-catalog";
+import { AddLearningItemForm, EditLearningItemForm } from "@/app/(app)/learning/learning-forms";
 
 type Section = {
   id: string;
@@ -28,10 +29,13 @@ export function LearningCatalog({
   sections,
   emptyHint,
   hrefPrefix = "/learning",
+  canEdit = false,
 }: {
   sections: Section[];
   emptyHint: string;
   hrefPrefix?: string;
+  /** Staff editor. Edit stays on the same section — no second copy of the list. */
+  canEdit?: boolean;
 }) {
   const [q, setQ] = useState("");
   const [role, setRole] = useState<"all" | LearningAudience>("all");
@@ -60,8 +64,8 @@ export function LearningCatalog({
         });
         return { ...section, items };
       })
-      .filter((s) => s.items.length > 0);
-  }, [sections, q, role]);
+      .filter((s) => s.items.length > 0 || (canEdit && !query && role === "all"));
+  }, [sections, q, role, canEdit]);
 
   const roles: Array<"all" | LearningAudience> = ["all", "clinical", "billing", "admin"];
 
@@ -117,9 +121,25 @@ export function LearningCatalog({
                     </span>
                     <span className="shrink-0 text-[12.5px] font-medium text-brand">Open</span>
                   </Link>
+                  {canEdit ? (
+                    <details className="mb-2">
+                      <summary className="cursor-pointer pb-2 text-[12px] text-ink-3">Edit</summary>
+                      <EditLearningItemForm
+                        item={{
+                          id: item.id,
+                          title: item.title,
+                          summary: item.summary,
+                          body: item.body,
+                          url: item.url,
+                          published: item.published,
+                        }}
+                      />
+                    </details>
+                  ) : null}
                 </li>
               ))}
             </ul>
+            {canEdit ? <AddLearningItemForm sectionId={section.id} /> : null}
           </section>
         ))
       )}

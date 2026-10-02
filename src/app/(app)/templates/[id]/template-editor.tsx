@@ -317,7 +317,7 @@ export function TemplateEditor({
       <Card>
         <CardHeader
           title="Playbook"
-          subtitle="Used when creating a new workspace. Each task’s default assignee is a staffing role (Implementation Specialist, billing, customer lead, …) — not a named person. When that role is filled on the project, PATH auto-assigns the task. Duplicate makes a custom copy so the four site-creation paths stay unique. Changes here do not rewrite live projects."
+          subtitle="Default assignee is a role. Duplicate to customize. Changes here do not rewrite live projects."
           action={
             <span className="flex flex-wrap items-center gap-3">
               <TemplateLockButton templateId={template.id} locked={template.isLocked} />
@@ -372,7 +372,7 @@ export function TemplateEditor({
       <AreasPanel templateId={template.id} rows={areaRows} filter={areaFilter} onFilter={setAreaFilter} />
 
       <Card>
-        <CardHeader title="Phases" subtitle="Jump to a section. Drag the handle on a phase card to reorder." />
+        <CardHeader title="Phases" subtitle="Jump" />
         <ol className="flex flex-wrap gap-1.5 p-4">
           {orderedPhases.map((phase, i) => (
             <li key={phase.id}>
@@ -389,10 +389,7 @@ export function TemplateEditor({
       </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[12.5px] text-ink-3">
-          Drag the handle to reorder phases or tasks. Add nested subtasks, descriptions, training
-          areas, and library files — this is the Dock-style playbook editor.
-        </p>
+        <p className="text-[12.5px] text-ink-3">Drag to reorder.</p>
         {pending ? <span className="text-[12px] text-ink-3">Saving order…</span> : null}
       </div>
 
@@ -677,12 +674,6 @@ function PhaseEditor({
             </select>
           </Field>
         ) : null}
-        <p className="text-[11.5px] text-ink-3">
-          Default assignee is a role, not a person. When that role is named on the project, the
-          task auto-assigns to them (and to nested subtasks that share the role). New tasks land
-          at the end of this phase. Nest under a section task to match Dock checklists. Drag to
-          reorder.
-        </p>
       </form>
       <p className="hidden">{templateId}</p>
     </Card>
