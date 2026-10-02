@@ -112,11 +112,14 @@ export function HandedOffRow({
 export function HandedOffEntries({
   entries,
   empty,
-  wrap,
+  layout = "stack",
+  before,
 }: {
   entries: readonly { id: string; handedOff: boolean; content: ReactNode }[];
   empty: ReactNode;
-  wrap?: (nodes: ReactNode) => ReactNode;
+  /** Serializable layout. A function prop cannot cross the server/client boundary. */
+  layout?: "stack" | "grid" | "divided";
+  before?: ReactNode;
 }) {
   const show = useShowHandedOff();
   const visible = entries.filter((entry) => show || !entry.handedOff);
@@ -131,5 +134,16 @@ export function HandedOffEntries({
     return empty;
   }
   const nodes = visible.map((entry) => <Fragment key={entry.id}>{entry.content}</Fragment>);
-  return wrap ? wrap(nodes) : nodes;
+  if (layout === "grid") {
+    return <div className="grid gap-4 md:grid-cols-2">{nodes}</div>;
+  }
+  if (layout === "divided") {
+    return (
+      <>
+        {before}
+        <div className="divide-y divide-border">{nodes}</div>
+      </>
+    );
+  }
+  return nodes;
 }

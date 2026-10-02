@@ -143,7 +143,7 @@ export default async function CustomersPage() {
             />
           </Card>
         }
-        wrap={(nodes) => <div className="grid gap-4 md:grid-cols-2">{nodes}</div>}
+        layout="grid"
       />
     </>
   );

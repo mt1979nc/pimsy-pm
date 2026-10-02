@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.15";
+export const APP_VERSION = "1.18.16";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,16 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.16",
+    date: "2026-10-02",
+    summary:
+      "Customers and Projects load again. The handed-off list no longer passes a function into a client component. No schema migrate.",
+    highlights: [
+      "Show handed off still hides sites only after project.supportHandoffAt is set. The lists render with a layout name instead of a wrapper function, which is what crashed both pages on 1.18.15.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.15",
     date: "2026-10-02",
