@@ -109,6 +109,7 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /No Engagements item/.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements/.test(h) && /Roster/.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /supportHandoffAt/.test(h) && /LIVE/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /EHR\+RCM/.test(h) && /sourceProjectId/.test(h))).toBe(true);
     expect(RELEASE_NOTES.find((n) => n.version === "1.18.14")).toBeTruthy();
   });
 

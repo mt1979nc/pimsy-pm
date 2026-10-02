@@ -63,7 +63,7 @@ describe("P1 EHR color chrome", () => {
     expect(ui).toMatch(/CUSTOMER: \{ label: "Waiting on customer", tone: "maroon" \}/);
     expect(ui).toMatch(/#7a4550/);
     expect(ui).toMatch(/bg-ehr-maroon-soft/);
-    expect(source("src/components/project-row.tsx")).toMatch(/tone="maroon">RCM/);
+    expect(source("src/components/project-row.tsx")).toMatch(/productType === "EHR" \? "slate" : "maroon"/);
     expect(source("src/components/task-row.tsx")).toMatch(/tone="maroon">RCM/);
     expect(source("src/components/task-row.tsx")).toMatch(/tone="maroon">Customer/);
     expect(source("src/app/globals.css")).toMatch(/#6941c6/);

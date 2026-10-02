@@ -10,6 +10,7 @@ import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate, daysUntil } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { projectHasRcmTrack } from "@/lib/add-rcm";
+import { ceoProductType, type CeoProductType } from "@/lib/ceo-book";
 
 type Row = {
   id: string;
@@ -23,6 +24,8 @@ type Row = {
   taskCountTotal: number;
   playbookPath?: string | null;
   rcmTaskCountTotal?: number | null;
+  ehrTaskCountTotal?: number | null;
+  sourceProjectId?: string | null;
   customerAccount?: { id: string; name: string } | null;
   lead?: { id: string; name: string | null; image?: string | null } | null;
 };
@@ -33,17 +36,31 @@ export function siteAcronym(project: Pick<Row, "crmAcronym" | "code">) {
   return a && a.length > 0 ? a : project.code;
 }
 
+export function projectListProductType(project: {
+  playbookPath?: string | null;
+  rcmTaskCountTotal?: number | null;
+  ehrTaskCountTotal?: number | null;
+  sourceProjectId?: string | null;
+}): CeoProductType {
+  return ceoProductType({
+    playbookPath: project.playbookPath,
+    hasRcmTrack: projectHasRcmTrack({
+      playbookPath: project.playbookPath,
+      rcmTaskCountTotal: project.rcmTaskCountTotal,
+    }),
+    ehrTaskCountTotal: project.ehrTaskCountTotal,
+    rcmAddedOntoSite: Boolean(project.sourceProjectId),
+  });
+}
+
 export function ProjectRow({ project, href }: { project: Row; href?: string }) {
   const pct = pctComplete(project.taskCountDone, project.taskCountTotal);
   const days = daysUntil(project.targetGoLiveDate);
   const late = days !== null && days < 0 && project.status !== "COMPLETED";
   const acronym = siteAcronym(project);
   const siteName = project.customerAccount?.name ?? project.name;
-  const hasRcm = projectHasRcmTrack({
-    playbookPath: project.playbookPath,
-    rcmTaskCountTotal: project.rcmTaskCountTotal,
-  });
-  const hoverTitle = [acronym, siteName, project.name !== siteName ? project.name : null, hasRcm ? "RCM" : null]
+  const productType = projectListProductType(project);
+  const hoverTitle = [acronym, siteName, project.name !== siteName ? project.name : null, productType]
     .filter(Boolean)
     .join(" · ");
 
@@ -58,7 +75,7 @@ export function ProjectRow({ project, href }: { project: Row; href?: string }) {
           <div className="truncate text-[13.5px] font-semibold text-ink group-hover:text-brand">
             {acronym}
           </div>
-          {hasRcm ? <Badge tone="maroon">RCM</Badge> : null}
+          <Badge tone={productType === "EHR" ? "slate" : "maroon"}>{productType}</Badge>
         </div>
         <div className="mt-0.5 truncate text-[12.5px] text-ink-3" title={siteName}>
           {siteName}

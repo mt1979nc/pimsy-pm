@@ -27,7 +27,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: "1.18.15",
     date: "2026-10-02",
     summary:
-      "Staff sidebar uses three accordion sections: Day-to-day project work, Data analytics, and PATH settings. The old Admin link is Implementation Dashboard, under Data analytics. The engagements list is titled Roster and is not in the sidebar. Customers and Projects hide a site only after Hand off to Support. No schema migrate.",
+      "Staff sidebar uses three accordion sections: Day-to-day project work, Data analytics, and PATH settings. The old Admin link is Implementation Dashboard, under Data analytics. The engagements list is titled Roster and is not in the sidebar. Customers and Projects hide a site only after Hand off to Support. Product type is EHR, RCM, or EHR+RCM from every product on the site. No schema migrate.",
     highlights: [
       "Section headers expand and collapse. This browser remembers which sections were left open. Day-to-day starts open. The section that contains the current page stays open so the active link is visible.",
       "Day-to-day project work: Dashboard, My work, Inbox, Projects, Customers, Waiting on.",
@@ -35,6 +35,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       "PATH settings: Templates, File library, Learning Center, What's new, Settings. What's new lives here; the sidebar footer shows the version only.",
       "/management/engagements still opens. Its page title is Roster. Same other routes and the same role gates.",
       "Customers and Projects: Show handed off reveals sites whose Hand off to Support task set project.supportHandoffAt. Default is hidden. LIVE, go-live dates, and Onboarded do not hide a site. This browser remembers the toggle.",
+      "Product type on Customers, Projects, and Executive is EHR, RCM, or EHR+RCM. Adding RCM onto a site (projects.sourceProjectId) keeps EHR in the label, so the path rewrite to RCM Prism does not show RCM alone. EHR tasks on an RCM path do the same. A customer card combines its projects.",
       "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
     ],
   },

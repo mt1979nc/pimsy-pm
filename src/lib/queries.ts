@@ -473,6 +473,10 @@ export async function listCustomers() {
           taskCountTotal: true,
           archivedAt: true,
           supportHandoffAt: true,
+          playbookPath: true,
+          sourceProjectId: true,
+          ehrTaskCountTotal: true,
+          rcmTaskCountTotal: true,
         },
       },
       contacts: {

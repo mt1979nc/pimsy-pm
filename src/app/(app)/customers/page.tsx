@@ -2,6 +2,8 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/guard";
 import { listCustomers } from "@/lib/queries";
 import { customerHandedOffToSupport, isSupportHandedOff } from "@/lib/handed-off-list";
+import { combineCeoProductTypes } from "@/lib/ceo-book";
+import { projectListProductType } from "@/components/project-row";
 import {
   PageHeader,
   Card,
@@ -50,6 +52,12 @@ export default async function CustomersPage() {
             (p) => isSupportHandedOff(p.supportHandoffAt) && p.status !== "CANCELLED",
           );
           const contacts = c.contacts.filter((x) => x.isActive);
+          const productProjects = c.projects.filter((p) => p.status !== "CANCELLED");
+          const productType = combineCeoProductTypes(
+            (productProjects.length > 0 ? productProjects : c.projects).map((p) =>
+              projectListProductType(p),
+            ),
+          );
           const projectRows = [
             ...activeProjects.slice(0, 3).map((p) => ({ project: p, handedOff: false })),
             ...handedOffProjects
@@ -76,6 +84,9 @@ export default async function CustomersPage() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                    {productType ? (
+                      <Badge tone={productType === "EHR" ? "slate" : "maroon"}>{productType}</Badge>
+                    ) : null}
                     <Badge>
                       {activeProjects.length} active project
                       {activeProjects.length === 1 ? "" : "s"}
@@ -90,25 +101,29 @@ export default async function CustomersPage() {
 
                 {projectRows.length > 0 ? (
                   <div className="divide-y divide-border border-t border-border">
-                    {projectRows.map(({ project, handedOff }) => (
-                      <HandedOffRow key={project.id} handedOff={handedOff}>
-                        <Link
-                          href={`/projects/${project.id}`}
-                          className="flex items-center gap-3 px-5 py-2 hover:bg-surface-2"
-                        >
-                          <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-2">
-                            {project.name}
-                          </span>
-                          <span className="shrink-0 text-[12px] text-ink-3">
-                            {pctComplete(project.taskCountDone, project.taskCountTotal)}%
-                          </span>
-                          <span className="shrink-0 text-[12px] text-ink-3">
-                            {project.targetGoLiveDate ? fmtDate(project.targetGoLiveDate) : "—"}
-                          </span>
-                          <HealthBadge health={project.health} />
-                        </Link>
-                      </HandedOffRow>
-                    ))}
+                    {projectRows.map(({ project, handedOff }) => {
+                      const rowProduct = projectListProductType(project);
+                      return (
+                        <HandedOffRow key={project.id} handedOff={handedOff}>
+                          <Link
+                            href={`/projects/${project.id}`}
+                            className="flex items-center gap-3 px-5 py-2 hover:bg-surface-2"
+                          >
+                            <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-2">
+                              {project.name}
+                            </span>
+                            <Badge tone={rowProduct === "EHR" ? "slate" : "maroon"}>{rowProduct}</Badge>
+                            <span className="shrink-0 text-[12px] text-ink-3">
+                              {pctComplete(project.taskCountDone, project.taskCountTotal)}%
+                            </span>
+                            <span className="shrink-0 text-[12px] text-ink-3">
+                              {project.targetGoLiveDate ? fmtDate(project.targetGoLiveDate) : "—"}
+                            </span>
+                            <HealthBadge health={project.health} />
+                          </Link>
+                        </HandedOffRow>
+                      );
+                    })}
                   </div>
                 ) : null}
               </Card>
