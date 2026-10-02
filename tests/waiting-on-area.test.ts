@@ -7,6 +7,7 @@ import {
   countWaitingOnByArea,
   formatWaitingOnAreaHint,
   groupWaitingOnByArea,
+  tasksInWaitingOnArea,
   waitingOnPhaseDetail,
 } from "@/lib/waiting-on-area";
 
@@ -71,6 +72,13 @@ describe("groupWaitingOnByArea", () => {
     expect(groups[2]!.tasks.map((t) => t.id)).toEqual(["idp"]);
   });
 
+  it("filters one highlight area without dropping the others from the full list", () => {
+    expect(tasksInWaitingOnArea(rows, "discovery").map((t) => t.id)).toEqual(["logo", "org"]);
+    expect(tasksInWaitingOnArea(rows, "training").map((t) => t.id)).toEqual(["train1", "enduser"]);
+    expect(tasksInWaitingOnArea(rows, "configuration")).toEqual([]);
+    expect(tasksInWaitingOnArea(rows, "all")).toHaveLength(rows.length);
+  });
+
   it("does not invent empty highlight sections", () => {
     const groups = groupWaitingOnByArea([
       { id: "logo", title: "Upload Company Logo(s)", phase: { name: "Discovery" } },
@@ -112,5 +120,17 @@ describe("staff chase-list surfaces", () => {
     const helper = readFileSync(resolve(process.cwd(), "src/lib/waiting-on-area.ts"), "utf8");
     expect(helper).not.toMatch(/from ["']@\/db["']/);
     expect(helper).not.toMatch(/postgres/);
+    const list = readFileSync(resolve(process.cwd(), "src/components/waiting-on-customer-list.tsx"), "utf8");
+    expect(list).toMatch(/aria-pressed/);
+    expect(list).toMatch(/tasksInWaitingOnArea/);
+    const taskList = readFileSync(resolve(process.cwd(), "src/components/project-task-list.tsx"), "utf8");
+    expect(taskList).toMatch(/completed section/);
+    expect(taskList).toMatch(/Filter the punch list/);
+    const row = readFileSync(resolve(process.cwd(), "src/components/task-row.tsx"), "utf8");
+    expect(row).toMatch(/listDescriptionLine/);
+    expect(row).not.toMatch(/Specialist<\/Badge>/);
+    const portalList = readFileSync(resolve(process.cwd(), "src/components/portal-task-list.tsx"), "utf8");
+    expect(portalList).not.toMatch(/Show nested items/);
+    expect(portalList).toMatch(/onToggleChildren/);
   });
 });

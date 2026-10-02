@@ -59,6 +59,14 @@ export function classifyWaitingOnArea(phaseName?: string | null): WaitingOnArea 
   return "other";
 }
 
+export function tasksInWaitingOnArea<T extends WaitingOnAreaTask>(
+  tasks: T[],
+  area: WaitingOnArea | "all",
+): T[] {
+  if (area === "all") return tasks;
+  return tasks.filter((task) => classifyWaitingOnArea(task.phase?.name) === area);
+}
+
 export function countWaitingOnByArea<T extends WaitingOnAreaTask>(tasks: T[]): WaitingOnAreaCounts {
   const counts = emptyWaitingOnAreaCounts();
   for (const task of tasks) {

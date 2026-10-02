@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.13";
+export const APP_VERSION = "1.18.14";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.14",
+    date: "2026-10-02",
+    summary:
+      "Task lists show Dock descriptions, a Punch filter, and collapsible completed sections. Waiting-on-customer buckets filter by Discovery, Configuration, and Training. No schema migrate.",
+    highlights: [
+      "Staff and portal task rows show a short Dock description when the live note is blank or still the old catalog blurb. Staff-written notes still win. My work and Dashboard use the same copy. No playbook resync.",
+      "Punch keeps open items and the parent they sit under, and hides finished children. Search still matches title and description. Press / to focus the filter. This browser tab remembers the last filter.",
+      "Finished sections collapse under “N completed sections” on the staff task list. Finished groups inside an open section still collapse. Nested rows stay on one indent, with a checklist dot instead of a Specialist badge.",
+      "Waiting on customer (Dashboard, My work, project Overview, Portfolio) still groups Discovery, Configuration, and Training. Click a bucket to show only that area; click it again for the full chase list. Other stays on the list.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.13",
     date: "2026-10-02",

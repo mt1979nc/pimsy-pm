@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dockPlaybookDescriptionForTitle } from "@/db/dock-playbook-copy";
 import { flattenSeedTasks, IMPLEMENTATION_PHASES, RCM_TEMPLATE } from "@/db/template-implementation";
-import { resolveTaskDescription, descriptionSnippet } from "@/lib/task-description";
+import { resolveTaskDescription, descriptionSnippet, listDescriptionLine } from "@/lib/task-description";
 import { TRAINING_SESSION_DESCRIPTION } from "@/db/dock-training-checklists";
 
 describe("Dock playbook descriptions on live tasks", () => {
@@ -38,5 +38,13 @@ describe("Dock playbook descriptions on live tasks", () => {
     const snippet = descriptionSnippet("A".repeat(200), 40);
     expect(snippet?.endsWith("…")).toBe(true);
     expect(snippet!.length).toBeLessThanOrEqual(40);
+  });
+
+  it("shows a list line only when it adds something beyond the title", () => {
+    expect(listDescriptionLine("Org Info", null)).toBeNull();
+    expect(listDescriptionLine("Org Info", "Org Info")).toBeNull();
+    expect(listDescriptionLine("Org Info", "Enter organization details from the wizard.")).toMatch(
+      /organization details/,
+    );
   });
 });

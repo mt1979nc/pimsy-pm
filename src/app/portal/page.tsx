@@ -4,6 +4,7 @@ import { portalProjects, portalActionItems } from "@/lib/portal";
 import { listInboxThreads } from "@/lib/threads";
 import { partitionThreads } from "@/lib/thread-state";
 import { Card, CardHeader, EmptyState, Badge, ProgressBar, Avatar } from "@/components/ui";
+import { CollapsibleCompleted } from "@/components/collapsible-completed";
 import { PortalTaskRow } from "./portal-task-row";
 import { PortalMessageBox } from "./portal-message-box";
 import { ThreadPreviewList } from "@/components/thread-list";
@@ -200,7 +201,7 @@ export default async function PortalHome() {
 
           {completed.length > 0 ? (
             <Card>
-              <CardHeader title="Completed" />
+              <CollapsibleCompleted count={completed.length} flush>
               <div className="space-y-1 pb-2">
                 {doneGroups.map((g) => (
                   <div key={"done-" + g.label + g.items[0]?.id} className="border-b border-border last:border-b-0">
@@ -238,6 +239,7 @@ export default async function PortalHome() {
                   </div>
                 ))}
               </div>
+              </CollapsibleCompleted>
             </Card>
           ) : null}
         </div>

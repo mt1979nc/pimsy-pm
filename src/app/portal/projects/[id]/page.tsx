@@ -11,6 +11,7 @@ import {
 import { listInboxThreads } from "@/lib/threads";
 import { partitionThreads } from "@/lib/thread-state";
 import { Card, CardHeader, EmptyState, Badge, Avatar, ProgressBar } from "@/components/ui";
+import { CollapsibleCompleted } from "@/components/collapsible-completed";
 import { PortalTaskRow } from "../../portal-task-row";
 import { PortalMessageBox } from "../../portal-message-box";
 import { ThreadPreviewList } from "@/components/thread-list";
@@ -213,7 +214,7 @@ export default async function PortalProjectPage({
 
           {doneCount > 0 ? (
             <Card>
-              <CardHeader title="Completed" />
+              <CollapsibleCompleted count={doneCount} flush>
               <div className="space-y-1 pb-2">
                 {openByPhase.map(({ phase, done }) =>
                   done.length === 0 ? null : (
@@ -268,6 +269,7 @@ export default async function PortalProjectPage({
                   </div>
                 ) : null}
               </div>
+              </CollapsibleCompleted>
             </Card>
           ) : null}
 
