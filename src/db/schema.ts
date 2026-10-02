@@ -112,7 +112,7 @@ export const projectMemberRoleEnum = pgEnum("project_member_role", [
   "CONTRIBUTOR",
   "OBSERVER",
   "CUSTOMER_CONTACT",
-  /** v1.9 staffing roles — keep the v1.8.1 values above as aliases. */
+  /** v1.9 staffing roles. v1.8.1 SPECIALIST / RCM / BILLING_SUPPORT stay for existing rows; new writes use these names. */
   "IMPLEMENTATION_SPECIALIST",
   "T1_BILLING_SUPPORT",
   "T2_BILLING_SUPPORT",

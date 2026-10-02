@@ -8,6 +8,7 @@
 
 import type { CeoStatus } from "@/db/schema";
 import { mentionPlainText } from "@/lib/mentions";
+import { canonicalStaffingRole } from "@/lib/staffing";
 
 export const CEO_STATUSES = [
   "NOT_YET_STARTED",
@@ -58,12 +59,11 @@ export function ceoProductType(input: {
   return "EHR";
 }
 
-/** Project-member roles that count as the sheet's Assigned IS. */
-const ASSIGNED_IS_ROLES = new Set([
-  "IMPLEMENTATION_SPECIALIST",
-  "SPECIALIST",
-  "LEAD",
-]);
+/** Lead, or a member whose project role is the implementation specialist (including the v1.8.1 alias). */
+function isAssignedIsMemberRole(role: string): boolean {
+  if (role === "LEAD") return true;
+  return canonicalStaffingRole(role) === "IMPLEMENTATION_SPECIALIST";
+}
 
 type BookPerson = {
   id: string;
@@ -99,7 +99,7 @@ export function assignedImplementationSpecialists(input: {
   const extras = input.members
     .filter((member) => {
       if (!member.user || member.user.role === "CUSTOMER") return false;
-      return ASSIGNED_IS_ROLES.has(member.role);
+      return isAssignedIsMemberRole(member.role);
     })
     .map((member) => member.user!)
     .sort((a, b) => personLabel(a).localeCompare(personLabel(b)));

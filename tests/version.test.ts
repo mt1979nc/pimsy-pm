@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.10");
+    expect(APP_VERSION).toBe("1.18.11");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,33 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.11 shared portal nav and deprecation cleanup", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.11");
+    expect(note?.summary).toMatch(/Areas nav/);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /CustomerAreaNav/.test(h) && /\/portal\/learn/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /portal-contacts-panel/.test(h) && /InviteContactForm/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /shouldFanOutWizardWorkbook/.test(h) && /shouldAttachWizardWorkbook/.test(h))).toBe(
+      true,
+    );
+    expect(
+      note?.highlights?.some(
+        (h) => /IMPLEMENTATION_SPECIALIST/.test(h) && /SPECIALIST/.test(h) && /enum/.test(h),
+      ),
+    ).toBe(true);
+    expect(
+      note?.highlights?.some(
+        (h) => /learning-center-catalog\.ts/.test(h) && /dock-parity\.test\.ts/.test(h),
+      ),
+    ).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.10")).toBeTruthy();
   });
 
   it("documents v1.18.10 cutover banner, queue chips, and Prism nav", () => {

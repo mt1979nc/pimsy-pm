@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/guard";
 import { portalProject, portalPhaseTabs } from "@/lib/portal";
 import { Badge } from "@/components/ui";
-import { SideNavLink } from "@/components/nav-link";
+import { CustomerAreaNav } from "@/components/customer-area-nav";
 import { fmtDate, daysUntil } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
@@ -55,22 +55,18 @@ export default async function PortalProjectLayout({
 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
         <aside className="w-full shrink-0 lg:sticky lg:top-4 lg:w-[220px]">
-          <nav className="rounded-xl border border-border bg-surface p-2">
-            <div className="px-2.5 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-              Areas
-            </div>
-            <SideNavLink href={`/portal/projects/${id}`}>Overview</SideNavLink>
-            <SideNavLink href={`/portal/projects/${id}/about`}>About</SideNavLink>
-            <SideNavLink href="/portal/learn">Learning Center</SideNavLink>
-            {phaseTabs.map((phase) => (
-              <SideNavLink key={phase.id} href={`/portal/projects/${id}/phases/${phase.id}`}>
-                {phase.name}
-              </SideNavLink>
-            ))}
-            <div className="my-2 border-t border-border" />
-            <SideNavLink href={`/portal/projects/${id}/recordings`}>Recordings</SideNavLink>
-            <SideNavLink href={`/portal/projects/${id}/messages`}>Messages</SideNavLink>
-          </nav>
+          <CustomerAreaNav
+            overviewHref={`/portal/projects/${id}`}
+            aboutHref={`/portal/projects/${id}/about`}
+            learnHref="/portal/learn"
+            phases={phaseTabs.map((phase) => ({
+              id: phase.id,
+              name: phase.name,
+              href: `/portal/projects/${id}/phases/${phase.id}`,
+            }))}
+            recordingsHref={`/portal/projects/${id}/recordings`}
+            messagesHref={`/portal/projects/${id}/messages`}
+          />
         </aside>
         <div className="min-w-0 flex-1">{children}</div>
       </div>

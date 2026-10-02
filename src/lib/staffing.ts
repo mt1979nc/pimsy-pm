@@ -3,8 +3,9 @@
  *
  * App-level roles (OWNER / ADMIN / SPECIALIST / …) stay as they are. These
  * values live on `project_member.role` and optionally `user.staffingRole`.
- * v1.8.1 shipped SPECIALIST / RCM / BILLING_SUPPORT — those remain valid
- * aliases so existing memberships and WIP imports keep working.
+ * v1.8.1 shipped SPECIALIST / RCM / BILLING_SUPPORT. Those stay as a read
+ * path for rows already stored. New writes use the canonical names below.
+ * No schema migrate — the enum values are not dropped in this release.
  */
 
 import type { ProjectMemberRole } from "@/db/schema";
@@ -21,8 +22,13 @@ export const STAFFING_ROLES = [
 
 export type StaffingRole = (typeof STAFFING_ROLES)[number];
 
-/** Legacy v1.8.1 values that still appear on live rows. */
-export const LEGACY_STAFFING_ALIASES = {
+/**
+ * Read path only. Live `project_member.role` rows may still say SPECIALIST,
+ * RCM, or BILLING_SUPPORT. Do not add new call sites — use
+ * `canonicalStaffingRole` or `userIdForStaffingRole`. Drop this map after
+ * those rows are rewritten. Not exported.
+ */
+const LEGACY_STAFFING_ALIASES = {
   SPECIALIST: "IMPLEMENTATION_SPECIALIST",
   RCM: "RCM_IMPLEMENTATION_SPECIALIST",
   BILLING_SUPPORT: "T1_BILLING_SUPPORT",
@@ -74,24 +80,46 @@ export const MANAGER_OVERVIEW_ROLES: readonly StaffingRole[] = [
   "SUPPORT_DIRECTOR",
 ];
 
+/** Roles a project member form may store. Legacy aliases are rewritten, not listed. */
 export const ASSIGNABLE_PROJECT_ROLES: readonly ProjectMemberRole[] = [
   "LEAD",
-  "IMPLEMENTATION_SPECIALIST",
-  "T1_BILLING_SUPPORT",
-  "T2_BILLING_SUPPORT",
-  "RCM_IMPLEMENTATION_SPECIALIST",
-  "RCM_MANAGER",
-  "IMPLEMENTATION_DIRECTOR",
-  "SUPPORT_DIRECTOR",
-  "SPECIALIST",
-  "RCM",
-  "BILLING_SUPPORT",
+  ...STAFFING_ROLES,
   "CONTRIBUTOR",
   "OBSERVER",
   "CUSTOMER_CONTACT",
   "CUSTOMER_PROJECT_LEAD",
   "CUSTOMER_BILLING",
 ];
+
+/**
+ * Canonical role for a new write. SPECIALIST / RCM / BILLING_SUPPORT become
+ * the v1.9 names. Unknown strings return null.
+ */
+export function normalizeAssignableProjectRole(
+  raw: string | null | undefined,
+): ProjectMemberRole | null {
+  const value = (raw ?? "").trim();
+  if (!value) return null;
+  const canonical = canonicalStaffingRole(value);
+  if (canonical) return canonical;
+  if ((ASSIGNABLE_PROJECT_ROLES as readonly string[]).includes(value)) {
+    return value as ProjectMemberRole;
+  }
+  return null;
+}
+
+/** Roster id for a canonical staffing role, including a legacy assignment key. */
+export function userIdForStaffingRole(
+  assignments: Record<string, string | null | undefined>,
+  role: StaffingRole,
+): string | null {
+  const direct = assignments[role];
+  if (direct) return direct;
+  for (const [alias, target] of Object.entries(LEGACY_STAFFING_ALIASES)) {
+    if (target === role && assignments[alias]) return assignments[alias];
+  }
+  return null;
+}
 
 export function canonicalStaffingRole(
   role: string | null | undefined,
@@ -141,16 +169,14 @@ export function roleAssignmentKeys(role: string | null | undefined): string[] {
   return [...keys];
 }
 
-/** Persist / parse a template task's default assignee role (never a user id). */
+/**
+ * Persist / parse a template task's default assignee role (never a user id).
+ * Legacy staffing aliases are stored as the canonical role.
+ */
 export function parseTemplateDefaultRole(
   raw: string | null | undefined,
 ): ProjectMemberRole | null {
-  const value = (raw ?? "").trim();
-  if (!value) return null;
-  if ((ASSIGNABLE_PROJECT_ROLES as readonly string[]).includes(value)) {
-    return value as ProjectMemberRole;
-  }
-  return null;
+  return normalizeAssignableProjectRole(raw);
 }
 
 export function isCustomerTemplateRole(role: string | null | undefined): boolean {

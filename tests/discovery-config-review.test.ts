@@ -94,6 +94,7 @@ describe("Discovery → Configuration review helpers", () => {
     expect(client).not.toMatch(/from ["']@\/lib\/discovery-config-review-tasks["']/);
     const actions = readFileSync(resolve(process.cwd(), "src/actions/attachments.ts"), "utf8");
     expect(actions).toMatch(/shouldFanOutWizardWorkbook/);
+    expect(src).not.toMatch(/shouldAttachWizardWorkbook/);
     expect(actions).toMatch(/attachWizardWorkbookToConfiguration/);
     expect(actions).toMatch(/spawnConfigurationReviewTasks/);
     const webhook = readFileSync(

@@ -16,7 +16,7 @@ import {
   VisibilityBadge,
 } from "@/components/ui";
 import { ProjectRow, ProjectListHeader } from "@/components/project-row";
-import { PortalContactsPanel, ToggleContactActive, ResendContactInvite } from "./invite-contact-form";
+import { PortalContactsPanel, ToggleContactActive, ResendContactInvite } from "./portal-contacts-panel";
 import { EditContactForm } from "./edit-contact-form";
 import { ConfirmDeleteForm } from "@/components/confirm-delete";
 import { deleteCustomer } from "@/actions/customers";

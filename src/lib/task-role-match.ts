@@ -9,7 +9,7 @@
  * existing assignees (including a previous specialist or customer lead).
  */
 
-import { canonicalStaffingRole, roleAssignmentKeys } from "@/lib/staffing";
+import { canonicalStaffingRole, roleAssignmentKeys, userIdForStaffingRole } from "@/lib/staffing";
 
 export type AutoAssignKind =
   | "STAFF_ALL"
@@ -34,7 +34,6 @@ export function isBillingRelatedTask(
 ): boolean {
   const role = canonicalStaffingRole(task.defaultRole);
   if (role === "T1_BILLING_SUPPORT" || role === "T2_BILLING_SUPPORT") return true;
-  if (task.defaultRole === "BILLING_SUPPORT") return true;
   const phase = (phaseName ?? "").toLowerCase();
   if (phase.includes("billing")) return true;
   if (BILLING_TITLE.test(task.title.toLowerCase())) return true;
@@ -187,12 +186,11 @@ export function staffingIdsFromAssignments(assignments: Record<string, string>):
 } {
   return {
     specialistId:
-      assignments.IMPLEMENTATION_SPECIALIST ||
-      assignments.SPECIALIST ||
+      userIdForStaffingRole(assignments, "IMPLEMENTATION_SPECIALIST") ||
       assignments.LEAD ||
       null,
-    billingSupportId: assignments.T1_BILLING_SUPPORT || assignments.BILLING_SUPPORT || null,
-    t2BillingId: assignments.T2_BILLING_SUPPORT || null,
+    billingSupportId: userIdForStaffingRole(assignments, "T1_BILLING_SUPPORT"),
+    t2BillingId: userIdForStaffingRole(assignments, "T2_BILLING_SUPPORT"),
     customerLeadId: assignments.CUSTOMER_PROJECT_LEAD || null,
     customerBillingId: assignments.CUSTOMER_BILLING || null,
   };
