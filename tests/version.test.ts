@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.18");
+    expect(APP_VERSION).toBe("1.18.19");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,18 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.19 executive comments and the spreadsheet sync", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.19");
+    expect(note?.summary).toMatch(/0028_ceo_comments/);
+    expect(note?.summary).not.toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /ceoComments/.test(h) && /status update/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /db:sync:executive-sheet/.test(h) && /--apply/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /crmAcronym/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Assigned IS/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /DATABASE_URL/.test(h) && /db:migrate/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.18")).toBeTruthy();
   });
 
   it("documents v1.18.18 customer logos", () => {

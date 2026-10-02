@@ -22,8 +22,8 @@ export default async function ExecutiveBookPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-3xl text-[13px] leading-relaxed text-ink-2">
           The CEO implementation sheet, read from PATH. Name, abbreviation, product, go-live
-          dates, assigned specialist, and the latest project update are live. Contract date,
-          expected ARR, and status are saved here. Click a column heading to sort. Empty cells
+          dates, and assigned specialist are live. Contract date, expected ARR, status, and
+          comments are saved on the project. Click a column heading to sort. Empty cells
           stay blank. Pipeline and cancelled
           sites stay on Roster.
         </p>

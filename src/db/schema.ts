@@ -650,6 +650,11 @@ export const projects = pgTable(
     /** Annual recurring revenue in dollars, e.g. 32400.00 or 6973.46. */
     expectedArr: numeric("expected_arr", { precision: 12, scale: 2 }),
     ceoStatus: ceoStatusEnum("ceo_status"),
+    /**
+     * Executive Comments cell. Staff edit it on the CEO book, or the sheet
+     * sync fills it. Not the latest status update.
+     */
+    ceoComments: text("ceo_comments"),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

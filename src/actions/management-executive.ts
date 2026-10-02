@@ -6,14 +6,14 @@ import type { ActionState } from "@/actions/messages";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { audit } from "@/lib/audit";
-import { isCeoStatusToken, parseCeoStatus, parseExpectedArr } from "@/lib/ceo-book";
+import { isCeoStatusToken, parseCeoComments, parseCeoStatus, parseExpectedArr } from "@/lib/ceo-book";
 import { parseDateInput } from "@/lib/dates";
 import { requirePortfolioAccess } from "@/lib/guard";
 import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
 
 /**
- * Save the three CEO-sheet cells PATH does not already derive:
- * contract date, expected ARR, and CEO status.
+ * Save the CEO-sheet cells stored on the project:
+ * contract date, expected ARR, CEO status, and comments.
  */
 export async function updateCeoBookFields(
   _prev: ActionState,
@@ -37,6 +37,8 @@ export async function updateCeoBookFields(
   const statusRaw = formData.get("ceoStatus")?.toString() ?? "";
   if (!isCeoStatusToken(statusRaw)) return { error: "Pick a status from the list." };
   const ceoStatus = parseCeoStatus(statusRaw);
+  const hasComments = formData.has("ceoComments");
+  const ceoComments = hasComments ? parseCeoComments(formData.get("ceoComments")?.toString()) : undefined;
 
   const [project] = await db
     .select({
@@ -59,6 +61,7 @@ export async function updateCeoBookFields(
       contractDate,
       expectedArr: arr.value,
       ceoStatus,
+      ...(hasComments ? { ceoComments } : {}),
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId));
@@ -73,6 +76,7 @@ export async function updateCeoBookFields(
       contractDate: contractDate?.toISOString() ?? null,
       expectedArr: arr.value,
       ceoStatus,
+      ...(hasComments ? { ceoComments } : {}),
     },
   });
 
