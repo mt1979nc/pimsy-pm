@@ -168,7 +168,7 @@ export default async function ManagementHubPage() {
                 href="/management/engagements?status=pipeline"
                 className="text-[12.5px] font-medium text-brand hover:underline"
               >
-                Engagements →
+                Roster →
               </Link>
             }
           />

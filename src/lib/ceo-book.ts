@@ -40,22 +40,43 @@ const UNSET_STATUS_RANK = 4;
 export type CeoProductType = "EHR" | "RCM" | "EHR+RCM";
 
 /**
- * Sheet product type from the playbook path and whether the site has an RCM track.
+ * Sheet product type from every product already on the site.
  *
- * RCM-only: RCM legacy, or a Prism RCM path that has no EHR tasks.
- * EHR+RCM: EHR+RCM path, Add RCM onto an EHR site, or any other RCM track.
- * Otherwise EHR.
+ * Add RCM rewrites `playbookPath` to RCM_PRISM. That last write is not the
+ * product list. EHR stays in play when the path is EHR / EHR+RCM, EHR tasks
+ * exist, or RCM was attached onto this project (`sourceProjectId`). RCM stays
+ * in play when `hasRcmTrack` is set or the path is an RCM playbook.
+ *
+ * Both → EHR+RCM. RCM with no EHR signal → RCM. Otherwise EHR.
  */
 export function ceoProductType(input: {
   playbookPath?: string | null;
   hasRcmTrack: boolean;
   ehrTaskCountTotal?: number | null;
+  /** True when Add RCM attached onto this project (`projects.sourceProjectId`). */
+  rcmAddedOntoSite?: boolean;
 }): CeoProductType {
   const path = input.playbookPath ?? null;
   const ehrTasks = input.ehrTaskCountTotal ?? 0;
-  if (path === "RCM_LEGACY") return "RCM";
-  if (path === "RCM_PRISM" && ehrTasks === 0) return "RCM";
-  if (input.hasRcmTrack || path === "EHR_RCM") return "EHR+RCM";
+  const hasRcm =
+    input.hasRcmTrack || path === "EHR_RCM" || path === "RCM_LEGACY" || path === "RCM_PRISM";
+  const hasEhr =
+    path === "EHR" ||
+    path === "EHR_RCM" ||
+    ehrTasks > 0 ||
+    Boolean(input.rcmAddedOntoSite);
+  if (hasEhr && hasRcm) return "EHR+RCM";
+  if (hasRcm) return "RCM";
+  return "EHR";
+}
+
+/** Customer card: any EHR project plus any RCM project is EHR+RCM, not the last row. */
+export function combineCeoProductTypes(types: readonly CeoProductType[]): CeoProductType | null {
+  if (types.length === 0) return null;
+  const hasEhr = types.some((type) => type === "EHR" || type === "EHR+RCM");
+  const hasRcm = types.some((type) => type === "RCM" || type === "EHR+RCM");
+  if (hasEhr && hasRcm) return "EHR+RCM";
+  if (hasRcm) return "RCM";
   return "EHR";
 }
 

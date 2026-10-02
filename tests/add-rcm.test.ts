@@ -118,7 +118,8 @@ describe("Add RCM eligibility (mid-implementation)", () => {
       "utf8",
     );
     expect(list).toMatch(/projectHasRcmTrack/);
-    expect(list).toMatch(/Badge tone="maroon">RCM/);
+    expect(list).toMatch(/ceoProductType/);
+    expect(list).toMatch(/productType === "EHR" \? "slate" : "maroon"/);
     expect(about).toMatch(/projectHasRcmTrack/);
     expect(about).toMatch(/hasRcm=/);
     expect(kickoff).toMatch(/hasRcm/);

@@ -1,13 +1,12 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireStaff } from "@/lib/guard";
 import { canSeePortfolio, canManageTemplates } from "@/lib/authz";
 import { unreadThreadCount } from "@/lib/threads";
-import { NavLink } from "@/components/nav-link";
+import { StaffSidebar } from "@/components/staff-sidebar";
 import { StaffUtilityBar } from "@/components/staff-utility-bar";
 import { APP_VERSION } from "@/lib/version";
-import { PRODUCT_EXPANSION, PRODUCT_NAME, PRISM_MODULE_NAME } from "@/lib/brand";
-import { ADMIN_AREA_HREF, ADMIN_AREA_LABEL, PRISM_NAV } from "@/lib/area-nav";
+import { PRODUCT_EXPANSION, PRODUCT_NAME } from "@/lib/brand";
+import { staffSidebarSections } from "@/lib/staff-sidebar";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const actor = await requireStaff();
   if (actor.mustChangePassword) redirect("/change-password");
   const unread = await unreadThreadCount(actor);
+  const showPortfolio = canSeePortfolio(actor);
 
   return (
     <div className="flex min-h-screen bg-bg">
@@ -30,62 +30,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2.5 py-2">
-          <NavLink href="/dashboard">Dashboard</NavLink>
-          <NavLink href="/my-work">My work</NavLink>
-          <NavLink href="/inbox" badge={unread}>
-            Inbox
-          </NavLink>
-
-          <div className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-            Delivery
-          </div>
-          <NavLink href="/projects">Projects</NavLink>
-          <NavLink href="/customers">Customers</NavLink>
-
-          {canSeePortfolio(actor) ? (
-            <>
-              <div className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-                Leadership
-              </div>
-              <NavLink href={ADMIN_AREA_HREF}>{ADMIN_AREA_LABEL}</NavLink>
-              <NavLink href="/reports" exact>
-                Portfolio
-              </NavLink>
-              <NavLink href="/reports/waiting-on">Waiting on</NavLink>
-
-              <div className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-                {PRISM_MODULE_NAME}
-              </div>
-              {PRISM_NAV.map((item) => (
-                <NavLink key={item.href} href={item.href} exact={item.exact}>
-                  {item.label}
-                </NavLink>
-              ))}
-            </>
-          ) : null}
-
-          <div className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-            Setup
-          </div>
-          {canManageTemplates(actor) ? (
-            <>
-              <NavLink href="/templates">Templates</NavLink>
-              <NavLink href="/library">File library</NavLink>
-            </>
-          ) : null}
-          <NavLink href="/learning">Learning Center</NavLink>
-          <NavLink href="/updates">What&apos;s new</NavLink>
-          <NavLink href="/settings">Settings</NavLink>
-        </nav>
+        <StaffSidebar
+          sections={staffSidebarSections({
+            unread,
+            showPortfolio,
+            showTemplates: canManageTemplates(actor),
+          })}
+        />
 
         <div className="border-t border-border p-2.5">
-          <Link
-            href="/updates"
-            className="block rounded-lg px-2 py-1 text-[11.5px] text-ink-3 hover:bg-surface-2 hover:text-ink"
-          >
-            v{APP_VERSION} · What&apos;s new
-          </Link>
+          <p className="px-2 py-1 text-[11.5px] text-ink-3">v{APP_VERSION}</p>
         </div>
       </aside>
 
@@ -95,7 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           email={actor.email}
           role={actor.role}
           unread={unread}
-          showWeekly={canSeePortfolio(actor)}
+          showWeekly={showPortfolio}
         />
         <main className="min-w-0 flex-1 px-4 pb-16 pt-4 sm:px-6 md:pt-6 lg:px-8">
           <div className="mx-auto w-full max-w-[1180px] has-[[data-page-width=full]]:max-w-none">

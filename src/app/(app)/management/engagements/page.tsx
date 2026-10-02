@@ -6,7 +6,7 @@ import { PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
 import { cn } from "@/lib/cn";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Engagements — Prism" };
+export const metadata = { title: "Roster" };
 
 const FILTERS: Array<{ key: "all" | PrismStatus; label: string }> = [
   { key: "all", label: "All" },
@@ -56,7 +56,7 @@ export default async function ManagementEngagementsPage({
       </div>
       <Card className="min-w-0">
         <CardHeader
-          title={filter === "all" ? "Engagements" : PRISM_STATUS_LABELS[filter]}
+          title={filter === "all" ? "Roster" : PRISM_STATUS_LABELS[filter]}
           subtitle={
             filter === "pipeline"
               ? "Not counted in weekly hours."

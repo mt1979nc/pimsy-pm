@@ -9,6 +9,7 @@ import {
   assignedImplementationSpecialists,
   ceoCommentText,
   ceoProductType,
+  combineCeoProductTypes,
   compareCeoBookRows,
   expectedArrInputValue,
   formatAssignedIs,
@@ -42,6 +43,30 @@ describe("CEO executive book", () => {
     );
     expect(ceoProductType({ playbookPath: "RCM_LEGACY", hasRcmTrack: true, ehrTaskCountTotal: 0 })).toBe("RCM");
     expect(ceoProductType({ playbookPath: "RCM_PRISM", hasRcmTrack: true, ehrTaskCountTotal: 0 })).toBe("RCM");
+    // Add RCM rewrites the path to RCM_PRISM and stamps sourceProjectId. EHR stays.
+    expect(
+      ceoProductType({
+        playbookPath: "RCM_PRISM",
+        hasRcmTrack: true,
+        ehrTaskCountTotal: 0,
+        rcmAddedOntoSite: true,
+      }),
+    ).toBe("EHR+RCM");
+    // EHR tasks added onto an RCM-only path.
+    expect(ceoProductType({ playbookPath: "RCM_LEGACY", hasRcmTrack: true, ehrTaskCountTotal: 3 })).toBe(
+      "EHR+RCM",
+    );
+    expect(ceoProductType({ playbookPath: "RCM_PRISM", hasRcmTrack: true, ehrTaskCountTotal: 1 })).toBe(
+      "EHR+RCM",
+    );
+  });
+
+  it("combines product types across a customer's projects", () => {
+    expect(combineCeoProductTypes([])).toBeNull();
+    expect(combineCeoProductTypes(["EHR", "EHR"])).toBe("EHR");
+    expect(combineCeoProductTypes(["RCM"])).toBe("RCM");
+    expect(combineCeoProductTypes(["EHR", "RCM"])).toBe("EHR+RCM");
+    expect(combineCeoProductTypes(["EHR+RCM", "EHR"])).toBe("EHR+RCM");
   });
 
   it("wires Assigned IS from the project lead and IS-role members", () => {
@@ -147,6 +172,8 @@ describe("CEO executive book", () => {
     expect(query).toMatch(/targetGoLiveDate/);
     expect(query).toMatch(/actualGoLiveDate/);
     expect(query).toMatch(/projectHasRcmTrack/);
+    expect(query).toMatch(/sourceProjectId/);
+    expect(query).toMatch(/rcmAddedOntoSite/);
     expect(query).toMatch(/statusUpdates/);
     expect(query).toMatch(/crmAcronym/);
     expect(layout).toMatch(/PrismNav/);

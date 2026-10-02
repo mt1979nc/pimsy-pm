@@ -194,7 +194,7 @@ export default async function ManagementForecastPage() {
           subtitle="Active and pre-kickoff. A slip stretches the window and drops weekly hours unless custom hrs/wk is set."
           action={
             <Link href="/management/engagements" className="text-[12.5px] font-medium text-brand hover:underline">
-              Engagements →
+              Roster →
             </Link>
           }
         />

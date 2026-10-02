@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.14");
+    expect(APP_VERSION).toBe("1.18.15");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,20 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.15 sidebar sections and the Roster title", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.15");
+    expect(note?.summary).toMatch(/Day-to-day project work/);
+    expect(note?.summary).toMatch(/Implementation Dashboard/);
+    expect(note?.summary).toMatch(/Roster/);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /localStorage|this browser/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /No Engagements item/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /\/management\/engagements/.test(h) && /Roster/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /supportHandoffAt/.test(h) && /LIVE/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /EHR\+RCM/.test(h) && /sourceProjectId/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.14")).toBeTruthy();
   });
 
   it("documents v1.18.14 task list punch filter and waiting-on area buckets", () => {
