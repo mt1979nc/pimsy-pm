@@ -174,6 +174,7 @@ export type MemberLoad = {
   image?: string | null;
   capacityHoursPerWeek: number;
   capacityExempt: boolean;
+  canLead?: boolean;
   isDirector?: boolean;
   thisWeekHours: number;
   peakHours?: number;

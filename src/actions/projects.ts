@@ -744,13 +744,23 @@ export async function recordProjectSlip(
   }
 
   const sourceRaw = formData.get("slipSource")?.toString();
-  const source = sourceRaw === "weekly" || sourceRaw === "management" ? sourceRaw : "settings";
+  const source =
+    sourceRaw === "weekly" || sourceRaw === "management" || sourceRaw === "capacity"
+      ? sourceRaw
+      : "settings";
+  const approveRaw = formData.get("approveGoLive")?.toString();
+  if (approveRaw !== "yes" && approveRaw !== "no") {
+    return { error: "Confirm whether to update the go-live date." };
+  }
   const fields = slipFieldsFromForm(formData);
   const result = await applyRequiredProjectSlip({
     actor,
     projectId,
     ...fields,
     source,
+    approveGoLive: approveRaw === "yes",
+    weekdayGoLive: true,
+    preferMonday: Boolean(fields.slipDaysRaw?.trim()),
   });
   if (!result.ok) return { error: result.error };
 
@@ -1534,28 +1544,31 @@ export async function deleteSlipEvent(slipId: string): Promise<ActionState> {
     };
   }
 
+  const applied = slip.goLiveApplied !== false;
   const previousGoLive = project.targetGoLiveDate ? new Date(project.targetGoLiveDate) : null;
   const restoredGoLive = new Date(slip.fromDate);
   const kickoff = project.startDate ? new Date(project.startDate) : null;
 
-  await db
-    .update(projects)
-    .set({ targetGoLiveDate: restoredGoLive, updatedAt: new Date() })
-    .where(eq(projects.id, slip.projectId));
+  if (applied) {
+    await db
+      .update(projects)
+      .set({ targetGoLiveDate: restoredGoLive, updatedAt: new Date() })
+      .where(eq(projects.id, slip.projectId));
 
-  const cascadePlan = shouldCascadeReschedule({
-    previousKickoff: kickoff,
-    previousGoLive,
-    nextKickoff: kickoff,
-    nextGoLive: restoredGoLive,
-  });
-  if (cascadePlan.cascade && cascadePlan.next) {
-    await cascadeRescheduleProject({
-      projectId: slip.projectId,
-      templateId: project.templateId,
-      previous: cascadePlan.previous,
-      next: cascadePlan.next,
+    const cascadePlan = shouldCascadeReschedule({
+      previousKickoff: kickoff,
+      previousGoLive,
+      nextKickoff: kickoff,
+      nextGoLive: restoredGoLive,
     });
+    if (cascadePlan.cascade && cascadePlan.next) {
+      await cascadeRescheduleProject({
+        projectId: slip.projectId,
+        templateId: project.templateId,
+        previous: cascadePlan.previous,
+        next: cascadePlan.next,
+      });
+    }
   }
 
   await db.delete(slipEvents).where(eq(slipEvents.id, slip.id));
@@ -1565,13 +1578,16 @@ export async function deleteSlipEvent(slipId: string): Promise<ActionState> {
     action: "project.go_live.slip_deleted",
     entityType: "project",
     entityId: slip.projectId,
-    summary: `${project.code}: slip undone (${slip.days > 0 ? "+" : ""}${slip.days}d)`,
+    summary: applied
+      ? `${project.code}: slip undone (${slip.days > 0 ? "+" : ""}${slip.days}d)`
+      : `${project.code}: unapplied slip removed`,
     metadata: {
       slipId: slip.id,
       days: slip.days,
       fromDate: slip.fromDate,
       toDate: slip.toDate,
-      restoredGoLive,
+      goLiveApplied: applied,
+      restoredGoLive: applied ? restoredGoLive : null,
     },
   });
 

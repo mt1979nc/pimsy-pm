@@ -554,6 +554,13 @@ export const projects = pgTable(
      */
     prismStatus: text("prism_status"),
     prismNote: text("prism_note"),
+    /**
+     * Recorded Prism capacity phase (kickoff / discovery / config / training /
+     * pregolive / complete). Null until someone picks it on Team capacity.
+     * The model guess is not stored.
+     */
+    currentPhase: text("current_phase"),
+    phaseRecordedAt: timestamp("phase_recorded_at", { withTimezone: true }),
 
     startDate: timestamp("start_date", { withTimezone: true }),
     /**
@@ -726,6 +733,11 @@ export const slipEvents = pgTable(
     days: integer("days").notNull(),
     cause: slipCauseEnum("cause"),
     note: text("note"),
+    /**
+     * False when the slip was recorded but the go-live date was left unchanged
+     * (capacity approval declined). Existing rows default to applied.
+     */
+    goLiveApplied: boolean("go_live_applied").notNull().default(true),
     createdById: text("created_by_id").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

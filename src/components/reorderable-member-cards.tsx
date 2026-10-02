@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { CapacityMemberBody, CapacityUnassignedSites } from "@/components/capacity-site-rows";
 import { MemberLoadCard, type MemberLoad } from "@/components/charts";
+import type { CapacitySiteRow } from "@/lib/capacity-phase";
+import { cn } from "@/lib/cn";
 import {
   CAPACITY_MEMBER_CARD_ORDER_KEY,
   moveIdBy,
@@ -51,11 +54,34 @@ function clearDragChrome(root: HTMLElement | null) {
 }
 
 /**
- * Team headroom cards with a browser-local order.
- * Drag the grip, or use Up / Down. Card hours are unchanged.
+ * Team capacity cards with a browser-local order.
+ * Drag the grip, or use Up / Down. Forecast hours on the card stay as calculated.
  * Drag chrome is toggled on the node so a re-render does not cancel the drag.
  */
-export function ReorderableMemberLoadCards({ members }: { members: MemberLoad[] }) {
+function cardBorder(member: MemberLoad): string {
+  if (member.capacityExempt) return "border-border";
+  const cap = member.capacityHoursPerWeek || 0;
+  const weekly = member.thisWeekHours || 0;
+  if (cap > 0 && weekly > cap) return "border-red";
+  if (cap > 0 && weekly > cap * 0.85) return "border-amber";
+  return "border-green";
+}
+
+function showSiteBody(member: MemberLoad, sites: CapacitySiteRow[]): boolean {
+  if (sites.length > 0) return true;
+  return member.canLead !== false && !member.capacityExempt;
+}
+
+export function ReorderableMemberLoadCards({
+  members,
+  sitesByMember,
+  unassignedSites = [],
+}: {
+  members: MemberLoad[];
+  /** Site rows under the specialist who owns them. Omitted on pages that only show headroom. */
+  sitesByMember?: Record<string, CapacitySiteRow[]>;
+  unassignedSites?: CapacitySiteRow[];
+}) {
   const [preferred, setPreferred] = useState<string[] | null>(null);
   const dragIdRef = useRef<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -82,7 +108,8 @@ export function ReorderableMemberLoadCards({ members }: { members: MemberLoad[] 
   }
 
   return (
-    <div ref={gridRef} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <>
+    <div ref={gridRef} className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
       {ordered.map((member, index) => {
         const label = personLabel(member);
         return (
@@ -111,7 +138,9 @@ export function ReorderableMemberLoadCards({ members }: { members: MemberLoad[] 
               commit(reorderIds(ordered.map((item) => item.id), fromId, member.id));
             }}
           >
+            <div className={cn("overflow-hidden rounded-xl border-2 bg-surface", cardBorder(member))}>
             <MemberLoadCard
+              className="rounded-none border-0 shadow-none"
               member={member}
               leading={
                 <div className="flex shrink-0 flex-col items-center gap-0.5">
@@ -163,9 +192,22 @@ export function ReorderableMemberLoadCards({ members }: { members: MemberLoad[] 
                 </div>
               }
             />
+            {sitesByMember && showSiteBody(member, sitesByMember[member.id] ?? []) ? (
+              <CapacityMemberBody
+                memberId={member.id}
+                hoursPerWeek={member.capacityHoursPerWeek}
+                capacityExempt={member.capacityExempt}
+                canLead={member.canLead !== false}
+                isDirector={Boolean(member.isDirector)}
+                sites={sitesByMember[member.id] ?? []}
+              />
+            ) : null}
+            </div>
           </div>
         );
       })}
     </div>
+    <CapacityUnassignedSites sites={unassignedSites} />
+    </>
   );
 }
