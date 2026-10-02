@@ -80,6 +80,9 @@
           --color-red-soft: #2e1817;
           --color-violet: #b39bf5;
           --color-violet-soft: #221c33;
+
+      /* Slate text sits on the dark page. Chip fills stay the light EHR hexes. */
+      --color-ehr-slate: #9db4cc;
     }
 }
 /* end dark-mode override */

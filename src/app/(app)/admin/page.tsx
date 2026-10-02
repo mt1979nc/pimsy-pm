@@ -277,7 +277,7 @@ export default async function AdminOverviewPage() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[12.5px] text-ink">{u.name ?? u.email}</div>
                     </div>
-                    {u.role === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
+                    {u.role === "CUSTOMER" ? <Badge tone="maroon">Customer</Badge> : null}
                     <span className="shrink-0 text-[11.5px] text-ink-3">
                       {fmtRelative(u.lastSeenAt)}
                     </span>

@@ -233,7 +233,7 @@ export function MessageList({
                   {m.author.name}
                   {isMe ? <span className="ml-1 font-normal text-ink-3">(you)</span> : null}
                 </span>
-                {isExternal ? <Badge tone="violet">Customer</Badge> : null}
+                {isExternal ? <Badge tone="maroon">Customer</Badge> : null}
                 <span className="text-[12px] text-ink-3">{fmtRelative(m.createdAt)}</span>
                 {m.editedAt ? <span className="text-[11.5px] text-ink-3">edited</span> : null}
               </div>

@@ -221,12 +221,12 @@ export function TaskRow({
             {nested && task.priority !== "HIGH" && task.priority !== "URGENT" ? null : (
               <PriorityBadge priority={task.priority} />
             )}
-            {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
+            {task.ownerSide === "CUSTOMER" ? <Badge tone="maroon">Customer</Badge> : null}
             {specialistSub ? <Badge tone="amber">Specialist</Badge> : null}
             {showReviewRequiredBadge(task) ? <ReviewRequiredBadge /> : null}
             {optimisticStatus === "BLOCKED" ? <Badge tone="red">Blocked</Badge> : null}
             {na ? <Badge tone="amber">N/A</Badge> : null}
-            {task.workTrack === "RCM" ? <Badge tone="violet">RCM</Badge> : null}
+            {task.workTrack === "RCM" ? <Badge tone="maroon">RCM</Badge> : null}
             {task.connectedNote ? <Badge tone="green">{task.connectedNote}</Badge> : null}
             <CommentCountBadge count={task.commentCount ?? 0} href={href} />
           </div>

@@ -22,10 +22,11 @@ const FILTERS = [
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; health?: string; customer?: string }>;
+  searchParams: Promise<{ status?: string; health?: string; customer?: string; q?: string }>;
 }) {
   const actor = await requireStaff();
   const sp = await searchParams;
+  const q = (sp.q ?? "").trim();
 
   const projects = await listProjects(actor, {
     status: sp.status,
@@ -34,16 +35,36 @@ export default async function ProjectsPage({
     includeArchived: false,
     // “All active” / health chips = Implementation WIP. Completing Hand off
     // to Support sets COMPLETED, which drops the site from this list.
-    openOnly: !sp.status,
+    // A site search includes completed work so the utility bar can find it.
+    openOnly: !sp.status && !q,
   });
 
+  const needle = q.toLowerCase();
+  const visible = needle
+    ? projects.filter((project) =>
+        [project.name, project.code, project.customerAccount?.name]
+          .some((value) => (value ?? "").toLowerCase().includes(needle)),
+      )
+    : projects;
+
   const activeKey = sp.health ? `health=${sp.health}` : sp.status ? `status=${sp.status}` : "";
+
+  function filterHref(key: string) {
+    const params = new URLSearchParams(key);
+    if (q) params.set("q", q);
+    const query = params.toString();
+    return query ? `/projects?${query}` : "/projects";
+  }
 
   return (
     <>
       <PageHeader
         title="Projects"
-        subtitle={`${projects.length} project${projects.length === 1 ? "" : "s"}`}
+        subtitle={
+          q
+            ? `${visible.length} match${visible.length === 1 ? "" : "es"} for “${q}”`
+            : `${visible.length} project${visible.length === 1 ? "" : "s"}`
+        }
         actions={
           canCreateProjects(actor) ? (
             <LinkButton href="/projects/new" variant="primary">
@@ -59,7 +80,7 @@ export default async function ProjectsPage({
         {FILTERS.map((f) => (
           <Link
             key={f.key}
-            href={f.key ? `/projects?${f.key}` : "/projects"}
+            href={filterHref(f.key)}
             className={cn(
               "rounded-lg px-2.5 py-1 text-[13px] font-medium transition-colors",
               activeKey === f.key
@@ -73,16 +94,18 @@ export default async function ProjectsPage({
       </div>
 
       <Card className="overflow-hidden">
-        {projects.length === 0 ? (
+        {visible.length === 0 ? (
           <EmptyState
-            title="No projects here"
+            title={q ? "No sites match" : "No projects here"}
             description={
-              activeKey
-                ? "Nothing matches this filter right now."
-                : "Create your first project to get started."
+              q
+                ? `Nothing matches “${q}”.`
+                : activeKey
+                  ? "Nothing matches this filter right now."
+                  : "Create your first project to get started."
             }
             action={
-              canCreateProjects(actor) ? (
+              canCreateProjects(actor) && !q ? (
                 <LinkButton href="/projects/new" variant="primary" size="sm">
                   New project
                 </LinkButton>
@@ -93,7 +116,7 @@ export default async function ProjectsPage({
           <>
             <ProjectListHeader />
             <div className="divide-y divide-border">
-              {projects.map((p) => (
+              {visible.map((p) => (
                 <ProjectRow key={p.id} project={p} />
               ))}
             </div>

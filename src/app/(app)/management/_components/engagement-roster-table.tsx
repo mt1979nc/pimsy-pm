@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui";
+import { Badge, QuietBlank } from "@/components/ui";
 import { fmtShort } from "@/lib/dates";
 import { formatRosterSlipDays } from "@/lib/engagement-roster";
 import { PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
@@ -25,20 +25,27 @@ export type EngagementRow = {
   slipDays: number;
 };
 
-function statusTone(s: PrismStatus): "green" | "amber" | "neutral" | "violet" {
+function statusTone(s: PrismStatus): "green" | "amber" | "neutral" | "slate" {
   if (s === "active") return "green";
   if (s === "pre-kickoff") return "amber";
-  if (s === "pipeline") return "violet";
+  if (s === "pipeline") return "slate";
   return "neutral";
 }
 
 function ownersLabel(row: EngagementRow) {
-  const primary = row.leadName ?? "—";
+  const primary = row.leadName;
+  if (!primary && !row.coLeadName) return null;
   if (!row.coLeadName) return primary;
+  if (!primary) return row.coLeadName;
   return `${primary} / ${row.coLeadName} (${row.ownerSplitPercent}/${100 - row.ownerSplitPercent})`;
 }
 
-const th = "px-2 py-2 font-semibold";
+function SheetText({ value, label = "Empty" }: { value: string | number | null | undefined; label?: string }) {
+  if (value == null || value === "" || value === "—") return <QuietBlank label={label} />;
+  return <>{value}</>;
+}
+
+const th = "px-2 py-2 font-semibold text-white";
 const td = "px-2 py-2";
 
 export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
@@ -46,7 +53,7 @@ export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
     <div className="min-w-0 w-full">
       <table className="w-full table-fixed border-collapse text-[12.5px]">
         <thead>
-          <tr className="border-b border-border bg-surface-2 text-[11px] uppercase tracking-wide text-ink-3">
+          <tr className="border-b border-[#0d2f4f] bg-[#113c64] text-[11px] uppercase tracking-wide text-white">
             <th className={`${th} w-[5.25rem] text-left`}>Acronym</th>
             <th className={`${th} text-left`}>Customer</th>
             <th className={`${th} w-[8rem] text-left`}>Owner(s)</th>
@@ -67,31 +74,40 @@ export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
             const customer = row.customerName ?? row.name;
             const owners = ownersLabel(row);
             return (
-              <tr key={row.id} className="hover:bg-surface-2/60">
+              <tr key={row.id} className="hover:bg-brand-soft/70">
                 <td className={`${td} truncate font-medium tabular-nums text-ink`} title={row.acronym}>
                   {row.acronym}
                 </td>
                 <td className={`${td} truncate text-ink-2`} title={customer}>
                   {customer}
                 </td>
-                <td className={`${td} truncate text-ink-2`} title={owners}>
-                  {owners}
+                <td className={`${td} truncate text-ink-2`} title={owners ?? undefined}>
+                  <SheetText value={owners} label="No owner" />
                 </td>
                 <td className={`${td} text-right tabular-nums text-ink-2`}>
-                  {row.userCount ?? "—"}
+                  <SheetText value={row.userCount} label="No users" />
                 </td>
                 <td className={`${td} text-right tabular-nums text-ink-2`}>
-                  {row.locationCount ?? "—"}
+                  <SheetText value={row.locationCount} label="No locations" />
                 </td>
                 <td className={`${td} truncate text-ink-2`} title={row.complexityTier ?? undefined}>
-                  {row.complexityTier ?? "—"}
+                  <SheetText value={row.complexityTier} label="No complexity" />
                 </td>
                 <td className={`${td} text-right tabular-nums text-ink-2`}>
-                  {row.displayHours != null ? Number(row.displayHours).toFixed(1) : "—"}
+                  <SheetText
+                    value={row.displayHours != null ? Number(row.displayHours).toFixed(1) : null}
+                    label="No hours"
+                  />
                 </td>
-                <td className={`${td} whitespace-nowrap text-ink-2`}>{fmtShort(row.startDate)}</td>
-                <td className={`${td} whitespace-nowrap text-ink-2`}>{fmtShort(row.initialGoLiveDate)}</td>
-                <td className={`${td} whitespace-nowrap text-ink-2`}>{fmtShort(row.targetGoLiveDate)}</td>
+                <td className={`${td} whitespace-nowrap text-ink-2`}>
+                  <SheetText value={row.startDate ? fmtShort(row.startDate) : null} label="No kickoff" />
+                </td>
+                <td className={`${td} whitespace-nowrap text-ink-2`}>
+                  <SheetText value={row.initialGoLiveDate ? fmtShort(row.initialGoLiveDate) : null} label="No initial go-live" />
+                </td>
+                <td className={`${td} whitespace-nowrap text-ink-2`}>
+                  <SheetText value={row.targetGoLiveDate ? fmtShort(row.targetGoLiveDate) : null} label="No current go-live" />
+                </td>
                 <td className={td}>
                   <div className="flex flex-wrap items-center gap-1">
                     <Badge tone={statusTone(row.effectivePrismStatus)}>
@@ -105,7 +121,7 @@ export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
                   </div>
                 </td>
                 <td className={`${td} text-right tabular-nums text-ink-2`}>
-                  {formatRosterSlipDays(row.slipDays)}
+                  <SheetText value={formatRosterSlipDays(row.slipDays)} label="No slip days" />
                 </td>
                 <td className={`${td} text-right`}>
                   <Link

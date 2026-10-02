@@ -77,7 +77,7 @@ export default async function ProjectLayout({
               <span className="font-mono text-[12px] text-ink-3">{project.code}</span>
               <HealthBadge health={project.health} />
               <ProjectStatusBadge status={project.status} />
-              {hasRcm ? <Badge tone="violet">RCM</Badge> : null}
+              {hasRcm ? <Badge tone="maroon">RCM</Badge> : null}
               {!project.portalEnabled ? <Badge tone="amber">Portal off</Badge> : null}
               {project.onboarded ? <Badge tone="green">Onboarded</Badge> : null}
               {project.excludeFromAnalytics || project.customerAccount?.excludeFromAnalytics ? (
@@ -131,7 +131,7 @@ export default async function ProjectLayout({
                 <ProgressBar
                   value={project.rcmTaskCountDone}
                   total={project.rcmTaskCountTotal}
-                  tone="violet"
+                  tone="maroon"
                   className="mt-1"
                 />
               </div>

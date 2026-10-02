@@ -306,8 +306,8 @@ export default async function DashboardPage() {
             />
             <WaitingOnCustomerList
               tasks={chase}
-              emptyTitle="None"
-              emptyDescription={undefined}
+              emptyTitle="All clear"
+              emptyDescription="No customer actions waiting."
             />
           </Card>
 

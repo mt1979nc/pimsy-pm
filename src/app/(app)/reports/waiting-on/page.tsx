@@ -89,7 +89,7 @@ export default async function WaitingOnReportPage() {
                           <Badge tone="amber">{row.pimsyCount} on PIMSY</Badge>
                         ) : null}
                         {row.customerCount > 0 ? (
-                          <Badge tone="violet">{row.customerCount} on customer</Badge>
+                          <Badge tone="maroon">{row.customerCount} on customer</Badge>
                         ) : null}
                         {row.unknownCount > 0 ? (
                           <Badge>{row.unknownCount} untagged</Badge>

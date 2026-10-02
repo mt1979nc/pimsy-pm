@@ -142,7 +142,7 @@ export default async function ProjectOverviewPage({
                 customerAccount: project.customerAccount,
               },
             }))}
-            emptyTitle="None"
+            emptyTitle="All clear"
             emptyDescription="Assign a customer task to show it here."
             showProject={false}
             showStatus

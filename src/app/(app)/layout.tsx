@@ -4,8 +4,7 @@ import { requireStaff } from "@/lib/guard";
 import { canSeePortfolio, canManageTemplates } from "@/lib/authz";
 import { unreadThreadCount } from "@/lib/threads";
 import { NavLink } from "@/components/nav-link";
-import { SignOutButton } from "@/components/sign-out-button";
-import { Avatar } from "@/components/ui";
+import { StaffUtilityBar } from "@/components/staff-utility-bar";
 import { APP_VERSION } from "@/lib/version";
 import { PRODUCT_EXPANSION, PRODUCT_NAME, PRISM_MODULE_NAME } from "@/lib/brand";
 import { ADMIN_AREA_HREF, ADMIN_AREA_LABEL, PRISM_NAV } from "@/lib/area-nav";
@@ -82,50 +81,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         <div className="border-t border-border p-2.5">
           <Link
-            href="/settings"
-            className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-surface-2"
-          >
-            <Avatar name={actor.name ?? actor.email} size={26} />
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[12.5px] font-medium leading-tight text-ink">
-                {actor.name ?? actor.email}
-              </div>
-              <div className="truncate text-[11.5px] leading-tight capitalize text-ink-3">
-                {actor.role.toLowerCase()}
-              </div>
-            </div>
-          </Link>
-          <Link
             href="/updates"
-            className="mt-0.5 block rounded-lg px-2 py-1 text-[11.5px] text-ink-3 hover:bg-surface-2 hover:text-ink"
+            className="block rounded-lg px-2 py-1 text-[11.5px] text-ink-3 hover:bg-surface-2 hover:text-ink"
           >
             v{APP_VERSION} · What&apos;s new
           </Link>
-          <SignOutButton />
         </div>
       </aside>
 
-      {/* Mobile top bar */}
-      <div className="fixed inset-x-0 top-0 z-20 flex items-center gap-3 border-b border-border bg-surface px-4 py-2.5 md:hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/pimsy-icon-color.png" alt="" className="size-6 shrink-0" />
-        <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-[13px]">
-          <NavLink href="/dashboard">Home</NavLink>
-          <NavLink href="/projects">Projects</NavLink>
-          <NavLink href="/inbox" badge={unread}>
-            Inbox
-          </NavLink>
-          <NavLink href="/my-work">Mine</NavLink>
-          {canSeePortfolio(actor) ? <NavLink href="/management/weekly">Weekly</NavLink> : null}
-          <NavLink href="/updates">New</NavLink>
-        </nav>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <StaffUtilityBar
+          name={actor.name}
+          email={actor.email}
+          role={actor.role}
+          unread={unread}
+          showWeekly={canSeePortfolio(actor)}
+        />
+        <main className="min-w-0 flex-1 px-4 pb-16 pt-4 sm:px-6 md:pt-6 lg:px-8">
+          <div className="mx-auto w-full max-w-[1180px] has-[[data-page-width=full]]:max-w-none">
+            {children}
+          </div>
+        </main>
       </div>
-
-      <main className="min-w-0 flex-1 px-4 pb-16 pt-16 sm:px-6 md:pt-6 lg:px-8">
-        <div className="mx-auto w-full max-w-[1180px] has-[[data-page-width=full]]:max-w-none">
-          {children}
-        </div>
-      </main>
     </div>
   );
 }

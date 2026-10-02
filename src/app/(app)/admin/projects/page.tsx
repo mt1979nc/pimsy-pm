@@ -107,7 +107,7 @@ export default async function AdminProjectsPage({
                             <span className="block truncate font-medium text-ink hover:text-brand">
                               {p.customerAccount?.name ?? "Internal"}
                             </span>
-                            {hasRcm ? <Badge tone="violet">RCM</Badge> : null}
+                            {hasRcm ? <Badge tone="maroon">RCM</Badge> : null}
                           </span>
                           <span className="block truncate text-[12px] text-ink-3">{p.name}</span>
                         </Link>

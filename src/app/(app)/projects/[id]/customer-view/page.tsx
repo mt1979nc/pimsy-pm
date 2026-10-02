@@ -224,7 +224,7 @@ export default async function CustomerViewPreviewPage({
                                 : "Not started"}
                           </span>
                           {t.ownerSide === "CUSTOMER" ? (
-                            <Badge tone="violet">Customer</Badge>
+                            <Badge tone="maroon">Customer</Badge>
                           ) : null}
                           <CommentCountBadge
                             count={t.comments?.length ?? 0}

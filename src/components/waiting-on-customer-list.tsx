@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AreaChip } from "@/components/queue-chips";
 import { Badge, EmptyState } from "@/components/ui";
 import { dueLabel, isOverdue } from "@/lib/dates";
 import {
@@ -39,14 +40,9 @@ export function WaitingOnAreaHighlights({
       className={cn("flex flex-wrap items-center gap-1.5", className)}
       aria-label="Outstanding customer actions by area"
     >
-      {WAITING_ON_HIGHLIGHT_AREAS.map((key) => {
-        const n = counts[key];
-        return (
-          <Badge key={key} tone={n > 0 ? "violet" : "neutral"}>
-            {WAITING_ON_AREA_LABELS[key]} {n}
-          </Badge>
-        );
-      })}
+      {WAITING_ON_HIGHLIGHT_AREAS.map((key) => (
+        <AreaChip key={key} area={key} count={counts[key]} />
+      ))}
       {showOther ? <Badge>{WAITING_ON_AREA_LABELS.other} {counts.other}</Badge> : null}
     </div>
   );
@@ -139,11 +135,25 @@ export function WaitingOnCustomerList({
       </div>
       {groups.map((group) => (
         <div key={group.key} className="border-b border-border last:border-b-0">
-          <div className="flex items-center justify-between gap-2 bg-surface-2 px-4 py-1.5">
-            <div className="text-[11.5px] font-semibold uppercase tracking-wide text-ink-3">
-              {group.label}
-            </div>
-            <Badge tone={group.key === "other" ? "neutral" : "violet"}>{group.tasks.length}</Badge>
+          <div
+            className={cn(
+              "flex items-center justify-between gap-2 px-4 py-1.5",
+              group.key === "discovery" && "bg-ehr-slate/10",
+              group.key === "configuration" && "bg-ehr-gold/35",
+              group.key === "training" && "bg-ehr-sage-soft",
+              group.key === "other" && "bg-surface-2",
+            )}
+          >
+            {group.key === "other" ? (
+              <>
+                <div className="text-[11.5px] font-semibold uppercase tracking-wide text-ink-3">
+                  {group.label}
+                </div>
+                <Badge>{group.tasks.length}</Badge>
+              </>
+            ) : (
+              <AreaChip area={group.key} count={group.tasks.length} />
+            )}
           </div>
           <div className="divide-y divide-border">
             {group.tasks.map((task) => (

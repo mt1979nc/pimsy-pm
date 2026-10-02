@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardHeader, Badge, Button, VisibilityBadge, EmptyState } from "@/components/ui";
+import { AreaChip } from "@/components/queue-chips";
 import { TaskRow, type TaskRowData } from "@/components/task-row";
 import { TaskListToolbar } from "@/components/task-list-toolbar";
 import { CollapsibleCompleted } from "@/components/collapsible-completed";
@@ -17,6 +18,7 @@ import { PhaseVisibilityButton } from "@/app/(app)/projects/[id]/tasks/phase-vis
 import type { MoveTaskPhaseOption } from "@/components/move-task-dialog";
 import type { MoveTaskNode } from "@/lib/task-move";
 import { fmtShort } from "@/lib/dates";
+import { classifyWaitingOnArea } from "@/lib/waiting-on-area";
 import {
   excludeCollapsedDescendants,
   filterNestedTasks,
@@ -306,7 +308,7 @@ export function ProjectTaskBoard({
           <Badge>{openCount} open</Badge>
           <Badge tone="green">{doneCount} done</Badge>
           {customerCount > 0 ? (
-            <Badge tone="violet">{customerCount} waiting on customer</Badge>
+            <Badge tone="maroon">{customerCount} waiting on customer</Badge>
           ) : null}
         </div>
         <span className="flex flex-wrap items-center gap-2">
@@ -359,11 +361,15 @@ export function ProjectTaskBoard({
         const sectionDone = isSectionComplete(phase.tasks, {
           sectionNotApplicable: phase.notApplicable,
         });
+        const area = classifyWaitingOnArea(phase.name);
         return (
           <Card key={phase.id}>
             <CardHeader
               title={
                 <span className="flex items-center gap-2">
+                  {area === "discovery" || area === "configuration" || area === "training" ? (
+                    <AreaChip area={area} />
+                  ) : null}
                   {phase.name}
                   {phase.visibility === "INTERNAL" ? (
                     <VisibilityBadge visibility="INTERNAL" />
@@ -373,7 +379,7 @@ export function ProjectTaskBoard({
                   ) : sectionDone ? (
                     <Badge tone="green">Done</Badge>
                   ) : null}
-                  {phase.workTrack === "RCM" ? <Badge tone="violet">RCM</Badge> : null}
+                  {phase.workTrack === "RCM" ? <Badge tone="maroon">RCM</Badge> : null}
                 </span>
               }
               subtitle={
@@ -396,9 +402,9 @@ export function ProjectTaskBoard({
               }
             />
             {filtered.length === 0 ? (
-              <p className="px-5 py-4 text-[13px] text-ink-3">
-                {phase.tasks.length === 0 ? "Nothing in this phase yet." : "No tasks match this filter."}
-              </p>
+              <EmptyState
+                title={phase.tasks.length === 0 ? "Nothing in this phase yet" : "No matches"}
+              />
             ) : (
               <div className="divide-y divide-border">
                 <PhaseTaskRows

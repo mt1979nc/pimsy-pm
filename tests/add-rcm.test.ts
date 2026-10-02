@@ -118,13 +118,13 @@ describe("Add RCM eligibility (mid-implementation)", () => {
       "utf8",
     );
     expect(list).toMatch(/projectHasRcmTrack/);
-    expect(list).toMatch(/Badge tone="violet">RCM/);
+    expect(list).toMatch(/Badge tone="maroon">RCM/);
     expect(about).toMatch(/projectHasRcmTrack/);
     expect(about).toMatch(/hasRcm=/);
     expect(kickoff).toMatch(/hasRcm/);
-    expect(kickoff).toMatch(/Badge tone="violet">On/);
+    expect(kickoff).toMatch(/Badge tone="maroon">On/);
     expect(layout).toMatch(/projectHasRcmTrack/);
-    expect(layout).toMatch(/Badge tone="violet">RCM/);
+    expect(layout).toMatch(/Badge tone="maroon">RCM/);
   });
 
   it("detects a finished Workflow & Handoff phase", () => {

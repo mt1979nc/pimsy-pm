@@ -209,7 +209,7 @@ export default async function ProjectSettingsPage({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="truncate text-[13px] text-ink">{m.user.name}</span>
-                    {m.user.role === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
+                    {m.user.role === "CUSTOMER" ? <Badge tone="maroon">Customer</Badge> : null}
                   </div>
                   <div className="truncate text-[12px] capitalize text-ink-3">
                     {staffingRoleLabel(m.role)}

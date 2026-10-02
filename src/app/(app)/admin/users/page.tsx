@@ -85,7 +85,7 @@ export default async function AdminUsersPage() {
                 <ContactCard
                   key={u.id}
                   person={u}
-                  badges={<Badge tone="violet">{u.customerAccount?.name ?? "No account"}</Badge>}
+                  badges={<Badge tone="maroon">{u.customerAccount?.name ?? "No account"}</Badge>}
                   actions={<ActiveToggle userId={u.id} isActive={u.isActive} />}
                 />
               ))}
