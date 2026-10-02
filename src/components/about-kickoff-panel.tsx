@@ -66,7 +66,7 @@ export function AboutKickoffPanel({
           <div>
             <dt className="text-[11.5px] uppercase tracking-wide text-ink-3">RCM</dt>
             <dd className="mt-0.5">
-              <Badge tone="violet">On</Badge>
+              <Badge tone="maroon">On</Badge>
             </dd>
           </div>
         ) : null}

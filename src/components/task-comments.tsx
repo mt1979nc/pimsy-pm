@@ -179,7 +179,7 @@ function CommentItem({
               <span className="ml-1 font-normal text-ink-3">(you)</span>
             ) : null}
           </span>
-          {comment.author.role === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
+          {comment.author.role === "CUSTOMER" ? <Badge tone="maroon">Customer</Badge> : null}
           <span className="text-[12px] text-ink-3">{fmtRelative(comment.createdAt)}</span>
           {comment.editedAt ? <span className="text-[11.5px] text-ink-3">edited</span> : null}
           {canChooseVisibility ? <VisibilityBadge visibility={comment.visibility} /> : null}

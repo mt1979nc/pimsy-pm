@@ -86,7 +86,7 @@ export function AssigneePicker({
             <li key={p.id} className="flex items-center gap-2">
               <Avatar name={p.name} image={p.image} size={24} />
               <span className="min-w-0 flex-1 truncate text-[13px] text-ink">{label(p)}</span>
-              {p.role === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
+              {p.role === "CUSTOMER" ? <Badge tone="maroon">Customer</Badge> : null}
               <button
                 type="button"
                 disabled={pending}

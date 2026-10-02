@@ -243,7 +243,7 @@ export default async function TaskDetailPage({
           <PriorityBadge priority={task.priority} />
           <VisibilityBadge visibility={task.visibility} />
           {showReviewRequiredBadge(task) ? <ReviewRequiredBadge /> : null}
-          {task.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
+          {task.ownerSide === "CUSTOMER" ? <Badge tone="maroon">Customer</Badge> : null}
           {task.phase ? <Badge>{task.phase.name}</Badge> : null}
           {connectedPeers.length > 0 ? <Badge tone="green">Connected</Badge> : null}
           {task.status === "BLOCKED" ? <Badge tone="red">Blocked</Badge> : null}

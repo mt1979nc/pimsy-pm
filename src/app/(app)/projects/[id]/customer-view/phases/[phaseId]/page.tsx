@@ -61,7 +61,7 @@ export default async function CustomerViewPhasePage({
                   <span className="text-[11.5px] text-ink-3">
                     {t.status === "DONE" ? "Complete" : t.status === "IN_PROGRESS" ? "In progress" : "Not started"}
                   </span>
-                  {t.ownerSide === "CUSTOMER" ? <Badge tone="violet">Customer</Badge> : null}
+                  {t.ownerSide === "CUSTOMER" ? <Badge tone="maroon">Customer</Badge> : null}
                   <CommentCountBadge
                     count={t.comments?.length ?? 0}
                     href={`/projects/${id}/customer-view/tasks/${t.id}`}

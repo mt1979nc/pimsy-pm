@@ -10,11 +10,14 @@ export function NavLink({
   children,
   badge,
   exact = false,
+  tone = "default",
 }: {
   href: string;
   children: React.ReactNode;
   badge?: number;
   exact?: boolean;
+  /** `inverse` is for the navy utility bar, where the page background is dark. */
+  tone?: "default" | "inverse";
 }) {
   const pathname = usePathname();
   const active = isNavLinkActive(pathname, href, exact);
@@ -25,12 +28,23 @@ export function NavLink({
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors",
-        active ? "bg-brand-soft text-brand" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+        tone === "inverse"
+          ? active
+            ? "bg-white/15 text-white shadow-[inset_3px_0_0_#ffe28e]"
+            : "text-white/80 hover:bg-white/10 hover:text-white"
+          : active
+            ? "bg-brand-soft text-brand shadow-[inset_3px_0_0_var(--color-ehr-slate)]"
+            : "text-ink-2 hover:bg-surface-2 hover:text-ink",
       )}
     >
       <span className="flex-1 truncate">{children}</span>
       {badge && badge > 0 ? (
-        <span className="rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-semibold leading-none text-brand-ink">
+        <span
+          className={cn(
+            "rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none",
+            tone === "inverse" ? "bg-ehr-gold text-[#113c64]" : "bg-brand text-brand-ink",
+          )}
+        >
           {badge > 99 ? "99+" : badge}
         </span>
       ) : null}

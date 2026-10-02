@@ -4,7 +4,7 @@ import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { updateCeoBookFields } from "@/actions/management-executive";
-import { Badge } from "@/components/ui";
+import { Badge, QuietBlank } from "@/components/ui";
 import {
   CEO_STATUSES,
   CEO_STATUS_LABELS,
@@ -17,16 +17,23 @@ import {
 } from "@/lib/ceo-book";
 import { cn } from "@/lib/cn";
 
-const th = "sticky top-0 z-10 bg-surface-2 px-2 py-2 text-left align-bottom font-semibold whitespace-normal";
+const th =
+  "sticky top-0 z-10 bg-[#113c64] px-2 py-2 text-left align-bottom font-semibold whitespace-normal text-white";
 const td = "px-2 py-2 align-top";
 const cellInput =
-  "h-7 w-full min-w-0 rounded border border-transparent bg-transparent px-1 text-[12.5px] text-ink hover:border-border focus:border-brand focus:bg-surface focus:outline-none";
+  "h-7 w-full min-w-0 rounded border border-transparent bg-transparent px-1 text-[12.5px] text-ink hover:border-ehr-slate/40 focus:border-brand focus:bg-surface focus:outline-none";
 
-function statusClass(status: string): string {
-  if (status === "IN_PROCESS_OFF_TRACK") return "text-red";
-  if (status === "IN_PROCESS_ON_TRACK" || status === "LIVE") return "text-green";
-  if (status === "PAUSED") return "text-amber";
-  return "text-ink";
+function statusMark(status: string): { dot: string; text: string } | null {
+  if (status === "IN_PROCESS_OFF_TRACK") return { dot: "bg-red", text: "text-red" };
+  if (status === "IN_PROCESS_ON_TRACK" || status === "LIVE") return { dot: "bg-ehr-sage", text: "text-green" };
+  if (status === "PAUSED") return { dot: "bg-amber", text: "text-amber" };
+  if (status === "NOT_YET_STARTED") return { dot: "bg-ehr-slate", text: "text-ink" };
+  return null;
+}
+
+function SheetText({ value, label = "Empty" }: { value: string | null | undefined; label?: string }) {
+  if (!value || value === "—") return <QuietBlank label={label} />;
+  return <>{value}</>;
 }
 
 function ExecutiveRow({ row }: { row: CeoBookRow }) {
@@ -43,10 +50,11 @@ function ExecutiveRow({ row }: { row: CeoBookRow }) {
       : savedArr.value !== editedArr.value;
   const dirty =
     contractDate !== row.contractDateInput || arrDirty || ceoStatus !== (row.ceoStatus ?? "");
+  const mark = statusMark(ceoStatus);
 
   return (
     <>
-      <tr className="hover:bg-surface-2/60">
+      <tr className="hover:bg-brand-soft/70">
         <td className={td}>
           <Link href={`/projects/${row.id}`} className="font-medium text-ink hover:text-brand">
             {row.name}
@@ -80,11 +88,6 @@ function ExecutiveRow({ row }: { row: CeoBookRow }) {
                 !contractDate && !contractFocused && "text-transparent",
               )}
             />
-            {!contractDate && !contractFocused ? (
-              <span className="pointer-events-none absolute inset-y-0 left-1 flex items-center text-ink-3">
-                —
-              </span>
-            ) : null}
           </div>
         </td>
         <td className={td}>
@@ -92,28 +95,37 @@ function ExecutiveRow({ row }: { row: CeoBookRow }) {
             name="expectedArr"
             inputMode="decimal"
             aria-label={`Expected ARR for ${row.abbreviation}`}
-            placeholder="—"
+            placeholder=""
             value={expectedArr}
             onChange={(event) => setExpectedArr(event.target.value)}
             disabled={pending}
             className={cn(cellInput, "w-[6.5rem] tabular-nums")}
           />
         </td>
-        <td className={`${td} whitespace-nowrap tabular-nums text-ink-2`}>{row.initialGoLive}</td>
-        <td className={`${td} whitespace-nowrap tabular-nums text-ink-2`}>{row.currentGoLive}</td>
-        <td className={`${td} whitespace-nowrap tabular-nums text-ink-2`}>{row.actualGoLive}</td>
-        <td className={`${td} min-w-[8rem] text-ink-2`}>{row.assignedIs}</td>
+        <td className={`${td} whitespace-nowrap tabular-nums text-ink-2`}>
+          <SheetText value={row.initialGoLive} label="No initial go-live" />
+        </td>
+        <td className={`${td} whitespace-nowrap tabular-nums text-ink-2`}>
+          <SheetText value={row.currentGoLive} label="No current go-live" />
+        </td>
+        <td className={`${td} whitespace-nowrap tabular-nums text-ink-2`}>
+          <SheetText value={row.actualGoLive} label="No actual go-live" />
+        </td>
+        <td className={`${td} min-w-[8rem] text-ink-2`}>
+          <SheetText value={row.assignedIs} label="No specialist" />
+        </td>
         <td className={td}>
           <div className="flex items-center gap-1.5">
+            {mark ? <span className={cn("size-2 shrink-0 rounded-full", mark.dot)} aria-hidden /> : null}
             <select
               name="ceoStatus"
               aria-label={`Status for ${row.abbreviation}`}
               value={ceoStatus}
               onChange={(event) => setCeoStatus(event.target.value)}
               disabled={pending}
-              className={cn(cellInput, "w-[11.5rem]", statusClass(ceoStatus))}
+              className={cn(cellInput, "w-[11.5rem]", mark?.text ?? "text-ink-3")}
             >
-              <option value="">—</option>
+              <option value="">Not set</option>
               {CEO_STATUSES.map((status) => (
                 <option key={status} value={status}>
                   {CEO_STATUS_LABELS[status]}
@@ -149,7 +161,7 @@ function ExecutiveRow({ row }: { row: CeoBookRow }) {
               {row.commentPreview}
             </Link>
           ) : (
-            "—"
+            <QuietBlank label="No comment" />
           )}
         </td>
         <td className={td}>
@@ -206,11 +218,11 @@ function SortHeader({
       <button
         type="button"
         onClick={() => onSort(column)}
-        className="inline-flex w-full items-center gap-1 text-left font-semibold uppercase tracking-wide hover:text-ink"
+        className="inline-flex w-full items-center gap-1 text-left font-semibold uppercase tracking-wide text-white/90 hover:text-white"
       >
         <span>{label}</span>
         {active ? (
-          <span aria-hidden className="shrink-0 text-[12px] font-semibold text-ink">
+          <span aria-hidden className="shrink-0 text-[12px] font-semibold text-ehr-gold">
             {direction === "asc" ? "↑" : "↓"}
           </span>
         ) : (
@@ -229,7 +241,7 @@ export function ExecutiveBookTable({ rows }: { rows: CeoBookRow[] }) {
     <div className="min-w-0 w-full overflow-x-auto">
       <table className="w-full min-w-[1280px] border-collapse text-[12.5px]">
         <thead>
-          <tr className="border-b border-border text-[11px] uppercase tracking-wide text-ink-3">
+          <tr className="border-b border-[#0d2f4f] text-[11px] uppercase tracking-wide text-white">
             {SORT_COLUMNS.map((col) => (
               <SortHeader
                 key={col.column}

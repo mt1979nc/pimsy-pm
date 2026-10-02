@@ -147,7 +147,7 @@ export default async function AdminAlertsPage() {
                   person={u}
                   badges={
                     <>
-                      <Badge tone="violet">{u.customerAccount?.name ?? "No account"}</Badge>
+                      <Badge tone="maroon">{u.customerAccount?.name ?? "No account"}</Badge>
                       {!u.notificationPrefs ? <Badge>Defaults</Badge> : <Badge tone="brand">Custom</Badge>}
                       {!prefs.emailEnabled ? <Badge tone="amber">Email off</Badge> : null}
                     </>

@@ -58,7 +58,7 @@ export function ProjectRow({ project, href }: { project: Row; href?: string }) {
           <div className="truncate text-[13.5px] font-semibold text-ink group-hover:text-brand">
             {acronym}
           </div>
-          {hasRcm ? <Badge tone="violet">RCM</Badge> : null}
+          {hasRcm ? <Badge tone="maroon">RCM</Badge> : null}
         </div>
         <div className="mt-0.5 truncate text-[12.5px] text-ink-3" title={siteName}>
           {siteName}

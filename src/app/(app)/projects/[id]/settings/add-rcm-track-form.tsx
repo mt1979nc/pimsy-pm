@@ -35,7 +35,7 @@ export function AddRcmOnSummary({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Badge tone="violet">RCM</Badge>
+      <Badge tone="maroon">RCM</Badge>
       <span className="text-[12.5px] text-ink-3">{bits.length ? bits.join(" · ") : "On"}</span>
     </div>
   );

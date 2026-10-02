@@ -145,7 +145,7 @@ export function LinkButton({
 // Badges & status
 // ---------------------------------------------------------------------------
 
-type Tone = "neutral" | "brand" | "green" | "amber" | "red" | "violet";
+type Tone = "neutral" | "brand" | "green" | "amber" | "red" | "violet" | "maroon" | "slate";
 
 const toneClasses: Record<Tone, string> = {
   neutral: "bg-surface-2 text-ink-2 border-border",
@@ -154,6 +154,9 @@ const toneClasses: Record<Tone, string> = {
   amber: "bg-amber-soft text-amber border-transparent",
   red: "bg-red-soft text-red border-transparent",
   violet: "bg-violet-soft text-violet border-transparent",
+  // EHR mauve/maroon (#e9dbd6 fill, #90545e dot family). Label is darkened for AA.
+  maroon: "bg-ehr-maroon-soft text-[#7a4550] border-ehr-maroon/40",
+  slate: "bg-surface text-ehr-slate border-ehr-slate/30",
 };
 
 export function Badge({
@@ -218,7 +221,7 @@ const taskStatusMeta: Record<TaskStatus, { label: string; tone: Tone }> = {
   TODO: { label: "To do", tone: "neutral" },
   IN_PROGRESS: { label: "In progress", tone: "brand" },
   BLOCKED: { label: "Blocked", tone: "red" },
-  IN_REVIEW: { label: "In review", tone: "violet" },
+  IN_REVIEW: { label: "In review", tone: "maroon" },
   DONE: { label: "Done", tone: "green" },
   CANCELLED: { label: "Cancelled", tone: "neutral" },
 };
@@ -303,7 +306,7 @@ export function VisibilityBadge({
 
 const waitingOnMeta: Record<WaitingOn, { label: string; tone: Tone }> = {
   PIMSY: { label: "Waiting on PIMSY", tone: "amber" },
-  CUSTOMER: { label: "Waiting on customer", tone: "violet" },
+  CUSTOMER: { label: "Waiting on customer", tone: "maroon" },
   UNKNOWN: { label: "Waiting on —", tone: "neutral" },
 };
 
@@ -457,7 +460,11 @@ export function ProgressBar({
         ? "bg-amber"
         : tone === "red"
           ? "bg-red"
-          : "bg-brand";
+          : tone === "maroon"
+            ? "bg-ehr-maroon"
+            : tone === "slate"
+              ? "bg-ehr-slate"
+              : "bg-brand";
   return (
     <div
       className={cn("h-1.5 w-full overflow-hidden rounded-full bg-border", className)}
@@ -525,15 +532,22 @@ export function EmptyState({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
-      {icon ? <div className="mb-2 text-ink-3">{icon}</div> : null}
-      <p className="text-[13.5px] font-medium text-ink">{title}</p>
-      {description ? (
-        <p className="mt-0.5 max-w-sm text-[12.5px] text-ink-3">{description}</p>
-      ) : null}
-      {action ? <div className="mt-3">{action}</div> : null}
+    <div className="px-4 py-3">
+      <div className="flex flex-col items-center justify-center rounded-lg border border-ehr-slate/25 bg-brand-soft px-4 py-5 text-center">
+        {icon ? <div className="mb-2 text-ehr-slate">{icon}</div> : null}
+        <p className="text-[13.5px] font-medium text-ink">{title}</p>
+        {description ? (
+          <p className="mt-0.5 max-w-sm text-[12.5px] text-ink-2">{description}</p>
+        ) : null}
+        {action ? <div className="mt-3">{action}</div> : null}
+      </div>
     </div>
   );
+}
+
+/** Blank sheet cell. The word is for assistive tech; the dash is not drawn. */
+export function QuietBlank({ label = "Empty" }: { label?: string }) {
+  return <span className="sr-only">{label}</span>;
 }
 
 export function Field({

@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.11";
+export const APP_VERSION = "1.18.12";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.12",
+    date: "2026-10-02",
+    summary:
+      "Navy staff utility bar, EHR phase chips, and calmer Executive and Engagements tables. No schema migrate.",
+    highlights: [
+      "Staff shell: navy top bar with site search, Alerts (inbox unread), and profile. The left nav stays the depth menu.",
+      "Discovery, Config, and Training chips use the EHR secondary palette from 1.18.10 (slate #4b7095, gold #ffe28e, sage #89a55b / #cedeba). Empty states sit on a soft blue panel. The flat “None” line is All clear.",
+      "Executive and Engagements: navy header band, status with color and text, blank cells instead of em dashes.",
+      "In review, waiting on customer, and RCM use the EHR maroon family (#90545e / #e9dbd6) instead of Prism violet (#6941c6). Violet stays on Director and Go-live.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.11",
     date: "2026-10-02",

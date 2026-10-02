@@ -138,7 +138,7 @@ export function AddTaskInline({
               type="button"
               onClick={() => setOwnerSide("CUSTOMER")}
               className={`px-2.5 py-1 text-[12.5px] font-medium ${
-                ownerSide === "CUSTOMER" ? "bg-violet text-white" : "bg-surface text-ink-2"
+                ownerSide === "CUSTOMER" ? "bg-ehr-maroon text-white" : "bg-surface text-ink-2"
               }`}
             >
               Customer
