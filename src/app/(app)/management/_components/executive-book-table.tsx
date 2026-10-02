@@ -55,8 +55,8 @@ function ExecutiveRow({ row }: { row: CeoBookRow }) {
   return (
     <>
       <tr className="hover:bg-brand-soft/70">
-        <td className={td}>
-          <Link href={`/projects/${row.id}`} className="font-medium text-ink hover:text-brand">
+        <td className={`${td} max-w-[16rem]`}>
+          <Link href={`/projects/${row.id}`} title={row.name} className="break-words font-medium text-ink hover:text-brand">
             {row.name}
           </Link>
         </td>
@@ -238,7 +238,7 @@ export function ExecutiveBookTable({ rows }: { rows: CeoBookRow[] }) {
   const sortedRows = useMemo(() => sortCeoBookRows(rows, sort), [rows, sort]);
 
   return (
-    <div className="min-w-0 w-full overflow-x-auto">
+    <div className="min-w-0 w-full max-w-full overflow-x-auto">
       <table className="w-full min-w-[1280px] border-collapse text-[12.5px]">
         <thead>
           <tr className="border-b border-[#0d2f4f] text-[11px] uppercase tracking-wide text-white">

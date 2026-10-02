@@ -246,7 +246,7 @@ export default async function DashboardPage() {
                       <span className="size-1.5 shrink-0 rounded-full bg-brand" />
                       <span className="truncate text-[13px] font-medium text-ink">{t.subject}</span>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-2 pl-3.5 text-[12px] text-ink-3">
+                    <div className="mt-0.5 flex min-w-0 items-center gap-2 pl-3.5 text-[12px] text-ink-3">
                       <span className="truncate">
                         {t.project?.customerAccount?.name ?? t.project?.name ?? "Internal"}
                       </span>
@@ -351,7 +351,7 @@ export default async function DashboardPage() {
               <CardHeader title="Portfolio" />
               <div className="grid grid-cols-2 gap-px bg-border">
                 <div className="bg-surface px-4 py-3">
-                  <div className="text-[11.5px] uppercase tracking-wide text-ink-3">
+                  <div className="break-words text-[11.5px] uppercase tracking-wide text-ink-3">
                     Customer actions open
                   </div>
                   <div className="mt-1 text-[20px] font-semibold">
@@ -362,7 +362,7 @@ export default async function DashboardPage() {
                   ) : null}
                 </div>
                 <div className="bg-surface px-4 py-3">
-                  <div className="text-[11.5px] uppercase tracking-wide text-ink-3">
+                  <div className="break-words text-[11.5px] uppercase tracking-wide text-ink-3">
                     Live this quarter
                   </div>
                   <div className="mt-1 text-[20px] font-semibold">

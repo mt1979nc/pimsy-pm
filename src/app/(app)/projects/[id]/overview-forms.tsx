@@ -118,7 +118,7 @@ export function StatusUpdateForm({
           </div>
 
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <Field label="Health" htmlFor="health" className="w-[190px]">
+            <Field label="Health" htmlFor="health" className="w-full min-w-0 max-w-[190px]">
               <select id="health" name="health" defaultValue={currentHealth} className={inputClass}>
                 <option value="GREEN">On track</option>
                 <option value="YELLOW">Needs attention</option>

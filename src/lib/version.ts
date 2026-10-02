@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.16";
+export const APP_VERSION = "1.18.17";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.17",
+    date: "2026-10-02",
+    summary:
+      "Staff pages keep their text and controls readable when the window is narrow. Sidebar sections, lists, chips, and dense tables wrap or scroll inside the page. No schema migrate.",
+    highlights: [
+      "The accordion (Day-to-day project work, Data analytics, PATH settings) stays on the page below 1024px, full width and scrollable, and returns to the left column on a laptop. Section headers wrap. Long links truncate, with the full label on hover.",
+      "Project tabs, customer rows (including EHR+RCM), queue chips, and card headers wrap instead of stacking on top of each other.",
+      "Executive, Forecast, Team capacity, Analysis, and Implementation Dashboard tables scroll inside the card. Roster stays fitted to the page; dates and status no longer paint over the next column.",
+      "The headroom chart scrolls sideways inside the card so week labels do not overlap.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.16",
     date: "2026-10-02",

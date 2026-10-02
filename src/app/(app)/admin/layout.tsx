@@ -18,13 +18,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <>
       <PageHeader title={ADMIN_AREA_LABEL} subtitle="Projects, customers, people, and alerts." />
-      <div className="mb-5 flex flex-wrap items-center gap-5 border-b border-border">
+      <nav aria-label="Implementation Dashboard" className="mb-5 flex min-w-0 flex-wrap items-end gap-x-5 gap-y-1 border-b border-border">
         {items.map((item) => (
           <SubNavLink key={item.href} href={item.href} match={item.match ?? "exact"}>
             {item.label}
           </SubNavLink>
         ))}
-      </div>
+      </nav>
       {children}
     </>
   );

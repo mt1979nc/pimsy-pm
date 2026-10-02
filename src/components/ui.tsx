@@ -48,15 +48,15 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 border-b border-border px-4 py-2",
+        "flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-2",
         className,
       )}
     >
       <div className="min-w-0">
-        <h2 className="text-[13px] font-semibold tracking-tight text-ink">{title}</h2>
-        {subtitle ? <p className="mt-0.5 text-[12px] leading-snug text-ink-3">{subtitle}</p> : null}
+        <h2 className="break-words text-[13px] font-semibold tracking-tight text-ink">{title}</h2>
+        {subtitle ? <p className="mt-0.5 break-words text-[12px] leading-snug text-ink-3">{subtitle}</p> : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="max-w-full shrink-0">{action}</div> : null}
     </div>
   );
 }
@@ -76,12 +76,12 @@ export function PageHeader({
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
         {breadcrumb ? <div className="mb-1 text-[12px] text-ink-3">{breadcrumb}</div> : null}
-        <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+        <h1 className="break-words text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
           {title}
         </h1>
-        {subtitle ? <p className="mt-0.5 text-[13px] text-ink-2">{subtitle}</p> : null}
+        {subtitle ? <p className="mt-0.5 break-words text-[13px] text-ink-2">{subtitle}</p> : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex max-w-full flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   );
 }
@@ -493,7 +493,7 @@ export function Stat({
 }) {
   const inner = (
     <>
-      <div className="text-[11px] font-medium uppercase tracking-wide text-ink-3">{label}</div>
+      <div className="break-words text-[11px] font-medium uppercase tracking-wide text-ink-3">{label}</div>
       <div
         className={cn(
           "mt-1 text-[22px] font-semibold leading-none tracking-[-0.02em]",
@@ -508,7 +508,7 @@ export function Stat({
     </>
   );
   const className = cn(
-    "block rounded-xl border border-border bg-surface px-3.5 py-2.5",
+    "block min-w-0 rounded-xl border border-border bg-surface px-3.5 py-2.5",
     href && "transition-colors hover:border-border-strong hover:bg-surface-2",
   );
   return href ? (

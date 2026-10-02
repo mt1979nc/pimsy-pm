@@ -77,7 +77,8 @@ export default async function WaitingOnReportPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <Link
                           href={`/projects/${row.project.id}/messages`}
-                          className="truncate text-[14px] font-semibold text-ink hover:text-brand"
+                          title={row.project.customerAccount?.name ?? row.project.name}
+                          className="min-w-0 max-w-full truncate text-[14px] font-semibold text-ink hover:text-brand"
                         >
                           {row.project.customerAccount?.name ?? row.project.name}
                         </Link>

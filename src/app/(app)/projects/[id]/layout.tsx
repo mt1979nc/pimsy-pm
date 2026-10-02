@@ -51,15 +51,16 @@ export default async function ProjectLayout({
   return (
     <>
       <div className="mb-4">
-        <div className="mb-1 flex items-center gap-2 text-[12px] text-ink-3">
-          <Link href="/projects" className="hover:text-brand">
+        <div className="mb-1 flex min-w-0 items-center gap-2 text-[12px] text-ink-3">
+          <Link href="/projects" className="shrink-0 hover:text-brand">
             Projects
           </Link>
-          <span>/</span>
+          <span className="shrink-0">/</span>
           {project.customerAccount ? (
             <Link
               href={`/customers/${project.customerAccount.id}`}
-              className="truncate hover:text-brand"
+              title={project.customerAccount.name}
+              className="min-w-0 truncate hover:text-brand"
             >
               {project.customerAccount.name}
             </Link>
@@ -68,10 +69,10 @@ export default async function ProjectLayout({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="min-w-0 max-w-full">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h1 className="min-w-0 break-words text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
                 {project.name}
               </h1>
               <span className="font-mono text-[12px] text-ink-3">{project.code}</span>
@@ -137,16 +138,21 @@ export default async function ProjectLayout({
               </div>
             ) : null}
             {project.lead ? (
-              <div className="flex items-center gap-1.5">
+              <div className="flex min-w-0 max-w-full items-center gap-1.5">
                 <Avatar name={project.lead.name} image={project.lead.image} size={20} />
-                <span className="text-ink">{project.lead.name}</span>
+                <span className="min-w-0 truncate text-ink" title={project.lead.name ?? undefined}>
+                  {project.lead.name}
+                </span>
               </div>
             ) : null}
           </div>
         </div>
       </div>
 
-      <div className="mb-4 flex items-center gap-4 border-b border-border">
+      <nav
+        aria-label="Project"
+        className="mb-4 flex min-w-0 flex-wrap items-end gap-x-4 gap-y-1 border-b border-border"
+      >
         <SubNavLink href={`/projects/${id}`}>Overview</SubNavLink>
         <SubNavLink href={`/projects/${id}/about`}>About</SubNavLink>
         <SubNavLink href={`/projects/${id}/tasks`}>Tasks</SubNavLink>
@@ -156,7 +162,7 @@ export default async function ProjectLayout({
         <SubNavLink href={`/projects/${id}/customer-view`} match="prefix">
           Customer view
         </SubNavLink>
-      </div>
+      </nav>
 
       {children}
     </>

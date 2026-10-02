@@ -137,7 +137,7 @@ export default async function AdminOverviewPage() {
                     <Link
                       key={p.id}
                       href={`/projects/${p.id}`}
-                      className="flex items-center gap-4 px-4 py-3 hover:bg-surface-2"
+                      className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-surface-2"
                     >
                       <div className="min-w-0 flex-[2]">
                         <div
@@ -194,7 +194,7 @@ export default async function AdminOverviewPage() {
                     <Link
                       key={c.id}
                       href={`/customers/${c.id}`}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-2"
+                      className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 hover:bg-surface-2"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[13px] font-medium text-ink">{c.name}</div>

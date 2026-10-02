@@ -104,17 +104,18 @@ export default async function AnalysisPage() {
                     />
                   ))}
                 </div>
-                <div className="divide-y divide-border rounded-lg border border-border">
+                <div className="min-w-0 overflow-x-auto rounded-lg border border-border">
+                  <div className="min-w-[40rem] divide-y divide-border">
                   <div className="flex items-center gap-4 border-b border-border bg-surface-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-                    <div className="flex-1">Owner</div>
-                    <div className="w-[90px] text-right">Completed</div>
-                    <div className="w-[100px] text-right">On-time</div>
-                    <div className="w-[110px] text-right">Avg. variance</div>
-                    <div className="w-[140px] text-right">Avg. days late (misses)</div>
+                    <div className="min-w-0 flex-1">Owner</div>
+                    <div className="w-[90px] shrink-0 text-right">Completed</div>
+                    <div className="w-[100px] shrink-0 text-right">On-time</div>
+                    <div className="w-[110px] shrink-0 text-right">Avg. variance</div>
+                    <div className="w-[140px] shrink-0 text-right">Avg. days late (misses)</div>
                   </div>
                   {owners.map((o) => (
                     <div key={`${o.leadId}-row`} className="flex items-center gap-4 px-4 py-3">
-                      <div className="flex-1 truncate text-[13.5px] font-medium text-ink">{o.name}</div>
+                      <div className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-ink" title={o.name}>{o.name}</div>
                       <div className="w-[90px] text-right text-[13px] text-ink-2">{o.completed}</div>
                       <div className="w-[100px] text-right">
                         <Badge tone={o.onTimeRate >= 80 ? "green" : o.onTimeRate >= 50 ? "amber" : "red"}>
@@ -124,11 +125,12 @@ export default async function AnalysisPage() {
                       <div className="w-[110px] text-right text-[13px] text-ink-2">
                         {o.avgVariance !== null ? `${o.avgVariance > 0 ? "+" : ""}${o.avgVariance}d` : "—"}
                       </div>
-                      <div className="w-[140px] text-right text-[13px] text-ink-2">
+                      <div className="w-[140px] shrink-0 text-right text-[13px] text-ink-2">
                         {o.misses > 0 ? `+${o.avgDaysLateOnMisses}d (${o.misses})` : "no misses"}
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -143,11 +145,11 @@ export default async function AnalysisPage() {
                 <div className="divide-y divide-border">
                   {tiers.map((t) => (
                     <div key={t.tier} className="space-y-2 px-4 py-3">
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1 text-[13.5px] font-medium text-ink">
+                      <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <div className="min-w-0 text-[13.5px] font-medium text-ink">
                           {TIER_LABEL[t.tier]} <span className="text-ink-3">({t.n})</span>
                         </div>
-                        <div className="text-right text-[12.5px] text-ink-2">
+                        <div className="text-[12.5px] text-ink-2">
                           avg duration {t.avgDuration ?? "—"}d · avg variance{" "}
                           {t.avgVariance !== null ? `${t.avgVariance > 0 ? "+" : ""}${t.avgVariance}d` : "—"}
                         </div>
@@ -202,8 +204,8 @@ export default async function AnalysisPage() {
                   {slips.byOwner.length > 0 ? (
                     <div className="mt-4 space-y-1.5 border-t border-border pt-3">
                       {slips.byOwner.map((o) => (
-                        <div key={o.name} className="flex items-center justify-between text-[12.5px]">
-                          <span className="text-ink">{o.name}</span>
+                        <div key={o.name} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-[12.5px]">
+                          <span className="min-w-0 break-words text-ink">{o.name}</span>
                           <span className="text-ink-3">
                             {o.events} event{o.events === 1 ? "" : "s"} · customer {o.customerDays}d ·
                             PIMSY {o.pimsyDays}d
@@ -222,7 +224,7 @@ export default async function AnalysisPage() {
               title="Forecast vs actual"
               subtitle="Initial go-live commitment vs actual. Positive variance is late. Strikethrough codes are excluded from primary averages."
             />
-            <div className="overflow-x-auto">
+            <div className="min-w-0 max-w-full overflow-x-auto">
               <table className="w-full min-w-[720px] border-collapse text-[12.5px]">
                 <thead>
                   <tr className="border-b border-border bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">

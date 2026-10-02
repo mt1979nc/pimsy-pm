@@ -353,11 +353,11 @@ export function ProjectTaskBoard({
       <Card key={phase.id}>
         <CardHeader
           title={
-            <span className="flex items-center gap-2">
+            <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
               {area === "discovery" || area === "configuration" || area === "training" ? (
                 <AreaChip area={area} />
               ) : null}
-              {phase.name}
+              <span className="min-w-0 break-words">{phase.name}</span>
               {phase.visibility === "INTERNAL" ? (
                 <VisibilityBadge visibility="INTERNAL" />
               ) : null}
