@@ -6,6 +6,7 @@ import { SubmitButton, FormError } from "@/components/submit-button";
 import { Card, CardHeader, Field, inputClass, LinkButton } from "@/components/ui";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
 import { PortalContactFields } from "@/components/portal-contact-fields";
+import { CustomerLogoFields } from "@/components/customer-logo-fields";
 
 export function NewCustomerForm() {
   const [state, action] = useActionState(createCustomer, {});
@@ -88,6 +89,8 @@ export function NewCustomerForm() {
           </Field>
 
           <AnalyticsExcludeToggle />
+
+          <CustomerLogoFields idPrefix="new-customer-" />
         </div>
       </Card>
 

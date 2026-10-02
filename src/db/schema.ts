@@ -221,6 +221,19 @@ export const customerAccounts = pgTable(
      * Default false.
      */
     excludeFromAnalytics: boolean("exclude_from_analytics").notNull().default(false),
+    /**
+     * Practice mark as an https URL (Dock account logo, or a link pasted when
+     * the customer is handed in). Null when the mark is an uploaded file
+     * (`logoStorageKey`) or when no logo is set. Projects show this customer
+     * logo — there is no separate project logo.
+     */
+    logoUrl: text("logo_url"),
+    /**
+     * Storage key from the shared upload backend when staff upload a logo.
+     * Served only through /api/customer-logos/[id]. Saving a URL clears this;
+     * uploading clears logoUrl.
+     */
+    logoStorageKey: text("logo_storage_key"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),

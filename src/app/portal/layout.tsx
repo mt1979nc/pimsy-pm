@@ -5,7 +5,8 @@ import { customerAccounts } from "@/db/schema";
 import { requireCustomer } from "@/lib/guard";
 import { unreadThreadCount } from "@/lib/threads";
 import { SignOutButton } from "@/components/sign-out-button";
-import { Avatar } from "@/components/ui";
+import { Avatar, BrandMark } from "@/components/ui";
+import { customerLogoSrc } from "@/lib/customer-logo";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: { default: "Your workspace", template: "%s · PIMSY" } };
@@ -15,7 +16,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const [account, unread] = await Promise.all([
     db.query.customerAccounts.findFirst({
       where: eq(customerAccounts.id, actor.customerAccountId),
-      columns: { id: true, name: true },
+      columns: { id: true, name: true, logoUrl: true, logoStorageKey: true },
     }),
     unreadThreadCount(actor),
   ]);
@@ -24,9 +25,12 @@ export default async function PortalLayout({ children }: { children: React.React
     <div className="min-h-screen bg-bg">
       <header className="sticky top-0 z-20 border-b border-border bg-surface">
         <div className="mx-auto flex max-w-[1000px] items-center gap-4 px-4 py-3 sm:px-6">
-          <Link href="/portal" className="flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/pimsy-icon-color.png" alt="" className="size-7 shrink-0" />
+          <Link href="/portal" className="flex min-w-0 items-center gap-2.5">
+            <BrandMark
+              name={account?.name ?? "Your workspace"}
+              src={account ? customerLogoSrc(account) : null}
+              size={28}
+            />
             <div className="min-w-0">
               <div className="truncate text-[13px] font-semibold leading-tight text-ink">
                 {account?.name ?? "Your workspace"}

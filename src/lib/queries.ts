@@ -95,7 +95,7 @@ export async function listProjects(
     where: and(...conditions),
     orderBy: [asc(projects.targetGoLiveDate), desc(projects.updatedAt)],
     with: {
-      customerAccount: { columns: { id: true, name: true, status: true } },
+      customerAccount: { columns: { id: true, name: true, status: true, logoUrl: true, logoStorageKey: true } },
       lead: { columns: { id: true, name: true, image: true } },
     },
   });
@@ -222,7 +222,7 @@ export async function attentionProjects(actor: Actor, limit = 12) {
       inArray(projects.status, [...OPEN_PROJECT_STATUSES]),
     ),
     with: {
-      customerAccount: { columns: { id: true, name: true } },
+      customerAccount: { columns: { id: true, name: true, logoUrl: true, logoStorageKey: true } },
       lead: { columns: { id: true, name: true, image: true } },
     },
   });

@@ -8,7 +8,8 @@ import { assertProjectAccess, NotFoundError, ForbiddenError } from "@/lib/authz"
 import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate, daysUntil } from "@/lib/dates";
 import { SubNavLink } from "@/components/nav-link";
-import { HealthBadge, ProjectStatusBadge, ProgressBar, Avatar, Badge } from "@/components/ui";
+import { HealthBadge, ProjectStatusBadge, ProgressBar, Avatar, Badge, BrandMark } from "@/components/ui";
+import { customerLogoSrc } from "@/lib/customer-logo";
 import { cn } from "@/lib/cn";
 import { projectHasRcmTrack } from "@/lib/add-rcm";
 
@@ -34,7 +35,16 @@ export default async function ProjectLayout({
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, id),
     with: {
-      customerAccount: { columns: { id: true, name: true, status: true, excludeFromAnalytics: true } },
+      customerAccount: {
+        columns: {
+          id: true,
+          name: true,
+          status: true,
+          excludeFromAnalytics: true,
+          logoUrl: true,
+          logoStorageKey: true,
+        },
+      },
       lead: { columns: { id: true, name: true, image: true } },
     },
   });
@@ -72,6 +82,11 @@ export default async function ProjectLayout({
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="min-w-0 max-w-full">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <BrandMark
+                name={project.customerAccount?.name ?? project.name}
+                src={customerLogoSrc(project.customerAccount)}
+                size={32}
+              />
               <h1 className="min-w-0 break-words text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
                 {project.name}
               </h1>

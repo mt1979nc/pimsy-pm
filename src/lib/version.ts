@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.17";
+export const APP_VERSION = "1.18.18";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.18",
+    date: "2026-10-02",
+    summary:
+      "Customers and projects show a practice logo. Upload or paste a URL when you add a customer or project. A one-time Dock import can fill existing customers by acronym. Migrate 0027_customer_logo.",
+    highlights: [
+      "customer_account.logo_url stores an https image link. An uploaded PNG, JPG, GIF, or WebP is stored with the existing file backend (local disk or Azure blob) and shown from /api/customer-logos/[id]. Projects use the customer’s logo.",
+      "The mark is a small avatar on the Customers list, Projects list, customer page, project header, and the customer portal. Missing logos fall back to initials.",
+      "Set it on Add customer, New project, the customer Account card, or Project settings → Customer logo. Later customers do not need Dock.",
+      "One-time Dock pull: npm run db:import:dock-logos (dry-run), then npm run db:import:dock-logos -- --apply. Needs DOCK_API_KEY from Dock Settings → API, or a JSON snapshot. Matches acronym / CRM key. --overwrite replaces a PATH upload or a different URL. HubSpot is not read.",
+      "Migrate: npm run db:migrate applies 0027_customer_logo (logo_url, logo_storage_key on customer_account). PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.17",
     date: "2026-10-02",

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireCustomer } from "@/lib/guard";
 import { portalProject, portalPhaseTabs } from "@/lib/portal";
-import { Badge } from "@/components/ui";
+import { Badge, BrandMark } from "@/components/ui";
+import { customerLogoSrc } from "@/lib/customer-logo";
 import { CustomerAreaNav } from "@/components/customer-area-nav";
 import { fmtDate, daysUntil } from "@/lib/dates";
 
@@ -32,19 +33,26 @@ export default async function PortalProjectLayout({
       </Link>
 
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
-            {project.name}
-          </h1>
-          <p className="mt-0.5 text-[13px] text-ink-2">
-            {project.status === "COMPLETED"
-              ? "Live"
-              : days !== null
-                ? days >= 0
-                  ? `Go-live ${fmtDate(project.targetGoLiveDate)} · ${days}d`
-                  : `Target was ${fmtDate(project.targetGoLiveDate)}`
-                : "Go-live unset"}
-          </p>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <BrandMark
+            name={project.customerAccount?.name ?? project.name}
+            src={customerLogoSrc(project.customerAccount)}
+            size={32}
+          />
+          <div className="min-w-0">
+            <h1 className="break-words text-[20px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+              {project.name}
+            </h1>
+            <p className="mt-0.5 text-[13px] text-ink-2">
+              {project.status === "COMPLETED"
+                ? "Live"
+                : days !== null
+                  ? days >= 0
+                    ? `Go-live ${fmtDate(project.targetGoLiveDate)} · ${days}d`
+                    : `Target was ${fmtDate(project.targetGoLiveDate)}`
+                  : "Go-live unset"}
+            </p>
+          </div>
         </div>
         {project.status === "COMPLETED" ? (
           <Badge tone="green">Live</Badge>

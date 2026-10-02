@@ -49,6 +49,8 @@ import {
   deleteRiskForActor,
 } from "@/lib/content-edit";
 import { audit } from "@/lib/audit";
+import { parseLogoForm, type LogoInput } from "@/lib/customer-logo-parse";
+import { persistCustomerLogo } from "@/lib/customer-logo-store";
 import { completeHistoricalProjectOnTime } from "@/lib/historical-complete";
 import { parseDateInput, toDateInput } from "@/lib/dates";
 import { forecastImplementation, parseSkipUsFederalHolidays, type ImplementationScope } from "@/lib/estimator";
@@ -212,6 +214,27 @@ async function nextProjectCode(type: string) {
   return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
 }
 
+async function saveLogoOnCustomer(
+  actor: Actor,
+  customerAccountId: string | null | undefined,
+  input: LogoInput,
+) {
+  if (!customerAccountId || input.kind === "unchanged") return;
+  const saved = await persistCustomerLogo(customerAccountId, input);
+  if (!saved.ok) {
+    console.error("project create logo failed", saved.error);
+    return;
+  }
+  await audit({
+    actor,
+    action: "customer.logo.updated",
+    entityType: "customer_account",
+    entityId: customerAccountId,
+    summary: input.kind === "url" ? input.url : input.kind,
+    metadata: { via: "project.create" },
+  });
+}
+
 /**
  * Creates a project and, when a template is chosen, materializes the entire
  * playbook: phases, tasks (internal and customer-side), and milestones, with
@@ -223,6 +246,9 @@ export async function createProject(
 ): Promise<ActionState> {
   const actor = await requireStaff();
   if (!canCreateProjects(actor)) return { error: "You cannot create projects." };
+
+  const logo = await parseLogoForm(formData);
+  if (!logo.ok) return { error: logo.error };
 
   const parsed = createProjectSchema.safeParse({
     name: formData.get("name"),
@@ -251,6 +277,9 @@ export async function createProject(
 
   if (d.type !== "INTERNAL" && !d.customerAccountId) {
     return { error: "Pick the customer this project belongs to." };
+  }
+  if (d.type === "INTERNAL" && logo.input.kind !== "unchanged") {
+    return { error: "Internal projects have no customer logo. Set the logo on the customer." };
   }
 
   const portalContact = parseOptionalPortalContact(formData);
@@ -340,6 +369,7 @@ export async function createProject(
       portalEnabled: source?.portalEnabled ?? false,
       newContact: portalContact.contact,
     });
+    await saveLogoOnCustomer(actor, source?.customerAccountId, logo.input);
     revalidatePrismSurfaces(d.sourceProjectId);
     revalidatePath(`/projects/${d.sourceProjectId}`);
     redirect(`/projects/${d.sourceProjectId}`);
@@ -502,6 +532,12 @@ export async function createProject(
     portalEnabled: d.type !== "INTERNAL",
     newContact: portalContact.contact,
   });
+
+  await saveLogoOnCustomer(
+    actor,
+    d.type === "INTERNAL" ? null : d.customerAccountId,
+    logo.input,
+  );
 
   revalidatePrismSurfaces(projectId);
   revalidatePath("/dashboard");

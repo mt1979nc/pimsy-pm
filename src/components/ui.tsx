@@ -1,6 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
+import { logoInitials } from "@/lib/customer-logo";
 import type {
   Health,
   Priority,
@@ -397,6 +398,49 @@ export function Avatar({
       title={name ?? undefined}
     >
       {initials || "?"}
+    </span>
+  );
+}
+
+/** Small practice mark. Image when set, initials when the logo is missing. */
+export function BrandMark({
+  name,
+  src,
+  size = 28,
+  className,
+}: {
+  name?: string | null;
+  src?: string | null;
+  size?: number;
+  className?: string;
+}) {
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt=""
+        width={size}
+        height={size}
+        className={cn(
+          "shrink-0 rounded-md border border-border bg-surface object-contain",
+          className,
+        )}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center rounded-md border border-border bg-brand-soft font-semibold text-[#113c64] dark:text-[#cee0e7]",
+        className,
+      )}
+      style={{ width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.32)) }}
+      title={name ?? undefined}
+      aria-hidden
+    >
+      {logoInitials(name)}
     </span>
   );
 }

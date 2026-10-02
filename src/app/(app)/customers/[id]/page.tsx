@@ -14,7 +14,9 @@ import {
   CustomerStatusBadge,
   Badge,
   VisibilityBadge,
+  BrandMark,
 } from "@/components/ui";
+import { customerLogoSrc } from "@/lib/customer-logo";
 import { ProjectRow, ProjectListHeader } from "@/components/project-row";
 import { PortalContactsPanel, ToggleContactActive, ResendContactInvite } from "./portal-contacts-panel";
 import { EditContactForm } from "./edit-contact-form";
@@ -23,6 +25,7 @@ import { deleteCustomer } from "@/actions/customers";
 import { fmtRelative } from "@/lib/dates";
 import { ContactCard } from "@/components/contact-card";
 import { CustomerAnalyticsForm } from "./customer-analytics-form";
+import { CustomerLogoForm } from "./customer-logo-form";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +39,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
       projects: {
         with: {
           lead: { columns: { id: true, name: true, image: true } },
-          customerAccount: { columns: { id: true, name: true } },
+          customerAccount: { columns: { id: true, name: true, logoUrl: true, logoStorageKey: true } },
         },
         orderBy: (p, { desc: d }) => [d(p.createdAt)],
       },
@@ -56,7 +59,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   return (
     <>
       <PageHeader
-        title={customer.name}
+        title={
+          <span className="flex max-w-full min-w-0 items-center gap-2.5">
+            <BrandMark name={customer.name} src={customerLogoSrc(customer)} size={32} />
+            <span className="min-w-0 break-words">{customer.name}</span>
+          </span>
+        }
         breadcrumb={
           <LinkButton href="/customers" variant="ghost" size="sm" className="-ml-2.5">
             ← Customers
@@ -176,6 +184,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   </div>
                 ))}
             </dl>
+            <CustomerLogoForm
+              customerId={customer.id}
+              currentSrc={customerLogoSrc(customer)}
+              currentUrl={customer.logoUrl}
+              className="border-t border-border"
+            />
           </Card>
 
           <Card>

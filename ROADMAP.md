@@ -43,6 +43,7 @@ Priority epics for Nathan / **PATH** (Plan · Assign · Track · Handoff). Repo 
 | **Customer email digest (Wave C)** | **Shipped** (#39) | One PATH summary email when several due-soon / overdue tasks or PIMSY-staff messages pile up; in-app still per item; portal deep links. Cron: `POST /api/cron/customer-digest` with Bearer `CRON_SECRET`. Azure Logic Apps **`pimsy-customer-digest`** and **`pimsy-cron-task-due-reminders`** every 15 minutes (same `CRON_SECRET`). No migrate. |
 | **Portfolio WIP view** | **Shipped** (v1.7 rollup + v1.11.1 restore) | Leadership → Portfolio (`/reports`) is delivery health; Waiting on (`/reports/waiting-on`) is the SHARED-thread rollup. |
 | **CEO executive book (v1.18.8)** | **Shipped** | `/management/executive` replaces the weekly CEO sheet. Live name, acronym, product, go-live, IS, and latest update. Contract date, expected ARR, and CEO status are migrate `0026_ceo_executive`. PATH link replaces Dock. |
+| **Customer logos (v1.18.18)** | **Shipped** | Practice mark on customer and project lists and headers. Upload or https URL on create/edit. One-time Dock account logos via `npm run db:import:dock-logos` (dry-run, then `--apply`), matched by acronym. Migrate `0027_customer_logo`. |
 | **Executive sort + capacity card order (v1.18.9)** | **Shipped** | Executive column headers sort the sheet in the browser. Team capacity headroom cards reorder and remember that order in localStorage. No schema migrate. |
 
 ## Milestone: Retire standalone Prism
