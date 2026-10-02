@@ -169,7 +169,7 @@ export async function updateEngagement(
 ): Promise<ActionState> {
   const actor = await requirePortfolioAccess();
   if (!canManagePrismCapacity(actor)) {
-    throw new ForbiddenError("Management access required.");
+    throw new ForbiddenError("Prism access required.");
   }
 
   const projectId = String(formData.get("projectId") ?? "");
@@ -471,7 +471,7 @@ export async function createEngagement(
 ): Promise<ActionState> {
   const actor = await requirePortfolioAccess();
   if (!canManagePrismCapacity(actor)) {
-    throw new ForbiddenError("Management access required.");
+    throw new ForbiddenError("Prism access required.");
   }
 
   const acronym = acronymKey(formData.get("acronym")?.toString());

@@ -17,13 +17,14 @@ import {
   Card,
   CardHeader,
   PageHeader,
-  Stat,
   EmptyState,
   LinkButton,
   Badge,
   HealthBadge,
   WaitingOnBadge,
 } from "@/components/ui";
+import { CutoverBanner } from "@/components/cutover-banner";
+import { QueueChips } from "@/components/queue-chips";
 import { ProjectRow } from "@/components/project-row";
 import { TaskRow } from "@/components/task-row";
 import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
@@ -79,26 +80,44 @@ export default async function DashboardPage() {
         }
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Active projects" value={summary.active} href="/projects" />
-        <Stat
-          label="At risk"
-          value={summary.atRisk}
-          tone={summary.atRisk > 0 ? "red" : undefined}
-          hint={summary.needsAttention > 0 ? `${summary.needsAttention} need attention` : "All healthy"}
-          href="/projects?health=RED"
+      <CutoverBanner />
+
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <QueueChips
+          chips={[
+            {
+              label: "At risk",
+              count: summary.atRisk,
+              href: "/projects?health=RED",
+              tone: "maroon",
+              title: "Open projects marked at risk",
+            },
+            {
+              label: "Go-lives in 30 days",
+              count: summary.goLivesNext30,
+              href: "/projects",
+              tone: "slate",
+              title: "Open projects with a target go-live in the next 30 days",
+            },
+            {
+              label: "Overdue",
+              count: summary.overdueTasks,
+              href: "/my-work",
+              tone: "gold",
+              title: "Open tasks past their due date",
+            },
+            {
+              label: "Waiting on customer",
+              count: summary.openCustomerActions,
+              href: "/my-work",
+              tone: "sage",
+              title: "Open customer action items",
+            },
+          ]}
         />
-        <Stat
-          label="Go-lives in 30 days"
-          value={summary.goLivesNext30}
-          href="/reports"
-        />
-        <Stat
-          label="Overdue tasks"
-          value={summary.overdueTasks}
-          tone={summary.overdueTasks > 0 ? "amber" : undefined}
-          href="/my-work"
-        />
+        <Link href="/projects" className="px-1 text-[12.5px] font-medium text-ink-3 hover:text-ink">
+          {summary.active} active
+        </Link>
       </div>
 
       <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.35fr_1fr]">

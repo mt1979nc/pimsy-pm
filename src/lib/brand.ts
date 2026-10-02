@@ -7,6 +7,6 @@
 export const PRODUCT_NAME = "PATH";
 export const PRODUCT_EXPANSION = "Plan · Assign · Track · Handoff";
 
-/** Capacity, forecast, analysis, engagement roster — Management-only. */
+/** Capacity, forecast, analysis, engagement roster — leadership-only. */
 export const PRISM_MODULE_NAME = "Prism";
 export const PRISM_EXPANSION = "Portfolio · Readiness · Insight · Staffing · Metrics";

@@ -76,7 +76,7 @@ export default async function ReportsPage() {
             <LinkButton href="/reports/waiting-on">Waiting on</LinkButton>
             <LinkButton href="/management/weekly">Weekly meeting</LinkButton>
             <LinkButton href="/management/engagements">Engagements</LinkButton>
-            <LinkButton href="/reports/capacity">Team capacity</LinkButton>
+            <LinkButton href="/management/capacity">Team capacity</LinkButton>
           </>
         }
       />

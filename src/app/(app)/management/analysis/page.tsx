@@ -1,4 +1,3 @@
-import { requirePortfolioAccess } from "@/lib/guard";
 import {
   forecastAccuracy,
   onTimeByOwner,
@@ -8,8 +7,7 @@ import {
 } from "@/lib/queries";
 import { loadForecastExclusions } from "@/lib/forecast-data";
 import { isExcludedFromPrimaryAverages } from "@/lib/forecast";
-import { Card, CardHeader, PageHeader, Stat, EmptyState, Badge } from "@/components/ui";
-import { PrismNav } from "@/components/prism-nav";
+import { Card, CardHeader, Stat, EmptyState, Badge } from "@/components/ui";
 import { RateBar } from "@/components/charts";
 import { cn } from "@/lib/cn";
 import { fmtShort } from "@/lib/dates";
@@ -25,8 +23,6 @@ const TIER_LABEL: Record<string, string> = {
 };
 
 export default async function AnalysisPage() {
-  await requirePortfolioAccess();
-
   const exclusions = await loadForecastExclusions();
   const [accuracy, owners, tiers, slips, completed] = await Promise.all([
     forecastAccuracy(exclusions),
@@ -38,12 +34,6 @@ export default async function AnalysisPage() {
 
   return (
     <>
-      <PrismNav />
-      <PageHeader
-        title="Analysis"
-        subtitle="On-time rate and slip patterns for finished sites."
-      />
-
       <p className="mb-4 rounded-lg border border-border bg-surface-2 px-4 py-3 text-[12.5px] text-ink-2">
         Primary averages exclude{" "}
         {exclusions.length > 0 ? (

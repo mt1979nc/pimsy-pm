@@ -32,7 +32,7 @@ import { cn } from "@/lib/cn";
 import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Management" };
+export const metadata = { title: "Admin" };
 
 export default async function AdminOverviewPage() {
   const actor = await requirePortfolioAccess();
@@ -108,7 +108,7 @@ export default async function AdminOverviewPage() {
         <div className="rounded-xl border border-transparent bg-red-soft px-4 py-3 text-[13px] text-red">
           <strong className="font-semibold">Over capacity:</strong>{" "}
           {overloaded.map((t) => `${t.name} (${t.utilization}%)`).join(", ")}.{" "}
-          <Link href="/reports/capacity" className="underline underline-offset-2">
+          <Link href="/management/capacity" className="underline underline-offset-2">
             Rebalance
           </Link>
         </div>
@@ -213,7 +213,7 @@ export default async function AdminOverviewPage() {
 
         <div className="space-y-5">
           <Card>
-            <CardHeader title="Team load" action={<LinkButton href="/reports/capacity" size="sm">Detail</LinkButton>} />
+            <CardHeader title="Team load" action={<LinkButton href="/management/capacity" size="sm">Detail</LinkButton>} />
             <div className="divide-y divide-border">
               {team.slice(0, 8).map((t) => (
                 <div key={t.id} className="flex items-center gap-3 px-4 py-2.5">

@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.9");
+    expect(APP_VERSION).toBe("1.18.10");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,21 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.10 cutover banner, queue chips, and Prism nav", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.10");
+    expect(note?.summary).toMatch(/Cutover banner/);
+    expect(note?.summary).toMatch(/queue chips/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /path\.cutover-banner\.dismissed/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /\/management\/capacity/.test(h) && /\/management\/analysis/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /path\.capacity\.member-card-order/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /\/admin/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.9")).toBeTruthy();
   });
 
   it("documents v1.18.9 executive column sort and capacity card order", () => {

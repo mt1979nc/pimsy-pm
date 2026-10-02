@@ -8,6 +8,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { Avatar } from "@/components/ui";
 import { APP_VERSION } from "@/lib/version";
 import { PRODUCT_EXPANSION, PRODUCT_NAME, PRISM_MODULE_NAME } from "@/lib/brand";
+import { ADMIN_AREA_HREF, ADMIN_AREA_LABEL, PRISM_NAV } from "@/lib/area-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <div className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
                 Leadership
               </div>
-              <NavLink href="/admin">Management</NavLink>
+              <NavLink href={ADMIN_AREA_HREF}>{ADMIN_AREA_LABEL}</NavLink>
               <NavLink href="/reports" exact>
                 Portfolio
               </NavLink>
@@ -57,16 +58,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <div className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
                 {PRISM_MODULE_NAME}
               </div>
-              <NavLink href="/management" exact>
-                Overview
-              </NavLink>
-              <NavLink href="/management/executive">Executive</NavLink>
-              <NavLink href="/management/weekly">Weekly meeting</NavLink>
-              <NavLink href="/management/forecast">Forecast</NavLink>
-              <NavLink href="/reports/capacity">Team capacity</NavLink>
-              <NavLink href="/management/team">Team</NavLink>
-              <NavLink href="/management/engagements">Engagements</NavLink>
-              <NavLink href="/reports/analysis">Analysis</NavLink>
+              {PRISM_NAV.map((item) => (
+                <NavLink key={item.href} href={item.href} exact={item.exact}>
+                  {item.label}
+                </NavLink>
+              ))}
             </>
           ) : null}
 

@@ -47,7 +47,7 @@ describe("team capacity card order", () => {
   });
 
   it("reorders only the capacity headroom cards and leaves the math alone", () => {
-    const page = readFileSync(resolve(process.cwd(), "src/app/(app)/reports/capacity/page.tsx"), "utf8");
+    const page = readFileSync(resolve(process.cwd(), "src/app/(app)/management/capacity/page.tsx"), "utf8");
     const cards = readFileSync(resolve(process.cwd(), "src/components/reorderable-member-cards.tsx"), "utf8");
     const chart = readFileSync(resolve(process.cwd(), "src/components/charts.tsx"), "utf8");
     expect(page).toMatch(/<ReorderableMemberLoadCards /);

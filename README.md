@@ -66,7 +66,7 @@ capacity against declared weekly hours. Customers and projects flagged
 capacity analytics) are omitted from those reports and from Prism Forecast /
 roster load — they stay on the projects list, task hub, and portal.
 
-**Forecast** (`/management/forecast`) — Prism, Management-only (OWNER / ADMIN /
+**Forecast** (`/management/forecast`) — Prism, leadership-only (OWNER / ADMIN /
 MANAGER) weekly-hours forecast: team load, department headroom, peak week,
 hire-now. Capacity-exempt staff are excluded from department math. Analysis
 primary averages exclude SENSORI / MHC / LECHRIS by default (configurable).
@@ -74,7 +74,7 @@ Specialists are redirected; customers never see it. Native Postgres is the
 source of truth after the v1.11 cutover (`GET /api/prism/snapshot` for
 Director / Pipeline routines).
 
-**Management area** (`/admin`) — one place for org-wide numbers, every project
+**Admin** (`/admin`) — one place for org-wide numbers, every project
 in a filterable table, every customer with rollups, people, and alert policy.
 Open to OWNER, ADMIN and MANAGER; the People and Alerts tabs are admin-only.
 
@@ -185,7 +185,7 @@ object, because they reach it by different routes.
 
 ### Microsoft Teams — optional, about two minutes
 
-Off by default. Turn it on at **Management → Alerts → Microsoft Teams**.
+Off by default. Turn it on at **Admin → Alerts → Microsoft Teams**.
 
 The channel is a **customer-activity feed**: a customer sending a message,
 completing an action item, or attaching a document. Staff talking to each other

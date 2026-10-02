@@ -30,7 +30,8 @@ describe("weekly meeting view (source)", () => {
     );
     const layout = readFileSync(resolve(process.cwd(), "src/app/(app)/management/layout.tsx"), "utf8");
     const sidebar = readFileSync(resolve(process.cwd(), "src/app/(app)/layout.tsx"), "utf8");
-    const nav = readFileSync(resolve(process.cwd(), "src/components/prism-nav.tsx"), "utf8");
+    const nav = readFileSync(resolve(process.cwd(), "src/lib/area-nav.ts"), "utf8");
+    const prism = readFileSync(resolve(process.cwd(), "src/components/prism-nav.tsx"), "utf8");
     expect(page).toMatch(/listWeeklyMeetingSites/);
     expect(page).toMatch(/includeExcluded/);
     expect(page).toMatch(/Show excluded/);
@@ -46,10 +47,14 @@ describe("weekly meeting view (source)", () => {
     expect(layout).toMatch(/\/management\/weekly|PrismNav/);
     expect(layout).toMatch(/PrismNav/);
     expect(nav).toMatch(/Weekly meeting/);
-    expect(nav).toMatch(/\/reports\/capacity/);
+    expect(nav).toMatch(/href: "\/management\/capacity"/);
+    expect(nav).toMatch(/source: "\/reports\/capacity", destination: "\/management\/capacity"/);
+    expect(nav).not.toMatch(/href: "\/reports\/capacity"/);
     expect(nav).toMatch(/Analysis/);
-    expect(sidebar).toMatch(/href="\/management\/weekly"/);
-    expect(sidebar).toMatch(/href="\/management" exact/);
+    expect(nav).toMatch(/href: "\/management", label: "Overview", exact: true/);
+    expect(prism).toMatch(/PRISM_NAV/);
+    expect(sidebar).toMatch(/PRISM_NAV/);
+    expect(sidebar).toMatch(/exact=\{item\.exact\}/);
     const lib = readFileSync(resolve(process.cwd(), "src/lib/weekly-meeting.ts"), "utf8");
     expect(lib).toMatch(/isExcludedFromAnalytics/);
     expect(lib).toMatch(/includeExcluded/);

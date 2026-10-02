@@ -1,23 +1,15 @@
 import { SubNavLink } from "@/components/nav-link";
+import { PRISM_NAV } from "@/lib/area-nav";
 
-/**
- * One Prism tab strip, shared by /management and the report pages that sit
- * beside it (team capacity, analysis) so those destinations stay one click
- * apart.
- */
+/** Prism tabs. Items come from `PRISM_NAV` — the same list as the sidebar. */
 export function PrismNav() {
   return (
     <nav aria-label="Prism" className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-border">
-      <SubNavLink href="/management">Overview</SubNavLink>
-      <SubNavLink href="/management/executive">Executive</SubNavLink>
-      <SubNavLink href="/management/weekly">Weekly meeting</SubNavLink>
-      <SubNavLink href="/management/forecast">Forecast</SubNavLink>
-      <SubNavLink href="/reports/capacity">Team capacity</SubNavLink>
-      <SubNavLink href="/management/team">Team</SubNavLink>
-      <SubNavLink href="/management/engagements" match="prefix">
-        Engagements
-      </SubNavLink>
-      <SubNavLink href="/reports/analysis">Analysis</SubNavLink>
+      {PRISM_NAV.map((item) => (
+        <SubNavLink key={item.href} href={item.href} match={item.match ?? "exact"}>
+          {item.label}
+        </SubNavLink>
+      ))}
     </nav>
   );
 }

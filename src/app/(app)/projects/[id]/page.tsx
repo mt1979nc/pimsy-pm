@@ -28,6 +28,7 @@ import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
 import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
 import { ContactCard } from "@/components/contact-card";
 import { listMentionCandidates } from "@/lib/mention-candidates";
+import { CutoverBanner } from "@/components/cutover-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +87,8 @@ export default async function ProjectOverviewPage({
   const customerContacts = project.members.filter((m) => m.user.role === "CUSTOMER");
 
   return (
+    <>
+    <CutoverBanner />
     <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1.35fr_1fr]">
       <div className="space-y-4">
         <Card>
@@ -286,5 +289,6 @@ export default async function ProjectOverviewPage({
         ) : null}
       </div>
     </div>
+    </>
   );
 }

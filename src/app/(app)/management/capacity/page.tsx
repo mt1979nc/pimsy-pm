@@ -1,9 +1,7 @@
-import { requirePortfolioAccess } from "@/lib/guard";
-import { PrismNav } from "@/components/prism-nav";
 import { teamCapacity } from "@/lib/queries";
 import { loadCapacityForecast } from "@/lib/forecast-data";
 import { memberLoadsFromForecast } from "@/lib/forecast";
-import { PageHeader, Card, CardHeader, EmptyState, Badge, Avatar, Stat } from "@/components/ui";
+import { Card, CardHeader, EmptyState, Badge, Avatar, Stat } from "@/components/ui";
 import { HeadroomChart } from "@/components/charts";
 import { ReorderableMemberLoadCards } from "@/components/reorderable-member-cards";
 import { fmtShort } from "@/lib/dates";
@@ -20,7 +18,6 @@ function utilizationTone(pct: number) {
 }
 
 export default async function CapacityPage() {
-  await requirePortfolioAccess();
   const [team, forecast] = await Promise.all([teamCapacity(), loadCapacityForecast(12)]);
 
   const over = team.filter((t) => t.utilization > 110);
@@ -28,12 +25,10 @@ export default async function CapacityPage() {
 
   return (
     <>
-      <PrismNav />
-      <PageHeader title="Team capacity" subtitle="Hours against each person's weekly cap." />
-
       <p className="mb-4 text-[13px] text-ink-2">
-        The chart uses scoped hours from kickoff to go-live. The list below is open tasks. Exempt
-        people are left out of the department total. Edit hours on{" "}
+        Hours against each person&apos;s weekly cap. The chart uses scoped hours from kickoff to
+        go-live. The list below is open tasks. Exempt people are left out of the department total.
+        Edit hours on{" "}
         <a href="/management/team" className="font-medium text-brand hover:underline">
           Team
         </a>

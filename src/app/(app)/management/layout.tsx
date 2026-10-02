@@ -14,7 +14,7 @@ export default async function ManagementLayout({ children }: { children: React.R
 
   return (
     <>
-      <PageHeader title={PRISM_MODULE_NAME} subtitle="Staffing, forecast, and site health." />
+      <PageHeader title={PRISM_MODULE_NAME} subtitle="Capacity, forecast, and site health." />
       <PrismNav />
       {children}
     </>

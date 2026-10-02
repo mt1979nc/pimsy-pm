@@ -168,7 +168,7 @@ export type HourEstimate = {
 
 /**
  * Forecast+ weights — Alexander’s confirmed PATH model.
- * Shown on Management → Forecast. Existing project_scope snapshots stay as
+ * Shown on Prism → Forecast. Existing project_scope snapshots stay as
  * stored until the next save; these constants apply to new scopes / Forecast.
  */
 export const FORECAST_WEIGHTS = {
