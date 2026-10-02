@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.20";
+export const APP_VERSION = "1.18.21";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.21",
+    date: "2026-10-02",
+    summary:
+      "Prism Dock delivery shows Implementation WIP overdue tasks and open threads from a Dock scrape. PATH links by acronym. Migrate 0030_dock_delivery. Dock tasks are not imported.",
+    highlights: [
+      "Data analytics → Dock delivery (`/management/dock-delivery`). Chips for WIP sites, overdue tasks, open threads, waiting on PIMSY, waiting on customer, and last refreshed. The table sorts by acronym. Expand a row for Dock thread links.",
+      "Match is case-insensitive: projects.crmAcronym, then projects.code. The acronym is kept when nothing in PATH matches. A hidden overdue column shows as —.",
+      "Ingest: npm run db:ingest:dock-delivery -- --wip dock-wip.json --threads dock-threads.json --apply, or POST /api/internal/dock-delivery/ingest with Bearer DOCK_DELIVERY_INGEST_SECRET. The last 8 snapshots are kept. The same board does not insert a duplicate.",
+      "Scrape runs where a Dock session exists (CDP or storageState). See scripts/dock/README.md. PATH App Service does not log in to Dock. Weekday Logic App / CoS box posts the JSON.",
+      "Migrate 0030_dock_delivery. Analytics tables only. No task or playbook writes. Logos, Executive comments, and Team capacity are unchanged. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.20",
     date: "2026-10-02",

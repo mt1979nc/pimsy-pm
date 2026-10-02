@@ -1359,6 +1359,87 @@ export const learningCenterItems = pgTable(
   (t) => [index("learning_center_item_section_idx").on(t.sectionId, t.order)],
 );
 
+/**
+ * Analytics-only Dock Implementation WIP snapshots.
+ * Never copied into `task` / playbook. Match to PATH at read time by acronym.
+ */
+export const dockDeliverySnapshots = pgTable(
+  "dock_delivery_snapshots",
+  {
+    id: text("id").primaryKey().$defaultFn(createId),
+    /** Later of the WIP and threads scrape timestamps. Shown as Last refreshed. */
+    retrievedAt: timestamp("retrieved_at", { withTimezone: true }).notNull(),
+    wipRetrievedAt: timestamp("wip_retrieved_at", { withTimezone: true }),
+    threadsRetrievedAt: timestamp("threads_retrieved_at", { withTimezone: true }),
+    sourceUrl: text("source_url"),
+    filters: jsonb("filters"),
+    totals: jsonb("totals").$type<Record<string, unknown>>().notNull().default({}),
+    /** Stable fingerprint of sites + threads. Same hash does not insert a new row. */
+    contentHash: text("content_hash").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("dock_delivery_snapshot_retrieved_idx").on(t.retrievedAt),
+    index("dock_delivery_snapshot_created_idx").on(t.createdAt),
+    index("dock_delivery_snapshot_hash_idx").on(t.contentHash),
+  ],
+);
+
+export const dockDeliverySites = pgTable(
+  "dock_delivery_sites",
+  {
+    id: text("id").primaryKey().$defaultFn(createId),
+    snapshotId: text("snapshot_id")
+      .notNull()
+      .references(() => dockDeliverySnapshots.id, { onDelete: "cascade" }),
+    acronym: text("acronym").notNull(),
+    name: text("name").notNull(),
+    owners: jsonb("owners").$type<string[]>().notNull().default([]),
+    /** Calendar day `YYYY-MM-DD` from Dock. Null when the column was hidden. */
+    targetEnd: text("target_end"),
+    actualEnd: text("actual_end"),
+    /** Null when the overdue column was not on the Dock view. UI shows "—". */
+    overdueTaskCount: integer("overdue_task_count"),
+    status: text("status"),
+    acronymInferred: boolean("acronym_inferred").notNull().default(false),
+    waitingOnPimsy: integer("waiting_on_pimsy").notNull().default(0),
+    waitingOnCustomer: integer("waiting_on_customer").notNull().default(0),
+    waitingUnknown: integer("waiting_unknown").notNull().default(0),
+    openThreadCount: integer("open_thread_count").notNull().default(0),
+  },
+  (t) => [
+    uniqueIndex("dock_delivery_site_snapshot_acronym_idx").on(t.snapshotId, t.acronym),
+    index("dock_delivery_site_snapshot_idx").on(t.snapshotId),
+  ],
+);
+
+export const dockDeliveryThreads = pgTable(
+  "dock_delivery_threads",
+  {
+    id: text("id").primaryKey().$defaultFn(createId),
+    snapshotId: text("snapshot_id")
+      .notNull()
+      .references(() => dockDeliverySnapshots.id, { onDelete: "cascade" }),
+    acronym: text("acronym").notNull(),
+    /** URL, or a hash of acronym + type + title when Dock did not give a URL. */
+    dockThreadKey: text("dock_thread_key").notNull(),
+    type: text("type"),
+    title: text("title").notNull(),
+    /** pimsy | customer | unknown */
+    waitingOn: text("waiting_on").notNull(),
+    lastPoster: text("last_poster"),
+    /** Dock relative label such as "15h" or "3d", not an instant. */
+    lastActivity: text("last_activity"),
+    snippet: text("snippet"),
+    url: text("url"),
+    internal: boolean("internal"),
+  },
+  (t) => [
+    uniqueIndex("dock_delivery_thread_snapshot_key_idx").on(t.snapshotId, t.dockThreadKey),
+    index("dock_delivery_thread_snapshot_acronym_idx").on(t.snapshotId, t.acronym),
+  ],
+);
+
 export const auditLogs = pgTable(
   "audit_log",
   {
@@ -1643,6 +1724,25 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   actor: one(users, { fields: [auditLogs.actorId], references: [users.id] }),
+}));
+
+export const dockDeliverySnapshotsRelations = relations(dockDeliverySnapshots, ({ many }) => ({
+  sites: many(dockDeliverySites),
+  threads: many(dockDeliveryThreads),
+}));
+
+export const dockDeliverySitesRelations = relations(dockDeliverySites, ({ one }) => ({
+  snapshot: one(dockDeliverySnapshots, {
+    fields: [dockDeliverySites.snapshotId],
+    references: [dockDeliverySnapshots.id],
+  }),
+}));
+
+export const dockDeliveryThreadsRelations = relations(dockDeliveryThreads, ({ one }) => ({
+  snapshot: one(dockDeliverySnapshots, {
+    fields: [dockDeliveryThreads.snapshotId],
+    references: [dockDeliverySnapshots.id],
+  }),
 }));
 
 // ===========================================================================

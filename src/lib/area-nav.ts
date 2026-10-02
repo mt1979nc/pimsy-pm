@@ -40,6 +40,7 @@ export const PRISM_NAV: AreaNavItem[] = [
   { href: "/management/team", label: "Team", match: "exact" },
   { href: "/management/engagements", label: "Roster", match: "prefix" },
   { href: "/management/analysis", label: "Analysis", match: "exact" },
+  { href: "/management/dock-delivery", label: "Dock delivery", match: "exact" },
 ];
 
 /** Bookmarks on the old report URLs still open the Prism pages. */
