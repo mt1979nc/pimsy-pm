@@ -64,6 +64,25 @@ export function optionalAreaLabel(key: string): string {
   return OPTIONAL_AREA_CATALOG[key]?.label ?? key.replaceAll("_", " ");
 }
 
+/**
+ * Day count shown for a path. EHR and EHR+RCM share the Forecast+ go-live
+ * span when a scope is filled; RCM-only paths keep the template duration.
+ */
+export function playbookDayCount(opts: {
+  path: PlaybookPath;
+  templateDurationDays: number;
+  forecastCalendarDays?: number | null;
+}): number {
+  if (
+    (opts.path === "EHR" || opts.path === "EHR_RCM") &&
+    opts.forecastCalendarDays != null &&
+    opts.forecastCalendarDays > 0
+  ) {
+    return opts.forecastCalendarDays;
+  }
+  return opts.templateDurationDays;
+}
+
 /** Stable area key for optional playbook slices (create-site include/exclude). */
 export function normalizeAreaKey(raw: string): string {
   return raw
@@ -123,6 +142,7 @@ export function collectTemplateAreaRows(
       taskCount: stats.taskCount,
       optionalCount: stats.optionalCount,
     }))
+    .filter((row) => row.key !== "billing_configuration" || row.optionalCount > 0)
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 

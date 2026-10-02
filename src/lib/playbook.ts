@@ -225,6 +225,7 @@ export async function materializeTemplatesOnProject(opts: {
         name: tp.name,
         offsetDays: tp.offsetDays,
         durationDays: tp.durationDays,
+        workTrack: tp.workTrack,
       })),
       kickoff: opts.start,
       scaleFactor: opts.scaleFactor,

@@ -41,6 +41,26 @@ describe("template area helpers", () => {
     expect(byKey.data_import?.label).toMatch(/import/i);
   });
 
+  it("hides the billing-team tab from optional areas until something is marked optional", () => {
+    const hidden = collectTemplateAreaRows([
+      {
+        isOptional: false,
+        areaKey: "billing_configuration",
+        tasks: [{ isOptional: false, areaKey: null }],
+      },
+    ]);
+    expect(hidden.some((r) => r.key === "billing_configuration")).toBe(false);
+
+    const shown = collectTemplateAreaRows([
+      {
+        isOptional: false,
+        areaKey: "billing_configuration",
+        tasks: [{ isOptional: true, areaKey: "billing_configuration" }],
+      },
+    ]);
+    expect(shown.some((r) => r.key === "billing_configuration")).toBe(true);
+  });
+
   it("allocates unique copy codes", () => {
     expect(uniqueTemplateCode("ehr", [])).toBe("ehr-copy");
     expect(uniqueTemplateCode("ehr", ["ehr", "ehr-copy"])).toBe("ehr-copy-2");

@@ -48,6 +48,8 @@ export type PhaseScheduleInput = {
   name: string;
   offsetDays: number;
   durationDays: number;
+  /** When an EHR schedule also carries RCM tabs, those tabs stay on scaled offsets. */
+  workTrack?: "EHR" | "RCM" | "SHARED" | null;
 };
 
 export type ForecastSectionBucket = "kickoff" | "discovery" | "config" | "training" | "post" | "scaled";
@@ -262,9 +264,20 @@ export function recommendPhaseSchedule(opts: {
   }
 
   const windows = forecastWindowsFromProjection(opts.kickoff, opts.forecast);
+  // RCM tabs on a combined playbook must not stretch the EHR config/training
+  // windows — otherwise the same EHR section lands on a different day than
+  // the EHR-only playbook.
+  const alongsideEhr = opts.phases.some((p) => p.workTrack != null && p.workTrack !== "RCM");
   const buckets = new Map<ForecastSectionBucket, PhaseScheduleInput[]>();
   for (const phase of opts.phases) {
-    const bucket = forecastBucketForPhase(phase.name);
+    let bucket = forecastBucketForPhase(phase.name);
+    if (
+      alongsideEhr &&
+      phase.workTrack === "RCM" &&
+      (bucket === "config" || bucket === "training")
+    ) {
+      bucket = "scaled";
+    }
     const list = buckets.get(bucket) ?? [];
     list.push(phase);
     buckets.set(bucket, list);

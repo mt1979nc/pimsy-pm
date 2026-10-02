@@ -5,7 +5,6 @@ const LINKS = [
   { href: "/templates", label: "Playbooks", match: (path: string) => path === "/templates" || path.startsWith("/templates/") },
   { href: "/library", label: "File library", match: (path: string) => path === "/library" || path.startsWith("/library/") },
   { href: "/learning", label: "Learning Center", match: (path: string) => path === "/learning" || path.startsWith("/learning/") },
-  { href: "/projects/new", label: "New project", match: (path: string) => path === "/projects/new" },
 ] as const;
 
 /** Owner/admin strip for the template area (playbooks, library, Learning Center). */

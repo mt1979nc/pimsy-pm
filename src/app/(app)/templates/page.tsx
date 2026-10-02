@@ -49,14 +49,9 @@ export default async function TemplatesPage() {
         title="Templates"
         subtitle="Dock-style playbooks: phases, nested tasks, descriptions, default files, and training checklists. New projects clone the chosen path."
         actions={
-          <div className="flex flex-wrap gap-2">
-            <LinkButton href="/library" size="sm">
-              File library
-            </LinkButton>
-            <LinkButton href="/projects/new" variant="primary">
-              Use a template
-            </LinkButton>
-          </div>
+          <LinkButton href="/projects/new" variant="primary" size="sm">
+            New project
+          </LinkButton>
         }
       />
       <TemplateHubNav current="/templates" />
@@ -196,35 +191,12 @@ export default async function TemplatesPage() {
       )}
 
       <p className="mt-5 max-w-2xl text-[12.5px] leading-relaxed text-ink-3">
-        Playbook tasks mirror Dock Implementation: blue task action buttons with
-        the live PWMI labels (<strong>Click Here</strong> for Organization
-        Details Form / the wizard, <strong>Click Here to Submit Clinical
-        Workflow Form</strong>, <strong>Click Here to Submit Billing
-        Questionnaire</strong>, <strong>Upload files</strong>,{" "}
-        <strong>Open form</strong>), download → complete → upload copy on
-        customer file requests, and training descriptions.
-        Duplicate makes a custom copy so the four site-creation paths stay put. New workspaces
-        inherit that copy automatically. Billing Configuration is a billing-team
-        tab with connected Discovery/Configuration copies; Move to tab can send
-        overlapping work onto an RCM section.
-        Live projects are not rewritten when the template changes — run{" "}
-        <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
-          npm run db:resync:playbook-from-dock -- --apply
-        </code>{" "}
-        in Azure Cloud Shell to backfill missing descriptions, checklists, and default files on
-        existing WIP without deleting staff notes or user uploads (dry-run logs progress and
-        stops at 180s unless you pass{" "}
-        <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">--timeout-sec 0</code>
-        ).         Canonical path playbooks are <strong>locked</strong> so “not available”
-        junk is not edited into the live template — Duplicate to customize, or
-        Unlock (owner/admin) if you must edit. To reset the four standard paths
-        from code (and restore Dock expose/hide defaults), run{" "}
+        Locked paths stay as seeded — Duplicate to customize. New sites copy the
+        playbook; live projects are not rewritten. Reset the four paths with{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[11.5px]">
           npm run db:seed -- --templates-only
         </code>
-        . That replaces playbook rows only; live projects keep their tasks.
-        New workspaces inherit eyelid defaults (Kickoff + Discovery exposed;
-        Configuration / Accessing Pimsy / Training hidden until staff expose).
+        .
       </p>
     </>
   );

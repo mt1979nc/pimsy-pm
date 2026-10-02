@@ -22,6 +22,9 @@
  * Phase `visibility` is the Dock eyelid: Kickoff + Discovery start SHARED;
  * Configuration / Accessing Pimsy / Training and later tabs start INTERNAL
  * until staff expose them. See `dockDefaultPhaseVisibility`.
+ *
+ * Tab order follows that expose sequence: Site Configuration, then Accessing
+ * Pimsy, then Billing Configuration, then training and later tabs.
  */
 
 import { dockDefaultPhaseVisibility } from "@/lib/dock-phase-visibility";
@@ -147,20 +150,6 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
     ],
   },
   {
-    name: "Accessing Pimsy",
-    description:
-      "Live site, desktop application, practice acronym, and security key. Hidden until logins are ready — staff expose this tab (Dock eyelid).",
-    visibility: dockDefaultPhaseVisibility("Accessing Pimsy"),
-    offsetDays: 14,
-    durationDays: 7,
-    tasks: [
-      S("Accessing Pimsy", {
-        description:
-          "Bookmark the live site, install the desktop app, and keep the practice acronym and security key handy. Your specialist adds the details here when accounts are ready.",
-      }),
-    ],
-  },
-  {
     name: "Site Configuration",
     description: "Org, users, billing rules and forms built out in PIMSY.",
     visibility: dockDefaultPhaseVisibility("Site Configuration"),
@@ -206,6 +195,20 @@ export const IMPLEMENTATION_PHASES: SeedPhase[] = [
         S("Forms: Public Docs/Word Merge", { offsetDays: 16, durationDays: 6 }),
       ]),
       I("Expose Training Tab for Booking", { offsetDays: 22 }),
+    ],
+  },
+  {
+    name: "Accessing Pimsy",
+    description:
+      "Live site, desktop application, practice acronym, and security key. Hidden until logins are ready — staff expose this tab (Dock eyelid).",
+    visibility: dockDefaultPhaseVisibility("Accessing Pimsy"),
+    offsetDays: 14,
+    durationDays: 7,
+    tasks: [
+      S("Accessing Pimsy", {
+        description:
+          "Bookmark the live site, install the desktop app, and keep the practice acronym and security key handy. Your specialist adds the details here when accounts are ready.",
+      }),
     ],
   },
   {

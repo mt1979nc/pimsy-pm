@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.12");
+    expect(APP_VERSION).toBe("1.18.13");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,21 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.13 playbook days and template tabs", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.13");
+    expect(note?.summary).toMatch(/EHR and EHR\+RCM/);
+    expect(note?.summary).toMatch(/90-day/);
+    expect(note?.summary).toMatch(/Accessing Pimsy/);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /90-day/.test(h) && /Forecast/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Site Configuration, Accessing Pimsy, Billing Configuration/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /Learning Center/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /PATH/.test(h) && /Prism/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.12")).toBeTruthy();
   });
 
   it("documents v1.18.12 EHR color chrome", () => {
