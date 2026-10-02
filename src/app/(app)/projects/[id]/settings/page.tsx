@@ -6,6 +6,8 @@ import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, canDeletePortfolioRecords } from "@/lib/authz";
 import { toDateInput } from "@/lib/dates";
 import { Card, CardHeader, Badge, Avatar, VisibilityBadge, LinkButton } from "@/components/ui";
+import { CustomerLogoForm } from "@/app/(app)/customers/[id]/customer-logo-form";
+import { customerLogoSrc } from "@/lib/customer-logo";
 import {
   ProjectSettingsForm,
   AddMemberForm,
@@ -81,7 +83,7 @@ export default async function ProjectSettingsPage({
   const customer = project.customerAccountId
     ? await db.query.customerAccounts.findFirst({
         where: eq(customerAccounts.id, project.customerAccountId),
-        columns: { id: true, name: true },
+        columns: { id: true, name: true, logoUrl: true, logoStorageKey: true },
       })
     : null;
 
@@ -183,6 +185,19 @@ export default async function ProjectSettingsPage({
       </Card>
 
       <div className="space-y-4">
+        {customer ? (
+          <Card>
+            <CardHeader
+              title="Customer logo"
+              subtitle="Shown on this project and the customer list"
+            />
+            <CustomerLogoForm
+              customerId={customer.id}
+              currentSrc={customerLogoSrc(customer)}
+              currentUrl={customer.logoUrl}
+            />
+          </Card>
+        ) : null}
         <Card>
           <CardHeader
             title="Customer contacts"

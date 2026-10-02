@@ -30,6 +30,8 @@ import {
 } from "@/lib/customer-invite";
 import { isReservedStaffEmail } from "@/lib/internal-email";
 import { revalidateAboutSurfaces, revalidateCustomerAboutSurfaces } from "@/lib/about-revalidate";
+import { parseLogoForm } from "@/lib/customer-logo-parse";
+import { persistCustomerLogo } from "@/lib/customer-logo-store";
 
 function slugify(s: string) {
   return s
@@ -58,6 +60,9 @@ export async function createCustomer(
 ): Promise<ActionState> {
   const actor = await requireStaff();
   if (!canCreateCustomers(actor)) return { error: "You cannot create customers." };
+
+  const logo = await parseLogoForm(formData);
+  if (!logo.ok) return { error: logo.error };
 
   const parsed = customerSchema.safeParse({
     name: formData.get("name"),
@@ -114,12 +119,20 @@ export async function createCustomer(
     return { error: "Could not create the customer. Please try again." };
   }
 
+  if (logo.input.kind !== "unchanged") {
+    const saved = await persistCustomerLogo(id, logo.input);
+    if (!saved.ok) {
+      console.error("createCustomer logo failed", saved.error);
+    }
+  }
+
   await audit({
     actor,
     action: "customer.created",
     entityType: "customer_account",
     entityId: id,
     summary: d.name,
+    metadata: { logo: logo.input.kind },
   });
 
   if (portalContact.contact) {
@@ -195,6 +208,39 @@ export async function updateCustomer(
   revalidatePath(`/customers/${id}`);
   revalidatePrismSurfaces();
   return { ok: true };
+}
+
+/** Upload or https URL for the practice mark. Does not require Dock. */
+export async function saveCustomerLogo(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const id = String(formData.get("customerId") ?? "");
+  if (!id) return { error: "Missing customer." };
+
+  const logo = await parseLogoForm(formData);
+  if (!logo.ok) return { error: logo.error };
+  if (logo.input.kind === "unchanged") {
+    return { ok: true, message: "No logo change." };
+  }
+
+  const saved = await persistCustomerLogo(id, logo.input);
+  if (!saved.ok) return { error: saved.error };
+
+  await audit({
+    actor,
+    action: "customer.logo.updated",
+    entityType: "customer_account",
+    entityId: id,
+    summary: logo.input.kind === "url" ? logo.input.url : logo.input.kind,
+  });
+
+  revalidatePath("/customers");
+  revalidatePath(`/customers/${id}`);
+  revalidatePath("/projects");
+  revalidatePrismSurfaces();
+  return { ok: true, message: "Logo saved." };
 }
 
 // ---------------------------------------------------------------------------

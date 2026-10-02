@@ -3,7 +3,8 @@ import { requireCustomer } from "@/lib/guard";
 import { portalProjects, portalActionItems } from "@/lib/portal";
 import { listInboxThreads } from "@/lib/threads";
 import { partitionThreads } from "@/lib/thread-state";
-import { Card, CardHeader, EmptyState, Badge, ProgressBar, Avatar } from "@/components/ui";
+import { Card, CardHeader, EmptyState, Badge, ProgressBar, Avatar, BrandMark } from "@/components/ui";
+import { customerLogoSrc } from "@/lib/customer-logo";
 import { CollapsibleCompleted } from "@/components/collapsible-completed";
 import { PortalTaskRow } from "./portal-task-row";
 import { PortalMessageBox } from "./portal-message-box";
@@ -84,9 +85,16 @@ export default async function PortalHome() {
               <Card key={p.id}>
                 <Link href={`/portal/projects/${p.id}`} className="block px-5 py-4 hover:bg-surface-2">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="truncate text-[15px] font-semibold text-ink">{p.name}</h2>
-                      <p className="mt-0.5 text-[12.5px] text-ink-3">
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <BrandMark
+                        name={p.customerAccount?.name ?? p.name}
+                        src={customerLogoSrc(p.customerAccount)}
+                        size={32}
+                        className="mt-0.5"
+                      />
+                      <div className="min-w-0">
+                        <h2 className="truncate text-[15px] font-semibold text-ink">{p.name}</h2>
+                        <p className="mt-0.5 text-[12.5px] text-ink-3">
                         {p.status === "COMPLETED"
                           ? "Live"
                           : days !== null
@@ -95,6 +103,7 @@ export default async function PortalHome() {
                               : `Target date was ${fmtDate(p.targetGoLiveDate)}`
                             : "Go-live date to be confirmed"}
                       </p>
+                      </div>
                     </div>
                     {p.status === "COMPLETED" ? (
                       <Badge tone="green">Live</Badge>

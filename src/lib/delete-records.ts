@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAccounts, projects, users } from "@/db/schema";
 import { isProtectedStaffEmail } from "@/lib/demo-entities";
+import { deleteFile } from "@/lib/storage";
 import type { Actor } from "@/lib/authz";
 import { canDeletePortfolioRecords } from "@/lib/authz";
 
@@ -106,7 +107,12 @@ export async function hardDeleteProject(projectId: string): Promise<void> {
 }
 
 export async function hardDeleteCustomer(customerId: string): Promise<void> {
+  const row = await db.query.customerAccounts.findFirst({
+    where: eq(customerAccounts.id, customerId),
+    columns: { logoStorageKey: true },
+  });
   await db.delete(customerAccounts).where(eq(customerAccounts.id, customerId));
+  if (row?.logoStorageKey) await deleteFile(row.logoStorageKey);
 }
 
 export async function loadProjectForDelete(projectId: string) {

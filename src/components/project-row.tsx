@@ -1,11 +1,13 @@
 import Link from "next/link";
 import {
   Badge,
+  BrandMark,
   HealthBadge,
   ProjectStatusBadge,
   ProgressBar,
   Avatar,
 } from "@/components/ui";
+import { customerLogoSrc } from "@/lib/customer-logo";
 import { pctComplete } from "@/lib/pct-complete";
 import { fmtDate, daysUntil } from "@/lib/dates";
 import { cn } from "@/lib/cn";
@@ -26,7 +28,12 @@ type Row = {
   rcmTaskCountTotal?: number | null;
   ehrTaskCountTotal?: number | null;
   sourceProjectId?: string | null;
-  customerAccount?: { id: string; name: string } | null;
+  customerAccount?: {
+    id: string;
+    name: string;
+    logoUrl?: string | null;
+    logoStorageKey?: string | null;
+  } | null;
   lead?: { id: string; name: string | null; image?: string | null } | null;
 };
 
@@ -70,6 +77,11 @@ export function ProjectRow({ project, href }: { project: Row; href?: string }) {
       title={hoverTitle}
       className="group flex min-w-0 items-center gap-4 px-4 py-3 transition-colors hover:bg-surface-2"
     >
+      <BrandMark
+        name={acronym}
+        src={customerLogoSrc(project.customerAccount)}
+        size={28}
+      />
       <div className="min-w-0 flex-[2.2]">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <div className="max-w-full truncate text-[13.5px] font-semibold text-ink group-hover:text-brand">
@@ -129,6 +141,7 @@ export function ProjectRow({ project, href }: { project: Row; href?: string }) {
 export function ProjectListHeader() {
   return (
     <div className="flex items-center gap-4 border-b border-border bg-surface-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+      <div className="w-7 shrink-0" aria-hidden />
       <div className="min-w-0 flex-[2.2]">Site</div>
       <div className="hidden w-[110px] shrink-0 sm:block">Progress</div>
       <div className="hidden w-[128px] shrink-0 lg:block">Go-live</div>

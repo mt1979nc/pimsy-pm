@@ -12,7 +12,9 @@ import {
   CustomerStatusBadge,
   HealthBadge,
   Badge,
+  BrandMark,
 } from "@/components/ui";
+import { customerLogoSrc } from "@/lib/customer-logo";
 import { fmtDate } from "@/lib/dates";
 import { pctComplete } from "@/lib/pct-complete";
 import { HandedOffCount, HandedOffEntries, HandedOffRow, ShowHandedOffToggle } from "@/components/show-handed-off";
@@ -72,13 +74,16 @@ export default async function CustomersPage() {
               <Card className="overflow-hidden">
                 <Link href={`/customers/${c.id}`} className="block px-5 py-4 hover:bg-surface-2">
                   <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="truncate text-[14.5px] font-semibold text-ink">{c.name}</h2>
-                      <p className="mt-0.5 truncate text-[12.5px] text-ink-3">
-                        {[c.practiceType, c.seatCount ? `${c.seatCount} seats` : null]
-                          .filter(Boolean)
-                          .join(" · ") || "No details yet"}
-                      </p>
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <BrandMark name={c.name} src={customerLogoSrc(c)} size={32} className="mt-0.5" />
+                      <div className="min-w-0">
+                        <h2 className="truncate text-[14.5px] font-semibold text-ink">{c.name}</h2>
+                        <p className="mt-0.5 truncate text-[12.5px] text-ink-3">
+                          {[c.practiceType, c.seatCount ? `${c.seatCount} seats` : null]
+                            .filter(Boolean)
+                            .join(" · ") || "No details yet"}
+                        </p>
+                      </div>
                     </div>
                     <CustomerStatusBadge status={c.status} />
                   </div>

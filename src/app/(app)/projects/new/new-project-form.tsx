@@ -19,6 +19,7 @@ import { STAFFING_ROLES, STAFFING_ROLE_LABELS, MANAGER_OVERVIEW_ROLES } from "@/
 import { UsFederalHolidayToggle } from "@/components/us-federal-holiday-toggle";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
 import { PortalContactFields } from "@/components/portal-contact-fields";
+import { CustomerLogoFields } from "@/components/customer-logo-fields";
 
 type Option = { id: string; name: string | null; staffingRole?: string | null };
 type ExistingProject = { id: string; name: string; code: string; customerAccountId: string | null };
@@ -293,6 +294,17 @@ export function NewProjectForm({
                 className={inputClass}
               />
             </Field>
+
+            {!isInternal ? (
+              <div className="rounded-xl border border-border p-4">
+                <p className="mb-3 text-[13.5px] font-medium text-ink">Customer logo</p>
+                <p className="mb-3 text-[12.5px] text-ink-3">
+                  Optional. Saved on the customer and shown on lists and headers. Upload a file or
+                  paste an https URL — Dock is not required for customers you add later.
+                </p>
+                <CustomerLogoFields idPrefix="new-project-" />
+              </div>
+            ) : null}
           </div>
         </Card>
 

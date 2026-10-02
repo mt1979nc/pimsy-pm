@@ -33,6 +33,7 @@ export async function portalProjects(actor: CustomerActor) {
     orderBy: [asc(projects.targetGoLiveDate)],
     with: {
       lead: { columns: { id: true, name: true, image: true, email: true, title: true, zoomBookingUrl: true } },
+      customerAccount: { columns: { id: true, name: true, logoUrl: true, logoStorageKey: true } },
     },
   });
 }
@@ -283,7 +284,7 @@ export async function portalProject(actor: CustomerActor, projectId: string) {
     ),
     with: {
       lead: { columns: { id: true, name: true, image: true, email: true, title: true, zoomBookingUrl: true } },
-      customerAccount: { columns: { id: true, name: true } },
+      customerAccount: { columns: { id: true, name: true, logoUrl: true, logoStorageKey: true } },
     },
   });
   return row ?? null;
