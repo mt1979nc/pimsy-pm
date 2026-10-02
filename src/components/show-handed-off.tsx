@@ -135,7 +135,7 @@ export function HandedOffEntries({
   }
   const nodes = visible.map((entry) => <Fragment key={entry.id}>{entry.content}</Fragment>);
   if (layout === "grid") {
-    return <div className="grid gap-4 md:grid-cols-2">{nodes}</div>;
+    return <div className="grid min-w-0 gap-4 md:grid-cols-2 [&>*]:min-w-0">{nodes}</div>;
   }
   if (layout === "divided") {
     return (

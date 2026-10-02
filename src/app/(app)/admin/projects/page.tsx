@@ -78,7 +78,7 @@ export default async function AdminProjectsPage({
         {rows.length === 0 ? (
           <EmptyState title="Nothing matches" description="Try a different filter." />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="min-w-0 max-w-full overflow-x-auto [contain:paint]">
             <table className="w-full min-w-[860px] border-collapse text-[13px]">
               <thead>
                 <tr className="border-b border-border bg-surface-2 text-[11px] uppercase tracking-wide text-ink-3">

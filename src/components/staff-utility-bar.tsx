@@ -1,32 +1,29 @@
 import Link from "next/link";
-import { NavLink } from "@/components/nav-link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Avatar } from "@/components/ui";
 
 /**
  * Navy utility strip echoing the PIMSY EHR top bar: search, alerts, profile.
- * The left nav stays the depth menu. This bar does not replace it.
+ * The accordion sidebar is the section menu, including on a narrow window.
  */
 export function StaffUtilityBar({
   name,
   email,
   role,
   unread,
-  showWeekly,
 }: {
   name: string | null;
   email: string;
   role: string;
   unread: number;
-  showWeekly: boolean;
 }) {
   const label = name ?? email;
   const alertLabel = unread > 0 ? `Alerts, ${unread} unread` : "Alerts";
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#0d2f4f] bg-[#113c64] text-white">
-      <div className="flex h-12 items-center gap-2 px-3 sm:gap-3 sm:px-4">
-        <form action="/projects" role="search" className="min-w-0 flex-1">
+      <div className="flex min-h-12 flex-wrap items-center gap-2 px-3 py-1.5 sm:gap-3 sm:px-4">
+        <form action="/projects" role="search" className="min-w-[8rem] flex-1">
           <label htmlFor="staff-site-search" className="sr-only">
             Search sites
           </label>
@@ -62,28 +59,6 @@ export function StaffUtilityBar({
         </Link>
         <SignOutButton className="w-auto shrink-0 rounded-md px-2 py-1 text-white/90 hover:bg-white/10 hover:text-white" />
       </div>
-      <nav className="flex items-center gap-1 overflow-x-auto px-2 pb-2 md:hidden" aria-label="Sections">
-        <NavLink href="/dashboard" tone="inverse">
-          Home
-        </NavLink>
-        <NavLink href="/projects" tone="inverse">
-          Projects
-        </NavLink>
-        <NavLink href="/inbox" badge={unread} tone="inverse">
-          Inbox
-        </NavLink>
-        <NavLink href="/my-work" tone="inverse">
-          Mine
-        </NavLink>
-        {showWeekly ? (
-          <NavLink href="/management/weekly" tone="inverse">
-            Weekly
-          </NavLink>
-        ) : null}
-        <NavLink href="/updates" tone="inverse">
-          New
-        </NavLink>
-      </nav>
     </header>
   );
 }

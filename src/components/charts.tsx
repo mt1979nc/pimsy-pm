@@ -51,18 +51,19 @@ export function HeadroomChart({
   const labelPad = `${(plot.padX / plot.viewWidth) * 100}%`;
 
   return (
-    <div className={cn("px-4 pb-4 pt-3", className)}>
+    <div className={cn("min-w-0 px-4 pb-4 pt-3", className)}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-ink-3">
         <span>Billable hours / week (exempt excluded)</span>
         <span className="tabular-nums">Cap {numericHours(capacityHours)}h</span>
       </div>
+      <div className="min-w-0 overflow-x-auto [contain:paint]">
+      <div style={{ minWidth: Math.max(280, weeks.length * 48) }}>
       <svg
         viewBox={`0 0 ${plot.viewWidth} ${plot.viewHeight}`}
-        className="h-auto w-full overflow-visible"
+        className="h-auto w-full"
         role="img"
         aria-label={`Weekly load against ${numericHours(capacityHours)} hour department capacity`}
         preserveAspectRatio="xMidYMid meet"
-        overflow="visible"
       >
         {plot.capY != null ? (
           <line
@@ -141,11 +142,14 @@ export function HeadroomChart({
         {weeks.map((w) => (
           <div
             key={weekDayKey(w.weekOf)}
-            className="min-w-0 flex-1 text-center text-[10px] leading-tight text-ink-3"
+            className="min-w-0 flex-1 truncate text-center text-[10px] leading-tight text-ink-3"
+            title={fmtShort(w.weekOf)}
           >
             {fmtShort(w.weekOf)}
           </div>
         ))}
+      </div>
+      </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-4 text-[12px] text-ink-2">
         <span className="inline-flex items-center gap-1.5">
@@ -205,7 +209,9 @@ export function MemberLoadCard({
         <Avatar name={member.name ?? member.email} image={member.image} size={32} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="truncate text-[13.5px] font-medium text-ink">{member.name ?? member.email}</span>
+            <span className="min-w-0 max-w-full truncate text-[13.5px] font-medium text-ink" title={member.name ?? member.email ?? undefined}>
+              {member.name ?? member.email}
+            </span>
             {member.isDirector ? <Badge tone="violet">Director</Badge> : null}
             {member.capacityExempt ? <Badge tone="amber">Exempt</Badge> : null}
           </div>

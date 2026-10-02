@@ -82,7 +82,7 @@ export default async function CapacityPage() {
         {forecast.staff.length === 0 ? (
           <EmptyState title="No staff yet" />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="min-w-0 max-w-full overflow-x-auto [contain:paint]">
             <table className="w-full min-w-[560px] border-collapse text-[12.5px]">
               <thead>
                 <tr className="border-b border-border bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
@@ -163,22 +163,22 @@ export default async function CapacityPage() {
           <EmptyState title="No staff yet" description="Invite your team under People." />
         ) : (
           <>
-            <div className="flex items-center gap-4 border-b border-border bg-surface-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-              <div className="flex-1">Person</div>
-              <div className="hidden w-[80px] text-right sm:block">Projects</div>
-              <div className="w-[80px] text-right">Open</div>
-              <div className="hidden w-[80px] text-right md:block">Overdue</div>
-              <div className="w-[190px]">Utilization</div>
+            <div className="hidden items-center gap-4 border-b border-border bg-surface-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3 sm:flex">
+              <div className="min-w-0 flex-1">Person</div>
+              <div className="w-16 text-right">Projects</div>
+              <div className="w-14 text-right">Open</div>
+              <div className="hidden w-16 text-right md:block">Overdue</div>
+              <div className="w-[9.5rem] shrink-0">Utilization</div>
             </div>
             <div className="divide-y divide-border">
               {team.map((t) => {
                 const u = utilizationTone(t.utilization);
                 return (
-                  <div key={t.id} className="flex items-center gap-4 px-4 py-3">
+                  <div key={t.id} className="flex min-w-0 flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
                     <div className="flex min-w-0 flex-1 items-center gap-2.5">
                       <Avatar name={t.name} image={t.image} size={28} />
                       <div className="min-w-0">
-                        <div className="truncate text-[13.5px] font-medium text-ink">
+                        <div className="truncate text-[13.5px] font-medium text-ink" title={t.name ?? t.email}>
                           {t.name ?? t.email}
                         </div>
                         <div className="truncate text-[12px] capitalize text-ink-3">
@@ -187,11 +187,16 @@ export default async function CapacityPage() {
                       </div>
                     </div>
 
-                    <div className="hidden w-[80px] text-right text-[13px] text-ink-2 sm:block">
+                    <div className="hidden w-16 shrink-0 text-right text-[13px] text-ink-2 sm:block">
                       {t.projectsLed}
                     </div>
-                    <div className="w-[80px] text-right text-[13px] text-ink-2">{t.openTasks}</div>
-                    <div className="hidden w-[80px] text-right md:block">
+                    <div className="flex shrink-0 items-baseline justify-between gap-3 sm:block sm:w-14 sm:text-right">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-3 sm:hidden">
+                        Open
+                      </span>
+                      <span className="text-[13px] text-ink-2">{t.openTasks}</span>
+                    </div>
+                    <div className="hidden w-16 shrink-0 text-right md:block">
                       {t.overdueTasks > 0 ? (
                         <Badge tone="red">{t.overdueTasks}</Badge>
                       ) : (
@@ -199,12 +204,14 @@ export default async function CapacityPage() {
                       )}
                     </div>
 
-                    <div className="w-[190px]">
+                    <div className="min-w-0 sm:w-[9.5rem] sm:shrink-0">
                       <div className="mb-1 flex items-baseline justify-between gap-2">
                         <span className="text-[12px] font-medium text-ink">
                           {t.committedHours}h
                         </span>
-                        <span className="text-[11.5px] text-ink-3">{u.label}</span>
+                        <span className="min-w-0 truncate text-[11.5px] text-ink-3" title={u.label}>
+                          {u.label}
+                        </span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
                         <div

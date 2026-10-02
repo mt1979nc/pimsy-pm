@@ -45,28 +45,28 @@ function SheetText({ value, label = "Empty" }: { value: string | number | null |
   return <>{value}</>;
 }
 
-const th = "px-2 py-2 font-semibold text-white";
-const td = "px-2 py-2";
+const th = "overflow-hidden break-words px-2 py-2 font-semibold leading-tight text-white";
+const td = "overflow-hidden px-2 py-2";
 
 export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
   return (
-    <div className="min-w-0 w-full">
-      <table className="w-full table-fixed border-collapse text-[12.5px]">
+    <div className="min-w-0 w-full max-w-full overflow-hidden [contain:paint]">
+      <table className="w-full min-w-0 table-fixed border-collapse text-[12.5px]">
         <thead>
           <tr className="border-b border-[#0d2f4f] bg-[#113c64] text-[11px] uppercase tracking-wide text-white">
-            <th className={`${th} w-[5.25rem] text-left`}>Acronym</th>
+            <th className={`${th} w-[9%] text-left`}>Acronym</th>
             <th className={`${th} text-left`}>Customer</th>
-            <th className={`${th} w-[8rem] text-left`}>Owner(s)</th>
-            <th className={`${th} w-11 text-right`}>Users</th>
-            <th className={`${th} w-9 text-right`}>Locs</th>
-            <th className={`${th} w-[5.25rem] text-left`}>Complexity</th>
-            <th className={`${th} w-[3.75rem] text-right`}>Est. hrs</th>
-            <th className={`${th} w-16 text-left`}>Kickoff</th>
-            <th className={`${th} w-16 text-left`}>Initial GL</th>
-            <th className={`${th} w-16 text-left`}>Current GL</th>
-            <th className={`${th} w-[5.75rem] text-left`}>Status</th>
-            <th className={`${th} w-16 text-right leading-tight`}>Slip days</th>
-            <th className={`${th} w-10 text-right`}> </th>
+            <th className={`${th} w-[12%] text-left`}>Owner(s)</th>
+            <th className={`${th} w-[5%] text-right`}>Users</th>
+            <th className={`${th} w-[5%] text-right`}>Locs</th>
+            <th className={`${th} w-[8%] text-left`}>Complexity</th>
+            <th className={`${th} w-[6%] text-right`}>Est. hrs</th>
+            <th className={`${th} w-[7%] text-left`}>Kickoff</th>
+            <th className={`${th} w-[7%] text-left`}>Initial GL</th>
+            <th className={`${th} w-[7%] text-left`}>Current GL</th>
+            <th className={`${th} w-[9%] text-left`}>Status</th>
+            <th className={`${th} w-[6%] text-right leading-tight`}>Slip days</th>
+            <th className={`${th} w-[4%] text-right`}> </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -99,19 +99,23 @@ export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
                     label="No hours"
                   />
                 </td>
-                <td className={`${td} whitespace-nowrap text-ink-2`}>
+                <td className={`${td} truncate text-ink-2`} title={row.startDate ? fmtShort(row.startDate) : undefined}>
                   <SheetText value={row.startDate ? fmtShort(row.startDate) : null} label="No kickoff" />
                 </td>
-                <td className={`${td} whitespace-nowrap text-ink-2`}>
+                <td className={`${td} truncate text-ink-2`} title={row.initialGoLiveDate ? fmtShort(row.initialGoLiveDate) : undefined}>
                   <SheetText value={row.initialGoLiveDate ? fmtShort(row.initialGoLiveDate) : null} label="No initial go-live" />
                 </td>
-                <td className={`${td} whitespace-nowrap text-ink-2`}>
+                <td className={`${td} truncate text-ink-2`} title={row.targetGoLiveDate ? fmtShort(row.targetGoLiveDate) : undefined}>
                   <SheetText value={row.targetGoLiveDate ? fmtShort(row.targetGoLiveDate) : null} label="No current go-live" />
                 </td>
                 <td className={td}>
-                  <div className="flex flex-wrap items-center gap-1">
-                    <Badge tone={statusTone(row.effectivePrismStatus)}>
-                      {PRISM_STATUS_LABELS[row.effectivePrismStatus]}
+                  <div className="flex min-w-0 flex-wrap items-center gap-1">
+                    <Badge
+                      tone={statusTone(row.effectivePrismStatus)}
+                      className="max-w-full overflow-hidden"
+                      title={PRISM_STATUS_LABELS[row.effectivePrismStatus]}
+                    >
+                      <span className="min-w-0 truncate">{PRISM_STATUS_LABELS[row.effectivePrismStatus]}</span>
                     </Badge>
                     {row.prismNote ? (
                       <span title={row.prismNote}>

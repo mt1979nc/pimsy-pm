@@ -71,7 +71,7 @@ export default async function CustomersPage() {
             content: (
               <Card className="overflow-hidden">
                 <Link href={`/customers/${c.id}`} className="block px-5 py-4 hover:bg-surface-2">
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h2 className="truncate text-[14.5px] font-semibold text-ink">{c.name}</h2>
                       <p className="mt-0.5 truncate text-[12.5px] text-ink-3">
@@ -107,9 +107,12 @@ export default async function CustomersPage() {
                         <HandedOffRow key={project.id} handedOff={handedOff}>
                           <Link
                             href={`/projects/${project.id}`}
-                            className="flex items-center gap-3 px-5 py-2 hover:bg-surface-2"
+                            className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2 hover:bg-surface-2"
                           >
-                            <span className="min-w-0 flex-1 truncate text-[12.5px] text-ink-2">
+                            <span
+                              className="min-w-[8rem] flex-1 truncate text-[12.5px] text-ink-2"
+                              title={project.name}
+                            >
                               {project.name}
                             </span>
                             <Badge tone={rowProduct === "EHR" ? "slate" : "maroon"}>{rowProduct}</Badge>

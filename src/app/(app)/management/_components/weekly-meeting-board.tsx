@@ -108,7 +108,7 @@ export function WeeklyMeetingBoard({
         </div>
       </div>
 
-      <div className="grid items-stretch gap-3 md:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid min-w-0 items-stretch gap-3 md:grid-cols-2 2xl:grid-cols-3 [&>*]:min-w-0">
         {sorted.map((row) => (
           <WeeklyMeetingCard
             key={row.id}
@@ -142,7 +142,8 @@ function WeeklyMeetingCard({
         <div className="min-w-0">
           <Link
             href={`/projects/${row.id}/settings`}
-            className="text-[15px] font-semibold tracking-tight text-ink hover:text-brand"
+            title={row.acronym}
+            className="block truncate text-[15px] font-semibold tracking-tight text-ink hover:text-brand"
           >
             {row.acronym}
           </Link>

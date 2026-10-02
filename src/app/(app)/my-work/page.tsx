@@ -107,8 +107,8 @@ export default async function MyWorkPage() {
             <Card key={customer.id}>
               <CardHeader
                 title={
-                  <span className="flex items-center gap-2">
-                    {customer.label}
+                  <span className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span className="min-w-0 break-words">{customer.label}</span>
                     <Badge tone="neutral">
                       {customer.phases.reduce((n, p) => n + p.tasks.length, 0)}
                     </Badge>
@@ -118,7 +118,7 @@ export default async function MyWorkPage() {
               <div className="divide-y divide-border">
                 {customer.phases.map((phase) => (
                   <div key={phase.id}>
-                    <div className="bg-surface-2 px-4 py-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-ink-3">
+                    <div className="break-words bg-surface-2 px-4 py-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-ink-3">
                       {phase.label}
                     </div>
                     <div className="divide-y divide-border">

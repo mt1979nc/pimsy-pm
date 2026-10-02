@@ -79,7 +79,8 @@ export function StaffSidebar({ sections }: { sections: StaffSidebarSection[] }) 
               aria-expanded={expanded}
               aria-controls={panelId}
               onClick={() => writeStored(toggleOpenSection(openIds, section.id))}
-              className="flex w-full items-center gap-1.5 rounded-md px-2.5 py-1 text-left text-[11.5px] font-semibold leading-tight text-ink-3 hover:bg-surface-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              title={section.label}
+              className="flex w-full min-w-0 items-center gap-1.5 rounded-md px-2.5 py-1 text-left text-[11.5px] font-semibold leading-tight text-ink-3 hover:bg-surface-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             >
               <svg
                 width="12"
@@ -93,7 +94,7 @@ export function StaffSidebar({ sections }: { sections: StaffSidebarSection[] }) 
               >
                 <path d="m9 6 6 6-6 6" />
               </svg>
-              <span className="min-w-0 flex-1">{section.label}</span>
+              <span className="min-w-0 flex-1 text-pretty">{section.label}</span>
             </button>
             <div id={panelId} role="group" aria-labelledby={buttonId} hidden={!expanded} className="space-y-0.5">
               {section.items.map((item) => (

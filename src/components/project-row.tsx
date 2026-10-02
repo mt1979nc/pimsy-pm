@@ -68,11 +68,11 @@ export function ProjectRow({ project, href }: { project: Row; href?: string }) {
     <Link
       href={href ?? `/projects/${project.id}`}
       title={hoverTitle}
-      className="group flex items-center gap-4 px-4 py-3 transition-colors hover:bg-surface-2"
+      className="group flex min-w-0 items-center gap-4 px-4 py-3 transition-colors hover:bg-surface-2"
     >
       <div className="min-w-0 flex-[2.2]">
-        <div className="flex items-center gap-1.5">
-          <div className="truncate text-[13.5px] font-semibold text-ink group-hover:text-brand">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <div className="max-w-full truncate text-[13.5px] font-semibold text-ink group-hover:text-brand">
             {acronym}
           </div>
           <Badge tone={productType === "EHR" ? "slate" : "maroon"}>{productType}</Badge>
@@ -129,7 +129,7 @@ export function ProjectRow({ project, href }: { project: Row; href?: string }) {
 export function ProjectListHeader() {
   return (
     <div className="flex items-center gap-4 border-b border-border bg-surface-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-      <div className="flex-[2.2]">Site</div>
+      <div className="min-w-0 flex-[2.2]">Site</div>
       <div className="hidden w-[110px] shrink-0 sm:block">Progress</div>
       <div className="hidden w-[128px] shrink-0 lg:block">Go-live</div>
       <div className="hidden w-[130px] shrink-0 md:block">Health</div>

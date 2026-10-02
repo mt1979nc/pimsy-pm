@@ -110,7 +110,7 @@ export default async function ProjectsPage({
         <ShowHandedOffToggle />
       </div>
 
-      <Card className="overflow-hidden">
+      <Card className="min-w-0 overflow-hidden">
         <HandedOffEntries
           entries={visible.map((project) => ({
             id: project.id,

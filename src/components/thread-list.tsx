@@ -56,12 +56,13 @@ export function ThreadList({
               aria-hidden
             />
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <span
                   className={cn(
-                    "truncate text-[13.5px]",
+                    "min-w-0 max-w-full truncate text-[13.5px]",
                     unread ? "font-semibold text-ink" : "font-medium text-ink",
                   )}
+                  title={t.subject}
                 >
                   {t.subject}
                 </span>

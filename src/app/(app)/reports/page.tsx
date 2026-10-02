@@ -188,7 +188,7 @@ export default async function ReportsPage() {
                     <Link
                       key={p.id}
                       href={`/projects/${p.id}`}
-                      className="flex items-center gap-4 px-4 py-3 hover:bg-surface-2"
+                      className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-surface-2"
                     >
                       <div className="min-w-0 flex-[2]">
                         <div className="truncate text-[13.5px] font-medium text-ink">
@@ -231,7 +231,7 @@ export default async function ReportsPage() {
                     <Link
                       key={p.id}
                       href={`/projects/${p.id}`}
-                      className="flex items-center gap-4 px-4 py-2.5 hover:bg-surface-2"
+                      className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 hover:bg-surface-2"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[13px] text-ink">
@@ -241,7 +241,7 @@ export default async function ReportsPage() {
                           {pctComplete(p.taskCountDone, p.taskCountTotal)}% complete
                         </div>
                       </div>
-                      <div className="w-[120px] text-right">
+                      <div className="w-[7.5rem] shrink-0 text-right">
                         <div
                           className={cn(
                             "text-[12.5px] font-medium",
@@ -322,11 +322,11 @@ export default async function ReportsPage() {
                     href={`/projects/${r.project.id}`}
                     className="block px-4 py-2.5 hover:bg-surface-2"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-[13px] text-ink">{r.title}</span>
+                    <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                      <span className="min-w-0 break-words text-[13px] text-ink">{r.title}</span>
                       <SeverityBadge severity={r.severity} />
                     </div>
-                    <div className="mt-0.5 flex items-center gap-2 text-[12px] text-ink-3">
+                    <div className="mt-0.5 flex min-w-0 items-center gap-2 text-[12px] text-ink-3">
                       <span className="truncate">{r.project.name}</span>
                       {r.owner ? <span>· {r.owner.name}</span> : null}
                     </div>
@@ -346,7 +346,7 @@ export default async function ReportsPage() {
                   <Link
                     key={m.id}
                     href={`/projects/${m.project.id}`}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-2"
+                    className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 hover:bg-surface-2"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
