@@ -68,9 +68,15 @@ export async function listProjects(
     skipAnalyticsExcluded?: boolean;
     /**
      * Active Implementation WIP: NOT_STARTED / IN_PROGRESS / ON_HOLD / BLOCKED.
-     * Staff “All active” uses this so COMPLETED (handoff) sites drop off.
+     * Staff “All active” uses this so completed sites drop off. Handed-off
+     * sites are brought back only by the list toggle (`handedOffOnly`).
      */
     openOnly?: boolean;
+    /**
+     * `project.supportHandoffAt` is set — Hand off to Support completed.
+     * Not customer LIVE, not a go-live date, not the Onboarded checkbox.
+     */
+    handedOffOnly?: boolean;
   } = {},
 ) {
   const ids = await accessibleProjectIds(actor);
@@ -79,6 +85,7 @@ export async function listProjects(
   const conditions = [inArray(projects.id, ids)];
   if (!opts.includeArchived) conditions.push(isNull(projects.archivedAt));
   if (opts.skipAnalyticsExcluded) conditions.push(includedInAnalytics());
+  if (opts.handedOffOnly) conditions.push(isNotNull(projects.supportHandoffAt));
   if (opts.status) conditions.push(eq(projects.status, opts.status as never));
   else if (opts.openOnly) conditions.push(inArray(projects.status, [...OPEN_PROJECT_STATUSES]));
   if (opts.health) conditions.push(eq(projects.health, opts.health as never));
@@ -465,6 +472,7 @@ export async function listCustomers() {
           taskCountDone: true,
           taskCountTotal: true,
           archivedAt: true,
+          supportHandoffAt: true,
         },
       },
       contacts: {

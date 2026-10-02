@@ -7,8 +7,8 @@ import { ADMIN_AREA_LABEL, ADMIN_NAV } from "@/lib/area-nav";
 export const dynamic = "force-dynamic";
 
 /**
- * Admin directory. Open to OWNER, ADMIN and MANAGER — a director needs the
- * overview without needing the right to change people's roles.
+ * Implementation dashboard. Open to OWNER, ADMIN and MANAGER — a director needs
+ * the overview without needing the right to change people's roles.
  * Prism (capacity, forecast, analysis) is `/management`, not this area.
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

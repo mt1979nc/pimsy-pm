@@ -34,7 +34,7 @@ export default async function ManagementEngagementEditPage({
           href="/management/engagements"
           className="text-[13px] font-medium text-brand hover:underline"
         >
-          ← Engagements
+          ← Roster
         </Link>
         <LinkButton href={`/projects/${project.id}`} size="sm" variant="secondary">
           Open project

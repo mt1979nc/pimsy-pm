@@ -29,7 +29,8 @@ describe("weekly meeting view (source)", () => {
       "utf8",
     );
     const layout = readFileSync(resolve(process.cwd(), "src/app/(app)/management/layout.tsx"), "utf8");
-    const sidebar = readFileSync(resolve(process.cwd(), "src/app/(app)/layout.tsx"), "utf8");
+    const sidebar = readFileSync(resolve(process.cwd(), "src/lib/staff-sidebar.ts"), "utf8");
+    const sidebarView = readFileSync(resolve(process.cwd(), "src/components/staff-sidebar.tsx"), "utf8");
     const nav = readFileSync(resolve(process.cwd(), "src/lib/area-nav.ts"), "utf8");
     const prism = readFileSync(resolve(process.cwd(), "src/components/prism-nav.tsx"), "utf8");
     expect(page).toMatch(/listWeeklyMeetingSites/);
@@ -54,7 +55,7 @@ describe("weekly meeting view (source)", () => {
     expect(nav).toMatch(/href: "\/management", label: "Overview", exact: true/);
     expect(prism).toMatch(/PRISM_NAV/);
     expect(sidebar).toMatch(/PRISM_NAV/);
-    expect(sidebar).toMatch(/exact=\{item\.exact\}/);
+    expect(sidebarView).toMatch(/exact=\{item\.exact\}/);
     const lib = readFileSync(resolve(process.cwd(), "src/lib/weekly-meeting.ts"), "utf8");
     expect(lib).toMatch(/isExcludedFromAnalytics/);
     expect(lib).toMatch(/includeExcluded/);

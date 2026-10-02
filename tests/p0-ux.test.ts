@@ -6,7 +6,7 @@ import { ADMIN_AREA_LABEL, ADMIN_NAV, LEGACY_PRISM_REDIRECTS, PRISM_NAV } from "
 
 describe("P0 cutover banner, queue chips, and Prism nav", () => {
   it("keeps one Prism list and one Admin list, with clearer labels", () => {
-    expect(ADMIN_AREA_LABEL).toBe("Admin");
+    expect(ADMIN_AREA_LABEL).toBe("Implementation Dashboard");
     expect(ADMIN_NAV.map((item) => item.href)).toEqual([
       "/admin",
       "/admin/projects",
@@ -21,7 +21,7 @@ describe("P0 cutover banner, queue chips, and Prism nav", () => {
       "Forecast",
       "Team capacity",
       "Team",
-      "Engagements",
+      "Roster",
       "Analysis",
     ]);
     expect(PRISM_NAV.map((item) => item.href)).toEqual([
@@ -50,11 +50,15 @@ describe("P0 cutover banner, queue chips, and Prism nav", () => {
     expect(existsSync(resolve(process.cwd(), "src/app/(app)/management/capacity/page.tsx"))).toBe(true);
     const config = readFileSync(resolve(process.cwd(), "next.config.ts"), "utf8");
     expect(config).toMatch(/LEGACY_PRISM_REDIRECTS/);
-    const sidebar = readFileSync(resolve(process.cwd(), "src/app/(app)/layout.tsx"), "utf8");
+    const layout = readFileSync(resolve(process.cwd(), "src/app/(app)/layout.tsx"), "utf8");
+    const sidebar = readFileSync(resolve(process.cwd(), "src/lib/staff-sidebar.ts"), "utf8");
     const admin = readFileSync(resolve(process.cwd(), "src/app/(app)/admin/layout.tsx"), "utf8");
     expect(sidebar).toMatch(/PRISM_NAV/);
     expect(sidebar).toMatch(/ADMIN_AREA_LABEL/);
-    expect(sidebar).not.toMatch(/>Management</);
+    expect(sidebar).toMatch(/\/management\/engagements/);
+    expect(layout).toMatch(/staffSidebarSections/);
+    expect(layout).not.toMatch(/>Management</);
+    expect(layout).not.toMatch(/PRISM_MODULE_NAME/);
     expect(admin).toMatch(/ADMIN_NAV/);
     expect(admin).toMatch(/ADMIN_AREA_LABEL/);
   });

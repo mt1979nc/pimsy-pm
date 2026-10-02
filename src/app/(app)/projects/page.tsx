@@ -2,9 +2,11 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/guard";
 import { listProjects } from "@/lib/queries";
 import { canCreateProjects } from "@/lib/authz";
+import { isSupportHandedOff } from "@/lib/handed-off-list";
 import { Card, PageHeader, EmptyState, LinkButton, Badge } from "@/components/ui";
 import { CutoverBanner } from "@/components/cutover-banner";
 import { ProjectRow, ProjectListHeader } from "@/components/project-row";
+import { HandedOffCount, HandedOffEntries, ShowHandedOffToggle } from "@/components/show-handed-off";
 import { cn } from "@/lib/cn";
 
 export const dynamic = "force-dynamic";
@@ -28,16 +30,28 @@ export default async function ProjectsPage({
   const sp = await searchParams;
   const q = (sp.q ?? "").trim();
 
-  const projects = await listProjects(actor, {
+  // “All active” / health chips = Implementation WIP. Search includes every
+  // status so the utility bar can find a site. Handed-off rows (supportHandoffAt)
+  // are included in the payload and hidden until “Show handed off”. LIVE and
+  // go-live dates do not hide a site.
+  const openOnly = !sp.status && !q;
+  const listed = await listProjects(actor, {
     status: sp.status,
     health: sp.health,
     customerId: sp.customer,
     includeArchived: false,
-    // “All active” / health chips = Implementation WIP. Completing Hand off
-    // to Support sets COMPLETED, which drops the site from this list.
-    // A site search includes completed work so the utility bar can find it.
-    openOnly: !sp.status && !q,
+    openOnly,
   });
+  const handedOffExtra = openOnly
+    ? await listProjects(actor, {
+        health: sp.health,
+        customerId: sp.customer,
+        includeArchived: false,
+        handedOffOnly: true,
+      })
+    : [];
+  const seen = new Set(listed.map((project) => project.id));
+  const projects = [...listed, ...handedOffExtra.filter((project) => !seen.has(project.id))];
 
   const needle = q.toLowerCase();
   const visible = needle
@@ -61,9 +75,11 @@ export default async function ProjectsPage({
       <PageHeader
         title="Projects"
         subtitle={
-          q
-            ? `${visible.length} match${visible.length === 1 ? "" : "es"} for “${q}”`
-            : `${visible.length} project${visible.length === 1 ? "" : "s"}`
+          <HandedOffCount
+            rows={visible.map((project) => ({ handedOff: isSupportHandedOff(project.supportHandoffAt) }))}
+            noun="project"
+            query={q || undefined}
+          />
         }
         actions={
           canCreateProjects(actor) ? (
@@ -91,37 +107,42 @@ export default async function ProjectsPage({
             {f.label}
           </Link>
         ))}
+        <ShowHandedOffToggle />
       </div>
 
       <Card className="overflow-hidden">
-        {visible.length === 0 ? (
-          <EmptyState
-            title={q ? "No sites match" : "No projects here"}
-            description={
-              q
-                ? `Nothing matches “${q}”.`
-                : activeKey
-                  ? "Nothing matches this filter right now."
-                  : "Create your first project to get started."
-            }
-            action={
-              canCreateProjects(actor) && !q ? (
-                <LinkButton href="/projects/new" variant="primary" size="sm">
-                  New project
-                </LinkButton>
-              ) : null
-            }
-          />
-        ) : (
-          <>
-            <ProjectListHeader />
-            <div className="divide-y divide-border">
-              {visible.map((p) => (
-                <ProjectRow key={p.id} project={p} />
-              ))}
-            </div>
-          </>
-        )}
+        <HandedOffEntries
+          entries={visible.map((project) => ({
+            id: project.id,
+            handedOff: isSupportHandedOff(project.supportHandoffAt),
+            content: <ProjectRow project={project} />,
+          }))}
+          empty={
+            <EmptyState
+              title={q ? "No sites match" : "No projects here"}
+              description={
+                q
+                  ? `Nothing matches “${q}”.`
+                  : activeKey
+                    ? "Nothing matches this filter right now."
+                    : "Create your first project to get started."
+              }
+              action={
+                canCreateProjects(actor) && !q ? (
+                  <LinkButton href="/projects/new" variant="primary" size="sm">
+                    New project
+                  </LinkButton>
+                ) : null
+              }
+            />
+          }
+          wrap={(nodes) => (
+            <>
+              <ProjectListHeader />
+              <div className="divide-y divide-border">{nodes}</div>
+            </>
+          )}
+        />
       </Card>
 
       <p className="mt-4 text-[12.5px] text-ink-3">

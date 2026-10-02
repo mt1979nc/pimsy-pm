@@ -30,9 +30,10 @@ import { pctComplete } from "@/lib/pct-complete";
 import { fmtRelative, daysUntil, addDays } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
+import { ADMIN_AREA_LABEL } from "@/lib/area-nav";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Admin" };
+export const metadata = { title: ADMIN_AREA_LABEL };
 
 export default async function AdminOverviewPage() {
   const actor = await requirePortfolioAccess();

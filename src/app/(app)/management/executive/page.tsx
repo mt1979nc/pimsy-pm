@@ -25,7 +25,7 @@ export default async function ExecutiveBookPage({
           dates, assigned specialist, and the latest project update are live. Contract date,
           expected ARR, and status are saved here. Click a column heading to sort. Empty cells
           stay blank. Pipeline and cancelled
-          sites stay on Engagements.
+          sites stay on Roster.
         </p>
         <Link
           href={includeExcluded ? "/management/executive" : "/management/executive?excluded=1"}

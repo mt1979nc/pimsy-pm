@@ -9,9 +9,11 @@ function source(path: string) {
 describe("P1 EHR color chrome", () => {
   it("keeps the left nav and adds a navy utility bar", () => {
     const layout = source("src/app/(app)/layout.tsx");
+    const nav = source("src/lib/staff-sidebar.ts");
     const bar = source("src/components/staff-utility-bar.tsx");
-    expect(layout).toMatch(/PRISM_NAV/);
-    expect(layout).toMatch(/ADMIN_AREA_LABEL/);
+    expect(nav).toMatch(/PRISM_NAV/);
+    expect(nav).toMatch(/ADMIN_AREA_LABEL/);
+    expect(layout).toMatch(/<StaffSidebar/);
     expect(layout).toMatch(/<StaffUtilityBar/);
     expect(bar).toMatch(/Search sites/);
     expect(bar).toMatch(/Alerts/);
