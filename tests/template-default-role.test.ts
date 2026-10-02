@@ -49,6 +49,7 @@ describe("template default assignee is a role", () => {
 
   it("parses a stored role and rejects a named person / junk", () => {
     expect(parseTemplateDefaultRole("IMPLEMENTATION_SPECIALIST")).toBe("IMPLEMENTATION_SPECIALIST");
+    expect(parseTemplateDefaultRole("SPECIALIST")).toBe("IMPLEMENTATION_SPECIALIST");
     expect(parseTemplateDefaultRole("CUSTOMER_PROJECT_LEAD")).toBe("CUSTOMER_PROJECT_LEAD");
     expect(parseTemplateDefaultRole("")).toBeNull();
     expect(parseTemplateDefaultRole("sam@pimsyehr.com")).toBeNull();

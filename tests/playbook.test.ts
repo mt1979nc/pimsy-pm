@@ -1,11 +1,15 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import {
+  ASSIGNABLE_PROJECT_ROLES,
   canonicalStaffingRole,
+  normalizeAssignableProjectRole,
+  parseTemplateDefaultRole,
   resolveAssigneeForRole,
   staffingRoleFromTitle,
   staffingRoleLabel,
   staffingRoleRank,
   isManagerOverviewRole,
+  userIdForStaffingRole,
 } from "@/lib/staffing";
 import {
   shouldIncludeByArea,
@@ -56,6 +60,26 @@ describe("staffing helpers", () => {
     expect(isManagerOverviewRole("SPECIALIST")).toBe(false);
     expect(staffingRoleRank("LEAD")).toBeLessThan(staffingRoleRank("IMPLEMENTATION_SPECIALIST"));
     expect(staffingRoleRank("IMPLEMENTATION_SPECIALIST")).toBeLessThan(staffingRoleRank("CONTRIBUTOR"));
+  });
+
+  it("stores canonical staffing roles and still reads a legacy assignment key", () => {
+    expect(ASSIGNABLE_PROJECT_ROLES).not.toContain("SPECIALIST");
+    expect(ASSIGNABLE_PROJECT_ROLES).not.toContain("RCM");
+    expect(ASSIGNABLE_PROJECT_ROLES).not.toContain("BILLING_SUPPORT");
+    expect(normalizeAssignableProjectRole("SPECIALIST")).toBe("IMPLEMENTATION_SPECIALIST");
+    expect(normalizeAssignableProjectRole("RCM")).toBe("RCM_IMPLEMENTATION_SPECIALIST");
+    expect(normalizeAssignableProjectRole("BILLING_SUPPORT")).toBe("T1_BILLING_SUPPORT");
+    expect(normalizeAssignableProjectRole("LEAD")).toBe("LEAD");
+    expect(normalizeAssignableProjectRole("not-a-role")).toBeNull();
+    expect(parseTemplateDefaultRole("BILLING_SUPPORT")).toBe("T1_BILLING_SUPPORT");
+    expect(userIdForStaffingRole({ RCM: "mindy" }, "RCM_IMPLEMENTATION_SPECIALIST")).toBe("mindy");
+    expect(
+      userIdForStaffingRole(
+        { RCM_IMPLEMENTATION_SPECIALIST: "mindy", RCM: "other" },
+        "RCM_IMPLEMENTATION_SPECIALIST",
+      ),
+    ).toBe("mindy");
+    expect(userIdForStaffingRole({ SPECIALIST: "sam" }, "IMPLEMENTATION_SPECIALIST")).toBe("sam");
   });
 
   it("auto-assigns by role and falls back to the lead for specialists", () => {

@@ -4,6 +4,7 @@ import {
   customerMayChangeAssignee,
   defaultRoleMatchesMemberRole,
   isBillingRelatedTask,
+  staffingIdsFromAssignments,
   taskMatchesAutoAssign,
   userIdsForNewTask,
 } from "@/lib/task-role-match";
@@ -22,6 +23,13 @@ describe("billing vs specialist vs customer matching", () => {
         title: "Post go-live billing check",
         ownerSide: "INTERNAL",
         defaultRole: "T2_BILLING_SUPPORT",
+      }),
+    ).toBe(true);
+    expect(
+      isBillingRelatedTask({
+        title: "Kickoff call",
+        ownerSide: "INTERNAL",
+        defaultRole: "BILLING_SUPPORT",
       }),
     ).toBe(true);
   });
@@ -151,6 +159,25 @@ describe("billing vs specialist vs customer matching", () => {
         {},
       ),
     ).toEqual([]);
+  });
+
+  it("reads a legacy roster key through the canonical staffing lookup", () => {
+    expect(
+      staffingIdsFromAssignments({
+        SPECIALIST: "sam",
+        BILLING_SUPPORT: "anna",
+      }),
+    ).toMatchObject({
+      specialistId: "sam",
+      billingSupportId: "anna",
+    });
+    expect(
+      staffingIdsFromAssignments({
+        IMPLEMENTATION_SPECIALIST: "sam",
+        SPECIALIST: "other",
+        T1_BILLING_SUPPORT: "anna",
+      }).specialistId,
+    ).toBe("sam");
   });
 
   it("matches template defaultRole to the project member role, including aliases", () => {

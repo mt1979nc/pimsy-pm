@@ -75,7 +75,7 @@ import {
   resolveTemplatesForPath,
   setPhaseNotApplicable,
 } from "@/lib/playbook";
-import { ASSIGNABLE_PROJECT_ROLES } from "@/lib/staffing";
+import { normalizeAssignableProjectRole } from "@/lib/staffing";
 import { autoAssignForProjectRole, notifyDefaultAssigneesForProject } from "@/lib/task-assignees";
 import { isCustomerMemberRole } from "@/lib/task-role-match";
 import {
@@ -735,11 +735,8 @@ export async function addProjectMember(
   const projectId = String(formData.get("projectId") ?? "");
   const userId = String(formData.get("userId") ?? "");
   const roleRaw = formData.get("role")?.toString() ?? "CONTRIBUTOR";
-  const allowedRoles = ASSIGNABLE_PROJECT_ROLES;
-  if (!allowedRoles.includes(roleRaw as (typeof allowedRoles)[number])) {
-    return { error: "Pick a valid project role." };
-  }
-  const role = roleRaw as (typeof allowedRoles)[number];
+  const role = normalizeAssignableProjectRole(roleRaw);
+  if (!role) return { error: "Pick a valid project role." };
   if (!projectId || !userId) return { error: "Pick someone to add." };
 
   await assertProjectWrite(actor, projectId);
@@ -826,10 +823,8 @@ export async function setProjectMemberRole(
 ): Promise<{ ok: true } | { error: string }> {
   const actor = await requireStaff();
   await assertProjectWrite(actor, projectId);
-  if (!ASSIGNABLE_PROJECT_ROLES.includes(roleRaw as (typeof ASSIGNABLE_PROJECT_ROLES)[number])) {
-    return { error: "Pick a valid project role." };
-  }
-  const role = roleRaw as (typeof ASSIGNABLE_PROJECT_ROLES)[number];
+  const role = normalizeAssignableProjectRole(roleRaw);
+  if (!role) return { error: "Pick a valid project role." };
   const target = await db.query.users.findFirst({
     where: eq(users.id, userId),
     columns: { id: true, role: true, customerAccountId: true, name: true },

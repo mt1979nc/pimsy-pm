@@ -225,9 +225,6 @@ export function shouldFanOutWizardWorkbook(opts: {
   return false;
 }
 
-/** @deprecated Use shouldFanOutWizardWorkbook. */
-export const shouldAttachWizardWorkbook = shouldFanOutWizardWorkbook;
-
 export type WizardWebhookJson = {
   projectCode: string;
   url: string;

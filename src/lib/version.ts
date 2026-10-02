@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.10";
+export const APP_VERSION = "1.18.11";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,20 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.11",
+    date: "2026-10-02",
+    summary:
+      "Portal and staff Customer view share one Areas nav. Unused invite form and workbook alias are removed. New project roles save the current staffing names. No schema migrate.",
+    highlights: [
+      "Customer portal project pages and staff Customer view both use CustomerAreaNav (`src/components/customer-area-nav.tsx`). Portal still links Learning Center to `/portal/learn`. Staff Customer view still has no learn route.",
+      "Customer page uses PortalContactsPanel (`src/app/(app)/customers/[id]/portal-contacts-panel.tsx`). InviteContactForm and `invite-contact-form.tsx` are removed.",
+      "Workbook fan-out is `shouldFanOutWizardWorkbook` only. The `shouldAttachWizardWorkbook` alias is removed.",
+      "Adding or changing a project member stores IMPLEMENTATION_SPECIALIST, T1_BILLING_SUPPORT, and RCM_IMPLEMENTATION_SPECIALIST. Older SPECIALIST / RCM / BILLING_SUPPORT rows still match. The database enum is unchanged.",
+      "PIMSY Implementation Customer Guide stays off the Learning Center. The Dock signed GCS URL is not hardcoded. Re-host notes: `src/db/learning-center-catalog.ts` (DOCK_LC_ASSETS / LEARNING_CENTER_SECTIONS) and the omit check in `tests/dock-parity.test.ts`.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.10",
     date: "2026-10-02",

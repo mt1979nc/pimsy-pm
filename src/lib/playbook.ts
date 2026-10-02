@@ -27,7 +27,7 @@ import {
 import { dockPlaybookDescriptionForTitle } from "@/db/dock-playbook-copy";
 import { recommendPhaseSchedule, scheduleFromOffsets } from "@/lib/project-timeline";
 import type { ForecastSectionInput } from "@/lib/project-timeline";
-import { canonicalStaffingRole } from "@/lib/staffing";
+import { canonicalStaffingRole, userIdForStaffingRole } from "@/lib/staffing";
 import { insertTaskAssigneeRows, newTaskAssigneeIds } from "@/lib/task-assignees";
 import { refreshProjectCounters } from "@/lib/rollup";
 import { syncMilestonesFromTaskCompletion } from "@/lib/milestone-rollup";
@@ -552,10 +552,9 @@ export async function addRcmTrackToProject(opts: {
       scaleFactor: opts.scaleFactor,
       excludedAreaKeys: opts.excludedAreaKeys,
       roleAssignments: opts.roleAssignments,
-      defaultInternalAssigneeId: opts.roleAssignments.RCM_IMPLEMENTATION_SPECIALIST
-        ?? opts.roleAssignments.RCM
-        ?? opts.roleAssignments.IMPLEMENTATION_SPECIALIST
-        ?? null,
+      defaultInternalAssigneeId:
+        userIdForStaffingRole(opts.roleAssignments, "RCM_IMPLEMENTATION_SPECIALIST") ??
+        userIdForStaffingRole(opts.roleAssignments, "IMPLEMENTATION_SPECIALIST"),
       orderOffset,
       forceWorkTrack: "RCM",
       skipUsFederalHolidays: opts.skipUsFederalHolidays,

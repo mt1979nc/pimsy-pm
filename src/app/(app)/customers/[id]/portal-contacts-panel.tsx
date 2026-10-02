@@ -159,21 +159,6 @@ export function PortalContactsPanel({
   );
 }
 
-/** @deprecated Prefer PortalContactsPanel — kept for ToggleContactActive export site. */
-export function InviteContactForm({
-  customerAccountId,
-  projects,
-}: {
-  customerAccountId: string;
-  projects: { id: string; name: string }[];
-}) {
-  return (
-    <PortalContactsPanel customerAccountId={customerAccountId} projects={projects}>
-      {null}
-    </PortalContactsPanel>
-  );
-}
-
 export function ToggleContactActive({
   userId,
   isActive,

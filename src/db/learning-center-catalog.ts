@@ -103,9 +103,22 @@ export const DOCK_LC_ASSETS = {
 } as const;
 
 /**
- * TODO: PIMSY Implementation Customer Guide.pdf was a private signed GCS URL
- * (expires ~12h). Do not hardcode. Re-host in Azure Blob, then add a Training
- * Guide FILE/LINK here.
+ * BLOCKED — PIMSY Implementation Customer Guide.pdf is not in the catalog.
+ *
+ * Dock served it as a private signed GCS URL (`X-Goog-Signature`, about a 12h
+ * expiry). Do not paste that URL or invent a blob credential.
+ *
+ * Public siblings already live on `DOCK_LC_ASSETS.gettingStartedPdf` and
+ * `tipsPdf` (`storage.googleapis.com/dock-production-public/…`). This guide is
+ * not in that public bucket, and this change has no Azure Blob credential to
+ * re-host it.
+ *
+ * When a durable unsigned URL exists, add one field on `DOCK_LC_ASSETS` in
+ * this file (`src/db/learning-center-catalog.ts`) and a LINK item in
+ * `LEARNING_CENTER_SECTIONS` (Getting started, after the Getting Started PDF).
+ * Then drop the omit assertion in `tests/dock-parity.test.ts`
+ * (`"PIMSY Implementation Customer Guide.pdf"`).
+ * Seed with `npm run db:seed -- --templates-only`. No schema migrate.
  */
 
 /** Documented Help Desk installer page — same URL Accessing Pimsy attaches. */
