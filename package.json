@@ -1,6 +1,6 @@
 {
   "name": "pimsy-pm",
-    "version": "1.18.18",
+    "version": "1.18.19",
   "description": "Implementation & project management platform with customer portal for PIMSY EHR",
   "scripts": {
     "dev": "next dev",
@@ -28,7 +28,8 @@
     "db:rename:dock-acronym": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/rename-dock-acronym.ts",
     "db:resync:playbook-from-dock": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/resync-playbook-from-dock.ts",
     "db:upload:template-attachments": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/upload-template-attachments.ts",
-    "db:complete:historical-on-time": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/complete-historical-on-time.ts"
+    "db:complete:historical-on-time": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/complete-historical-on-time.ts",
+    "db:sync:executive-sheet": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/sync-executive-from-spreadsheet.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

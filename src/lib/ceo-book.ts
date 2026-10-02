@@ -134,6 +134,12 @@ export function formatAssignedIs(names: string[]): string {
 
 const COMMENT_PREVIEW_MAX = 160;
 
+/** Executive Comments cell. Blank stays null. Line breaks inside the note stay. */
+export function parseCeoComments(raw: string | null | undefined): string | null {
+  const trimmed = (raw ?? "").trim();
+  return trimmed ? trimmed : null;
+}
+
 export function ceoCommentText(summary: string | null | undefined): {
   preview: string | null;
   full: string | null;
@@ -213,6 +219,8 @@ export type CeoBookRow = CeoBookSortRow & {
   currentGoLive: string;
   actualGoLive: string;
   assignedIs: string;
+  /** Raw Executive comment for the editor. Empty string when the column is null. */
+  commentInput: string;
   commentPreview: string | null;
   commentFull: string | null;
   excludeFromAnalytics: boolean;

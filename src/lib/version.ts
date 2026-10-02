@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.18";
+export const APP_VERSION = "1.18.19";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.19",
+    date: "2026-10-02",
+    summary:
+      "Executive comments are saved on the project, and the CEO sheet can be filled from the implementations spreadsheet. Migrate 0028_ceo_comments.",
+    highlights: [
+      "Comments on Executive are an editable cell on the project (projects.ceoComments). Empty stays blank. Save sits with contract date, expected ARR, and status. Project status updates are unchanged and no longer fill this column. Migrate 0028_ceo_comments.",
+      "npm run db:sync:executive-sheet is a dry run. npm run db:sync:executive-sheet -- --apply writes contract date, expected ARR, CEO status, the three go-live dates, and comments when the sheet cell is not empty. Empty sheet cells do not clear PATH. Assigned IS is not taken from the sheet. Unmatched acronyms are not created.",
+      "Match the sheet Abbreviation to projects.crmAcronym, projects.code, or projects.prismClientId. An implementation project on the Executive book wins. If several would show on the book, the row is skipped and listed.",
+      "Azure: set DATABASE_URL, deploy, run npm run db:migrate, then npm run db:sync:executive-sheet -- --apply. The CSV is data/executive-contract-dates.csv.",
+      "PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.18",
     date: "2026-10-02",

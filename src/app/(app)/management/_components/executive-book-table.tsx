@@ -42,6 +42,8 @@ function ExecutiveRow({ row }: { row: CeoBookRow }) {
   const [contractFocused, setContractFocused] = useState(false);
   const [expectedArr, setExpectedArr] = useState(row.expectedArrInput);
   const [ceoStatus, setCeoStatus] = useState(row.ceoStatus ?? "");
+  const [comments, setComments] = useState(row.commentInput);
+  const [commentsFocused, setCommentsFocused] = useState(false);
   const savedArr = parseExpectedArr(row.expectedArrInput);
   const editedArr = parseExpectedArr(expectedArr);
   const arrDirty =
@@ -49,7 +51,10 @@ function ExecutiveRow({ row }: { row: CeoBookRow }) {
       ? expectedArr.trim() !== row.expectedArrInput.trim()
       : savedArr.value !== editedArr.value;
   const dirty =
-    contractDate !== row.contractDateInput || arrDirty || ceoStatus !== (row.ceoStatus ?? "");
+    contractDate !== row.contractDateInput ||
+    arrDirty ||
+    ceoStatus !== (row.ceoStatus ?? "") ||
+    comments !== row.commentInput;
   const mark = statusMark(ceoStatus);
 
   return (
@@ -142,6 +147,7 @@ function ExecutiveRow({ row }: { row: CeoBookRow }) {
                   data.set("contractDate", contractDate);
                   data.set("expectedArr", expectedArr);
                   data.set("ceoStatus", ceoStatus);
+                  data.set("ceoComments", comments);
                   action(data);
                 }}
                 className="h-7 shrink-0 rounded-md bg-[#113c64] px-2 text-[12px] font-medium text-white hover:bg-[#0d2f4f] disabled:opacity-60"
@@ -152,17 +158,30 @@ function ExecutiveRow({ row }: { row: CeoBookRow }) {
           </div>
         </td>
         <td className={`${td} max-w-[18rem] text-ink-2`}>
-          {row.commentPreview ? (
-            <Link
-              href={`/projects/${row.id}`}
-              title={row.commentFull ?? undefined}
-              className="line-clamp-2 hover:text-brand"
-            >
-              {row.commentPreview}
-            </Link>
-          ) : (
-            <QuietBlank label="No comment" />
-          )}
+          <div className="relative max-w-[18rem]">
+            <textarea
+              name="ceoComments"
+              aria-label={`Comments for ${row.abbreviation}`}
+              title={commentsFocused ? undefined : row.commentFull ?? undefined}
+              value={comments}
+              rows={commentsFocused ? 6 : 2}
+              onChange={(event) => setComments(event.target.value)}
+              onFocus={() => setCommentsFocused(true)}
+              onBlur={() => setCommentsFocused(false)}
+              disabled={pending}
+              className={cn(
+                cellInput,
+                "h-auto py-1 leading-snug",
+                commentsFocused ? "min-h-[4.5rem] resize-y" : "resize-none overflow-hidden",
+                !comments.trim() && !commentsFocused && "text-transparent",
+              )}
+            />
+            {!comments.trim() && !commentsFocused ? (
+              <span className="pointer-events-none absolute left-1 top-1">
+                <QuietBlank label="No comment" />
+              </span>
+            ) : null}
+          </div>
         </td>
         <td className={td}>
           <Link href={`/projects/${row.id}`} className="font-medium text-brand hover:underline">
@@ -258,7 +277,7 @@ export function ExecutiveBookTable({ rows }: { rows: CeoBookRow[] }) {
         <tbody className="divide-y divide-border">
           {sortedRows.map((row) => (
             <ExecutiveRow
-              key={`${row.id}|${row.contractDateInput}|${row.expectedArrInput}|${row.ceoStatus ?? ""}`}
+              key={`${row.id}|${row.contractDateInput}|${row.expectedArrInput}|${row.ceoStatus ?? ""}|${row.commentInput}`}
               row={row}
             />
           ))}

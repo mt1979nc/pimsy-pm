@@ -2,10 +2,10 @@
  * CEO implementation book query. Server-only.
  */
 
-import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, or } from "drizzle-orm";
 
 import { db } from "@/db";
-import { projects, statusUpdates } from "@/db/schema";
+import { projects } from "@/db/schema";
 import { projectHasRcmTrack } from "@/lib/add-rcm";
 import { includedInAnalytics } from "@/lib/analytics-scope";
 import { isExcludedFromAnalytics } from "@/lib/analytics-exclude";
@@ -16,6 +16,7 @@ import {
   compareCeoBookRows,
   expectedArrInputValue,
   formatAssignedIs,
+  parseCeoComments,
   type CeoBookRow,
 } from "@/lib/ceo-book";
 import { fmtDate, toDateInput, utcDayKey } from "@/lib/dates";
@@ -48,6 +49,7 @@ export async function listCeoBook(opts?: { includeExcluded?: boolean }): Promise
       contractDate: true,
       expectedArr: true,
       ceoStatus: true,
+      ceoComments: true,
       excludeFromAnalytics: true,
     },
     with: {
@@ -57,16 +59,12 @@ export async function listCeoBook(opts?: { includeExcluded?: boolean }): Promise
         columns: { role: true },
         with: { user: { columns: { id: true, name: true, email: true, role: true } } },
       },
-      statusUpdates: {
-        columns: { summary: true },
-        orderBy: [sql`coalesce(${statusUpdates.publishedAt}, ${statusUpdates.createdAt}) desc`],
-        limit: 1,
-      },
     },
   });
 
   const mapped: CeoBookRow[] = rows.map((row) => {
-    const comment = ceoCommentText(row.statusUpdates[0]?.summary);
+    const storedComment = parseCeoComments(row.ceoComments);
+    const comment = ceoCommentText(storedComment);
     const abbreviation = row.crmAcronym || row.prismClientId || row.code;
     return {
       id: row.id,
@@ -94,6 +92,7 @@ export async function listCeoBook(opts?: { includeExcluded?: boolean }): Promise
         }),
       ),
       ceoStatus: row.ceoStatus,
+      commentInput: storedComment ?? "",
       commentPreview: comment.preview,
       commentFull: comment.full,
       excludeFromAnalytics: isExcludedFromAnalytics(row),

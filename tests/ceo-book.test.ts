@@ -15,6 +15,7 @@ import {
   formatAssignedIs,
   formatExpectedArr,
   nextCeoBookColumnSort,
+  parseCeoComments,
   parseExpectedArr,
   sortCeoBookRows,
   summarizeCeoBook,
@@ -100,7 +101,10 @@ describe("CEO executive book", () => {
     expect(formatAssignedIs([])).toBe("—");
   });
 
-  it("uses the latest update text and leaves a missing comment empty", () => {
+  it("formats a stored CEO comment and leaves a blank one empty", () => {
+    expect(parseCeoComments(null)).toBeNull();
+    expect(parseCeoComments("  ")).toBeNull();
+    expect(parseCeoComments("  Go live pushed.\nStill on track.  ")).toBe("Go live pushed.\nStill on track.");
     expect(ceoCommentText(null)).toEqual({ preview: null, full: null });
     expect(ceoCommentText("   ")).toEqual({ preview: null, full: null });
     const text = ceoCommentText("08/14: Import is done.\nAsk @[Morgan](user:abc) about auths.");
@@ -150,6 +154,8 @@ describe("CEO executive book", () => {
     const layout = readFileSync(resolve(process.cwd(), "src/app/(app)/management/layout.tsx"), "utf8");
     const nav = readFileSync(resolve(process.cwd(), "src/lib/area-nav.ts"), "utf8");
     const migration = readFileSync(resolve(process.cwd(), "drizzle/0026_ceo_executive.sql"), "utf8");
+    const commentsMigration = readFileSync(resolve(process.cwd(), "drizzle/0028_ceo_comments.sql"), "utf8");
+    const action = readFileSync(resolve(process.cwd(), "src/actions/management-executive.ts"), "utf8");
     const schema = readFileSync(resolve(process.cwd(), "src/db/schema.ts"), "utf8");
 
     expect(page).toMatch(/listCeoBook/);
@@ -174,7 +180,8 @@ describe("CEO executive book", () => {
     expect(query).toMatch(/projectHasRcmTrack/);
     expect(query).toMatch(/sourceProjectId/);
     expect(query).toMatch(/rcmAddedOntoSite/);
-    expect(query).toMatch(/statusUpdates/);
+    expect(query).toMatch(/ceoComments/);
+    expect(query).not.toMatch(/statusUpdates/);
     expect(query).toMatch(/crmAcronym/);
     expect(layout).toMatch(/PrismNav/);
     expect(nav).toMatch(/\/management\/executive/);
@@ -188,7 +195,16 @@ describe("CEO executive book", () => {
     expect(schema).toMatch(/contractDate/);
     expect(schema).toMatch(/expectedArr/);
     expect(schema).toMatch(/ceoStatus/);
+    expect(schema).toMatch(/ceoComments/);
     expect(schema).not.toMatch(/dockUrl/);
+    expect(commentsMigration).toMatch(/ceo_comments/);
+    expect(action).toMatch(/parseCeoComments/);
+    expect(action).toMatch(/ceoComments/);
+    expect(table).toMatch(/name="ceoComments"/);
+    expect(table).toMatch(/<textarea/);
+    expect(table).toMatch(/QuietBlank label="No comment"/);
+    expect(page).not.toMatch(/latest project update/);
+    expect(page).toMatch(/comments are saved on the project/);
   });
 
   function bookRow(
