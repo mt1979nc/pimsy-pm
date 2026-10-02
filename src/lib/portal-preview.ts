@@ -21,6 +21,7 @@ import { bookmarkFromCustomFields } from "./accessing-pimsy";
 import { projectHasRcmTrack } from "./add-rcm";
 import { loadProjectRecordingAggregate } from "./recordings-query";
 import type { AggregatedRecording } from "./recordings";
+import { portalProjectColumns } from "./portal-fields";
 
 export async function previewPortalAbout(projectId: string): Promise<PortalAboutPayload | null> {
   const project = await previewPortalProject(projectId);
@@ -51,6 +52,7 @@ export async function previewPortalProject(projectId: string) {
   return (
     (await db.query.projects.findFirst({
       where: and(eq(projects.id, projectId), isNull(projects.archivedAt)),
+      columns: portalProjectColumns,
       with: {
         lead: { columns: { id: true, name: true, image: true, email: true, title: true, zoomBookingUrl: true } },
         customerAccount: { columns: { id: true, name: true } },

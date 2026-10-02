@@ -105,7 +105,7 @@ export function ProjectAboutForm({
       <Field
         label="HubSpot deal URL"
         htmlFor="hubspotDealUrl"
-        hint="CRM auto-create. Staff only — not the live site."
+        hint="Staff only. Save fills empty contract date and expected ARR. Clearing this keeps them."
       >
         <input
           id="hubspotDealUrl"

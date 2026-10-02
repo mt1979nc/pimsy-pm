@@ -96,6 +96,8 @@ const RESERVED_CUSTOM_FIELD_KEYS = new Set([
   "aboutnotes",
   "about",
   "bookmark",
+  "contractdate",
+  "expectedarr",
   "crmlink",
   "pimsyurl",
   "pimsybookmark",

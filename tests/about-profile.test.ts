@@ -30,7 +30,7 @@ describe("custom fields", () => {
     expect(isReservedCustomFieldKey("zoomBookingUrl")).toBe(true);
     expect(isReservedCustomFieldKey("timezone")).toBe(false);
     const parsed = parseCustomFieldLines(
-      "hubspot=https://app.hubspot.com/x\ntimezone=America/Chicago\ncrmKey=secret\npreferredContact=Jane\nempty=\n",
+      "hubspot=https://app.hubspot.com/x\ntimezone=America/Chicago\ncrmKey=secret\npreferredContact=Jane\nexpectedArr=32400\ncontractDate=2026-03-01\nempty=\n",
     );
     expect(parsed).toEqual({ timezone: "America/Chicago", preferredContact: "Jane" });
     expect(extraCustomFields({ HubSpot: "x", timezone: "America/Chicago", notes: "nope" })).toEqual([
