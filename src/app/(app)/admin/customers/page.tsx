@@ -52,7 +52,7 @@ export default async function AdminCustomersPage() {
         {customers.length === 0 ? (
           <EmptyState title="No customers yet" />
         ) : (
-          <div className="min-w-0 max-w-full overflow-x-auto">
+          <div className="min-w-0 max-w-full overflow-x-auto [contain:paint]">
             <table className="w-full min-w-[900px] border-collapse text-[13px]">
               <thead>
                 <tr className="border-b border-border bg-surface-2 text-[11px] uppercase tracking-wide text-ink-3">

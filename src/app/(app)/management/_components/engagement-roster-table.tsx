@@ -50,23 +50,23 @@ const td = "overflow-hidden px-2 py-2";
 
 export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
   return (
-    <div className="min-w-0 w-full max-w-full overflow-hidden">
-      <table className="w-full table-fixed border-collapse text-[12.5px]">
+    <div className="min-w-0 w-full max-w-full overflow-hidden [contain:paint]">
+      <table className="w-full min-w-0 table-fixed border-collapse text-[12.5px]">
         <thead>
           <tr className="border-b border-[#0d2f4f] bg-[#113c64] text-[11px] uppercase tracking-wide text-white">
-            <th className={`${th} w-[5.25rem] text-left`}>Acronym</th>
+            <th className={`${th} w-[9%] text-left`}>Acronym</th>
             <th className={`${th} text-left`}>Customer</th>
-            <th className={`${th} w-[8rem] text-left`}>Owner(s)</th>
-            <th className={`${th} w-11 text-right`}>Users</th>
-            <th className={`${th} w-9 text-right`}>Locs</th>
-            <th className={`${th} w-[5.25rem] text-left`}>Complexity</th>
-            <th className={`${th} w-[3.75rem] text-right`}>Est. hrs</th>
-            <th className={`${th} w-16 text-left`}>Kickoff</th>
-            <th className={`${th} w-16 text-left`}>Initial GL</th>
-            <th className={`${th} w-16 text-left`}>Current GL</th>
-            <th className={`${th} w-[5.75rem] text-left`}>Status</th>
-            <th className={`${th} w-16 text-right leading-tight`}>Slip days</th>
-            <th className={`${th} w-10 text-right`}> </th>
+            <th className={`${th} w-[12%] text-left`}>Owner(s)</th>
+            <th className={`${th} w-[5%] text-right`}>Users</th>
+            <th className={`${th} w-[5%] text-right`}>Locs</th>
+            <th className={`${th} w-[8%] text-left`}>Complexity</th>
+            <th className={`${th} w-[6%] text-right`}>Est. hrs</th>
+            <th className={`${th} w-[7%] text-left`}>Kickoff</th>
+            <th className={`${th} w-[7%] text-left`}>Initial GL</th>
+            <th className={`${th} w-[7%] text-left`}>Current GL</th>
+            <th className={`${th} w-[9%] text-left`}>Status</th>
+            <th className={`${th} w-[6%] text-right leading-tight`}>Slip days</th>
+            <th className={`${th} w-[4%] text-right`}> </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">

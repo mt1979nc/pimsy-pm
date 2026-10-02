@@ -238,7 +238,7 @@ export function ExecutiveBookTable({ rows }: { rows: CeoBookRow[] }) {
   const sortedRows = useMemo(() => sortCeoBookRows(rows, sort), [rows, sort]);
 
   return (
-    <div className="min-w-0 w-full max-w-full overflow-x-auto">
+    <div className="min-w-0 w-full max-w-full overflow-x-auto [contain:paint]">
       <table className="w-full min-w-[1280px] border-collapse text-[12.5px]">
         <thead>
           <tr className="border-b border-[#0d2f4f] text-[11px] uppercase tracking-wide text-white">

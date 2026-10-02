@@ -26,15 +26,20 @@ describe("narrow-window layout", () => {
   });
 
   it("scrolls dense analytics tables inside the page and keeps Roster fitted", () => {
-    expect(source("src/app/(app)/management/_components/executive-book-table.tsx")).toMatch(
-      /max-w-full overflow-x-auto/,
+    const executive = source("src/app/(app)/management/_components/executive-book-table.tsx");
+    expect(executive).toMatch(/max-w-full overflow-x-auto \[contain:paint\]/);
+    expect(source("src/app/(app)/management/forecast/page.tsx")).toMatch(
+      /min-w-0 max-w-full overflow-x-auto \[contain:paint\]/,
     );
-    expect(source("src/app/(app)/management/forecast/page.tsx")).toMatch(/min-w-0 max-w-full overflow-x-auto/);
     expect(source("src/app/(app)/management/analysis/page.tsx")).toMatch(/min-w-\[40rem\]/);
+    expect(source("src/app/(app)/management/analysis/page.tsx")).toMatch(/\[contain:paint\]/);
     const roster = source("src/app/(app)/management/_components/engagement-roster-table.tsx");
     expect(roster).toMatch(/table-fixed/);
+    expect(roster).toMatch(/overflow-hidden \[contain:paint\]/);
+    expect(roster).toMatch(/w-\[9%\]/);
     expect(roster).not.toMatch(/overflow-x-auto/);
     expect(roster).not.toMatch(/whitespace-nowrap text-ink-2/);
-    expect(source("src/components/charts.tsx")).toMatch(/overflow-x-auto/);
+    expect(roster).not.toMatch(/w-\[\d+(\.\d+)?rem\]/);
+    expect(source("src/components/charts.tsx")).toMatch(/overflow-x-auto \[contain:paint\]/);
   });
 });

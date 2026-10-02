@@ -104,7 +104,7 @@ export default async function AnalysisPage() {
                     />
                   ))}
                 </div>
-                <div className="min-w-0 overflow-x-auto rounded-lg border border-border">
+                <div className="min-w-0 overflow-x-auto [contain:paint] rounded-lg border border-border">
                   <div className="min-w-[40rem] divide-y divide-border">
                   <div className="flex items-center gap-4 border-b border-border bg-surface-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
                     <div className="min-w-0 flex-1">Owner</div>
@@ -224,7 +224,7 @@ export default async function AnalysisPage() {
               title="Forecast vs actual"
               subtitle="Initial go-live commitment vs actual. Positive variance is late. Strikethrough codes are excluded from primary averages."
             />
-            <div className="min-w-0 max-w-full overflow-x-auto">
+            <div className="min-w-0 max-w-full overflow-x-auto [contain:paint]">
               <table className="w-full min-w-[720px] border-collapse text-[12.5px]">
                 <thead>
                   <tr className="border-b border-border bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">

@@ -56,7 +56,7 @@ export function HeadroomChart({
         <span>Billable hours / week (exempt excluded)</span>
         <span className="tabular-nums">Cap {numericHours(capacityHours)}h</span>
       </div>
-      <div className="min-w-0 overflow-x-auto">
+      <div className="min-w-0 overflow-x-auto [contain:paint]">
       <div style={{ minWidth: Math.max(280, weeks.length * 48) }}>
       <svg
         viewBox={`0 0 ${plot.viewWidth} ${plot.viewHeight}`}

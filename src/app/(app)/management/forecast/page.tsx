@@ -102,7 +102,7 @@ export default async function ManagementForecastPage() {
         {forecast.staff.length === 0 ? (
           <EmptyState title="No staff yet" description="Add people under Team." />
         ) : (
-          <div className="min-w-0 max-w-full overflow-x-auto">
+          <div className="min-w-0 max-w-full overflow-x-auto [contain:paint]">
             <table className="w-full min-w-[640px] border-collapse text-[12.5px]">
               <thead>
                 <tr className="border-b border-border bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
@@ -201,7 +201,7 @@ export default async function ManagementForecastPage() {
         {loadRows.length === 0 ? (
           <EmptyState title="No active or pre-kickoff implementations" />
         ) : (
-          <div className="min-w-0 max-w-full overflow-x-auto">
+          <div className="min-w-0 max-w-full overflow-x-auto [contain:paint]">
             <table className="w-full min-w-[720px] border-collapse text-[12.5px]">
               <thead>
                 <tr className="border-b border-border bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">

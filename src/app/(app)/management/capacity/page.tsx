@@ -82,7 +82,7 @@ export default async function CapacityPage() {
         {forecast.staff.length === 0 ? (
           <EmptyState title="No staff yet" />
         ) : (
-          <div className="min-w-0 max-w-full overflow-x-auto">
+          <div className="min-w-0 max-w-full overflow-x-auto [contain:paint]">
             <table className="w-full min-w-[560px] border-collapse text-[12.5px]">
               <thead>
                 <tr className="border-b border-border bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
