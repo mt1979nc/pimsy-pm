@@ -48,6 +48,7 @@ describe("staff sidebar sections", () => {
       "Team capacity",
       "Team",
       "Analysis",
+      "Dock delivery",
     ]);
     expect(ADMIN_AREA_LABEL).toBe("Implementation Dashboard");
     expect(hrefs("analytics")).toContain("/admin");

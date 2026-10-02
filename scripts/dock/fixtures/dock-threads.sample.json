@@ -1,0 +1,204 @@
+{
+  "retrievedAt": "2026-10-01T11:06:09.786Z",
+  "sourceUrl": "https://pimsyehr.dock.us/spaces/views/WFEopP9nDBAC",
+  "totals": {
+    "threads": 34,
+    "waiting_on_pimsy": 3,
+    "waiting_on_customer": 28,
+    "unknown": 3,
+    "sites_with_open_threads": 11
+  },
+  "by_site": {
+    "BDMH": {
+      "waiting_on_pimsy": 0,
+      "waiting_on_customer": 6,
+      "unknown": 0,
+      "thread_ids": [
+        4,
+        5,
+        9,
+        10,
+        11,
+        21
+      ],
+      "count": 6,
+      "threads": [
+        {
+          "id": 4,
+          "account": "Better Days Mental Health",
+          "acronym": "BDMH",
+          "type": "Task Comment",
+          "title": "Notification of Privac...",
+          "lastActivity": "15h",
+          "snippet": "Sent message to client for confirmation",
+          "internal": true,
+          "lastPoster": "Morgan Davis",
+          "waitingOn": "customer",
+          "url": "https://pimsyehr.dock.us/spaces/RNXEmxTYYyLg/editor/dOhqspAv2yso?stepId=nbd0topYys4l#section-I8v7Nb3mtQwy"
+        },
+        {
+          "id": 5,
+          "account": "Better Days Mental Health",
+          "acronym": "BDMH",
+          "type": "Message",
+          "title": "Business Associate Relation...",
+          "lastActivity": "15h",
+          "snippet": "File we received is attached here:",
+          "internal": null,
+          "lastPoster": "Morgan Davis",
+          "waitingOn": "customer",
+          "url": "https://pimsyehr.dock.us/better-days-mental-health-RNXEmxTYYyLg/bKjbMi51l0Wa#message-MNmrXxzGpw8j-comment-K7mUeWPkjWvV"
+        }
+      ]
+    },
+    "BHC": {
+      "waiting_on_pimsy": 0,
+      "waiting_on_customer": 0,
+      "unknown": 0,
+      "thread_ids": [],
+      "count": 0,
+      "threads": []
+    },
+    "CCCCARE": {
+      "waiting_on_pimsy": 0,
+      "waiting_on_customer": 1,
+      "unknown": 0,
+      "thread_ids": [
+        32
+      ],
+      "count": 1,
+      "threads": [
+        {
+          "id": 32,
+          "account": "Connected Community Care",
+          "acronym": "CCCCARE",
+          "type": "Task Comment",
+          "title": "Data Review Meeting",
+          "lastActivity": "3d",
+          "snippet": "Latonya Brown, you may have missed my prior message. We need to schedule your import review. Please met know what days/times work best for your schedule and I'll send out an invite. Thanks!",
+          "internal": null,
+          "lastPoster": "Marisa Thompson",
+          "waitingOn": "customer",
+          "url": "https://pimsyehr.dock.us/connected-community-care-gtTKwmQcOdCb/5q96AEv3ZOAD?stepId=v994lu4utZZt#section-2tjdyMe0DQVB"
+        }
+      ]
+    },
+    "CEDAR": {
+      "waiting_on_pimsy": 0,
+      "waiting_on_customer": 1,
+      "unknown": 0,
+      "thread_ids": [
+        3
+      ],
+      "count": 1,
+      "threads": [
+        {
+          "id": 3,
+          "account": "CEDAR Health",
+          "acronym": "CEDAR",
+          "type": "Task Comment",
+          "title": "Data Review Meeting",
+          "lastActivity": "13h",
+          "snippet": "Perfect - TU! I've sent an invite for 11 ET / 10 CT for tomorrow. I look forward to speaking with you then!",
+          "internal": null,
+          "lastPoster": "Marisa Thompson",
+          "waitingOn": "customer",
+          "url": "https://pimsyehr.dock.us/cedar-health-uJj0moDKb0ZB/JIN2IsFyXiRa?stepId=0ZsLHDc7nZpR#section-bXEnLr2317Vk"
+        }
+      ]
+    },
+    "DYM": {
+      "waiting_on_pimsy": 0,
+      "waiting_on_customer": 1,
+      "unknown": 0,
+      "thread_ids": [
+        12
+      ],
+      "count": 1,
+      "threads": [
+        {
+          "id": 12,
+          "account": "DYM BHSO",
+          "acronym": "DYM",
+          "type": "Message",
+          "title": "Called Office and Cell",
+          "lastActivity": "19h",
+          "snippet": null,
+          "internal": true,
+          "lastPoster": "Danielle Piper",
+          "waitingOn": "customer",
+          "url": "https://pimsyehr.dock.us/spaces/Uv80XbOrH0lC/editor/ad1Zrh3x7d4y#message-3eQ2ADdK1aza"
+        }
+      ]
+    }
+  },
+  "threads": [
+    {
+      "id": 1,
+      "account": "Triangle Health Services",
+      "acronym": "THS",
+      "type": "Message",
+      "title": "Follow-up 09/30/2026",
+      "lastActivity": "10h",
+      "snippet": "Yes, can we do friday 11am with danielle?",
+      "internal": null,
+      "lastPoster": "Nicole Artis",
+      "waitingOn": "pimsy",
+      "url": "https://pimsyehr.dock.us/triangle-health-services-6bRKXbpYlxhF/1L9Em8ZI9zK7#message-tWjSZ8oNQdLb-comment-2ilq3VicayAV"
+    },
+    {
+      "id": 2,
+      "account": "Epic Behavioral Health Kentucky",
+      "acronym": "EBHKY",
+      "type": "Task Comment",
+      "title": "UAT",
+      "lastActivity": "12h",
+      "snippet": "Hi Tiffany M. Osborne! You import has been completed. Please review the charts in your site and let me know if there are any issues or if you have any questions - thanks!",
+      "internal": null,
+      "lastPoster": "Marisa Thompson",
+      "waitingOn": "customer",
+      "url": "https://pimsyehr.dock.us/epic-behavioral-health-kentucky-PZGSTScYP58C/cg69m6WDqmx2?stepId=sHAGslFuueUB#section-fToOlbJetiYs"
+    },
+    {
+      "id": 3,
+      "account": "CEDAR Health",
+      "acronym": "CEDAR",
+      "type": "Task Comment",
+      "title": "Data Review Meeting",
+      "lastActivity": "13h",
+      "snippet": "Perfect - TU! I've sent an invite for 11 ET / 10 CT for tomorrow. I look forward to speaking with you then!",
+      "internal": null,
+      "lastPoster": "Marisa Thompson",
+      "waitingOn": "customer",
+      "url": "https://pimsyehr.dock.us/cedar-health-uJj0moDKb0ZB/JIN2IsFyXiRa?stepId=0ZsLHDc7nZpR#section-bXEnLr2317Vk"
+    },
+    {
+      "id": 4,
+      "account": "Better Days Mental Health",
+      "acronym": "BDMH",
+      "type": "Task Comment",
+      "title": "Notification of Privac...",
+      "lastActivity": "15h",
+      "snippet": "Sent message to client for confirmation",
+      "internal": true,
+      "lastPoster": "Morgan Davis",
+      "waitingOn": "customer",
+      "url": "https://pimsyehr.dock.us/spaces/RNXEmxTYYyLg/editor/dOhqspAv2yso?stepId=nbd0topYys4l#section-I8v7Nb3mtQwy"
+    },
+    {
+      "id": 5,
+      "account": "Better Days Mental Health",
+      "acronym": "BDMH",
+      "type": "Message",
+      "title": "Business Associate Relation...",
+      "lastActivity": "15h",
+      "snippet": "File we received is attached here:",
+      "internal": null,
+      "lastPoster": "Morgan Davis",
+      "waitingOn": "customer",
+      "url": "https://pimsyehr.dock.us/better-days-mental-health-RNXEmxTYYyLg/bKjbMi51l0Wa#message-MNmrXxzGpw8j-comment-K7mUeWPkjWvV"
+    }
+  ],
+  "_note": "waitingOn is pimsy|customer|unknown; match sites to PATH via acronym / crmAcronym.",
+  "_fixture": "Demo excerpt for local ingest only. Not production Dock data. Not loaded by db:seed."
+}

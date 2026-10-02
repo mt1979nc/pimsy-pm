@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.20");
+    expect(APP_VERSION).toBe("1.18.21");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,17 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.21 Dock delivery analytics", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.21");
+    expect(note?.summary).toMatch(/Dock delivery/);
+    expect(note?.summary).toMatch(/0030_dock_delivery/);
+    expect(note?.summary).toMatch(/not imported/);
+    expect(note?.highlights?.some((h) => /crmAcronym/.test(h) && /code/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /DOCK_DELIVERY_INGEST_SECRET/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /does not log in to Dock/.test(h))).toBe(true);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.20")).toBeTruthy();
   });
 
   it("documents v1.18.20 team capacity site rows", () => {

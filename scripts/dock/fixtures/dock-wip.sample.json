@@ -1,0 +1,154 @@
+{
+  "retrievedAt": "2026-10-01T11:05:01.476Z",
+  "sourceUrl": "https://pimsyehr.dock.us/spaces/views/WFEopP9nDBAC",
+  "filters": {
+    "view": "Implementation WIP",
+    "savedViewUrl": "https://pimsyehr.dock.us/spaces/views/WFEopP9nDBAC",
+    "exclusions": "Actual end date <= 2026-10-01; DRAFT Impl. Billing/RCM; RCM-only",
+    "asOfLocal": "2026-10-01 America/Chicago",
+    "filterState": "Implementation WIP active; footer 1-25 of 42 | 26-42 of 42; columns visible: Account, Workspace, Owner, Trend, Last contact view, Views, Actions, Time spent, Last modified; note: Actual end/Target end/Start/Project age NOT in current view (Reset+Edit columns disabled); exportTried=true",
+    "pagination": {
+      "pagesCaptured": 2,
+      "totalOnBoard": 42,
+      "pageNotes": [
+        {
+          "pageNum": 1,
+          "footer": "1-25 of 42",
+          "header": [
+            "Account",
+            "Workspace",
+            "Owner",
+            "Trend",
+            "Last contact view",
+            "Views",
+            "Actions",
+            "Time spent",
+            "Last modified"
+          ],
+          "n": 25
+        },
+        {
+          "pageNum": 2,
+          "footer": "26-42 of 42",
+          "header": [
+            "Account",
+            "Workspace",
+            "Owner",
+            "Trend",
+            "Last contact view",
+            "Views",
+            "Actions",
+            "Time spent",
+            "Last modified"
+          ],
+          "n": 17
+        }
+      ]
+    }
+  },
+  "totalIncluded": 22,
+  "workspaces": [
+    {
+      "name": "The Anxiety Center",
+      "acronym": "TAC",
+      "owners": [
+        "AM",
+        "JR",
+        "MD"
+      ],
+      "targetEnd": "2026-12-14",
+      "actualEnd": null,
+      "overdueTaskCount": null,
+      "status": "Hot",
+      "acronymInferred": true
+    },
+    {
+      "name": "Regional Management Care",
+      "acronym": "RMC",
+      "owners": [
+        "AM",
+        "AS"
+      ],
+      "targetEnd": "2026-11-09",
+      "actualEnd": null,
+      "overdueTaskCount": null,
+      "status": "Warm"
+    },
+    {
+      "name": "O'Connor Evaluations",
+      "acronym": "OCE",
+      "owners": [
+        "JR",
+        "MDy"
+      ],
+      "targetEnd": "2026-11-09",
+      "actualEnd": null,
+      "overdueTaskCount": null,
+      "status": "Hot"
+    },
+    {
+      "name": "North Shore Psychotherapy Associates",
+      "acronym": "NSPA",
+      "owners": [
+        "AM",
+        "AS"
+      ],
+      "targetEnd": "2026-12-07",
+      "actualEnd": null,
+      "overdueTaskCount": null,
+      "status": "Warm"
+    },
+    {
+      "name": "Project Wellness",
+      "acronym": "PWMI",
+      "owners": [
+        "AM",
+        "MD"
+      ],
+      "targetEnd": "2026-10-05",
+      "actualEnd": null,
+      "overdueTaskCount": null,
+      "status": "Warm"
+    },
+    {
+      "name": "Triangle Health Services",
+      "acronym": "THS",
+      "owners": [
+        "JR",
+        "MD"
+      ],
+      "targetEnd": "2026-10-05",
+      "actualEnd": null,
+      "overdueTaskCount": null,
+      "status": "Hot"
+    },
+    {
+      "name": "CEDAR Health",
+      "acronym": "CEDAR",
+      "owners": [
+        "AM",
+        "MD",
+        "AS"
+      ],
+      "targetEnd": "2026-10-05",
+      "actualEnd": null,
+      "overdueTaskCount": null,
+      "status": "Hot"
+    },
+    {
+      "name": "Epic Behavioral Health Kentucky",
+      "acronym": "EBHKY",
+      "owners": [
+        "DP",
+        "MD",
+        "AS"
+      ],
+      "targetEnd": "2026-10-12",
+      "actualEnd": null,
+      "overdueTaskCount": null,
+      "status": "Hot"
+    }
+  ],
+  "_note": "Full morning snapshots live under /workspace/shared-morning-snapshot-YYYY-MM-DD/; shape is authoritative for ingest.",
+  "_fixture": "Demo excerpt for local ingest only. Not production Dock data. Not loaded by db:seed."
+}

@@ -23,6 +23,7 @@ describe("P0 cutover banner, queue chips, and Prism nav", () => {
       "Team",
       "Roster",
       "Analysis",
+      "Dock delivery",
     ]);
     expect(PRISM_NAV.map((item) => item.href)).toEqual([
       "/management",
@@ -33,6 +34,7 @@ describe("P0 cutover banner, queue chips, and Prism nav", () => {
       "/management/team",
       "/management/engagements",
       "/management/analysis",
+      "/management/dock-delivery",
     ]);
     expect(PRISM_NAV.find((item) => item.href === "/management")?.exact).toBe(true);
     expect(PRISM_NAV.find((item) => item.href === "/management/engagements")?.match).toBe("prefix");

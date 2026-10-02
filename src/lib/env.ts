@@ -126,6 +126,15 @@ export const env = {
     return optional("CRON_SECRET");
   },
   /**
+   * Bearer token for POST /api/internal/dock-delivery/ingest.
+   * Weekday Logic App / CoS box posts dock-wip.json + dock-threads.json.
+   * Unset → that route 404s. PATH does not log in to Dock.
+   * Generate with: openssl rand -base64 32
+   */
+  get DOCK_DELIVERY_INGEST_SECRET() {
+    return optional("DOCK_DELIVERY_INGEST_SECRET");
+  },
+  /**
    * Bearer token for POST /api/discovery-wizard/workbook (Power Automate
    * delivering the wizard Excel). Falls back to PRISM_READ_API_KEY when unset.
    */
