@@ -136,12 +136,8 @@ export default async function ProjectsPage({
               }
             />
           }
-          wrap={(nodes) => (
-            <>
-              <ProjectListHeader />
-              <div className="divide-y divide-border">{nodes}</div>
-            </>
-          )}
+          layout="divided"
+          before={<ProjectListHeader />}
         />
       </Card>
 

@@ -51,5 +51,10 @@ describe("support handoff list signal", () => {
     expect(projects).toMatch(/handedOffOnly: true/);
     expect(queries).toMatch(/isNotNull\(projects\.supportHandoffAt\)/);
     expect(source("src/components/show-handed-off.tsx")).toMatch(/path\.lists\.show-handed-off/);
+    expect(projects).toMatch(/layout="divided"/);
+    expect(customers).toMatch(/layout="grid"/);
+    expect(projects).not.toMatch(/wrap=/);
+    expect(customers).not.toMatch(/wrap=/);
+    expect(source("src/components/show-handed-off.tsx")).not.toMatch(/wrap\?:/);
   });
 });
