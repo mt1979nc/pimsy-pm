@@ -52,7 +52,7 @@ export async function updateForecastExclusions(
 ): Promise<ActionState> {
   const actor = await requirePortfolioAccess();
   if (!canManagePrismCapacity(actor)) {
-    throw new ForbiddenError("Management access required.");
+    throw new ForbiddenError("Prism access required.");
   }
 
   const raw = formData.get("exclusions")?.toString() ?? "";
@@ -76,7 +76,7 @@ export async function updateForecastExclusions(
 
   revalidatePath("/management");
   revalidatePath("/management/forecast");
-  revalidatePath("/reports/analysis");
-  revalidatePath("/reports/capacity");
+  revalidatePath("/management/analysis");
+  revalidatePath("/management/capacity");
   return { ok: true };
 }

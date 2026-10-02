@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.9";
+export const APP_VERSION = "1.18.10";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.10",
+    date: "2026-10-02",
+    summary:
+      "Cutover banner on Dashboard, Projects, and project Overview. Dashboard queue chips for at risk, go-lives, overdue, and waiting on customer. Team capacity and Analysis sit under Prism. No schema migrate.",
+    highlights: [
+      "Staff banner: roster and time slips are live in PATH; tasks are still in Dock. Dismiss stays in this browser (`path.cutover-banner.dismissed`). The customer portal does not show it.",
+      "Dashboard chips use the EHR secondary palette with counts from the existing portfolio summary: at risk, go-lives in 30 days, overdue tasks, and open customer actions.",
+      "Prism tabs and the sidebar share one nav list. Team capacity is `/management/capacity` and Analysis is `/management/analysis`. `/reports/capacity` and `/reports/analysis` redirect. Headroom card order still uses `path.capacity.member-card-order`.",
+      "Admin (`/admin`) is the directory. Prism stays `/management`. The `/management/staffing` alias is removed.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.9",
     date: "2026-10-01",

@@ -3,6 +3,7 @@ import { requireStaff } from "@/lib/guard";
 import { listProjects } from "@/lib/queries";
 import { canCreateProjects } from "@/lib/authz";
 import { Card, PageHeader, EmptyState, LinkButton, Badge } from "@/components/ui";
+import { CutoverBanner } from "@/components/cutover-banner";
 import { ProjectRow, ProjectListHeader } from "@/components/project-row";
 import { cn } from "@/lib/cn";
 
@@ -51,6 +52,8 @@ export default async function ProjectsPage({
           ) : null
         }
       />
+
+      <CutoverBanner />
 
       <div className="mb-4 flex flex-wrap items-center gap-1.5">
         {FILTERS.map((f) => (

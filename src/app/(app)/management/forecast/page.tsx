@@ -282,7 +282,15 @@ export default async function ManagementForecastPage() {
         <Card>
           <CardHeader
             title="Analysis exclusions"
-            subtitle="Primary averages on /reports/analysis skip these codes."
+            subtitle={
+              <>
+                Primary averages on{" "}
+                <Link href="/management/analysis" className="font-medium text-brand hover:underline">
+                  Analysis
+                </Link>{" "}
+                skip these codes.
+              </>
+            }
           />
           <ForecastExclusionsForm exclusions={exclusions} knownCodes={knownCodes} />
         </Card>

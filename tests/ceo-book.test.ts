@@ -123,7 +123,7 @@ describe("CEO executive book", () => {
     );
     const query = readFileSync(resolve(process.cwd(), "src/lib/ceo-book-query.ts"), "utf8");
     const layout = readFileSync(resolve(process.cwd(), "src/app/(app)/management/layout.tsx"), "utf8");
-    const nav = readFileSync(resolve(process.cwd(), "src/components/prism-nav.tsx"), "utf8");
+    const nav = readFileSync(resolve(process.cwd(), "src/lib/area-nav.ts"), "utf8");
     const migration = readFileSync(resolve(process.cwd(), "drizzle/0026_ceo_executive.sql"), "utf8");
     const schema = readFileSync(resolve(process.cwd(), "src/db/schema.ts"), "utf8");
 

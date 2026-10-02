@@ -47,7 +47,7 @@ export default async function ManagementTeamPage() {
         {team.length === 0 ? (
           <EmptyState
             title="No active staff"
-            description="Invite people under Management → People, or run the Prism import seed."
+            description="Invite people under Admin → People, or run the Prism import seed."
           />
         ) : (
           <div>

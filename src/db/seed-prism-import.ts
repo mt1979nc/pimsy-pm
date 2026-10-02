@@ -3,7 +3,7 @@
  * Staffing Monitor) — the separate forecasting/analytics tool this data used
  * to live in. Brings its book of business (13 active/pre-kickoff engagements
  * and 38 completed implementations, as of the 2026-08-25 PRISM review) into
- * Patio's real schema, so /reports/analysis has a real on-time baseline and
+ * Patio's real schema, so Prism Analysis has a real on-time baseline and
  * the estimator can be checked against real history from day one instead of
  * starting cold.
  *

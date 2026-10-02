@@ -12,8 +12,8 @@ export function revalidatePrismSurfaces(projectId?: string) {
   revalidatePath("/management/weekly");
   revalidatePath("/management/executive");
   revalidatePath("/management/team");
-  revalidatePath("/reports/capacity");
-  revalidatePath("/reports/analysis");
+  revalidatePath("/management/capacity");
+  revalidatePath("/management/analysis");
   revalidatePath("/reports");
   revalidatePath("/dashboard");
   revalidatePath("/projects");

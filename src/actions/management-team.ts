@@ -38,7 +38,7 @@ export async function updateTeamMemberFlags(
 ): Promise<ActionState> {
   const actor = await requirePortfolioAccess();
   if (!canManagePrismCapacity(actor)) {
-    throw new ForbiddenError("Management access required.");
+    throw new ForbiddenError("Prism access required.");
   }
 
   const userId = String(formData.get("userId") ?? "");
