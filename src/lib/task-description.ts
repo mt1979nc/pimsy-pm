@@ -44,10 +44,4 @@ export function resolveTaskDescription(
   return text;
 }
 
-export function descriptionSnippet(text: string | null | undefined, max = 160): string | null {
-  if (!text) return null;
-  const oneLine = text.replace(/\s+/g, " ").trim();
-  if (!oneLine) return null;
-  if (oneLine.length <= max) return oneLine;
-  return `${oneLine.slice(0, max - 1).trimEnd()}…`;
-}
+export { descriptionSnippet, listDescriptionLine } from "@/lib/task-description-line";

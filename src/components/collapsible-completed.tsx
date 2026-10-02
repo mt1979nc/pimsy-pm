@@ -8,6 +8,7 @@ export function CollapsibleCompleted({
   children,
   defaultOpen = false,
   noun = "completed",
+  label,
   hideHint = "— hide finished work",
   showHint = "— show",
   flush = false,
@@ -16,6 +17,8 @@ export function CollapsibleCompleted({
   children: React.ReactNode;
   defaultOpen?: boolean;
   noun?: string;
+  /** Replaces “{count} {noun}” when the noun does not pluralize cleanly. */
+  label?: string;
   hideHint?: string;
   showHint?: string;
   /** Skip the top border when this is already the first child of a card. */
@@ -44,7 +47,7 @@ export function CollapsibleCompleted({
         >
           <path d="m9 6 6 6-6 6" />
         </svg>
-        {count} {noun}
+        {label ?? `${count} ${noun}`}
       </button>
       {open ? <div className="divide-y divide-border border-t border-border">{children}</div> : null}
     </div>

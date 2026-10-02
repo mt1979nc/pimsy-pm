@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardHeader, EmptyState, ProgressBar } from "@/components/ui";
 import { TaskListToolbar } from "@/components/task-list-toolbar";
 import { CollapsibleCompleted } from "@/components/collapsible-completed";
@@ -9,7 +9,9 @@ import { pctComplete } from "@/lib/pct-complete";
 import {
   excludeCollapsedDescendants,
   filterNestedTasks,
+  parseTaskListPrefs,
   partitionCompletedGroups,
+  taskListPrefsKey,
   type TaskListView,
 } from "@/lib/task-list-filter";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
@@ -31,6 +33,7 @@ export type PortalListTask = {
   assignee?: { id: string; name: string | null; image?: string | null } | null;
   assignees?: Array<{ id: string; name: string | null; image?: string | null }>;
   commentCount?: number;
+  depth?: number;
 };
 
 function childParentIds(tasks: PortalListTask[]): Set<string> {
@@ -60,7 +63,33 @@ export function PortalPhaseTaskList({
 }) {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<TaskListView>("all");
+  const [filterReady, setFilterReady] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    try {
+      const prefs = parseTaskListPrefs(sessionStorage.getItem(taskListPrefsKey(projectId, "portal")));
+      if (prefs) {
+        setQuery(prefs.query);
+        setView(prefs.view === "mine" ? "all" : prefs.view);
+      }
+    } catch {
+      // This tab cannot read sessionStorage. The list still filters in memory.
+    }
+    setFilterReady(true);
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!filterReady) return;
+    try {
+      sessionStorage.setItem(
+        taskListPrefsKey(projectId, "portal"),
+        JSON.stringify({ query, view }),
+      );
+    } catch {
+      // Ignore quota / private-mode failures. The filter still works for this visit.
+    }
+  }, [filterReady, projectId, query, view]);
 
   const filtered = useMemo(
     () => filterNestedTasks(tasks, { query, view }),
@@ -73,43 +102,39 @@ export function PortalPhaseTaskList({
   const inProgress = tasks.filter((t) => t.status === "IN_PROGRESS").length;
   const pct = pctComplete(done, tasks.length);
 
+  function toggleParent(id: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   function rows(list: PortalListTask[]) {
     const visible = excludeCollapsedDescendants(list, collapsed);
     return visible.map((t) => (
-      <div key={t.id}>
-        <PortalTaskRow
-          task={{
-            id: t.id,
-            title: t.title,
-            description: t.description,
-            status: t.status,
-            dueDate: t.dueDate,
-            sessionAt: t.sessionAt ?? null,
-            projectId,
-            projectCode,
-            commentCount: t.commentCount,
-          }}
-          assets={assetsByTaskId[t.id]}
-          bookingUrls={bookingUrls}
-          canUpload={t.ownerSide === "CUSTOMER"}
-        />
-        {parents.has(t.id) ? (
-          <button
-            type="button"
-            className="mb-1 ml-12 text-[12px] text-ink-3 hover:text-ink hover:underline"
-            onClick={() =>
-              setCollapsed((prev) => {
-                const next = new Set(prev);
-                if (next.has(t.id)) next.delete(t.id);
-                else next.add(t.id);
-                return next;
-              })
-            }
-          >
-            {collapsed.has(t.id) ? "Show nested items" : "Hide nested items"}
-          </button>
-        ) : null}
-      </div>
+      <PortalTaskRow
+        key={t.id}
+        task={{
+          id: t.id,
+          title: t.title,
+          description: t.description,
+          status: t.status,
+          dueDate: t.dueDate,
+          sessionAt: t.sessionAt ?? null,
+          projectId,
+          projectCode,
+          commentCount: t.commentCount,
+          depth: t.depth ?? 0,
+        }}
+        assets={assetsByTaskId[t.id]}
+        bookingUrls={bookingUrls}
+        canUpload={t.ownerSide === "CUSTOMER"}
+        hasChildren={parents.has(t.id)}
+        childrenCollapsed={collapsed.has(t.id)}
+        onToggleChildren={parents.has(t.id) ? () => toggleParent(t.id) : undefined}
+      />
     ));
   }
 
@@ -138,7 +163,7 @@ export function PortalPhaseTaskList({
             view={view}
             onView={setView}
             showMine={false}
-            placeholder="Filter this area…"
+            placeholder={view === "punch" ? "Filter the punch list…" : "Filter this area…"}
           />
         </div>
       ) : null}

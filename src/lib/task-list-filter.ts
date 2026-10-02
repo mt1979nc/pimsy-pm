@@ -3,10 +3,11 @@
  * Pure helpers so staff and portal lists share the same behavior.
  */
 
-export type TaskListView = "all" | "open" | "done" | "customer" | "mine";
+export type TaskListView = "all" | "punch" | "open" | "done" | "customer" | "mine";
 
 export const TASK_LIST_VIEWS: Array<{ id: TaskListView; label: string }> = [
   { id: "all", label: "All" },
+  { id: "punch", label: "Punch" },
   { id: "open", label: "Open" },
   { id: "done", label: "Done" },
   { id: "customer", label: "Customer" },
@@ -108,6 +109,8 @@ function matchesView(t: FilterableTask, view: TaskListView, currentUserId?: stri
       return true;
     case "open":
       return !isClosed(t);
+    case "punch":
+      return !isClosed(t);
     case "done":
       return t.status === "DONE";
     case "customer":
@@ -122,8 +125,10 @@ function matchesView(t: FilterableTask, view: TaskListView, currentUserId?: stri
 }
 
 /**
- * Keep a nested row if it, an ancestor, or a descendant matches query + view.
+ * Keep a nested row if it matches query + view.
  * Ancestors stay so the specialist still sees which parent a sub-task belongs to.
+ * Punch list browsing does not pull finished children back in. Other views still
+ * keep descendants so a matching parent does not hide its checklist.
  */
 export function filterNestedTasks<T extends FilterableTask>(
   ordered: T[],
@@ -132,6 +137,7 @@ export function filterNestedTasks<T extends FilterableTask>(
   const q = opts.query.trim().toLowerCase();
   const byId = new Map(ordered.map((t) => [t.id, t]));
   const children = childrenMap(ordered);
+  const keepDescendants = opts.view !== "punch";
 
   const queryHit = new Set<string>();
   for (const t of ordered) {
@@ -152,7 +158,9 @@ export function filterNestedTasks<T extends FilterableTask>(
       keep.add(parentId);
       parentId = byId.get(parentId)?.parentTaskId ?? null;
     }
-    for (const d of collectDescendants(t.id, children)) keep.add(d.id);
+    if (keepDescendants) {
+      for (const d of collectDescendants(t.id, children)) keep.add(d.id);
+    }
   }
 
   return ordered.filter((t) => keep.has(t.id));
@@ -194,6 +202,31 @@ export function partitionCompletedGroups<T extends FilterableTask>(ordered: T[])
   }
 
   return { active, completed };
+}
+
+const TASK_LIST_VIEW_IDS = new Set<string>(TASK_LIST_VIEWS.map((view) => view.id));
+
+/** Restore the last task-list filter for this browser tab. Invalid JSON is ignored. */
+export function parseTaskListPrefs(
+  raw: string | null,
+): { query: string; view: TaskListView } | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { query?: unknown; view?: unknown };
+    const view =
+      typeof parsed.view === "string" && TASK_LIST_VIEW_IDS.has(parsed.view)
+        ? (parsed.view as TaskListView)
+        : null;
+    const query = typeof parsed.query === "string" ? parsed.query.slice(0, 200) : "";
+    if (!view && !query) return null;
+    return { query, view: view ?? "all" };
+  } catch {
+    return null;
+  }
+}
+
+export function taskListPrefsKey(projectId: string, scope = "staff"): string {
+  return `path.task-list.${scope}.${projectId}`;
 }
 
 export function countOpen(rows: FilterableTask[]): number {

@@ -91,6 +91,7 @@ export default async function PortalPhasePage({
         assignee: t.assignee,
         assignees: assigneesByTask.get(t.id) ?? (t.assignee ? [t.assignee] : []),
         commentCount: t.comments?.length ?? 0,
+        depth: t.depth,
       }))}
     />
   );

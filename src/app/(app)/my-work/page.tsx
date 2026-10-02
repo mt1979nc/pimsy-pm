@@ -5,6 +5,7 @@ import { TaskRow } from "@/components/task-row";
 import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
 import { isOverdue } from "@/lib/dates";
 import { formatWaitingOnAreaHint, countWaitingOnByArea } from "@/lib/waiting-on-area";
+import { resolveTaskDescription } from "@/lib/task-description";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "My work" };
@@ -122,7 +123,11 @@ export default async function MyWorkPage() {
                     </div>
                     <div className="divide-y divide-border">
                       {phase.tasks.map((t) => (
-                        <TaskRow key={t.id} task={t} showProject />
+                        <TaskRow
+                          key={t.id}
+                          task={{ ...t, description: resolveTaskDescription(t.title, t.description) }}
+                          showProject
+                        />
                       ))}
                     </div>
                   </div>

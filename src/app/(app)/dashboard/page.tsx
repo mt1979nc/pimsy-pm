@@ -31,6 +31,7 @@ import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
 import { fmtShort, fmtRelative, differenceInCalendarDays, startOfDay } from "@/lib/dates";
 import { isOverviewUpcomingDue } from "@/lib/onboarded";
 import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
+import { resolveTaskDescription } from "@/lib/task-description";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard" };
@@ -205,7 +206,11 @@ export default async function DashboardPage() {
             ) : (
               <div className="divide-y divide-border">
                 {tasks.slice(0, 7).map((t) => (
-                  <TaskRow key={t.id} task={t} showProject />
+                  <TaskRow
+                    key={t.id}
+                    task={{ ...t, description: resolveTaskDescription(t.title, t.description) }}
+                    showProject
+                  />
                 ))}
               </div>
             )}

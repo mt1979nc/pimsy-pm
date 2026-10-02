@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { AreaChip } from "@/components/queue-chips";
 import { Badge, EmptyState } from "@/components/ui";
@@ -8,7 +11,9 @@ import {
   classifyWaitingOnArea,
   countWaitingOnByArea,
   groupWaitingOnByArea,
+  tasksInWaitingOnArea,
   waitingOnPhaseDetail,
+  type WaitingOnArea,
   type WaitingOnAreaCounts,
   type WaitingOnAreaTask,
 } from "@/lib/waiting-on-area";
@@ -29,21 +34,57 @@ export type ChaseTask = WaitingOnAreaTask & {
 
 export function WaitingOnAreaHighlights({
   counts,
+  area = "all",
+  onArea,
   className,
 }: {
   counts: WaitingOnAreaCounts;
+  area?: WaitingOnArea | "all";
+  onArea?: (area: WaitingOnArea | "all") => void;
   className?: string;
 }) {
-  const showOther = counts.other > 0;
   return (
     <div
       className={cn("flex flex-wrap items-center gap-1.5", className)}
       aria-label="Outstanding customer actions by area"
     >
-      {WAITING_ON_HIGHLIGHT_AREAS.map((key) => (
-        <AreaChip key={key} area={key} count={counts[key]} />
-      ))}
-      {showOther ? <Badge>{WAITING_ON_AREA_LABELS.other} {counts.other}</Badge> : null}
+      {WAITING_ON_HIGHLIGHT_AREAS.map((key) => {
+        const n = counts[key];
+        const selected = area === key;
+        const chip = <AreaChip area={key} count={n} />;
+        if (!onArea || n === 0) return <span key={key}>{chip}</span>;
+        return (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => onArea(selected ? "all" : key)}
+            className={cn("rounded-full", selected && "ring-2 ring-brand ring-offset-1")}
+            title={selected ? "Show every area" : `Show ${WAITING_ON_AREA_LABELS[key]} only`}
+          >
+            {chip}
+          </button>
+        );
+      })}
+      {counts.other > 0 ? (
+        onArea ? (
+          <button
+            type="button"
+            aria-pressed={area === "other"}
+            onClick={() => onArea(area === "other" ? "all" : "other")}
+            className={cn("rounded-full", area === "other" && "ring-2 ring-brand ring-offset-1")}
+            title={area === "other" ? "Show every area" : "Show Other only"}
+          >
+            <Badge>
+              {WAITING_ON_AREA_LABELS.other} {counts.other}
+            </Badge>
+          </button>
+        ) : (
+          <Badge>
+            {WAITING_ON_AREA_LABELS.other} {counts.other}
+          </Badge>
+        )
+      ) : null}
     </div>
   );
 }
@@ -121,8 +162,10 @@ export function WaitingOnCustomerList({
   showStatus?: boolean;
   highlightClassName?: string;
 }) {
+  const [area, setArea] = useState<WaitingOnArea | "all">("all");
   const counts = countWaitingOnByArea(tasks);
-  const groups = groupWaitingOnByArea(tasks);
+  const shown = tasksInWaitingOnArea(tasks, area);
+  const groups = groupWaitingOnByArea(shown);
 
   if (tasks.length === 0) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
@@ -131,8 +174,13 @@ export function WaitingOnCustomerList({
   return (
     <div>
       <div className={cn("border-b border-border px-4 py-2.5", highlightClassName)}>
-        <WaitingOnAreaHighlights counts={counts} />
+        <WaitingOnAreaHighlights counts={counts} area={area} onArea={setArea} />
       </div>
+      {shown.length === 0 && area !== "all" ? (
+        <p className="px-4 py-4 text-[13px] text-ink-3">
+          Nothing in {WAITING_ON_AREA_LABELS[area]}.
+        </p>
+      ) : null}
       {groups.map((group) => (
         <div key={group.key} className="border-b border-border last:border-b-0">
           <div

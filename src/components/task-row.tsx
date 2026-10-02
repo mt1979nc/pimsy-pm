@@ -14,6 +14,7 @@ import { MoveTaskDialog, type MoveTaskPhaseOption } from "@/components/move-task
 import { AddTaskInline } from "@/app/(app)/projects/[id]/tasks/task-forms";
 import type { MoveTaskNode } from "@/lib/task-move";
 import { dueLabel, isOverdue } from "@/lib/dates";
+import { listDescriptionLine } from "@/lib/task-description-line";
 import { cn } from "@/lib/cn";
 import { scheduledSessionLabel } from "@/lib/training-session";
 import type { Priority, TaskStatus, Visibility, OwnerSide } from "@/db/schema";
@@ -109,6 +110,7 @@ export function TaskRow({
   const overdue = isOverdue(task.dueDate, completedAt);
   const specialistSub = Boolean(task.parentTaskId) && task.ownerSide === "INTERNAL";
   const nested = (task.depth ?? 0) > 0;
+  const descriptionLine = !done && !na ? listDescriptionLine(task.title, task.description) : null;
 
   function toggle() {
     if (!canEdit) return;
@@ -148,7 +150,7 @@ export function TaskRow({
     >
       <div
         className="flex items-start gap-3 px-4 py-2"
-        style={task.depth ? { paddingLeft: 16 + task.depth * 14 } : undefined}
+        style={nested ? { paddingLeft: 30 } : undefined}
       >
         {hasChildren && onToggleChildren ? (
           <button
@@ -172,7 +174,9 @@ export function TaskRow({
             </svg>
           </button>
         ) : nested ? (
-          <span className="mt-0.5 size-[17px] shrink-0" aria-hidden />
+          <span className="mt-0.5 flex size-[17px] shrink-0 items-center justify-center" aria-hidden>
+            <span className="size-1.5 rounded-full bg-border-strong" />
+          </span>
         ) : null}
         <button
           type="button"
@@ -222,7 +226,6 @@ export function TaskRow({
               <PriorityBadge priority={task.priority} />
             )}
             {task.ownerSide === "CUSTOMER" ? <Badge tone="maroon">Customer</Badge> : null}
-            {specialistSub ? <Badge tone="amber">Specialist</Badge> : null}
             {showReviewRequiredBadge(task) ? <ReviewRequiredBadge /> : null}
             {optimisticStatus === "BLOCKED" ? <Badge tone="red">Blocked</Badge> : null}
             {na ? <Badge tone="amber">N/A</Badge> : null}
@@ -230,6 +233,9 @@ export function TaskRow({
             {task.connectedNote ? <Badge tone="green">{task.connectedNote}</Badge> : null}
             <CommentCountBadge count={task.commentCount ?? 0} href={href} />
           </div>
+          {descriptionLine ? (
+            <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-ink-3">{descriptionLine}</p>
+          ) : null}
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-3">
             {showProject && task.project ? (

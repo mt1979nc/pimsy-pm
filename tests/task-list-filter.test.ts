@@ -3,8 +3,10 @@ import {
   excludeCollapsedDescendants,
   filterNestedTasks,
   isSectionComplete,
+  parseTaskListPrefs,
   partitionCompletedGroups,
   sortPhaseSections,
+  taskListPrefsKey,
   type FilterableTask,
 } from "@/lib/task-list-filter";
 
@@ -63,6 +65,33 @@ describe("task list filter and completed collapse", () => {
     expect(completed.map((r) => r.id)).toEqual(["done-parent", "done-child"]);
     expect(active.some((r) => r.id === "user-setup")).toBe(true);
     expect(active.some((r) => r.id === "create-users")).toBe(true);
+  });
+
+  it("Punch keeps open items and their parents, and drops finished children", () => {
+    const rows = filterNestedTasks(tree, { query: "", view: "punch" });
+    expect(rows.map((r) => r.id)).toEqual(["user-setup", "user-codes", "logos"]);
+  });
+
+  it("Punch still shows a done parent when a child is open", () => {
+    const rows = filterNestedTasks(
+      [
+        t({ id: "parent", title: "User Setup", status: "DONE" }),
+        t({ id: "child", title: "User Codes / Rates", parentTaskId: "parent", status: "TODO" }),
+      ],
+      { query: "", view: "punch" },
+    );
+    expect(rows.map((r) => r.id)).toEqual(["parent", "child"]);
+  });
+
+  it("restores a saved punch filter and ignores junk", () => {
+    expect(parseTaskListPrefs(JSON.stringify({ query: "logo", view: "punch" }))).toEqual({
+      query: "logo",
+      view: "punch",
+    });
+    expect(parseTaskListPrefs("not-json")).toBeNull();
+    expect(parseTaskListPrefs(JSON.stringify({ view: "nope" }))).toBeNull();
+    expect(taskListPrefsKey("proj-1")).toBe("path.task-list.staff.proj-1");
+    expect(taskListPrefsKey("proj-1", "portal")).toBe("path.task-list.portal.proj-1");
   });
 
   it("hides descendants when a parent is collapsed", () => {

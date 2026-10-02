@@ -7,6 +7,7 @@ import { TaskActionButtons } from "@/components/task-action-buttons";
 import { AddAttachment } from "@/components/attachments";
 import { CommentCountBadge } from "@/components/comment-count-badge";
 import { dueLabel, isOverdue } from "@/lib/dates";
+import { listDescriptionLine } from "@/lib/task-description-line";
 import { cn } from "@/lib/cn";
 import { scheduledSessionLabel } from "@/lib/training-session";
 import type { TaskActionAsset } from "@/lib/playbook-resources";
@@ -18,6 +19,9 @@ export function PortalTaskRow({
   assets,
   bookingUrls,
   canUpload = false,
+  hasChildren = false,
+  childrenCollapsed = false,
+  onToggleChildren,
 }: {
   task: {
     id: string;
@@ -31,17 +35,23 @@ export function PortalTaskRow({
     projectCode?: string | null;
     commentCount?: number;
     visibility?: "INTERNAL" | "SHARED";
+    depth?: number;
   };
   showActions?: boolean;
   assets?: TaskActionAsset[];
   bookingUrls?: BookingUrlMap | null;
   canUpload?: boolean;
+  hasChildren?: boolean;
+  childrenCollapsed?: boolean;
+  onToggleChildren?: () => void;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useOptimistic(task.status);
   const done = optimisticStatus === "DONE";
+  const nested = (task.depth ?? 0) > 0;
+  const descriptionLine = !done ? listDescriptionLine(task.title, task.description) : null;
   const overdue = isOverdue(task.dueDate) && !done;
   const comments = task.commentCount ?? 0;
   const taskHref = task.projectId
@@ -49,7 +59,36 @@ export function PortalTaskRow({
     : null;
 
   return (
-    <div className={cn("flex items-start gap-3 px-4 py-2")}>
+    <div
+      className={cn("flex items-start gap-3 px-4 py-2")}
+      style={nested ? { paddingLeft: 30 } : undefined}
+    >
+      {hasChildren && onToggleChildren ? (
+        <button
+          type="button"
+          aria-label={childrenCollapsed ? `Expand ${task.title}` : `Collapse ${task.title}`}
+          aria-expanded={!childrenCollapsed}
+          onClick={onToggleChildren}
+          className="mt-0.5 flex size-[17px] shrink-0 items-center justify-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink"
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            className={cn("transition-transform", !childrenCollapsed && "rotate-90")}
+            aria-hidden
+          >
+            <path d="m9 6 6 6-6 6" />
+          </svg>
+        </button>
+      ) : nested ? (
+        <span className="mt-0.5 flex size-[17px] shrink-0 items-center justify-center" aria-hidden>
+          <span className="size-1.5 rounded-full bg-border-strong" />
+        </span>
+      ) : null}
       <button
         type="button"
         disabled={pending}
@@ -118,6 +157,9 @@ export function PortalTaskRow({
             <CommentCountBadge count={comments} href={taskHref} />
           ) : null}
         </div>
+        {descriptionLine ? (
+          <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-ink-3">{descriptionLine}</p>
+        ) : null}
         {task.projectName ? (
           <div className="mt-0.5 text-[12px] text-ink-3">{task.projectName}</div>
         ) : null}

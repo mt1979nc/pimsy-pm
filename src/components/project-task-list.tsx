@@ -23,8 +23,10 @@ import {
   excludeCollapsedDescendants,
   filterNestedTasks,
   isSectionComplete,
+  parseTaskListPrefs,
   partitionCompletedGroups,
   sortSectionsByCompletion,
+  taskListPrefsKey,
   type TaskListView,
 } from "@/lib/task-list-filter";
 import type { ChecklistItemView } from "@/components/task-checklist";
@@ -154,6 +156,7 @@ export function ProjectTaskBoard({
 }) {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<TaskListView>("all");
+  const [filterReady, setFilterReady] = useState(false);
   const [addRcmOpen, setAddRcmOpen] = useState(false);
   const alreadyOn = Boolean(rcmSummary) && !addRcm;
   const rcmView = addRcmPanelView({
@@ -161,6 +164,28 @@ export function ProjectTaskBoard({
     alreadyOn,
     expanded: addRcmOpen,
   });
+
+  useEffect(() => {
+    try {
+      const prefs = parseTaskListPrefs(sessionStorage.getItem(taskListPrefsKey(projectId)));
+      if (prefs) {
+        setQuery(prefs.query);
+        setView(prefs.view);
+      }
+    } catch {
+      // This tab cannot read sessionStorage. The list still filters in memory.
+    }
+    setFilterReady(true);
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!filterReady) return;
+    try {
+      sessionStorage.setItem(taskListPrefsKey(projectId), JSON.stringify({ query, view }));
+    } catch {
+      // Ignore quota / private-mode failures. The filter still works for this visit.
+    }
+  }, [filterReady, projectId, query, view]);
 
   useEffect(() => {
     const sync = () => {
@@ -300,6 +325,116 @@ export function ProjectTaskBoard({
   ).length;
 
   const nothingAtAll = phases.length === 0 && allTasks.length === 0;
+  const hideEmptyDone = view === "punch" || view === "open" || query.trim().length > 0;
+  const openPhaseRows = filteredPhases.filter(
+    (row) =>
+      !isSectionComplete(row.phase.tasks, { sectionNotApplicable: row.phase.notApplicable }),
+  );
+  const donePhaseRows = filteredPhases.filter((row) => {
+    const sectionDone = isSectionComplete(row.phase.tasks, {
+      sectionNotApplicable: row.phase.notApplicable,
+    });
+    if (!sectionDone) return false;
+    if (hideEmptyDone && row.filtered.length === 0) return false;
+    return true;
+  });
+
+  function renderPhaseCard(row: (typeof filteredPhases)[number], flattenCompleted: boolean) {
+    const { phase, filtered } = row;
+    const active = flattenCompleted ? filtered : row.active;
+    const completed = flattenCompleted ? [] : row.completed;
+    const done = phase.tasks.filter((t) => t.status === "DONE").length;
+    const applicable = phase.tasks.filter((t) => !t.notApplicable).length;
+    const sectionDone = isSectionComplete(phase.tasks, {
+      sectionNotApplicable: phase.notApplicable,
+    });
+    const area = classifyWaitingOnArea(phase.name);
+    return (
+      <Card key={phase.id}>
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              {area === "discovery" || area === "configuration" || area === "training" ? (
+                <AreaChip area={area} />
+              ) : null}
+              {phase.name}
+              {phase.visibility === "INTERNAL" ? (
+                <VisibilityBadge visibility="INTERNAL" />
+              ) : null}
+              {phase.notApplicable ? (
+                <Badge tone="amber">N/A</Badge>
+              ) : sectionDone ? (
+                <Badge tone="green">Done</Badge>
+              ) : null}
+              {phase.workTrack === "RCM" ? <Badge tone="maroon">RCM</Badge> : null}
+            </span>
+          }
+          subtitle={
+            <>
+              {done}/{applicable} complete
+              {phase.dueDate ? ` · due ${fmtShort(phase.dueDate)}` : ""}
+            </>
+          }
+          action={
+            <span className="flex flex-wrap items-center justify-end gap-3">
+              <PhaseVisibilityButton phaseId={phase.id} visibility={phase.visibility} />
+              <PhaseNaButton
+                phaseId={phase.id}
+                notApplicable={phase.notApplicable}
+                onPreviewChange={(next) =>
+                  setPhaseNaPreview((prev) => ({ ...prev, [phase.id]: next }))
+                }
+              />
+            </span>
+          }
+        />
+        {filtered.length === 0 ? (
+          <EmptyState
+            title={phase.tasks.length === 0 ? "Nothing in this phase yet" : "No matches"}
+          />
+        ) : (
+          <div className="divide-y divide-border">
+            <PhaseTaskRows
+              projectId={projectId}
+              tasks={active}
+              staff={staff}
+              defaultAssigneeId={defaultAssigneeId}
+              assetsByTaskId={assetsByTaskId}
+              bookingUrls={bookingUrls}
+              checklistByTaskId={checklistByTaskId}
+              allowStructureEdit
+              movePhases={movePhases}
+              moveTasks={moveTasks}
+              onPreviewChange={previewTaskChange}
+            />
+          </div>
+        )}
+        <CollapsibleCompleted count={completed.length}>
+          <PhaseTaskRows
+            projectId={projectId}
+            tasks={completed}
+            staff={staff}
+            defaultAssigneeId={defaultAssigneeId}
+            assetsByTaskId={assetsByTaskId}
+            bookingUrls={bookingUrls}
+            checklistByTaskId={checklistByTaskId}
+            allowStructureEdit
+            movePhases={movePhases}
+            moveTasks={moveTasks}
+            onPreviewChange={previewTaskChange}
+          />
+        </CollapsibleCompleted>
+        <div className="border-t border-border">
+          <AddTaskInline
+            projectId={projectId}
+            phaseId={phase.id}
+            staff={staff}
+            defaultAssigneeId={defaultAssigneeId}
+          />
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -343,7 +478,13 @@ export function ProjectTaskBoard({
       ) : null}
 
       {nothingAtAll ? null : (
-        <TaskListToolbar query={query} onQuery={setQuery} view={view} onView={setView} />
+        <TaskListToolbar
+          query={query}
+          onQuery={setQuery}
+          view={view}
+          onView={setView}
+          placeholder={view === "punch" ? "Filter the punch list…" : "Filter tasks…"}
+        />
       )}
 
       {nothingAtAll ? (
@@ -355,99 +496,20 @@ export function ProjectTaskBoard({
         </Card>
       ) : null}
 
-      {filteredPhases.map(({ phase, filtered, active, completed }) => {
-        const done = phase.tasks.filter((t) => t.status === "DONE").length;
-        const applicable = phase.tasks.filter((t) => !t.notApplicable).length;
-        const sectionDone = isSectionComplete(phase.tasks, {
-          sectionNotApplicable: phase.notApplicable,
-        });
-        const area = classifyWaitingOnArea(phase.name);
-        return (
-          <Card key={phase.id}>
-            <CardHeader
-              title={
-                <span className="flex items-center gap-2">
-                  {area === "discovery" || area === "configuration" || area === "training" ? (
-                    <AreaChip area={area} />
-                  ) : null}
-                  {phase.name}
-                  {phase.visibility === "INTERNAL" ? (
-                    <VisibilityBadge visibility="INTERNAL" />
-                  ) : null}
-                  {phase.notApplicable ? (
-                    <Badge tone="amber">N/A</Badge>
-                  ) : sectionDone ? (
-                    <Badge tone="green">Done</Badge>
-                  ) : null}
-                  {phase.workTrack === "RCM" ? <Badge tone="maroon">RCM</Badge> : null}
-                </span>
-              }
-              subtitle={
-                <>
-                  {done}/{applicable} complete
-                  {phase.dueDate ? ` · due ${fmtShort(phase.dueDate)}` : ""}
-                </>
-              }
-              action={
-                <span className="flex flex-wrap items-center justify-end gap-3">
-                  <PhaseVisibilityButton phaseId={phase.id} visibility={phase.visibility} />
-                  <PhaseNaButton
-                    phaseId={phase.id}
-                    notApplicable={phase.notApplicable}
-                    onPreviewChange={(next) =>
-                      setPhaseNaPreview((prev) => ({ ...prev, [phase.id]: next }))
-                    }
-                  />
-                </span>
-              }
-            />
-            {filtered.length === 0 ? (
-              <EmptyState
-                title={phase.tasks.length === 0 ? "Nothing in this phase yet" : "No matches"}
-              />
-            ) : (
-              <div className="divide-y divide-border">
-                <PhaseTaskRows
-                  projectId={projectId}
-                  tasks={active}
-                  staff={staff}
-                  defaultAssigneeId={defaultAssigneeId}
-                  assetsByTaskId={assetsByTaskId}
-                  bookingUrls={bookingUrls}
-                  checklistByTaskId={checklistByTaskId}
-                  allowStructureEdit
-                  movePhases={movePhases}
-                  moveTasks={moveTasks}
-                  onPreviewChange={previewTaskChange}
-                />
-              </div>
-            )}
-            <CollapsibleCompleted count={completed.length}>
-              <PhaseTaskRows
-                projectId={projectId}
-                tasks={completed}
-                staff={staff}
-                defaultAssigneeId={defaultAssigneeId}
-                assetsByTaskId={assetsByTaskId}
-                bookingUrls={bookingUrls}
-                checklistByTaskId={checklistByTaskId}
-                allowStructureEdit
-                movePhases={movePhases}
-                moveTasks={moveTasks}
-                onPreviewChange={previewTaskChange}
-              />
-            </CollapsibleCompleted>
-            <div className="border-t border-border">
-              <AddTaskInline
-                projectId={projectId}
-                phaseId={phase.id}
-                staff={staff}
-                defaultAssigneeId={defaultAssigneeId}
-              />
-            </div>
-          </Card>
-        );
-      })}
+      {openPhaseRows.map((row) => renderPhaseCard(row, false))}
+      <CollapsibleCompleted
+        count={donePhaseRows.length}
+        label={
+          donePhaseRows.length === 1
+            ? "1 completed section"
+            : `${donePhaseRows.length} completed sections`
+        }
+        flush
+      >
+        <div className="space-y-4 pt-3">
+          {donePhaseRows.map((row) => renderPhaseCard(row, true))}
+        </div>
+      </CollapsibleCompleted>
 
       {unphased.length > 0 ? (
         <Card>
