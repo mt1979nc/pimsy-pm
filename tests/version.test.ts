@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.21");
+    expect(APP_VERSION).toBe("1.18.22");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,18 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.22 HubSpot on create", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.22");
+    expect(note?.summary).toMatch(/HubSpot on create/);
+    expect(note?.summary).toMatch(/read-only/i);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /contractDate/.test(h) && /expectedArr/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /HUBSPOT_DEAL_ARR_PROPERTY/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /portal/i.test(h) && /token/i.test(h))).toBe(true);
+    expect(note?.highlights?.join(" ")).not.toMatch(/PHI/);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.21")).toBeTruthy();
   });
 
   it("documents v1.18.21 Dock delivery analytics", () => {

@@ -93,12 +93,27 @@ export const env = {
     return optional("PRISM_READ_API_KEY");
   },
   /**
-   * Optional HubSpot private-app token for staff About deal pull.
-   * When unset, About shows a clear outbound deal link only. Never required
-   * for PATH to run. Do not expose this to the portal or client bundles.
+   * Optional HubSpot private-app token. Scope: crm.objects.deals.read.
+   * PATH only GETs a deal. When unset, create/About still store the deal URL
+   * and do not error. Never required for PATH to run. Do not expose this to
+   * the portal or client bundles.
    */
   get HUBSPOT_ACCESS_TOKEN() {
     return optional("HUBSPOT_ACCESS_TOKEN");
+  },
+  /**
+   * HubSpot deal property for CEO contract date. Default `closedate`.
+   * A custom name is preferred when it has a value; otherwise closedate.
+   */
+  get HUBSPOT_DEAL_CONTRACT_DATE_PROPERTY() {
+    return optional("HUBSPOT_DEAL_CONTRACT_DATE_PROPERTY", "closedate");
+  },
+  /**
+   * HubSpot deal property for CEO expected ARR. Default `amount`.
+   * A custom name is preferred when it has a value; otherwise amount.
+   */
+  get HUBSPOT_DEAL_ARR_PROPERTY() {
+    return optional("HUBSPOT_DEAL_ARR_PROPERTY", "amount");
   },
   /**
    * Optional read-only HTTP feed of PIMSY EHR login/session rows for the

@@ -115,7 +115,7 @@ export function EngagementCreateForm({
           <Field
             label="HubSpot deal URL"
             htmlFor="hubspotDealUrl"
-            hint="CRM auto-create. Staff only — not the live site. Pull needs HUBSPOT_ACCESS_TOKEN."
+            hint="Staff only. Fills empty contract date and expected ARR."
           >
             <input
               id="hubspotDealUrl"
