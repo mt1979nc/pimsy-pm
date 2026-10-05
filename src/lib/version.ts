@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.23";
+export const APP_VERSION = "1.18.24";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.24",
+    date: "2026-10-05",
+    summary:
+      "Needs attention shows the site name on one line. The progress percent and the EHR+RCM label no longer sit on top of each other. No schema migrate.",
+    highlights: [
+      "Dashboard Needs attention (and the same row on Projects and a customer page) keeps a minimum width on the site name and ellipsizes the rest. A narrow card cannot crush the title into single letters.",
+      "The product label (EHR, RCM, or EHR+RCM) sits under the progress bar. The percent and the task count stay above the bar. Go-live, health, status, and lead stay on the row and wrap under the name when the card is narrow.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.23",
     date: "2026-10-05",
