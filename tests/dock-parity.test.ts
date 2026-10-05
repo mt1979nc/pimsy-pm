@@ -467,6 +467,7 @@ describe("Learning Center IA", () => {
     expect(start?.items.map((i) => i.title)).toEqual([
       "Intro to PIMSY",
       "Getting started with PIMSY v2",
+      "PIMSY Implementation Customer Guide",
       "Overview",
       "Tips for a Successful implementation V2",
     ]);
@@ -480,6 +481,7 @@ describe("Learning Center IA", () => {
     for (const need of [
       "Intro to PIMSY",
       "Getting started with PIMSY v2",
+      "PIMSY Implementation Customer Guide",
       "Overview",
       "Tips for a Successful implementation V2",
       "Password Reset",
@@ -501,12 +503,25 @@ describe("Learning Center IA", () => {
       expect(titles).toContain(need);
     }
     expect(titles).not.toContain("Discovery Wizard");
-    expect(titles).not.toContain("PIMSY Implementation Customer Guide.pdf");
     expect(titles).not.toContain("ClaimMD enrollment");
     const byTitle = new Map(LEARNING_CENTER_SECTIONS.flatMap((s) => s.items.map((i) => [i.title, i])));
     expect(byTitle.get("Overview")?.url).toBe(DOCK_LC_ASSETS.overview);
     expect(byTitle.get("Password Reset")?.url).toBe(DOCK_LC_ASSETS.passwordReset);
     expect(byTitle.get("Getting started with PIMSY v2")?.url).toBe(DOCK_LC_ASSETS.gettingStartedPdf);
+    const customerGuide = byTitle.get("PIMSY Implementation Customer Guide");
+    expect(customerGuide?.url).toBe(DOCK_LC_ASSETS.customerGuidePdf);
+    expect(customerGuide?.url).toBe("/learning/PIMSY-Implementation-Customer-Guide.pdf");
+    expect(customerGuide?.kind).toBe("LINK");
+    expect(customerGuide?.isPlaceholder).toBe(false);
+    expect(customerGuide?.order).toBe(2);
+    expect(isSignedGcsUrl(customerGuide?.url ?? "")).toBe(false);
+    expect(customerGuide?.url).not.toMatch(/X-Goog-Signature/i);
+    expect(customerGuide?.url).not.toMatch(/dock\.us/i);
+    const guidePdf = readFileSync(
+      resolve(process.cwd(), "public/learning/PIMSY-Implementation-Customer-Guide.pdf"),
+    );
+    expect(guidePdf.subarray(0, 5).toString("utf8")).toBe("%PDF-");
+    expect(guidePdf.includes(Buffer.from("X-Goog-Signature"))).toBe(false);
     expect(byTitle.get("Tips for a Successful implementation V2")?.url).toBe(DOCK_LC_ASSETS.tipsPdf);
     expect(byTitle.get("How to Navigate the Calendar in the Portal")?.url).toBe(DOCK_LC_ASSETS.navigateCalendar);
     expect(byTitle.get("How to Schedule Recurring Appointments in the Portal")?.url).toBe(
@@ -531,6 +546,7 @@ describe("Learning Center IA", () => {
     expect(learningOpenLabel("How to Navigate the Calendar in the Portal", "LINK")).not.toMatch(/view pdf/i);
     expect(learningKindLabel("LINK", DOCK_LC_ASSETS.overview)).toBe("Storylane");
     expect(learningKindLabel("LINK", DOCK_LC_ASSETS.gettingStartedPdf)).toBe("PDF");
+    expect(learningKindLabel("LINK", DOCK_LC_ASSETS.customerGuidePdf)).toBe("PDF");
   });
 
   it("keeps Training 1–5 in PIMSY module order including Training 4", () => {
@@ -568,6 +584,8 @@ describe("Learning Center IA", () => {
     expect(learningIframeSrc(DOCK_LC_ASSETS.favoriteTabs)).toBe(DOCK_LC_ASSETS.favoriteTabs);
     expect(learningIframeSrc(DOCK_LC_ASSETS.gettingStartedPdf)).toBe(DOCK_LC_ASSETS.gettingStartedPdf);
     expect(learningIframeSrc(DOCK_LC_ASSETS.tipsPdf)).toBe(DOCK_LC_ASSETS.tipsPdf);
+    expect(learningIframeSrc(DOCK_LC_ASSETS.customerGuidePdf)).toBe(DOCK_LC_ASSETS.customerGuidePdf);
+    expect(isSignedGcsUrl(DOCK_LC_ASSETS.customerGuidePdf)).toBe(false);
     expect(learningIframeSrc(DOCK_LC_ASSETS.navigateCalendar)).toBeNull();
     expect(learningIframeSrc(DOCK_LC_ASSETS.recurringAppointments)).toBeNull();
     expect(learningIframeSrc(DOCK_LC_ASSETS.telehealth)).toBeNull();

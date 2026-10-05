@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.22";
+export const APP_VERSION = "1.18.23";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.23",
+    date: "2026-10-05",
+    summary:
+      "Learning Center Getting started includes the PIMSY Implementation Customer Guide. The PDF is a public app file, not a signed Dock link. No schema migrate.",
+    highlights: [
+      "Getting started, after Getting started with PIMSY v2: PIMSY Implementation Customer Guide. Summary is “Ready to apply.” Opens /learning/PIMSY-Implementation-Customer-Guide.pdf.",
+      "The file is public/learning/PIMSY-Implementation-Customer-Guide.pdf. Same-origin path. Not a Dock space link and not a signed GCS URL.",
+      "No schema migrate. After deploy, run npm run db:seed -- --templates-only so Learning Center rows pick up the new item.",
+      "PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.22",
     date: "2026-10-03",

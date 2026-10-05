@@ -3,8 +3,8 @@
  *
  * Dock Implementation Template Learning Center assets (2026-09-17 inventory):
  * Storylane walkthroughs + public GCS PDFs. NEVER pimsyehr.dock.us space URLs.
- * NEVER the signed GCS URL for PIMSY Implementation Customer Guide.pdf
- * (re-host in Azure Blob later — omitted here).
+ * PIMSY Implementation Customer Guide is hosted in `public/learning/`
+ * (`DOCK_LC_ASSETS.customerGuidePdf`). Never a signed GCS URL.
  *
  * Groups: Getting started · Password & access · Scheduling · Notes · Providers
  * · Training (PIMSY modules).
@@ -47,7 +47,7 @@ export const LEARNING_TOPIC_META: Record<
 > = {
   getting_started: {
     label: "Getting started",
-    blurb: "Intro, Getting Started PDF, Overview walkthrough, and implementation tips.",
+    blurb: "Intro, Getting Started PDF, Customer Guide, Overview, and implementation tips.",
   },
   password_access: {
     label: "Password & access",
@@ -100,24 +100,16 @@ export const DOCK_LC_ASSETS = {
     "https://storage.googleapis.com/dock-production-public/T21IkHXC36Me/AIGvC3sOwl3t/5169kxJ4tgPF/Getting%20started%20with%20PIMSY%20v2.pdf",
   tipsPdf:
     "https://storage.googleapis.com/dock-production-public/T21IkHXC36Me/AIGvC3sOwl3t/Yb9W6TWTABbE/Tips%20for%20a%20Successful%20implementation%20V2.pdf",
+  /**
+   * Same-origin static file: `public/learning/PIMSY-Implementation-Customer-Guide.pdf`.
+   * Dock's copy was a private signed GCS URL — do not paste that URL.
+   */
+  customerGuidePdf: "/learning/PIMSY-Implementation-Customer-Guide.pdf",
 } as const;
 
 /**
- * BLOCKED — PIMSY Implementation Customer Guide.pdf is not in the catalog.
- *
- * Dock served it as a private signed GCS URL (`X-Goog-Signature`, about a 12h
- * expiry). Do not paste that URL or invent a blob credential.
- *
- * Public siblings already live on `DOCK_LC_ASSETS.gettingStartedPdf` and
- * `tipsPdf` (`storage.googleapis.com/dock-production-public/…`). This guide is
- * not in that public bucket, and this change has no Azure Blob credential to
- * re-host it.
- *
- * When a durable unsigned URL exists, add one field on `DOCK_LC_ASSETS` in
- * this file (`src/db/learning-center-catalog.ts`) and a LINK item in
- * `LEARNING_CENTER_SECTIONS` (Getting started, after the Getting Started PDF).
- * Then drop the omit assertion in `tests/dock-parity.test.ts`
- * (`"PIMSY Implementation Customer Guide.pdf"`).
+ * PIMSY Implementation Customer Guide is hosted in `public/learning/` and
+ * linked from Getting started via `DOCK_LC_ASSETS.customerGuidePdf`.
  * Seed with `npm run db:seed -- --templates-only`. No schema migrate.
  */
 
@@ -161,6 +153,8 @@ export function isSignedGcsUrl(url: string): boolean {
 /** Iframe src for Storylane `embed=inline` and public PDFs. Share / popup Storylanes open in a new tab. */
 export function learningIframeSrc(url: string): string | null {
   if (!url || isLearningDockSpaceUrl(url) || isSignedGcsUrl(url)) return null;
+  // Same-origin static PDFs (`/learning/….pdf`) are not absolute URLs.
+  if (url.startsWith("/") && !url.startsWith("//") && isLearningPdfUrl(url)) return url;
   try {
     const u = new URL(url);
     if (isLearningStorylaneUrl(url) && u.searchParams.get("embed") === "inline") return url;
@@ -245,7 +239,7 @@ export const LEARNING_CENTER_SECTIONS: LearningSectionSeed[] = [
     slug: "getting-started",
     title: "Getting started",
     description:
-      "Intro (text), Getting Started PDF, Overview walkthrough, and tips for a successful implementation.",
+      "Intro, Getting Started PDF, Customer Guide, Overview walkthrough, and tips.",
     topic: "getting_started",
     audienceRole: "all",
     order: 0,
@@ -274,13 +268,24 @@ export const LEARNING_CENTER_SECTIONS: LearningSectionSeed[] = [
         replaceTitles: ["Getting started", "Getting started with PIMSY"],
       },
       {
+        slugKey: "implementation-customer-guide",
+        title: "PIMSY Implementation Customer Guide",
+        summary: "Ready to apply.",
+        body: "",
+        kind: "LINK",
+        audienceRole: "all",
+        order: 2,
+        url: DOCK_LC_ASSETS.customerGuidePdf,
+        isPlaceholder: false,
+      },
+      {
         slugKey: "overview",
         title: "Overview",
         summary: "Calendar, charts, notes, provider dashboard.",
         body: "",
         kind: "LINK",
         audienceRole: "all",
-        order: 2,
+        order: 3,
         url: DOCK_LC_ASSETS.overview,
         isPlaceholder: false,
         replaceTitles: ["Finding your way around"],
@@ -292,7 +297,7 @@ export const LEARNING_CENTER_SECTIONS: LearningSectionSeed[] = [
         body: "",
         kind: "LINK",
         audienceRole: "all",
-        order: 3,
+        order: 4,
         url: DOCK_LC_ASSETS.tipsPdf,
         isPlaceholder: false,
         replaceTitles: ["Tips for a Successful implementation"],
