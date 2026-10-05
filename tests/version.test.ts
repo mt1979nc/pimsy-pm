@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.22");
+    expect(APP_VERSION).toBe("1.18.23");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,17 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.23 Learning Center Customer Guide", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.23");
+    expect(note?.summary).toMatch(/Customer Guide/);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /public\/learning/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /templates-only/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /\/learning\/PIMSY-Implementation-Customer-Guide\.pdf/.test(h))).toBe(true);
+    expect(note?.highlights?.join(" ")).not.toMatch(/X-Goog-Signature|dock\.us/i);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.22")).toBeTruthy();
   });
 
   it("documents v1.18.22 HubSpot on create", () => {
