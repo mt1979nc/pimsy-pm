@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.23");
+    expect(APP_VERSION).toBe("1.18.24");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,17 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.24 Needs attention names", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.24");
+    expect(note?.summary).toMatch(/Needs attention/);
+    expect(note?.summary).toMatch(/EHR\+RCM/);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /minimum width/.test(h) && /ellips/i.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /progress bar/.test(h))).toBe(true);
+    expect(note?.highlights?.join(" ")).not.toMatch(/PHI/);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.23")).toBeTruthy();
   });
 
   it("documents v1.18.23 Learning Center Customer Guide", () => {

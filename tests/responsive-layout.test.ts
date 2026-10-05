@@ -22,7 +22,12 @@ describe("narrow-window layout", () => {
     expect(project).toMatch(/aria-label="Project"/);
     expect(project).toMatch(/flex-wrap/);
     expect(source("src/app/(app)/customers/page.tsx")).toMatch(/flex-wrap items-center gap-x-3/);
-    expect(source("src/components/project-row.tsx")).toMatch(/flex-wrap items-center gap-1\.5/);
+    const row = source("src/components/project-row.tsx");
+    expect(row).toMatch(/flex-wrap/);
+    expect(row).toMatch(/min-w-\[14rem\]/);
+    expect(row).toMatch(/basis-\[14rem\]/);
+    expect(row).toMatch(/truncate text-\[13\.5px\]/);
+    expect(row).not.toMatch(/flex-\[2\.2\]/);
   });
 
   it("scrolls dense analytics tables inside the page and keeps Roster fitted", () => {
