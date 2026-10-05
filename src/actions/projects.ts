@@ -104,6 +104,9 @@ import {
 import { revalidateAboutSurfaces } from "@/lib/about-revalidate";
 import { parseCustomFieldLines } from "@/lib/about-profile";
 import { parseDealLink } from "@/lib/hubspot";
+import { env } from "@/lib/env";
+import { hubspotPullConfigured, pullHubSpotDeal, readHubSpotCeoFill } from "@/lib/hubspot-deal";
+import { ceoFieldsForDealSave, fillEmptyCeoFields } from "@/lib/hubspot-map";
 import { parseOptionalHttpUrl } from "@/lib/http-url";
 import { parseBookingUrlsFromForm } from "@/lib/booking-urls";
 import type { ActionState } from "./messages";
@@ -360,7 +363,12 @@ export async function createProject(
     });
     const source = await db.query.projects.findFirst({
       where: eq(projects.id, d.sourceProjectId),
-      columns: { customerAccountId: true, portalEnabled: true },
+      columns: {
+        customerAccountId: true,
+        portalEnabled: true,
+        contractDate: true,
+        expectedArr: true,
+      },
     });
     await invitePortalContactsForSite({
       actor,
@@ -370,6 +378,16 @@ export async function createProject(
       newContact: portalContact.contact,
     });
     await saveLogoOnCustomer(actor, source?.customerAccountId, logo.input);
+    if (hubspotDealUrl) {
+      const sourceCeo = await hubspotCeoOnSave(hubspotDealUrl, dealLink.deal?.dealId ?? null, {
+        contractDate: source?.contractDate ?? null,
+        expectedArr: source?.expectedArr ?? null,
+      });
+      await db
+        .update(projects)
+        .set({ ...sourceCeo, updatedAt: new Date() })
+        .where(eq(projects.id, d.sourceProjectId));
+    }
     revalidatePrismSurfaces(d.sourceProjectId);
     revalidatePath(`/projects/${d.sourceProjectId}`);
     redirect(`/projects/${d.sourceProjectId}`);
@@ -417,6 +435,11 @@ export async function createProject(
     },
   });
 
+  const hubspotCeo = await hubspotCeoOnSave(hubspotDealUrl, dealLink.deal?.dealId ?? null, {
+    contractDate: null,
+    expectedArr: null,
+  });
+
   let projectId: string;
   try {
     projectId = await db.transaction(async (tx) => {
@@ -438,7 +461,9 @@ export async function createProject(
           playbookPath,
           portalEnabled: d.type !== "INTERNAL",
           excludeFromAnalytics: parseExcludeFromAnalytics(formData),
-          hubspotDealUrl,
+          hubspotDealUrl: hubspotCeo.hubspotDealUrl,
+          ...(hubspotCeo.contractDate ? { contractDate: hubspotCeo.contractDate } : {}),
+          ...(hubspotCeo.expectedArr ? { expectedArr: hubspotCeo.expectedArr } : {}),
           crmAcronym: access.crmAcronym,
           crmKey: access.crmKey,
           customFields: access.customFields,
@@ -1465,7 +1490,12 @@ export async function updateProjectAbout(
 
   const existing = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
-    columns: { customerAccountId: true, customFields: true },
+    columns: {
+      customerAccountId: true,
+      customFields: true,
+      contractDate: true,
+      expectedArr: true,
+    },
   });
 
   const access = await resolveWorkspaceAccess({
@@ -1478,10 +1508,15 @@ export async function updateProjectAbout(
     inheritMissing: false,
   });
 
+  const hubspotCeo = await hubspotCeoOnSave(dealLink.deal?.href ?? null, dealLink.deal?.dealId ?? null, {
+    contractDate: existing?.contractDate ?? null,
+    expectedArr: existing?.expectedArr ?? null,
+  });
+
   await db
     .update(projects)
     .set({
-      hubspotDealUrl: dealLink.deal?.href ?? null,
+      ...hubspotCeo,
       prismClientId: prismClientId || null,
       crmAcronym: access.crmAcronym,
       crmKey: access.crmKey,
@@ -1510,10 +1545,96 @@ export async function updateProjectAbout(
 
   revalidatePath(`/projects/${projectId}`);
   revalidateAboutSurfaces({ projectId, customerAccountId: existing?.customerAccountId });
+  if (hubspotCeo.contractDate || hubspotCeo.expectedArr) {
+    revalidatePath("/management/executive");
+  }
   revalidatePath("/dashboard");
   revalidatePath("/my-work");
   revalidatePath("/reports");
   return { ok: true };
+}
+
+/**
+ * Staff About “Pull from HubSpot”. Fills empty contract date and expected ARR
+ * from a GET. Does not overwrite staff values and does not clear them.
+ */
+export async function pullHubSpotCeoFields(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireStaff();
+  const projectId = String(formData.get("projectId") ?? "");
+  if (!projectId) return { error: "Missing project." };
+  await assertProjectWrite(actor, projectId);
+
+  const existing = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: {
+      hubspotDealUrl: true,
+      contractDate: true,
+      expectedArr: true,
+      customerAccountId: true,
+    },
+  });
+  if (!existing) return { error: "Project not found." };
+
+  const dealLink = parseDealLink(existing.hubspotDealUrl ?? "");
+  if (!dealLink.ok) return { error: dealLink.error };
+  if (!dealLink.deal?.dealId) return { error: "Link a HubSpot deal first." };
+
+  if (!hubspotPullConfigured()) return { error: "HubSpot pull is off." };
+
+  const read = await pullHubSpotDeal(existing.hubspotDealUrl, {
+    token: env.HUBSPOT_ACCESS_TOKEN,
+    contractDateProperty: env.HUBSPOT_DEAL_CONTRACT_DATE_PROPERTY,
+    arrProperty: env.HUBSPOT_DEAL_ARR_PROPERTY,
+  });
+  if (read.summary.error) return { error: read.summary.error };
+
+  const patch = fillEmptyCeoFields(
+    { contractDate: existing.contractDate, expectedArr: existing.expectedArr },
+    read.ceo,
+  );
+  if (patch.contractDate || patch.expectedArr) {
+    await db
+      .update(projects)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(eq(projects.id, projectId));
+    await audit({
+      actor,
+      action: "project.hubspot.pulled",
+      entityType: "project",
+      entityId: projectId,
+      summary: "Filled empty CEO fields from HubSpot",
+      metadata: {
+        contractDate: Boolean(patch.contractDate),
+        expectedArr: Boolean(patch.expectedArr),
+      },
+    });
+  }
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidateAboutSurfaces({ projectId, customerAccountId: existing.customerAccountId });
+  revalidatePath("/management/executive");
+
+  if (patch.contractDate && patch.expectedArr) {
+    return { ok: true, message: "Filled empty contract date and expected ARR." };
+  }
+  if (patch.contractDate) return { ok: true, message: "Filled empty contract date." };
+  if (patch.expectedArr) return { ok: true, message: "Filled empty expected ARR." };
+  if (!read.ceo.contractDate && !read.ceo.expectedArr) {
+    return { ok: true, message: "HubSpot had no contract date or expected ARR." };
+  }
+  return { ok: true, message: "Contract date and expected ARR already set." };
+}
+
+async function hubspotCeoOnSave(
+  nextUrl: string | null,
+  dealId: string | null,
+  existing: { contractDate: Date | null; expectedArr: string | null },
+) {
+  const pulled = nextUrl && dealId ? await readHubSpotCeoFill(nextUrl) : null;
+  return ceoFieldsForDealSave({ nextUrl, existing, pulled });
 }
 
 // ---------------------------------------------------------------------------

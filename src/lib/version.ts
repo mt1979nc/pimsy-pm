@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.21";
+export const APP_VERSION = "1.18.22";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.22",
+    date: "2026-10-03",
+    summary:
+      "HubSpot on create fills empty contract date and expected ARR from a read-only deal pull. Staff paste the deal URL. PATH never writes to HubSpot. No schema migrate.",
+    highlights: [
+      "New project, Add to roster, and About save store the deal URL. When HUBSPOT_ACCESS_TOKEN is set and the URL has a deal id, PATH GETs the deal and fills empty projects.contractDate and projects.expectedArr. Staff-entered values stay. Clearing the URL does not wipe them.",
+      "Contract date defaults to HubSpot closedate. Expected ARR defaults to amount. Overrides: HUBSPOT_DEAL_CONTRACT_DATE_PROPERTY and HUBSPOT_DEAL_ARR_PROPERTY. An empty custom value falls back to the standard property. About still shows deal name, stage, and close date. Pull from HubSpot on About fills empty CEO fields when a deal is linked and the token is set.",
+      "Token unset stores the URL only and does not block create. Customer portal does not receive the token, deal URL, contract date, or expected ARR.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.21",
     date: "2026-10-02",

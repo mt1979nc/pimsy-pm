@@ -16,6 +16,8 @@ import { requirePortfolioAccess } from "@/lib/guard";
 import { canManagePrismCapacity, ForbiddenError, NotFoundError } from "@/lib/authz";
 import { audit } from "@/lib/audit";
 import { parseDealLink } from "@/lib/hubspot";
+import { readHubSpotCeoFill } from "@/lib/hubspot-deal";
+import { ceoFieldsForDealSave } from "@/lib/hubspot-map";
 import {
   complexityTier,
   parseDiscoveryScenario,
@@ -516,6 +518,13 @@ export async function createEngagement(
   const prismNote = formData.get("prismNote")?.toString().trim() || null;
   const dealLink = parseDealLink(formData.get("hubspotDealUrl")?.toString() ?? "");
   if (!dealLink.ok) return { error: dealLink.error };
+  const hubspotDealUrl = dealLink.deal?.href ?? null;
+  const hubspotCeo = ceoFieldsForDealSave({
+    nextUrl: hubspotDealUrl,
+    existing: { contractDate: null, expectedArr: null },
+    pulled:
+      hubspotDealUrl && dealLink.deal?.dealId ? await readHubSpotCeoFill(hubspotDealUrl) : null,
+  });
   const kickoffDate = parseDateInput(formData.get("kickoffDate")?.toString());
   const requestedGoLive = parseDateInput(formData.get("targetGoLiveDate")?.toString());
 
@@ -577,7 +586,9 @@ export async function createEngagement(
       portalEnabled: prismStatus !== "pipeline",
       prismClientId: acronym,
       crmAcronym: acronym,
-      hubspotDealUrl: dealLink.deal?.href ?? null,
+      hubspotDealUrl: hubspotCeo.hubspotDealUrl,
+      ...(hubspotCeo.contractDate ? { contractDate: hubspotCeo.contractDate } : {}),
+      ...(hubspotCeo.expectedArr ? { expectedArr: hubspotCeo.expectedArr } : {}),
       excludeFromAnalytics: parseExcludeFromAnalytics(formData),
       description: "Added to the Prism roster in PATH. Playbook can be attached later from New project.",
     })
