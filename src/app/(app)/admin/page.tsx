@@ -31,12 +31,14 @@ import { fmtRelative, daysUntil, addDays } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
 import { ADMIN_AREA_LABEL } from "@/lib/area-nav";
+import { dayToDayEnabled } from "@/lib/day-to-day";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: ADMIN_AREA_LABEL };
 
 export default async function AdminOverviewPage() {
   const actor = await requirePortfolioAccess();
+  const showDayToDay = dayToDayEnabled();
 
   const [summary, attention, customers, cycle, team, risks, staffCount, contactCount, recentlyActive, chase] =
     await Promise.all([
@@ -67,14 +69,16 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Customers" value={customers.length} hint={`${onboarding} onboarding · ${liveCustomers} live`} href="/admin/customers" />
-        <Stat label="Active projects" value={summary.active} href="/admin/projects" />
+        {showDayToDay ? (
+          <Stat label="Customers" value={customers.length} hint={`${onboarding} onboarding · ${liveCustomers} live`} href="/admin/customers" />
+        ) : null}
+        <Stat label="Active projects" value={summary.active} href={showDayToDay ? "/admin/projects" : undefined} />
         <Stat
           label="At risk"
           value={summary.atRisk + atRiskCustomers}
           tone={summary.atRisk + atRiskCustomers > 0 ? "red" : undefined}
           hint={`${summary.atRisk} projects · ${atRiskCustomers} accounts`}
-          href="/admin/projects?health=RED"
+          href={showDayToDay ? "/admin/projects?health=RED" : undefined}
         />
         <Stat
           label="People"
@@ -98,11 +102,13 @@ export default async function AdminOverviewPage() {
             cycle.onTimeRate === null ? undefined : cycle.onTimeRate >= 80 ? "green" : cycle.onTimeRate >= 60 ? "amber" : "red"
           }
         />
-        <Stat
-          label="Waiting on customers"
-          value={summary.openCustomerActions}
-          hint={chaseHint ?? "open action items"}
-        />
+        {showDayToDay ? (
+          <Stat
+            label="Waiting on customers"
+            value={summary.openCustomerActions}
+            hint={chaseHint ?? "open action items"}
+          />
+        ) : null}
       </div>
 
       {overloaded.length > 0 ? (
@@ -117,6 +123,8 @@ export default async function AdminOverviewPage() {
 
       <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.3fr_1fr]">
         <div className="space-y-5">
+          {showDayToDay ? (
+          <>
           <Card>
             <CardHeader
               title="Needs attention"
@@ -210,6 +218,8 @@ export default async function AdminOverviewPage() {
               </div>
             )}
           </Card>
+          </>
+          ) : null}
         </div>
 
         <div className="space-y-5">
@@ -222,7 +232,8 @@ export default async function AdminOverviewPage() {
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[13px] text-ink">{t.name ?? t.email}</div>
                     <div className="text-[12px] text-ink-3">
-                      {t.projectsLed} led · {t.openTasks} open
+                      {t.projectsLed} led
+                      {showDayToDay ? ` · ${t.openTasks} open` : ""}
                     </div>
                   </div>
                   <span
@@ -252,7 +263,7 @@ export default async function AdminOverviewPage() {
                 {risks.map((r) => (
                   <Link
                     key={r.id}
-                    href={`/projects/${r.project.id}`}
+                    href={showDayToDay ? `/projects/${r.project.id}` : `/management/engagements/${r.project.id}`}
                     className="block px-4 py-2.5 hover:bg-surface-2"
                   >
                     <div className="flex items-start justify-between gap-2">

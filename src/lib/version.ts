@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.25";
+export const APP_VERSION = "1.18.26";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.26",
+    date: "2026-10-13",
+    summary:
+      "Day-to-day project work is hidden behind PATH_DAY_TO_DAY. Portfolio is the staff landing page. Dock delivery stays read-only and refreshes daily from the existing ingest. No schema migrate. No HubSpot writes.",
+    highlights: [
+      "PATH_DAY_TO_DAY unset hides Dashboard, My work, Inbox, Projects, Customers, Waiting on, and task tracking from the nav, the top bar, and Analytics pages. Set PATH_DAY_TO_DAY=1 to bring them back. OWNER, ADMIN, and MANAGER land on Portfolio (`/reports`). Other staff land on Settings.",
+      "Analytics stays: Portfolio, Overview, Executive, Weekly meeting, Forecast, Team capacity, Team, Analysis, and Dock delivery. Team capacity still records phases, slip history, and go-live approval.",
+      "Data analytics → Dock delivery lists each active Implementation WIP site by acronym. Short counts: Late, PIMSY, Customer. Expand a site for overdue context and threads split into waiting on PIMSY and waiting on the customer. Dock links open Dock. PATH does not import the tasks.",
+      "Daily 08:15 America/Chicago: Logic App pimsy-cron-dock-delivery posts dock-wip.json and dock-threads.json to the existing POST /api/internal/dock-delivery/ingest (migration 0030_dock_delivery). GitHub workflow dock-delivery-ingest.yml is the fallback when DOCK_STORAGE_STATE is set. PATH does not log in to Dock and does not write to HubSpot.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.25",
     date: "2026-10-13",

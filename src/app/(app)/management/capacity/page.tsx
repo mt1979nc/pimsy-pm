@@ -28,8 +28,9 @@ export default async function CapacityPage() {
   return (
     <>
       <p className="mb-4 text-[13px] text-ink-2">
-        Sites sit under the specialist who owns them. Green is under 85%, amber is 85–100%, red is
-        over the weekly cap.
+        Sites sit under the specialist who owns them. Set the phase on a site, open Edit for the
+        full slip history, and approve the go-live change before the date moves. Green is under
+        85%, amber is 85–100%, red is over the weekly cap.
       </p>
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -1,6 +1,7 @@
 import { DockDeliveryTable } from "./delivery-table";
 import { EmptyState, Stat } from "@/components/ui";
 import { fmtDateTime } from "@/lib/dates";
+import { dayToDayEnabled } from "@/lib/day-to-day";
 import { loadDockDeliveryBoard } from "@/lib/dock-delivery-store";
 import { format } from "date-fns";
 
@@ -9,6 +10,7 @@ export const metadata = { title: "Dock delivery — Prism" };
 
 export default async function DockDeliveryPage() {
   const board = await loadDockDeliveryBoard();
+  const linkProjects = dayToDayEnabled();
 
   return (
     <div className="space-y-4">
@@ -30,28 +32,29 @@ export default async function DockDeliveryPage() {
             </div>
           ) : null}
 
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-            <Stat label="WIP sites" value={board.counts.sites} />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <Stat label="Sites" value={board.counts.sites} hint="active WIP" />
             <Stat
-              label="Overdue"
+              label="Late"
               value={board.counts.overdueTaskSum ?? "—"}
               hint={
                 board.counts.overdueUnknownSites > 0
                   ? `${board.counts.overdueUnknownSites} site${board.counts.overdueUnknownSites === 1 ? "" : "s"} —`
-                  : "tasks"
+                  : "overdue tasks"
               }
               tone={board.counts.overdueTaskSum != null && board.counts.overdueTaskSum > 0 ? "red" : undefined}
             />
-            <Stat label="Open threads" value={board.counts.openThreads} />
+            <Stat label="Threads" value={board.counts.openThreads} hint="open" />
             <Stat
-              label="On PIMSY"
+              label="PIMSY"
               value={board.counts.waitingOnPimsy}
+              hint="waiting"
               tone={board.counts.waitingOnPimsy > 0 ? "amber" : undefined}
             />
-            <Stat label="On customer" value={board.counts.waitingOnCustomer} />
+            <Stat label="Customer" value={board.counts.waitingOnCustomer} hint="waiting" />
             <Stat
-              label="Refreshed"
-              value={format(new Date(board.retrievedAt), "MMM d, h:mm a")}
+              label="As of"
+              value={format(new Date(board.retrievedAt), "MMM d")}
               hint={board.stale ? "Older than 24h" : fmtDateTime(board.retrievedAt)}
               tone={board.stale ? "amber" : undefined}
             />
@@ -64,7 +67,7 @@ export default async function DockDeliveryPage() {
           {board.rows.length === 0 ? (
             <EmptyState title="No active WIP sites" description="The latest snapshot had no sites after the Dock exclusions." />
           ) : (
-            <DockDeliveryTable rows={board.rows} />
+            <DockDeliveryTable rows={board.rows} linkProjects={linkProjects} />
           )}
 
           {board.sourceUrl ? (
@@ -90,9 +93,11 @@ function RefreshHelp() {
       <div className="mt-2 space-y-1.5">
         <p>Scrape runs where a Dock session already exists. PATH does not log in to Dock.</p>
         <p>
-          Weekdays, post both JSON files to <code className="text-[12px]">/api/internal/dock-delivery/ingest</code> with{" "}
-          <code className="text-[12px]">Authorization: Bearer $DOCK_DELIVERY_INGEST_SECRET</code>. Logic App, cron, or
-          the CoS box can do that.
+          Daily at 08:15 America/Chicago, post both JSON files to{" "}
+          <code className="text-[12px]">/api/internal/dock-delivery/ingest</code> with{" "}
+          <code className="text-[12px]">Authorization: Bearer $DOCK_DELIVERY_INGEST_SECRET</code>. Logic App{" "}
+          <code className="text-[12px]">pimsy-cron-dock-delivery</code>, the GitHub workflow, or the CoS box can do
+          that. PATH does not write to HubSpot.
         </p>
         <p>
           Or <code className="text-[12px]">npm run db:ingest:dock-delivery -- --wip dock-wip.json --threads dock-threads.json --apply</code>

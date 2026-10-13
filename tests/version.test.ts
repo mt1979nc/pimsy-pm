@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.25");
+    expect(APP_VERSION).toBe("1.18.26");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,20 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.26 analytics landing and daily Dock ingest", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.26");
+    expect(note?.date).toBe("2026-10-13");
+    expect(note?.summary).toMatch(/PATH_DAY_TO_DAY/);
+    expect(note?.summary).toMatch(/Portfolio/);
+    expect(note?.summary).toMatch(/No HubSpot writes/);
+    expect(note?.highlights?.some((h) => /\/reports/.test(h) && /Dashboard/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Team capacity/.test(h) && /slip history/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /0030_dock_delivery/.test(h) && /pimsy-cron-dock-delivery/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /waiting on PIMSY/.test(h) && /customer/.test(h))).toBe(true);
+    expect(note?.highlights?.join(" ")).not.toMatch(/hubspot\.com\/.*write/i);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.25")).toBeTruthy();
   });
 
   it("documents v1.18.25 revert of HubSpot on create", () => {

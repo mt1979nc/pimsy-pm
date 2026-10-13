@@ -29,12 +29,14 @@ import { cn } from "@/lib/cn";
 import { WaitingOnCustomerList } from "@/components/waiting-on-customer-list";
 import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-area";
 import { isOpenProjectStatus } from "@/lib/queries";
+import { dayToDayEnabled } from "@/lib/day-to-day";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Portfolio" };
 
 export default async function ReportsPage() {
   const actor = await requirePortfolioAccess();
+  const showDayToDay = dayToDayEnabled();
 
   const [summary, attention, all, risks, cycle, milestones, waiting, chase] = await Promise.all([
     portfolioSummary(actor),
@@ -73,7 +75,7 @@ export default async function ReportsPage() {
         subtitle="Delivery health across every active implementation."
         actions={
           <>
-            <LinkButton href="/reports/waiting-on">Waiting on</LinkButton>
+            {showDayToDay ? <LinkButton href="/reports/waiting-on">Waiting on</LinkButton> : null}
             <LinkButton href="/management/weekly">Weekly meeting</LinkButton>
             <LinkButton href="/management/engagements">Roster</LinkButton>
             <LinkButton href="/management/capacity">Team capacity</LinkButton>
@@ -159,20 +161,25 @@ export default async function ReportsPage() {
           }
           hint="hit the target date"
         />
-        <Stat
-          label="Overdue tasks"
-          value={summary.overdueTasks}
-          tone={summary.overdueTasks > 0 ? "amber" : undefined}
-        />
-        <Stat
-          label="Open customer actions"
-          value={summary.openCustomerActions}
-          hint={chaseHint ?? "waiting on practices"}
-        />
+        {showDayToDay ? (
+          <Stat
+            label="Overdue tasks"
+            value={summary.overdueTasks}
+            tone={summary.overdueTasks > 0 ? "amber" : undefined}
+          />
+        ) : null}
+        {showDayToDay ? (
+          <Stat
+            label="Open customer actions"
+            value={summary.openCustomerActions}
+            hint={chaseHint ?? "waiting on practices"}
+          />
+        ) : null}
       </div>
 
       <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1.3fr_1fr]">
         <div className="space-y-5">
+          {showDayToDay ? (
           <Card>
             <CardHeader
               title="Needs intervention"
@@ -217,6 +224,7 @@ export default async function ReportsPage() {
               </div>
             )}
           </Card>
+          ) : null}
 
           <Card>
             <CardHeader title="Go-live schedule" subtitle="Next up, by target date" />
@@ -230,16 +238,18 @@ export default async function ReportsPage() {
                   return (
                     <Link
                       key={p.id}
-                      href={`/projects/${p.id}`}
+                      href={showDayToDay ? `/projects/${p.id}` : `/management/engagements/${p.id}`}
                       className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 hover:bg-surface-2"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-[13px] text-ink">
                           {p.customerAccount?.name ?? p.name}
                         </div>
-                        <div className="text-[12px] text-ink-3">
-                          {pctComplete(p.taskCountDone, p.taskCountTotal)}% complete
-                        </div>
+                        {showDayToDay ? (
+                          <div className="text-[12px] text-ink-3">
+                            {pctComplete(p.taskCountDone, p.taskCountTotal)}% complete
+                          </div>
+                        ) : null}
                       </div>
                       <div className="w-[7.5rem] shrink-0 text-right">
                         <div
@@ -264,6 +274,7 @@ export default async function ReportsPage() {
         </div>
 
         <div className="space-y-5">
+          {showDayToDay ? (
           <Card>
             <CardHeader
               title="Waiting on customers"
@@ -280,7 +291,9 @@ export default async function ReportsPage() {
               emptyDescription="No customer action items are open."
             />
           </Card>
+          ) : null}
 
+          {showDayToDay ? (
           <Card>
             <CardHeader
               title="Waiting on"
@@ -309,6 +322,7 @@ export default async function ReportsPage() {
               </div>
             )}
           </Card>
+          ) : null}
 
           <Card>
             <CardHeader title="Risk register" subtitle="Open and mitigating, across the portfolio" />
@@ -319,7 +333,7 @@ export default async function ReportsPage() {
                 {risks.map((r) => (
                   <Link
                     key={r.id}
-                    href={`/projects/${r.project.id}`}
+                    href={showDayToDay ? `/projects/${r.project.id}` : `/management/engagements/${r.project.id}`}
                     className="block px-4 py-2.5 hover:bg-surface-2"
                   >
                     <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
@@ -345,7 +359,7 @@ export default async function ReportsPage() {
                 {milestones.slice(0, 12).map((m) => (
                   <Link
                     key={m.id}
-                    href={`/projects/${m.project.id}`}
+                    href={showDayToDay ? `/projects/${m.project.id}` : `/management/engagements/${m.project.id}`}
                     className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 hover:bg-surface-2"
                   >
                     <div className="min-w-0 flex-1">

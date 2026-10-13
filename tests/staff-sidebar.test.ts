@@ -65,6 +65,45 @@ describe("staff sidebar sections", () => {
     );
   });
 
+  it("hides day-to-day project work when the flag is off", () => {
+    const analytics = staffSidebarSections({
+      unread: 4,
+      showPortfolio: true,
+      showTemplates: true,
+      showDayToDay: false,
+    });
+    expect(analytics.map((section) => section.id)).toEqual(["analytics", "settings"]);
+    expect(labels("analytics", analytics)).toEqual([
+      "Portfolio",
+      ADMIN_AREA_LABEL,
+      "Overview",
+      "Executive",
+      "Weekly meeting",
+      "Forecast",
+      "Team capacity",
+      "Team",
+      "Analysis",
+      "Dock delivery",
+    ]);
+    const names = analytics.flatMap((section) => section.items.map((item) => item.label));
+    expect(names).not.toContain("Dashboard");
+    expect(names).not.toContain("My work");
+    expect(names).not.toContain("Inbox");
+    expect(names).not.toContain("Projects");
+    expect(names).not.toContain("Customers");
+    expect(names).not.toContain("Waiting on");
+    expect(hrefs("analytics", analytics)).toContain("/management/capacity");
+    expect(hrefs("analytics", analytics)).toContain("/management/dock-delivery");
+
+    const specialist = staffSidebarSections({
+      unread: 0,
+      showPortfolio: false,
+      showTemplates: false,
+      showDayToDay: false,
+    });
+    expect(specialist.map((section) => section.id)).toEqual(["settings"]);
+  });
+
   it("keeps portfolio and template gates", () => {
     const manager = staffSidebarSections({ unread: 0, showPortfolio: true, showTemplates: false });
     expect(labels("day-to-day", manager)).toContain("Waiting on");

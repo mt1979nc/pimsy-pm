@@ -5,6 +5,7 @@ import { NotFoundError, isCustomer } from "@/lib/authz";
 import { parseGoQuery, isSafeAppPath } from "@/lib/path-deep-links";
 import { resolvePathDeepLink, type ResolvedPathDeepLink } from "@/lib/path-deep-link-resolve";
 import { PRODUCT_NAME, PRODUCT_EXPANSION } from "@/lib/brand";
+import { staffHomeHref } from "@/lib/day-to-day";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: `Open in ${PRODUCT_NAME}` };
@@ -43,14 +44,14 @@ export default async function GoPage({
     resolved = await resolvePathDeepLink(actor, query);
   } catch (err) {
     if (err instanceof NotFoundError) {
-      return <GoMiss home={isCustomer(actor) ? "/portal" : "/dashboard"} />;
+      return <GoMiss home={isCustomer(actor) ? "/portal" : staffHomeHref(actor.role)} />;
     }
     throw err;
   }
   const destPath = resolved.path;
   const destWithoutHash = destPath.split("#")[0] ?? destPath;
   if (!isSafeAppPath(destWithoutHash)) {
-    redirect(isCustomer(actor) ? "/portal" : "/dashboard");
+    redirect(isCustomer(actor) ? "/portal" : staffHomeHref(actor.role));
   }
   redirect(destPath);
 }

@@ -1,6 +1,6 @@
 # Dock delivery analytics
 
-Dock stays the delivery system. PATH stores Implementation WIP snapshots for Prism at `/management/dock-delivery` (sidebar: **Data analytics → Dock delivery**).
+Dock stays the delivery system. PATH stores Implementation WIP snapshots for Prism at `/management/dock-delivery` (sidebar: **Data analytics → Dock delivery**). The page is read-only: overdue tasks and open threads, split into waiting on PIMSY and waiting on the customer. Details sit behind each site.
 
 This path does **not** create PATH projects, tasks, or playbook rows. It does not call HubSpot. It does not write Prism Azure SQL.
 
@@ -103,17 +103,17 @@ curl -sS -X POST "https://pimsy-app.azurewebsites.net/api/internal/dock-delivery
 EOF
 ```
 
-## Weekday schedule
+## Daily schedule
 
-Do **not** run the Playwright script inside Azure App Service for v1. There is no Dock cookie there.
+Do **not** run the Playwright script inside Azure App Service. There is no Dock cookie there. PATH does not write to HubSpot.
 
-Recommended: **weekdays 08:15 America/Chicago**, after the morning CoS scrape finishes.
+Recommended: **daily at 08:15 America/Chicago**, after the morning CoS scrape finishes.
 
 1. The CoS box (or a signed-in browser) writes `dock-wip.json` and `dock-threads.json`.
-2. An Azure Logic App, cron, or the same box POSTs both files to the ingest URL above.
-3. PATH only stores the result. Staff open **Data analytics → Dock delivery**. The page shows **Last refreshed** and a warning when that timestamp is older than 24 hours.
+2. Azure Logic App **`pimsy-cron-dock-delivery`** (or the same box) POSTs both files to the existing ingest URL above. That route and migration `0030_dock_delivery` are unchanged.
+3. PATH only stores the result. Staff open **Data analytics → Dock delivery**. The page shows **As of** and a warning when that timestamp is older than 24 hours.
 
-A GitHub Action with the same POST is fine. Prefer the Logic App if the scrape files already land on the CoS box.
+GitHub Actions fallback: `.github/workflows/dock-delivery-ingest.yml` (daily `15 13 * * *` UTC, about 08:15 America/Chicago during CDT). It scrapes only when repo secrets `PATH_APP_URL`, `DOCK_DELIVERY_INGEST_SECRET`, and `DOCK_STORAGE_STATE` are set, then POSTs to `/api/internal/dock-delivery/ingest`. Prefer the Logic App if the scrape files already land on the CoS box.
 
 ## Demo fixtures
 

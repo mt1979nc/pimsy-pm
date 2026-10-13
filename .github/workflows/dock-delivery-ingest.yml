@@ -1,0 +1,62 @@
+name: Daily Dock delivery ingest
+
+# Optional fallback if Azure Logic App `pimsy-cron-dock-delivery` is not wired.
+# Daily 08:15 America/Chicago. Reuses POST /api/internal/dock-delivery/ingest
+# and migration 0030_dock_delivery. PATH does not log in to Dock. The post is
+# the existing read-only snapshot ingest. Skips when the Dock session or
+# ingest secret is unset.
+
+on:
+  schedule:
+    # 13:15 UTC ≈ 08:15 America/Chicago during CDT.
+    - cron: "15 13 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: dock-delivery-ingest
+  cancel-in-progress: true
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip unless the Dock session and ingest secret are set
+        id: gate
+        env:
+          PATH_APP_URL: ${{ secrets.PATH_APP_URL }}
+          DOCK_DELIVERY_INGEST_SECRET: ${{ secrets.DOCK_DELIVERY_INGEST_SECRET }}
+          DOCK_STORAGE_STATE_JSON: ${{ secrets.DOCK_STORAGE_STATE }}
+        run: |
+          if [ -z "$PATH_APP_URL" ] || [ -z "$DOCK_DELIVERY_INGEST_SECRET" ] || [ -z "$DOCK_STORAGE_STATE_JSON" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "PATH_APP_URL / DOCK_DELIVERY_INGEST_SECRET / DOCK_STORAGE_STATE not set — skip (wire Azure Logic App pimsy-cron-dock-delivery instead)."
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Scrape Implementation WIP and post the existing ingest
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          PATH_APP_URL: ${{ secrets.PATH_APP_URL }}
+          DOCK_DELIVERY_INGEST_SECRET: ${{ secrets.DOCK_DELIVERY_INGEST_SECRET }}
+          DOCK_STORAGE_STATE_JSON: ${{ secrets.DOCK_STORAGE_STATE }}
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          printf '%s' "$DOCK_STORAGE_STATE_JSON" > /tmp/dock-state.json
+          DOCK_STORAGE_STATE=/tmp/dock-state.json npx tsx scripts/dock/scrape-implementation-wip.ts \
+            --wip /tmp/dock-wip.json --threads /tmp/dock-threads.json
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${DOCK_DELIVERY_INGEST_SECRET}" \
+            -H "Content-Type: application/json" \
+            --data "{\"wip\":$(cat /tmp/dock-wip.json),\"threads\":$(cat /tmp/dock-threads.json)}" \
+            "${PATH_APP_URL%/}/api/internal/dock-delivery/ingest"
