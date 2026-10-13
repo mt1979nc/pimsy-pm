@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.27";
+export const APP_VERSION = "1.18.28";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.28",
+    date: "2026-10-13",
+    summary:
+      "Team capacity shows each customer's go-live on the specialist card. The label uses the current approved go-live, as Go-live Nov 3. A site with no date shows —. No schema migrate.",
+    highlights: [
+      "/management/capacity: each site listed on a specialist card shows Go-live and a short date next to the acronym. Unassigned sites use the same line.",
+      "The date is projects.targetGoLiveDate, the go-live the capacity slip form updates only when the change is approved. An unapproved slip does not change the label.",
+      "No date shows —. No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.27",
     date: "2026-10-13",

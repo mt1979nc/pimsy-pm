@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  capacityGoLiveLabel,
   capacityNoteBadge,
   groupSitesUnderSpecialists,
   isCapacityPhase,
@@ -97,6 +98,18 @@ describe("capacity phase", () => {
     expect(modelCapacityPhase({ asOf: parseDateInput("2026-11-26")!, kickoff, goLive })).toBe("pregolive");
     expect(modelCapacityPhase({ asOf: parseDateInput("2026-12-01")!, kickoff, goLive })).toBe("complete");
     expect(modelCapacityPhase({ asOf: parseDateInput("2026-10-02")!, kickoff: null, goLive: null })).toBeNull();
+  });
+});
+
+describe("capacity go-live label", () => {
+  it("prints the approved go-live as a short date and a dash when it is missing", () => {
+    expect(capacityGoLiveLabel("2026-11-03")).toBe("Go-live Nov 3");
+    expect(capacityGoLiveLabel("2026-11-03T12:00:00.000Z")).toBe("Go-live Nov 3");
+    expect(capacityGoLiveLabel("2026-01-09")).toBe("Go-live Jan 9");
+    expect(capacityGoLiveLabel("")).toBe("—");
+    expect(capacityGoLiveLabel("   ")).toBe("—");
+    expect(capacityGoLiveLabel(null)).toBe("—");
+    expect(capacityGoLiveLabel("not-a-date")).toBe("—");
   });
 });
 
@@ -200,6 +213,7 @@ describe("team capacity page", () => {
     expect(sql.toLowerCase()).not.toMatch(/delete|drop table/);
     expect(cards).toMatch(/CapacityMemberBody/);
     expect(cards).not.toMatch(/sites\.flat\(/);
+    expect(rows).toMatch(/capacityGoLiveLabel/);
     expect(rows).toMatch(/Phase for/);
     expect(rows).toMatch(/capacityNoteBadge/);
     expect(rows).toMatch(/SlipHistoryList/);
