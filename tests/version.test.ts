@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.24");
+    expect(APP_VERSION).toBe("1.18.25");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,23 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.25 revert of HubSpot on create", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.25");
+    expect(note?.summary).toMatch(/Reverts HubSpot on create/);
+    expect(note?.summary).toMatch(/1\.18\.22 history note/);
+    expect(note?.summary).toMatch(/No schema migrate/i);
+    expect(note?.highlights?.some((h) => /contractDate/.test(h) && /expectedArr/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Pull from HubSpot is removed/.test(h) && /does not write to HubSpot/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /1\.18\.22 Update History note stays/.test(h))).toBe(true);
+    expect(note?.highlights?.join(" ")).not.toMatch(/PHI/);
+    const prior = RELEASE_NOTES.find((n) => n.version === "1.18.22");
+    expect(prior?.summary).toMatch(/HubSpot on create/);
+    expect(prior?.summary).toMatch(/read-only/i);
+    expect(RELEASE_NOTES.find((n) => n.version === "1.18.24")).toBeTruthy();
   });
 
   it("documents v1.18.24 Needs attention names", () => {
