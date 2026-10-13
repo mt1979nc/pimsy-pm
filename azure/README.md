@@ -257,6 +257,29 @@ Migration `0025_status_update_due` (`ALTER TYPE notification_type ADD VALUE
 'STATUS_UPDATE_DUE'`). Deploy-to-main already runs `npm run db:migrate`. No
 playbook resync. No new App Setting besides the existing `CRON_SECRET`.
 
+**Daily Dock delivery ingest.** Reuses `POST /api/internal/dock-delivery/ingest`
+and migration `0030_dock_delivery`. Dock stays the system of record. PATH
+stores the Implementation WIP snapshot only (overdue tasks and open threads,
+waiting on PIMSY vs the customer). No task import. No HubSpot writes. PATH
+does not log in to Dock.
+
+| Field | Value |
+|---|---|
+| Name | `pimsy-cron-dock-delivery` |
+| Trigger | Recurrence, **daily 08:15**, time zone **Central Time (Chicago)** |
+| Method | POST |
+| URI | `https://<AZURE_WEBAPP_NAME>.azurewebsites.net/api/internal/dock-delivery/ingest` |
+| Headers | `Authorization` = `Bearer <DOCK_DELIVERY_INGEST_SECRET>` |
+| Body | `{ "wip": <dock-wip.json>, "threads": <dock-threads.json> }` |
+
+App Setting `DOCK_DELIVERY_INGEST_SECRET` (`openssl rand -base64 32`). Unset or
+wrong secret → 404. The CoS box (or a signed-in browser) produces the two JSON
+files; the Logic App only posts them. Optional GitHub Actions fallback:
+`.github/workflows/dock-delivery-ingest.yml` (secrets `PATH_APP_URL`,
+`DOCK_DELIVERY_INGEST_SECRET`, `DOCK_STORAGE_STATE`). Prefer the Logic App.
+No new migration. Optional App Setting `PATH_DAY_TO_DAY=1` brings the
+day-to-day nav back; leave it unset to keep Analytics as the landing page.
+
 See `v1.10-REPORT.md` in the repo root.
 
 **v1.9.0** added `0010_playbook_staffing`. To refresh the four standard

@@ -43,15 +43,20 @@ export function staffSidebarSections(input: {
   unread: number;
   showPortfolio: boolean;
   showTemplates: boolean;
+  /** Default true so callers that predate the flag keep the full menu. */
+  showDayToDay?: boolean;
 }): StaffSidebarSection[] {
-  const dayToDay: StaffSidebarItem[] = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/my-work", label: "My work" },
-    { href: "/inbox", label: "Inbox", badge: input.unread },
-    { href: "/projects", label: "Projects" },
-    { href: "/customers", label: "Customers" },
-  ];
-  if (input.showPortfolio) {
+  const showDayToDay = input.showDayToDay !== false;
+  const dayToDay: StaffSidebarItem[] = showDayToDay
+    ? [
+        { href: "/dashboard", label: "Dashboard" },
+        { href: "/my-work", label: "My work" },
+        { href: "/inbox", label: "Inbox", badge: input.unread },
+        { href: "/projects", label: "Projects" },
+        { href: "/customers", label: "Customers" },
+      ]
+    : [];
+  if (showDayToDay && input.showPortfolio) {
     dayToDay.push({ href: "/reports/waiting-on", label: "Waiting on" });
   }
 

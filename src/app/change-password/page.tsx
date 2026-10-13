@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { requireUser } from "@/lib/guard";
+import { staffHomeHref } from "@/lib/day-to-day";
 import { PasswordForm } from "@/components/password-form";
 import { Card, CardHeader } from "@/components/ui";
 
@@ -16,7 +17,7 @@ export default async function ChangePasswordPage() {
 
   // Already cleared — send them into the app.
   if (!me.mustChangePassword) {
-    redirect(me.role === "CUSTOMER" ? "/portal" : "/dashboard");
+    redirect(me.role === "CUSTOMER" ? "/portal" : staffHomeHref(me.role));
   }
 
   return (

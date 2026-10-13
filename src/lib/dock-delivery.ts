@@ -656,6 +656,21 @@ export function nextDockSort(current: DockSort, key: DockSortKey): DockSort {
   return { key, dir: numeric ? "desc" : "asc" };
 }
 
+/** Split open threads into the two parties Dock is waiting on. */
+export function groupDockThreads<T extends { waitingOn: DockWaitingOn }>(
+  threads: readonly T[],
+): { pimsy: T[]; customer: T[]; unknown: T[] } {
+  const pimsy: T[] = [];
+  const customer: T[] = [];
+  const unknown: T[] = [];
+  for (const thread of threads) {
+    if (thread.waitingOn === "pimsy") pimsy.push(thread);
+    else if (thread.waitingOn === "customer") customer.push(thread);
+    else unknown.push(thread);
+  }
+  return { pimsy, customer, unknown };
+}
+
 function compareText(a: string, b: string): number {
   return a.localeCompare(b, undefined, { sensitivity: "base" });
 }

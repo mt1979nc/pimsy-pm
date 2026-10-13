@@ -21,6 +21,7 @@ import { sendEmail, passwordResetEmail } from "@/lib/email";
 import { writePasswordResetLink } from "@/lib/reset-link";
 import { audit } from "@/lib/audit";
 import { safeAppPath } from "@/lib/path-deep-links";
+import { staffHomeHref } from "@/lib/day-to-day";
 
 export type ActionState = { error?: string; ok?: boolean };
 
@@ -30,7 +31,7 @@ export type ActionState = { error?: string; ok?: boolean };
  * src/app/signin/page.tsx and src/app/(app)/layout.tsx).
  */
 function landingPathFor(role: string) {
-  return role === "CUSTOMER" ? "/portal" : "/dashboard";
+  return role === "CUSTOMER" ? "/portal" : staffHomeHref(role);
 }
 
 // ---------------------------------------------------------------------------

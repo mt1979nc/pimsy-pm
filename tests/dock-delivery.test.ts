@@ -10,6 +10,7 @@ import {
   dockWorkspaceExclusionReason,
   isDockDeliveryStale,
   matchDockAcronym,
+  groupDockThreads,
   nextDockSort,
   parseOverdueCount,
   sortDockRows,
@@ -152,6 +153,44 @@ describe("dock delivery snapshot", () => {
       id: "only",
       via: "code",
     });
+  });
+
+  it("splits threads into waiting on PIMSY and waiting on the customer", () => {
+    const groups = groupDockThreads([
+      { waitingOn: "pimsy" as const, title: "Need config" },
+      { waitingOn: "customer" as const, title: "Sign off" },
+      { waitingOn: "unknown" as const, title: "Unlabeled" },
+      { waitingOn: "customer" as const, title: "Questionnaire" },
+    ]);
+    expect(groups.pimsy.map((thread) => thread.title)).toEqual(["Need config"]);
+    expect(groups.customer.map((thread) => thread.title)).toEqual(["Sign off", "Questionnaire"]);
+    expect(groups.unknown).toHaveLength(1);
+  });
+
+  it("schedules a daily ingest against the existing Dock delivery route", () => {
+    const workflow = readFileSync(resolve(process.cwd(), ".github/workflows/dock-delivery-ingest.yml"), "utf8");
+    const readme = readFileSync(resolve(process.cwd(), "scripts/dock/README.md"), "utf8");
+    const azure = readFileSync(resolve(process.cwd(), "azure/README.md"), "utf8");
+    expect(workflow).toMatch(/15 13 \* \* \*/);
+    expect(workflow).toMatch(/\/api\/internal\/dock-delivery\/ingest/);
+    expect(workflow).toMatch(/DOCK_DELIVERY_INGEST_SECRET/);
+    expect(workflow).toMatch(/0030_dock_delivery/);
+    expect(workflow).toMatch(/pimsy-cron-dock-delivery/);
+    expect(workflow).not.toMatch(/hubspot/i);
+    expect(readme).toMatch(/pimsy-cron-dock-delivery/);
+    expect(readme).toMatch(/daily at 08:15 America\/Chicago/);
+    expect(azure).toMatch(/pimsy-cron-dock-delivery/);
+    expect(azure).toMatch(/0030_dock_delivery/);
+    expect(azure).toMatch(/No HubSpot writes/);
+    const page = readFileSync(resolve(process.cwd(), "src/app/(app)/management/dock-delivery/page.tsx"), "utf8");
+    const table = readFileSync(resolve(process.cwd(), "src/app/(app)/management/dock-delivery/delivery-table.tsx"), "utf8");
+    expect(page).toMatch(/label="Late"/);
+    expect(page).toMatch(/label="PIMSY"/);
+    expect(page).toMatch(/label="Customer"/);
+    expect(table).toMatch(/Waiting on PIMSY/);
+    expect(table).toMatch(/Waiting on customer/);
+    expect(table).toMatch(/groupDockThreads/);
+    expect(table).not.toMatch(/hubspot/i);
   });
 
   it("sorts overdue descending with blanks last", () => {

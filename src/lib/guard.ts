@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getActor } from "@/auth";
 import { isCustomer, isStaff, isAdmin, canSeePortfolio, type Actor } from "./authz";
+import { staffHomeHref } from "./day-to-day";
 
 /** Any signed-in, active user. Redirects to sign-in otherwise. */
 export async function requireUser(): Promise<Actor> {
@@ -20,18 +21,19 @@ export async function requireStaff(): Promise<Actor> {
 /** Customer contacts only. Staff are sent back to the internal app. */
 export async function requireCustomer(): Promise<Actor & { customerAccountId: string }> {
   const actor = await requireUser();
-  if (!isCustomer(actor) || !actor.customerAccountId) redirect("/dashboard");
+  if (isStaff(actor)) redirect(staffHomeHref(actor.role));
+  if (!isCustomer(actor) || !actor.customerAccountId) redirect("/signin");
   return actor as Actor & { customerAccountId: string };
 }
 
 export async function requireAdmin(): Promise<Actor> {
   const actor = await requireStaff();
-  if (!isAdmin(actor)) redirect("/dashboard");
+  if (!isAdmin(actor)) redirect(staffHomeHref(actor.role));
   return actor;
 }
 
 export async function requirePortfolioAccess(): Promise<Actor> {
   const actor = await requireStaff();
-  if (!canSeePortfolio(actor)) redirect("/dashboard");
+  if (!canSeePortfolio(actor)) redirect(staffHomeHref(actor.role));
   return actor;
 }

@@ -7,23 +7,20 @@ import { Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import {
   DEFAULT_DOCK_SORT,
+  groupDockThreads,
   nextDockSort,
   sortDockRows,
   type DockDeliveryTableRow,
+  type DockDeliveryTableThread,
   type DockSort,
   type DockSortKey,
-  type DockWaitingOn,
 } from "@/lib/dock-delivery";
 
-const COLUMNS: { key: DockSortKey; label: string; align?: "right" }[] = [
+const SORTS: { key: DockSortKey; label: string }[] = [
+  { key: "overdue", label: "Late" },
+  { key: "pimsy", label: "PIMSY" },
+  { key: "customer", label: "Customer" },
   { key: "acronym", label: "Acronym" },
-  { key: "name", label: "Site" },
-  { key: "overdue", label: "Overdue", align: "right" },
-  { key: "threads", label: "Threads", align: "right" },
-  { key: "pimsy", label: "On PIMSY", align: "right" },
-  { key: "customer", label: "On customer", align: "right" },
-  { key: "status", label: "Status" },
-  { key: "owners", label: "Owners" },
 ];
 
 function statusTone(status: string | null): "red" | "amber" | "green" | "neutral" {
@@ -34,199 +31,216 @@ function statusTone(status: string | null): "red" | "amber" | "green" | "neutral
   return "neutral";
 }
 
-function waitingLabel(waiting: DockWaitingOn): string {
-  if (waiting === "pimsy") return "PIMSY";
-  if (waiting === "customer") return "Customer";
-  return "Unknown";
-}
-
-function Count({ value, warn }: { value: number | null; warn?: boolean }) {
-  if (value == null) return <span className="text-ink-3">—</span>;
-  return <span className={cn(warn && value > 0 && "font-semibold text-red")}>{value}</span>;
-}
-
-export function DockDeliveryTable({ rows }: { rows: DockDeliveryTableRow[] }) {
+export function DockDeliveryTable({
+  rows,
+  linkProjects,
+}: {
+  rows: DockDeliveryTableRow[];
+  linkProjects: boolean;
+}) {
   const [sort, setSort] = useState<DockSort>(DEFAULT_DOCK_SORT);
   const [open, setOpen] = useState<string | null>(null);
   const ordered = sortDockRows(rows, sort);
 
   return (
-    <div className="min-w-0 w-full max-w-full overflow-x-auto [contain:paint]">
-      <table className="w-full min-w-[52rem] border-collapse text-[13px]">
-        <thead>
-          <tr className="bg-[#113c64] text-left text-[11px] font-semibold text-white">
-            <th className="w-8 px-2 py-2" aria-label="Threads" />
-            {COLUMNS.map((column) => {
-              const active = sort.key === column.key;
-              return (
-                <th
-                  key={column.key}
-                  aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
-                  className={cn("px-2 py-2 font-semibold", column.align === "right" && "text-right")}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSort((current) => nextDockSort(current, column.key))}
-                    className="inline-flex items-center gap-1 bg-transparent text-white hover:underline"
-                  >
-                    {column.label}
-                    {active ? <span aria-hidden>{sort.dir === "asc" ? "↑" : "↓"}</span> : null}
-                  </button>
-                </th>
-              );
-            })}
-            <th className="px-2 py-2 font-semibold">PATH</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ordered.map((row) => {
-            const expanded = open === row.acronym;
-            return (
-              <Row
-                key={row.acronym}
-                row={row}
-                expanded={expanded}
-                onToggle={() => setOpen(expanded ? null : row.acronym)}
-              />
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-1.5 text-[12px]" role="group" aria-label="Sort sites">
+        <span className="text-ink-3">Sort</span>
+        {SORTS.map((item) => {
+          const active = sort.key === item.key;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setSort((current) => nextDockSort(current, item.key))}
+              className={cn(
+                "rounded-full border px-2.5 py-0.5",
+                active
+                  ? "border-brand bg-brand-soft font-semibold text-ink"
+                  : "border-border text-ink-2 hover:bg-surface-2",
+              )}
+            >
+              {item.label}
+              {active ? <span aria-hidden>{sort.dir === "asc" ? " ↑" : " ↓"}</span> : null}
+            </button>
+          );
+        })}
+      </div>
+
+      <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+        {ordered.map((row) => {
+          const expanded = open === row.acronym;
+          return (
+            <li key={row.acronym}>
+              <button
+                type="button"
+                aria-expanded={expanded}
+                aria-label={`${expanded ? "Hide" : "Show"} ${row.acronym}`}
+                onClick={() => setOpen(expanded ? null : row.acronym)}
+                className="flex w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left hover:bg-brand-soft/40"
+              >
+                <Chevron expanded={expanded} />
+                <span className="w-16 shrink-0 text-[14px] font-semibold tracking-tight text-ink">
+                  {row.acronym}
+                  {row.acronymInferred ? (
+                    <span className="ml-0.5 text-[11px] font-normal text-ink-3" title="Acronym inferred from the site name">
+                      *
+                    </span>
+                  ) : null}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[13px] text-ink-2" title={row.name}>
+                  {row.name}
+                </span>
+                <span className="grid shrink-0 grid-cols-3 gap-x-3 text-right">
+                  <Count label="Late" value={row.overdueTaskCount} warn />
+                  <Count label="PIMSY" value={row.waitingOnPimsy} tone="amber" />
+                  <Count label="Customer" value={row.waitingOnCustomer} />
+                </span>
+              </button>
+              {expanded ? <SiteDetail row={row} linkProjects={linkProjects} /> : null}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
 
-function Row({
-  row,
-  expanded,
-  onToggle,
-}: {
-  row: DockDeliveryTableRow;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  const owners = row.owners.join(", ");
+function Chevron({ expanded }: { expanded: boolean }) {
   return (
-    <>
-      <tr className="border-b border-border hover:bg-brand-soft/50">
-        <td className="px-2 py-2 align-top">
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-label={`${expanded ? "Hide" : "Show"} threads for ${row.acronym}`}
-            onClick={onToggle}
-            className="flex h-6 w-6 items-center justify-center rounded text-ink-3 hover:bg-surface-2 hover:text-ink"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              className={cn("transition-transform", expanded && "rotate-90")}
-              aria-hidden
-            >
-              <path d="m9 6 6 6-6 6" />
-            </svg>
-          </button>
-        </td>
-        <td className="px-2 py-2 align-top font-medium text-ink">
-          {row.acronym}
-          {row.acronymInferred ? (
-            <span className="ml-1 text-[11px] font-normal text-ink-3" title="Acronym inferred from the site name">
-              *
-            </span>
-          ) : null}
-        </td>
-        <td className="max-w-[16rem] px-2 py-2 align-top">
-          <div className="truncate font-medium text-ink" title={row.name}>
-            {row.name}
-          </div>
-        </td>
-        <td className="px-2 py-2 text-right align-top">
-          <Count value={row.overdueTaskCount} warn />
-        </td>
-        <td className="px-2 py-2 text-right align-top">{row.openThreadCount}</td>
-        <td className="px-2 py-2 text-right align-top">
-          <span className={cn(row.waitingOnPimsy > 0 && "font-semibold text-amber")}>{row.waitingOnPimsy}</span>
-        </td>
-        <td className="px-2 py-2 text-right align-top">{row.waitingOnCustomer}</td>
-        <td className="px-2 py-2 align-top">
-          {row.status ? <Badge tone={statusTone(row.status)}>{row.status}</Badge> : <span className="text-ink-3">—</span>}
-        </td>
-        <td className="max-w-[10rem] px-2 py-2 align-top text-ink-2">
-          <div className="truncate" title={owners || undefined}>
-            {owners || "—"}
-          </div>
-        </td>
-        <td className="px-2 py-2 align-top">
-          {row.path ? (
-            <Link
-              href={`/projects/${row.path.id}`}
-              className="font-medium text-brand hover:underline"
-              title={
-                row.path.extra > 0
-                  ? `Matched ${row.path.via}. ${row.path.extra} other PATH project${row.path.extra === 1 ? "" : "s"} share this acronym.`
-                  : `Matched projects.${row.path.via === "crmAcronym" ? "crmAcronym" : "code"}`
-              }
-            >
-              {row.path.code}
-              {row.path.extra > 0 ? <span className="ml-1 text-[11px] text-ink-3">+{row.path.extra}</span> : null}
-            </Link>
-          ) : (
-            <span className="text-ink-3">—</span>
-          )}
-        </td>
-      </tr>
-      {expanded ? (
-        <tr className="border-b border-border bg-surface-2/60">
-          <td colSpan={10} className="px-3 py-3">
-            <ThreadList row={row} />
-          </td>
-        </tr>
-      ) : null}
-    </>
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      className={cn("shrink-0 text-ink-3 transition-transform", expanded && "rotate-90")}
+      aria-hidden
+    >
+      <path d="m9 6 6 6-6 6" />
+    </svg>
   );
 }
 
-function ThreadList({ row }: { row: DockDeliveryTableRow }) {
+function Count({
+  label,
+  value,
+  warn,
+  tone,
+}: {
+  label: string;
+  value: number | null;
+  warn?: boolean;
+  tone?: "amber";
+}) {
+  const hot = value != null && value > 0;
+  return (
+    <span className="min-w-[3.25rem]">
+      <span className="block text-[10px] font-medium uppercase tracking-wide text-ink-3">{label}</span>
+      <span
+        className={cn(
+          "block text-[14px] font-semibold tabular-nums leading-tight",
+          value == null && "font-normal text-ink-3",
+          warn && hot && "text-red",
+          tone === "amber" && hot && "text-amber",
+        )}
+      >
+        {value == null ? "—" : value}
+      </span>
+    </span>
+  );
+}
+
+function SiteDetail({ row, linkProjects }: { row: DockDeliveryTableRow; linkProjects: boolean }) {
+  const groups = groupDockThreads(row.threads);
   const listed = row.threads.length;
   const missing = Math.max(0, row.openThreadCount - listed);
+  const owners = row.owners.join(", ");
+
   return (
-    <div className="space-y-2">
+    <div className="border-t border-border bg-surface-2/50 px-3 py-3 pl-10">
       <p className="text-[12px] text-ink-3">
-        Target {row.targetEnd ?? "—"}
-        {row.waitingUnknown > 0 ? ` · Unknown ${row.waitingUnknown}` : ""}
-        {missing > 0 ? ` · Showing ${listed} of ${row.openThreadCount}` : ""}
+        Late {row.overdueTaskCount == null ? "—" : row.overdueTaskCount}
+        {row.overdueTaskCount == null ? " · Dock hid this count" : " · overdue in Dock, not imported"}
+        {missing > 0 ? ` · Showing ${listed} of ${row.openThreadCount} threads` : ""}
       </p>
-      {listed === 0 ? (
-        <p className="text-[13px] text-ink-2">No open threads in this snapshot.</p>
+
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <Party title="Waiting on PIMSY" threads={groups.pimsy} />
+        <Party title="Waiting on customer" threads={groups.customer} />
+      </div>
+      {groups.unknown.length > 0 ? (
+        <div className="mt-4">
+          <Party title="Unknown" threads={groups.unknown} />
+        </div>
+      ) : null}
+
+      <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-ink-3">
+        <span>{owners || "No owner"}</span>
+        <span aria-hidden>·</span>
+        {row.status ? <Badge tone={statusTone(row.status)}>{row.status}</Badge> : <span>No status</span>}
+        <span aria-hidden>·</span>
+        <span>Target {row.targetEnd ?? "—"}</span>
+        <span aria-hidden>·</span>
+        <PathMatch row={row} linkProjects={linkProjects} />
+      </p>
+    </div>
+  );
+}
+
+function Party({ title, threads }: { title: string; threads: DockDeliveryTableThread[] }) {
+  return (
+    <section>
+      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-ink-3">{title}</h3>
+      {threads.length === 0 ? (
+        <p className="mt-1 text-[12.5px] text-ink-3">None</p>
       ) : (
-        <ul className="space-y-2">
-          {row.threads.map((thread) => (
+        <ul className="mt-1 space-y-2">
+          {threads.map((thread) => (
             <li key={thread.key} className="text-[13px]">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                {thread.url ? (
-                  <a href={thread.url} target="_blank" rel="noreferrer" className="font-medium text-brand hover:underline">
-                    {thread.title}
-                  </a>
-                ) : (
-                  <span className="font-medium text-ink">{thread.title}</span>
-                )}
-                <span className="text-[12px] text-ink-3">{waitingLabel(thread.waitingOn)}</span>
-                {thread.type ? <span className="text-[12px] text-ink-3">{thread.type}</span> : null}
-                {thread.lastActivity ? <span className="text-[12px] text-ink-3">{thread.lastActivity}</span> : null}
-                {thread.internal ? <Badge tone="neutral">Internal</Badge> : null}
-              </div>
+              {thread.url ? (
+                <a href={thread.url} target="_blank" rel="noreferrer" className="font-medium text-brand hover:underline">
+                  {thread.title}
+                </a>
+              ) : (
+                <span className="font-medium text-ink">{thread.title}</span>
+              )}
               <p className="text-[12px] text-ink-2">
                 {thread.lastPoster ?? "—"}
-                {thread.snippet ? ` — ${thread.snippet}` : ""}
+                {thread.lastActivity ? ` · ${thread.lastActivity}` : ""}
+                {thread.type ? ` · ${thread.type}` : ""}
+                {thread.internal ? " · Internal" : ""}
               </p>
+              {thread.snippet ? <p className="text-[12px] text-ink-3">{thread.snippet}</p> : null}
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </section>
+  );
+}
+
+function PathMatch({ row, linkProjects }: { row: DockDeliveryTableRow; linkProjects: boolean }) {
+  if (!row.path) return <span>No PATH match</span>;
+  const extra = row.path.extra > 0 ? ` +${row.path.extra}` : "";
+  const title =
+    row.path.extra > 0
+      ? `Matched ${row.path.via}. ${row.path.extra} other PATH project${row.path.extra === 1 ? "" : "s"} share this acronym.`
+      : `Matched projects.${row.path.via === "crmAcronym" ? "crmAcronym" : "code"}`;
+  if (!linkProjects) {
+    return (
+      <span title={title}>
+        PATH {row.path.code}
+        {extra}
+      </span>
+    );
+  }
+  return (
+    <Link href={`/projects/${row.path.id}`} className="font-medium text-brand hover:underline" title={title}>
+      PATH {row.path.code}
+      {extra}
+    </Link>
   );
 }

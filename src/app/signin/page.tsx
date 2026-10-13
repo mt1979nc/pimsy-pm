@@ -6,6 +6,7 @@ import { Card, Button, Field, inputClass } from "@/components/ui";
 import { APP_VERSION } from "@/lib/version";
 import { PRODUCT_EXPANSION, PRODUCT_NAME } from "@/lib/brand";
 import { safeAppPath } from "@/lib/path-deep-links";
+import { staffHomeHref } from "@/lib/day-to-day";
 import { PasswordSignInForm } from "./password-form";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export default async function SignInPage({
   if (actor) {
     const next = safeAppPath(callbackUrl);
     if (next) redirect(next);
-    redirect(isCustomer(actor) ? "/portal" : "/dashboard");
+    redirect(isCustomer(actor) ? "/portal" : staffHomeHref(actor.role));
   }
 
   const googleEnabled = Boolean(env.GOOGLE_ID && env.GOOGLE_SECRET);
