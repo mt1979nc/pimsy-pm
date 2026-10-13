@@ -8,7 +8,7 @@
  */
 
 import type { PrismStatus } from "@/lib/prism-status";
-import { utcCalendarDaysBetween, utcDayKey } from "@/lib/dates";
+import { parseDateInput, utcCalendarDaysBetween, utcDayKey } from "@/lib/dates";
 
 export const CAPACITY_PHASES = [
   "kickoff",
@@ -188,6 +188,22 @@ export type CapacitySlipRow = {
   createdAt: string;
   goLiveApplied: boolean;
 };
+
+const GO_LIVE_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+/**
+ * Compact go-live for a Team capacity site row.
+ * `targetGoLive` is the current approved date (`projects.targetGoLiveDate`):
+ * a slip moves it only when the go-live change is approved.
+ * Empty or invalid → "—". Otherwise "Go-live Nov 3" from the UTC calendar day.
+ */
+export function capacityGoLiveLabel(targetGoLive: string | null | undefined): string {
+  const raw = (targetGoLive ?? "").trim();
+  if (!raw) return "—";
+  const parsed = parseDateInput(raw);
+  if (!parsed) return "—";
+  return `Go-live ${GO_LIVE_MONTHS[parsed.getUTCMonth()]} ${parsed.getUTCDate()}`;
+}
 
 /** One site row under a specialist. Dates are ISO strings so the client can render them. */
 export type CapacitySiteRow = {

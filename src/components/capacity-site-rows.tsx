@@ -11,6 +11,7 @@ import { Badge, inputClass } from "@/components/ui";
 import {
   CAPACITY_PHASE_LABELS,
   CAPACITY_PHASES,
+  capacityGoLiveLabel,
   capacityNoteBadge,
   type CapacityPhase,
   type CapacitySiteRow,
@@ -219,12 +220,13 @@ function CapacitySiteRow({ site }: { site: CapacitySiteRow }) {
           href={`/projects/${site.id}`}
           title={site.name}
           className={cn(
-            "min-w-0 flex-1 truncate text-[13px] text-ink hover:text-brand",
+            "min-w-0 truncate text-[13px] text-ink hover:text-brand",
             site.isSecondary ? "font-medium text-ink-2" : "font-semibold",
           )}
         >
           {site.acronym}
         </Link>
+        <span className="shrink-0 text-[11px] text-ink-3">{capacityGoLiveLabel(site.targetGoLive)}</span>
         {badge ? (
           <Badge tone={badge.tone} className="px-1.5 py-0 text-[10.5px]">
             {badge.label}
@@ -243,7 +245,7 @@ function CapacitySiteRow({ site }: { site: CapacitySiteRow }) {
         ) : null}
         <button
           type="button"
-          className="shrink-0 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
+          className="ml-auto shrink-0 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
