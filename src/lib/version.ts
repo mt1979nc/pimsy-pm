@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.24";
+export const APP_VERSION = "1.18.25";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.25",
+    date: "2026-10-13",
+    summary:
+      "Reverts HubSpot on create. Saving a project no longer fills contract date or expected ARR from the linked deal. The 1.18.22 history note stays. No schema migrate.",
+    highlights: [
+      "New project, Add to roster, and About save store the deal URL only. PATH does not fill empty projects.contractDate or projects.expectedArr from HubSpot.",
+      "Pull from HubSpot is removed from About. Staff About still shows deal name and stage when HUBSPOT_ACCESS_TOKEN is set. Existing contract date and expected ARR values stay. PATH does not write to HubSpot.",
+      "The 1.18.22 Update History note stays as the record of what shipped then. This release undoes that behavior.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.24",
     date: "2026-10-05",

@@ -19,7 +19,6 @@ import { bookmarkFromCustomFields } from "./accessing-pimsy";
 import { projectHasRcmTrack } from "./add-rcm";
 import { loadProjectRecordingAggregate } from "./recordings-query";
 import type { AggregatedRecording } from "./recordings";
-import { portalProjectColumns } from "./portal-fields";
 
 export type CustomerActor = Actor & { customerAccountId: string };
 
@@ -32,7 +31,6 @@ export async function portalProjects(actor: CustomerActor) {
       isNull(projects.archivedAt),
     ),
     orderBy: [asc(projects.targetGoLiveDate)],
-    columns: portalProjectColumns,
     with: {
       lead: { columns: { id: true, name: true, image: true, email: true, title: true, zoomBookingUrl: true } },
       customerAccount: { columns: { id: true, name: true, logoUrl: true, logoStorageKey: true } },
@@ -284,7 +282,6 @@ export async function portalProject(actor: CustomerActor, projectId: string) {
       eq(projects.portalEnabled, true),
       isNull(projects.archivedAt),
     ),
-    columns: portalProjectColumns,
     with: {
       lead: { columns: { id: true, name: true, image: true, email: true, title: true, zoomBookingUrl: true } },
       customerAccount: { columns: { id: true, name: true, logoUrl: true, logoStorageKey: true } },

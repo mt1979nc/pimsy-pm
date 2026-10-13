@@ -242,7 +242,7 @@ export function NewProjectForm({
               <Field
                 label="HubSpot deal URL"
                 htmlFor="hubspotDealUrl"
-                hint="Staff only. Fills empty contract date and expected ARR."
+                hint="CRM auto-create. Staff only — not the live site."
               >
                 <input
                   id="hubspotDealUrl"

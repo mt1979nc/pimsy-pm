@@ -8,7 +8,7 @@ import { Card, CardHeader } from "@/components/ui";
 import { ProjectAboutForm } from "./about-form";
 import { loadProjectAbout } from "@/lib/about-query";
 import { extraCustomFields } from "@/lib/about-profile";
-import { hubspotPullConfigured, loadHubSpotDealSummary } from "@/lib/hubspot-deal";
+import { loadHubSpotDealSummary } from "@/lib/hubspot-deal";
 import { AboutKickoffPanel } from "@/components/about-kickoff-panel";
 import { AboutHubSpotPanel } from "@/components/about-hubspot-panel";
 import { AboutContactCardGrid } from "@/components/about-contact-card";
@@ -82,11 +82,7 @@ export default async function ProjectAboutPage({
 
       <Card>
         <CardHeader title="HubSpot" />
-        <AboutHubSpotPanel
-          summary={hubspot}
-          projectId={project.id}
-          pullEnabled={hubspotPullConfigured()}
-        />
+        <AboutHubSpotPanel summary={hubspot} />
       </Card>
 
       <Card>
