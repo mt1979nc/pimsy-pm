@@ -97,3 +97,37 @@ export async function saveCapacityMember(input: {
   revalidatePrismSurfaces();
   return { ok: true };
 }
+
+/** Hide or unhide one person on Team capacity. Does not delete the user or their work. */
+export async function setCapacityMemberHidden(userId: string, hidden: boolean): Promise<ActionState> {
+  const actor = await requirePortfolioAccess();
+  if (!canManagePrismCapacity(actor)) {
+    throw new ForbiddenError("Prism access required.");
+  }
+  if (!userId) return { error: "Missing person." };
+
+  const target = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { id: true, name: true, email: true, role: true },
+  });
+  if (!target || target.role === "CUSTOMER") {
+    return { error: "Staff member not found." };
+  }
+
+  await db
+    .update(users)
+    .set({ capacityHidden: hidden, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+
+  await audit({
+    actor,
+    action: hidden ? "capacity.member.hidden" : "capacity.member.unhidden",
+    entityType: "user",
+    entityId: userId,
+    summary: `${target.name ?? target.email}: ${hidden ? "hidden" : "shown"} on Team capacity`,
+    metadata: { capacityHidden: hidden },
+  });
+
+  revalidatePrismSurfaces();
+  return { ok: true };
+}

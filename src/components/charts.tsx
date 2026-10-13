@@ -174,6 +174,8 @@ export type MemberLoad = {
   image?: string | null;
   capacityHoursPerWeek: number;
   capacityExempt: boolean;
+  /** Team capacity only. Other card lists leave this unset. */
+  capacityHidden?: boolean;
   canLead?: boolean;
   isDirector?: boolean;
   thisWeekHours: number;
@@ -189,11 +191,14 @@ function hoursText(n: unknown) {
 export function MemberLoadCard({
   member,
   leading,
+  action,
   className,
 }: {
   member: MemberLoad;
   /** Optional reorder controls. Omitted on pages that do not reorder. */
   leading?: ReactNode;
+  /** Optional card action, used by Team capacity hide/unhide. */
+  action?: ReactNode;
   className?: string;
 }) {
   const cap = numericHours(member.capacityHoursPerWeek);
@@ -218,7 +223,14 @@ export function MemberLoadCard({
           </div>
           <div className="text-[12px] text-ink-3">{hoursText(cap)}h/wk declared</div>
         </div>
-        <Badge tone={tone.badge}>{member.capacityExempt ? "n/a" : `${pct}%`}</Badge>
+        {action ? (
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <Badge tone={tone.badge}>{member.capacityExempt ? "n/a" : `${pct}%`}</Badge>
+            {action}
+          </div>
+        ) : (
+          <Badge tone={tone.badge}>{member.capacityExempt ? "n/a" : `${pct}%`}</Badge>
+        )}
       </div>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-border">
         <div className={cn("h-full min-h-2 rounded-full", tone.bar)} style={{ width: `${barPct}%` }} />

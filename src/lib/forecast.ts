@@ -37,6 +37,8 @@ export type ForecastStaffMember = {
   email?: string | null;
   capacityHoursPerWeek: number;
   capacityExempt: boolean;
+  /** Team capacity page only. Other analytics surfaces ignore this flag. */
+  capacityHidden?: boolean;
   canLead?: boolean;
   isDirector?: boolean;
   image?: string | null;
@@ -238,6 +240,54 @@ export function departmentCapacityHours(staff: readonly ForecastStaffMember[]): 
   return staff.filter((s) => !s.capacityExempt).reduce((sum, s) => sum + (s.capacityHoursPerWeek || 0), 0);
 }
 
+export function isHiddenFromCapacity(member: { capacityHidden?: boolean }): boolean {
+  return member.capacityHidden === true;
+}
+
+/**
+ * Team capacity totals without hidden people.
+ * Visible co-lead shares stay. Hidden hours and their weekly cap drop out.
+ * Engagement rows are unchanged — this does not delete sites or tasks.
+ */
+export function forecastExcludingHiddenStaff(forecast: CapacityForecast): CapacityForecast {
+  if (!forecast.staff.some(isHiddenFromCapacity)) return forecast;
+  const staff = forecast.staff.filter((s) => !isHiddenFromCapacity(s));
+  const hiddenIds = new Set(forecast.staff.filter(isHiddenFromCapacity).map((s) => s.id));
+  const deptCapacityHours = departmentCapacityHours(staff);
+  const billableIds = new Set(staff.filter((s) => !s.capacityExempt).map((s) => s.id));
+
+  const weeks: WeekAllocation[] = forecast.weeks.map((w) => {
+    const byPerson = w.byPerson.filter((p) => !hiddenIds.has(p.id));
+    const billableHours = round1(
+      byPerson.filter((p) => billableIds.has(p.id)).reduce((sum, p) => sum + p.hours, 0),
+    );
+    const totalHours = round1(byPerson.reduce((sum, p) => sum + p.hours, 0));
+    const headroom = round1(deptCapacityHours - billableHours);
+    const utilization =
+      deptCapacityHours > 0 ? Math.round((billableHours / deptCapacityHours) * 1000) / 1000 : 0;
+    return { ...w, byPerson, billableHours, totalHours, headroom, utilization };
+  });
+
+  const thisWeek = weeks[0] ?? null;
+  const peakWeek =
+    weeks.length === 0
+      ? null
+      : weeks.reduce((best, w) => (w.billableHours > best.billableHours ? w : best), weeks[0]!);
+
+  return {
+    ...forecast,
+    staff,
+    deptCapacityHours,
+    billableStaffCount: staff.filter((s) => !s.capacityExempt).length,
+    thisWeek,
+    peakWeek,
+    thisWeekHeadroom: thisWeek?.headroom ?? deptCapacityHours,
+    peakHeadroom: peakWeek?.headroom ?? deptCapacityHours,
+    hire: hireNowSignal(peakWeek, deptCapacityHours),
+    weeks,
+  };
+}
+
 export function hireNowSignal(peak: WeekAllocation | null, deptCapacity: number): HireNowSignal {
   if (!peak || deptCapacity <= 0) {
     return {
@@ -358,6 +408,7 @@ export type MemberLoadView = {
   image?: string | null;
   capacityHoursPerWeek: number;
   capacityExempt: boolean;
+  capacityHidden?: boolean;
   canLead?: boolean;
   isDirector?: boolean;
   thisWeekHours: number;
@@ -381,6 +432,7 @@ export function memberLoadsFromForecast(
     image: s.image,
     capacityHoursPerWeek: s.capacityHoursPerWeek,
     capacityExempt: s.capacityExempt,
+    capacityHidden: s.capacityHidden === true,
     canLead: s.canLead,
     isDirector: s.isDirector,
     thisWeekHours: thisById.get(s.id) ?? 0,
