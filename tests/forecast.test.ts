@@ -5,6 +5,7 @@ import {
   applyPrimaryAverageExclusions,
   buildCapacityForecast,
   countsTowardActiveLoad,
+  forecastExcludingHiddenStaff,
   DEFAULT_ANALYSIS_EXCLUSION_CODES,
   departmentCapacityHours,
   hireNowSignal,
@@ -183,6 +184,51 @@ describe("peak week, headroom, hire-now", () => {
     expect(forecast.hire.hireNow).toBe(true);
     expect(forecast.hire.hoursShort).toBeGreaterThan(0);
     expect(forecast.peakHeadroom).toBeLessThan(0);
+  });
+
+  it("drops a hidden person from capacity totals and keeps the visible co-lead share", () => {
+    const roster: ForecastStaffMember[] = staff.map((member) =>
+      member.id === "jeremy" ? { ...member, capacityHidden: true } : member,
+    );
+    const full = buildCapacityForecast({
+      asOf: d("2026-09-14"),
+      weeksAhead: 4,
+      staff: roster,
+      engagements: [
+        engagement({
+          id: "SPLIT",
+          leadId: "alex",
+          coLeadId: "jeremy",
+          ownerSplitPercent: 60,
+          customHoursPerWeek: 10,
+          estimatedHours: 40,
+          startDate: d("2026-09-14"),
+          targetGoLiveDate: d("2026-10-12"),
+        }),
+      ],
+    });
+    const shown = forecastExcludingHiddenStaff(full);
+
+    expect(full.deptCapacityHours).toBe(60);
+    expect(full.thisWeek?.billableHours).toBe(10);
+    expect(full.thisWeek?.byPerson.map((p) => p.id)).toContain("jeremy");
+    expect(full.engagements.find((e) => e.id === "SPLIT")).toBeTruthy();
+
+    expect(shown.staff.map((s) => s.id)).toEqual(["alex", "morgan"]);
+    expect(shown.deptCapacityHours).toBe(30);
+    expect(shown.billableStaffCount).toBe(1);
+    expect(shown.thisWeek?.byPerson.map((p) => p.id)).not.toContain("jeremy");
+    expect(shown.thisWeek?.byPerson.find((p) => p.id === "alex")?.hours).toBe(6);
+    expect(shown.thisWeek?.billableHours).toBe(6);
+    expect(shown.thisWeek?.headroom).toBe(24);
+    expect(shown.weeks.every((w) => w.byPerson.every((p) => p.id !== "jeremy"))).toBe(true);
+    expect(shown.engagements).toHaveLength(full.engagements.length);
+    expect(forecastExcludingHiddenStaff(buildCapacityForecast({
+      asOf: d("2026-09-14"),
+      weeksAhead: 2,
+      staff,
+      engagements: [],
+    }))).toMatchObject({ deptCapacityHours: 60 });
   });
 
   it("keeps exempt personal hours off department billable totals", () => {

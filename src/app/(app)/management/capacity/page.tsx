@@ -1,7 +1,7 @@
 import { teamCapacity } from "@/lib/queries";
 import { loadCapacityForecast } from "@/lib/forecast-data";
 import { loadCapacityBoard } from "@/lib/capacity-board";
-import { memberLoadsFromForecast } from "@/lib/forecast";
+import { forecastExcludingHiddenStaff, isHiddenFromCapacity, memberLoadsFromForecast } from "@/lib/forecast";
 import { Card, CardHeader, EmptyState, Badge, Avatar, Stat } from "@/components/ui";
 import { HeadroomChart } from "@/components/charts";
 import { ReorderableMemberLoadCards } from "@/components/reorderable-member-cards";
@@ -19,11 +19,13 @@ function utilizationTone(pct: number) {
 }
 
 export default async function CapacityPage() {
-  const [team, forecast] = await Promise.all([teamCapacity(), loadCapacityForecast(12)]);
-  const board = await loadCapacityBoard(forecast);
+  const [team, fullForecast] = await Promise.all([teamCapacity(), loadCapacityForecast(12)]);
+  const forecast = forecastExcludingHiddenStaff(fullForecast);
+  const board = await loadCapacityBoard(fullForecast);
+  const visibleTeam = team.filter((t) => !isHiddenFromCapacity(t));
 
-  const over = team.filter((t) => t.utilization > 110);
-  const idle = team.filter((t) => t.utilization < 40);
+  const over = visibleTeam.filter((t) => t.utilization > 110);
+  const idle = visibleTeam.filter((t) => t.utilization < 40);
 
   return (
     <>
@@ -34,7 +36,7 @@ export default async function CapacityPage() {
       </p>
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Dept capacity" value={`${forecast.deptCapacityHours}h`} hint="exempt excluded" />
+        <Stat label="Dept capacity" value={`${forecast.deptCapacityHours}h`} hint="exempt and hidden excluded" />
         <Stat
           label="Peak week"
           value={`${forecast.peakWeek?.billableHours ?? 0}h`}
@@ -52,13 +54,9 @@ export default async function CapacityPage() {
           href="/management/forecast"
         />
       </div>
-      {forecast.staff.length > 0 ? (
-        <div className="mb-5 space-y-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-[13.5px] font-semibold text-ink">Team capacity</h2>
-            <p className="text-[12px] text-ink-3">Drag to reorder. Saved in this browser.</p>
-          </div>
-          <ReorderableMemberLoadCards members={memberLoadsFromForecast(forecast)}
+      {fullForecast.staff.length > 0 ? (
+        <div className="mb-5">
+          <ReorderableMemberLoadCards members={memberLoadsFromForecast(fullForecast)}
             sitesByMember={board.sitesByMember}
             unassignedSites={board.unassigned}
           />
@@ -78,10 +76,12 @@ export default async function CapacityPage() {
       <Card className="mb-5">
         <CardHeader
           title="Weekly capacity forecast"
-          subtitle="Scoped hours across kickoff → go-live; pipeline omitted; exempt excluded from billable totals"
+          subtitle="Scoped hours across kickoff → go-live; pipeline omitted; exempt and hidden excluded from billable totals"
         />
         {forecast.staff.length === 0 ? (
-          <EmptyState title="No staff yet" />
+          <EmptyState
+            title={fullForecast.staff.some(isHiddenFromCapacity) ? "Everyone here is hidden" : "No staff yet"}
+          />
         ) : (
           <div className="min-w-0 max-w-full overflow-x-auto [contain:paint]">
             <table className="w-full min-w-[560px] border-collapse text-[12.5px]">
@@ -160,8 +160,15 @@ export default async function CapacityPage() {
               : "Everyone is carrying work"
           }
         />
-        {team.length === 0 ? (
-          <EmptyState title="No staff yet" description="Invite your team under People." />
+        {visibleTeam.length === 0 ? (
+          <EmptyState
+            title={team.some(isHiddenFromCapacity) ? "Everyone here is hidden" : "No staff yet"}
+            description={
+              team.some(isHiddenFromCapacity)
+                ? "Show hidden on the cards above to unhide someone."
+                : "Invite your team under People."
+            }
+          />
         ) : (
           <>
             <div className="hidden items-center gap-4 border-b border-border bg-surface-2 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3 sm:flex">
@@ -172,7 +179,7 @@ export default async function CapacityPage() {
               <div className="w-[9.5rem] shrink-0">Utilization</div>
             </div>
             <div className="divide-y divide-border">
-              {team.map((t) => {
+              {visibleTeam.map((t) => {
                 const u = utilizationTone(t.utilization);
                 return (
                   <div key={t.id} className="flex min-w-0 flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">

@@ -278,6 +278,12 @@ export const users = pgTable(
      * gates lead-owner dropdowns. isDirector is a capacity UI badge.
      */
     capacityExempt: boolean("capacity_exempt").notNull().default(false),
+    /**
+     * Hidden on Team capacity only (`/management/capacity`). The person, their
+     * sites, and their tasks stay. Department totals on that page skip them
+     * until an owner, admin, or manager unhides them.
+     */
+    capacityHidden: boolean("capacity_hidden").notNull().default(false),
     canLead: boolean("can_lead").notNull().default(true),
     isDirector: boolean("is_director").notNull().default(false),
     /** Optional map to Prism TeamId (am / dp / jr / md). */

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
+import { setCapacityMemberHidden } from "@/actions/capacity-board";
 import { CapacityMemberBody, CapacityUnassignedSites } from "@/components/capacity-site-rows";
 import { MemberLoadCard, type MemberLoad } from "@/components/charts";
 import type { CapacitySiteRow } from "@/lib/capacity-phase";
@@ -32,6 +33,33 @@ function writeStoredOrder(ids: string[]) {
 
 function personLabel(member: MemberLoad): string {
   return member.name?.trim() || member.email?.trim() || "team member";
+}
+
+function CapacityHideButton({ member }: { member: MemberLoad }) {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const label = personLabel(member);
+  const hidden = member.capacityHidden === true;
+  const text = hidden ? "Unhide" : "Hide";
+
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      aria-label={`${text} ${label}`}
+      title={error ?? undefined}
+      onClick={() => {
+        setError(null);
+        start(async () => {
+          const res = await setCapacityMemberHidden(member.id, !hidden);
+          if (res.error) setError(res.error);
+        });
+      }}
+      className="text-[11px] font-medium leading-none text-ink-3 hover:text-ink disabled:opacity-30"
+    >
+      {pending ? "Saving…" : text}
+    </button>
+  );
 }
 
 function GripIcon() {
@@ -83,6 +111,7 @@ export function ReorderableMemberLoadCards({
   unassignedSites?: CapacitySiteRow[];
 }) {
   const [preferred, setPreferred] = useState<string[] | null>(null);
+  const [showHidden, setShowHidden] = useState(false);
   const dragIdRef = useRef<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -97,20 +126,50 @@ export function ReorderableMemberLoadCards({
   }
 
   const ordered = preferred == null ? [...members] : orderMembersByPreference(members, preferred);
+  const hiddenCount = ordered.filter((member) => member.capacityHidden).length;
+  const shown = showHidden ? ordered : ordered.filter((member) => !member.capacityHidden);
 
   function commit(nextIds: string[]) {
     setPreferred(nextIds);
     writeStoredOrder(nextIds);
   }
 
+  function persistShown(nextShownIds: string[]) {
+    if (showHidden) {
+      commit(nextShownIds);
+      return;
+    }
+    const hiddenIds = ordered.filter((member) => member.capacityHidden).map((member) => member.id);
+    commit([...nextShownIds, ...hiddenIds]);
+  }
+
   function move(id: string, delta: -1 | 1) {
-    commit(moveIdBy(ordered.map((member) => member.id), id, delta));
+    persistShown(moveIdBy(shown.map((member) => member.id), id, delta));
   }
 
   return (
     <>
+    <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+      <h2 className="text-[13.5px] font-semibold text-ink">Team capacity</h2>
+      <div className="flex flex-wrap items-center gap-3">
+        {hiddenCount > 0 ? (
+          <button
+            type="button"
+            aria-pressed={showHidden}
+            onClick={() => setShowHidden((current) => !current)}
+            className={cn(
+              "text-[12px] font-medium",
+              showHidden ? "text-brand" : "text-ink-2 hover:text-ink",
+            )}
+          >
+            Show hidden ({hiddenCount})
+          </button>
+        ) : null}
+        <p className="text-[12px] text-ink-3">Drag to reorder. Saved in this browser.</p>
+      </div>
+    </div>
     <div ref={gridRef} className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {ordered.map((member, index) => {
+      {shown.map((member, index) => {
         const label = personLabel(member);
         return (
           <div
@@ -135,13 +194,14 @@ export function ReorderableMemberLoadCards({
               dragIdRef.current = null;
               clearDragChrome(gridRef.current);
               if (!fromId || fromId === member.id) return;
-              commit(reorderIds(ordered.map((item) => item.id), fromId, member.id));
+              persistShown(reorderIds(shown.map((item) => item.id), fromId, member.id));
             }}
           >
             <div className={cn("overflow-hidden rounded-xl border-2 bg-surface", cardBorder(member))}>
             <MemberLoadCard
               className="rounded-none border-0 shadow-none"
               member={member}
+              action={<CapacityHideButton member={member} />}
               leading={
                 <div className="flex shrink-0 flex-col items-center gap-0.5">
                   <button
@@ -183,7 +243,7 @@ export function ReorderableMemberLoadCards({
                   <button
                     type="button"
                     aria-label={`Move ${label} down`}
-                    disabled={index === ordered.length - 1}
+                    disabled={index === shown.length - 1}
                     onClick={() => move(member.id, 1)}
                     className="text-[10px] font-medium leading-none text-ink-3 hover:text-ink disabled:opacity-30"
                   >

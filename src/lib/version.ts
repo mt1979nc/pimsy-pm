@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.26";
+export const APP_VERSION = "1.18.27";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.27",
+    date: "2026-10-13",
+    summary:
+      "Team capacity can hide a person from that page. Owners, admins, and managers use Hide on the card. Hidden people leave the capacity totals. Show hidden (N) brings the card back so you can unhide them. Other analytics pages stay the same. Migrate 0031_capacity_hidden. No rows are deleted.",
+    highlights: [
+      "/management/capacity: each specialist card has Hide. Hidden people drop out of the cards, the weekly forecast columns, the workload list, department capacity, peak week, headroom, and hire-now on this page.",
+      "Show hidden (N) on Team capacity lists those cards with Unhide. Totals stay without them until they are unhidden.",
+      "The flag is user.capacity_hidden (default false). Forecast, Team, Overview, Executive, and Weekly meeting are unchanged.",
+      "Migrate 0031_capacity_hidden. Adds the column only. No data is deleted. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.26",
     date: "2026-10-13",

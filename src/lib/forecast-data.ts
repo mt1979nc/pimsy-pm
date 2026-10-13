@@ -36,6 +36,7 @@ export async function loadForecastStaff(): Promise<ForecastStaffMember[]> {
       email: true,
       capacityHoursPerWeek: true,
       capacityExempt: true,
+      capacityHidden: true,
       canLead: true,
       isDirector: true,
       image: true,

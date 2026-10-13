@@ -356,7 +356,7 @@ export async function openRisks(actor: Actor, limit = 25) {
 export async function teamCapacity() {
   const staff = await db.query.users.findMany({
     where: and(eq(users.isActive, true), ne(users.role, "CUSTOMER")),
-    columns: { id: true, name: true, email: true, role: true, capacityHoursPerWeek: true, capacityExempt: true, canLead: true, isDirector: true, image: true },
+    columns: { id: true, name: true, email: true, role: true, capacityHoursPerWeek: true, capacityExempt: true, capacityHidden: true, canLead: true, isDirector: true, image: true },
     orderBy: [asc(users.name)],
   });
 

@@ -14,7 +14,7 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.26");
+    expect(APP_VERSION).toBe("1.18.27");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
@@ -97,6 +97,21 @@ describe("staff Update History source", () => {
     expect(note?.highlights?.some((h) => /slip_event\.days|sum of slip/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /Services is removed/i.test(h))).toBe(true);
     expect(note?.highlights?.some((h) => /\/management\/engagements\/\[id\]/.test(h))).toBe(true);
+  });
+
+  it("documents v1.18.27 hide on team capacity", () => {
+    const note = RELEASE_NOTES.find((n) => n.version === "1.18.27");
+    expect(note?.date).toBe("2026-10-13");
+    expect(note?.summary).toMatch(/Team capacity/);
+    expect(note?.summary).toMatch(/Show hidden/);
+    expect(note?.summary).toMatch(/0031_capacity_hidden/);
+    expect(note?.summary).toMatch(/No rows are deleted/);
+    expect(note?.highlights?.some((h) => /\/management\/capacity/.test(h) && /Hide/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /Show hidden \(N\)/.test(h) && /Unhide/.test(h))).toBe(true);
+    expect(note?.highlights?.some((h) => /capacity_hidden/.test(h) && /Weekly meeting are unchanged/.test(h))).toBe(
+      true,
+    );
+    expect(note?.highlights?.some((h) => /No data is deleted/.test(h))).toBe(true);
   });
 
   it("documents v1.18.26 analytics landing and daily Dock ingest", () => {
