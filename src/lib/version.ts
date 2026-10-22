@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.28";
+export const APP_VERSION = "1.18.29";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.29",
+    date: "2026-10-22",
+    summary:
+      "Morgan Davis can lead implementations again. Seeds and Prism import keep her can-lead on and capacity-exempt off, so a re-import does not turn her back off. No schema migrate.",
+    highlights: [
+      "Staff login seed and the Prism history seed set morgan@pimsyehr.com (team id md) to can lead, and she counts toward department capacity.",
+      "Prism import writes those same flags for her even when the dump Flags JSON still says capacity-exempt and can-lead off.",
+      "Lead pickers and Team / Team capacity read the user row. No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.28",
     date: "2026-10-13",

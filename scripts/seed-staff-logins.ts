@@ -2,7 +2,7 @@
  * Upserts Outlook roster staff for live / demo environments.
  *
  * Alexander Morse  — OWNER + canLead + isDirector, password + mustChangePassword
- * Morgan Davis     — SPECIALIST, capacityExempt, canLead=false, password + mustChangePassword
+ * Morgan Davis     — SPECIALIST, canLead, counts toward capacity, password + mustChangePassword
  * Other roster     — staff rows without forcing a password
  *
  * Temporary password for Alexander + Morgan (must change on first login):
@@ -54,8 +54,8 @@ const ROSTER: StaffRow[] = [
     role: "SPECIALIST",
     title: "Implementation Specialist",
     capacityHoursPerWeek: 23,
-    capacityExempt: true,
-    canLead: false,
+    capacityExempt: false,
+    canLead: true,
     isDirector: false,
     prismTeamId: "md",
     forcePassword: true,
