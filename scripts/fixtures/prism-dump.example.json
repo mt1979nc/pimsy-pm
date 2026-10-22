@@ -13,7 +13,7 @@
       "TeamId": "md",
       "Name": "Morgan Davis",
       "HoursPerWeek": 23,
-      "Flags": "{\"capacityExempt\":true,\"canLead\":false,\"director\":false}"
+      "Flags": "{\"capacityExempt\":false,\"canLead\":true,\"director\":false}"
     }
   ],
   "formerTeam": [],

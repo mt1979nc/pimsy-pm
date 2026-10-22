@@ -67,7 +67,7 @@ const PRISM_STAFF = [
   { key: "Alexander", email: "alexander@pimsyehr.com", name: "Alexander Morse", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: true, prismTeamId: "am", appRole: "SPECIALIST", title: "Implementation Specialist" },
   { key: "Danielle", email: "danielle@pimsyehr.com", name: "Danielle Piper", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "dp", appRole: "SPECIALIST", title: "Implementation Specialist" },
   { key: "Jeremy", email: "jeremy@pimsyehr.com", name: "Jeremy Reals", capacityHoursPerWeek: 30, active: true, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "jr", appRole: "SPECIALIST", title: "Implementation Specialist" },
-  { key: "Morgan", email: "morgan@pimsyehr.com", name: "Morgan Davis", capacityHoursPerWeek: 23, active: true, capacityExempt: true, canLead: false, isDirector: false, prismTeamId: "md", appRole: "SPECIALIST", title: "Implementation Specialist" },
+  { key: "Morgan", email: "morgan@pimsyehr.com", name: "Morgan Davis", capacityHoursPerWeek: 23, active: true, capacityExempt: false, canLead: true, isDirector: false, prismTeamId: "md", appRole: "SPECIALIST", title: "Implementation Specialist" },
   // RCM (project_member_role RCM; app role MEMBER)
   { key: "Mindy", email: "mindy@pimsyehr.com", name: "Mindy Douglas", capacityHoursPerWeek: 30, active: true, capacityExempt: true, canLead: false, isDirector: false, prismTeamId: "mind", appRole: "MEMBER", title: "RCM" },
   { key: "Dave", email: "david@pimsyehr.com", name: "Dave Shepard", capacityHoursPerWeek: 30, active: true, capacityExempt: true, canLead: false, isDirector: false, prismTeamId: "dave", appRole: "MEMBER", title: "RCM" },

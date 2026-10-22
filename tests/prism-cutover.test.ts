@@ -30,8 +30,8 @@ describe("Prism dump parse", () => {
     expect(am.flags.canLead).toBe(true);
     expect(am.hoursPerWeek).toBe(30);
     const morgan = dump.team.find((t) => t.teamId === "md")!;
-    expect(morgan.flags.capacityExempt).toBe(true);
-    expect(morgan.flags.canLead).toBe(false);
+    expect(morgan.flags.capacityExempt).toBe(false);
+    expect(morgan.flags.canLead).toBe(true);
 
     const cedar = dump.customers.find((c) => c.id === "CEDAR")!;
     expect(cedar.status).toBe("active");

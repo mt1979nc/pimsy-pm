@@ -31,9 +31,42 @@ import {
   type PrismDumpCustomer,
   type PrismDumpSlip,
   type PrismDumpTeamMember,
+  type PrismTeamFlags,
 } from "@/lib/prism-dump";
 import { staffingRoleFromTitle } from "@/lib/staffing";
 import { env } from "@/lib/env";
+
+const MORGAN_DAVIS_EMAIL = "morgan@pimsyehr.com";
+const MORGAN_DAVIS_TEAM_ID = "md";
+
+/**
+ * Flags written onto `user` during a Prism import.
+ * Morgan Davis leads implementations again. A dump that still has her old
+ * Flags JSON must not turn canLead off or mark her capacity-exempt.
+ */
+export function importedTeamFlags(
+  member: Pick<PrismDumpTeamMember, "teamId" | "email" | "flags">,
+): PrismTeamFlags {
+  const teamId = member.teamId.trim().toLowerCase();
+  const explicit = (member.email ?? "").trim().toLowerCase();
+  const email =
+    explicit ||
+    emailForTeamMember({
+      teamId,
+      name: "",
+      hoursPerWeek: 0,
+      flags: member.flags,
+      active: true,
+    });
+  if (teamId === MORGAN_DAVIS_TEAM_ID || email === MORGAN_DAVIS_EMAIL) {
+    return {
+      capacityExempt: false,
+      canLead: true,
+      director: member.flags.director,
+    };
+  }
+  return member.flags;
+}
 
 export type ExistingProjectSnapshot = {
   id: string;
@@ -442,14 +475,15 @@ async function applyTeam(
       return;
     }
     if (hit) {
+      const flags = importedTeamFlags(m);
       await db
         .update(users)
         .set({
           name: hit.name ?? m.name,
           capacityHoursPerWeek: Math.round(m.hoursPerWeek),
-          capacityExempt: m.flags.capacityExempt,
-          canLead: m.flags.canLead,
-          isDirector: m.flags.director,
+          capacityExempt: flags.capacityExempt,
+          canLead: flags.canLead,
+          isDirector: flags.director,
           prismTeamId: m.teamId,
           isActive: active,
           updatedAt: new Date(),
@@ -460,6 +494,7 @@ async function applyTeam(
       return;
     }
     if (!email) return;
+    const flags = importedTeamFlags(m);
     const isBootstrapOwner = env.BOOTSTRAP_OWNER_EMAIL && email.toLowerCase() === env.BOOTSTRAP_OWNER_EMAIL;
     const [row] = await db
       .insert(users)
@@ -467,14 +502,14 @@ async function applyTeam(
         email,
         name: m.name,
         role: isBootstrapOwner ? "OWNER" : "SPECIALIST",
-        title: m.flags.director ? "Implementation Director" : "Implementation Specialist",
+        title: flags.director ? "Implementation Director" : "Implementation Specialist",
         capacityHoursPerWeek: Math.round(m.hoursPerWeek),
         isActive: active,
-        capacityExempt: m.flags.capacityExempt,
-        canLead: m.flags.canLead,
-        isDirector: m.flags.director,
+        capacityExempt: flags.capacityExempt,
+        canLead: flags.canLead,
+        isDirector: flags.director,
         prismTeamId: m.teamId,
-        staffingRole: staffingRoleFromTitle(m.flags.director ? "Implementation Director" : "Implementation Specialist"),
+        staffingRole: staffingRoleFromTitle(flags.director ? "Implementation Director" : "Implementation Specialist"),
       })
       .returning({ id: users.id });
     ids.set(m.teamId, row.id);
