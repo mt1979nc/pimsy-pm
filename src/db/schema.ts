@@ -1903,6 +1903,51 @@ export const pathConfigTemplate = pgTable("path_config_template", {
   sortOrder: integer("sort_order").notNull(),
 });
 
+export const dailyFacts = pgTable("daily_facts", {
+  factDate: text("fact_date").primaryKey(),
+  gap: boolean("gap").notNull().default(false),
+  wipShape: text("wip_shape").notNull().default("unknown"),
+  wipSites: integer("wip_sites"),
+  overdueTasks: integer("overdue_tasks"),
+  taskDone: integer("task_done"),
+  taskTotal: integer("task_total"),
+  targetPassed: integer("target_passed"),
+  openThreads: integer("open_threads"),
+  waitingOnPimsy: integer("waiting_on_pimsy"),
+  waitingOnCustomer: integer("waiting_on_customer"),
+  prismLoadHours: real("prism_load_hours"),
+  prismCapacityHours: real("prism_capacity_hours"),
+  slipDays: integer("slip_days"),
+  zendeskOpen: integer("zendesk_open"),
+  note: text("note").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const dailyFactOwners = pgTable(
+  "daily_fact_owners",
+  {
+    factDate: text("fact_date")
+      .notNull()
+      .references(() => dailyFacts.factDate, { onDelete: "cascade" }),
+    owner: text("owner").notNull(),
+    team: text("team").notNull().default(""),
+    wipSites: integer("wip_sites").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.factDate, t.owner, t.team] })],
+);
+
+export const dailyFactsRelations = relations(dailyFacts, ({ many }) => ({
+  owners: many(dailyFactOwners),
+}));
+
+export const dailyFactOwnersRelations = relations(dailyFactOwners, ({ one }) => ({
+  fact: one(dailyFacts, {
+    fields: [dailyFactOwners.factDate],
+    references: [dailyFacts.factDate],
+  }),
+}));
+
 export const pathConfigDockAllow = pgTable("path_config_dock_allow", {
   acronym: text("acronym").primaryKey(),
   included: boolean("included").notNull().default(true),
