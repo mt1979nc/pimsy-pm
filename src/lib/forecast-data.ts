@@ -59,6 +59,7 @@ export async function loadForecastStaff(): Promise<ForecastStaffMember[]> {
       capacityExempt: person.capacityExempt,
       capacityHidden: person.capacityHidden,
       canLead: person.canLead,
+      isDirector: person.isDirector,
     };
   });
 }

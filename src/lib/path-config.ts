@@ -159,6 +159,7 @@ async function readPathConfig(): Promise<PathConfig> {
       userId: row.userId,
       canLead: row.canLead,
       capacityExempt: row.capacityExempt,
+      isDirector: row.isDirector,
       capacityHidden: row.capacityHidden,
       hoursPerWeek: row.hoursPerWeek,
     })),
@@ -224,6 +225,7 @@ export async function listPeopleForSettings() {
       capacityExempt: true,
       capacityHidden: true,
       capacityHoursPerWeek: true,
+      isDirector: true,
     },
     orderBy: [asc(users.name)],
   });
@@ -236,6 +238,7 @@ export async function listPeopleForSettings() {
         name: row.name ?? row.email,
         canLead: saved?.canLead ?? row.canLead,
         capacityExempt: saved?.capacityExempt ?? row.capacityExempt,
+        isDirector: saved?.isDirector ?? row.isDirector,
         capacityHidden: saved?.capacityHidden ?? row.capacityHidden,
         hoursPerWeek: saved?.hoursPerWeek ?? row.capacityHoursPerWeek,
       };

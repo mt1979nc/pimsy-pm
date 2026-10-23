@@ -42,6 +42,7 @@ export async function listManagementTeam() {
       ...row,
       canLead: saved?.canLead ?? row.canLead,
       capacityExempt: saved?.capacityExempt ?? row.capacityExempt,
+      isDirector: saved?.isDirector ?? row.isDirector,
       capacityHoursPerWeek: saved?.hoursPerWeek ?? row.capacityHoursPerWeek,
     };
   });
@@ -109,12 +110,13 @@ export async function updateTeamMemberFlags(
       userId,
       canLead,
       capacityExempt,
+      isDirector,
       capacityHidden: target.capacityHidden,
       hoursPerWeek: hrs,
     })
     .onConflictDoUpdate({
       target: pathConfigPerson.userId,
-      set: { canLead, capacityExempt, hoursPerWeek: hrs },
+      set: { canLead, capacityExempt, isDirector, hoursPerWeek: hrs },
     });
   resetPathConfigCache();
 

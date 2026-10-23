@@ -47,4 +47,19 @@ describe("narrow-window layout", () => {
     expect(roster).not.toMatch(/w-\[\d+(\.\d+)?rem\]/);
     expect(source("src/components/charts.tsx")).toMatch(/overflow-x-auto \[contain:paint\]/);
   });
+
+  it("widens the staff shell and lets card grids fill the row", () => {
+    const layout = source("src/app/(app)/layout.tsx");
+    expect(layout).toMatch(/max-w-\[1760px\]/);
+    expect(layout).toMatch(/px-4 pb-16 pt-4 sm:px-6/);
+    expect(layout).toMatch(/lg:px-8/);
+    const css = source("src/app/globals.css");
+    expect(css).toMatch(/repeat\(auto-fill, minmax\(min\(100%, 300px\), 1fr\)\)/);
+    expect(source("src/components/reorderable-member-cards.tsx")).toMatch(/className="card-grid"/);
+    expect(source("src/components/charts.tsx")).toMatch(/className="card-grid"/);
+    expect(source("src/app/(app)/management/_components/weekly-meeting-board.tsx")).toMatch(
+      /card-grid card-grid-stretch/,
+    );
+    expect(source("src/components/show-handed-off.tsx")).toMatch(/className="card-grid"/);
+  });
 });

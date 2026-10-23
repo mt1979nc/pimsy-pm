@@ -108,7 +108,7 @@ export function WeeklyMeetingBoard({
         </div>
       </div>
 
-      <div className="grid min-w-0 items-stretch gap-3 md:grid-cols-2 2xl:grid-cols-3 [&>*]:min-w-0">
+      <div className="card-grid card-grid-stretch">
         {sorted.map((row) => (
           <WeeklyMeetingCard
             key={row.id}

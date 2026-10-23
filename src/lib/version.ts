@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.33";
+export const APP_VERSION = "1.18.34";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.34",
+    date: "2026-10-23",
+    summary:
+      "Staff pages use a 1760px content column. Card grids add columns on a wide window. Team capacity no longer edits exempt, can lead, or director. Those flags are on Settings. Impl hrs/wk on the card is read-only.",
+    highlights: [
+      "The staff shell cap is 1760px, with the same side padding. Pages that already opt into full width stay full width. Repeating cards use auto-fill columns (at least 300px, one column on a narrow phone). Tables keep their horizontal scroll.",
+      "Team capacity specialist cards no longer show Exempt, Can lead, or Director. Settings → People shows and saves all three, plus hours. Impl hrs/wk stays on the card as a read-only value.",
+      "Migrate 0035_person_director copies user.is_director onto the Settings person row. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.33",
     date: "2026-10-23",

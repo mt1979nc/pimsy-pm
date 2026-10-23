@@ -246,6 +246,13 @@
       "when": 1789088000000,
       "tag": "0034_daily_facts",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1789089000000,
+      "tag": "0035_person_director",
+      "breakpoints": true
     }
   ]
 }

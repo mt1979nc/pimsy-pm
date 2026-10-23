@@ -312,6 +312,7 @@ export async function savePathSettings(_prev: ActionState, form: FormData): Prom
           const person = {
             canLead: checked(form, `personLead.${userId}`),
             capacityExempt: checked(form, `personExempt.${userId}`),
+            isDirector: checked(form, `personDirector.${userId}`),
             capacityHidden: checked(form, `personHidden.${userId}`),
             hoursPerWeek,
           };
@@ -324,6 +325,7 @@ export async function savePathSettings(_prev: ActionState, form: FormData): Prom
             .set({
               canLead: person.canLead,
               capacityExempt: person.capacityExempt,
+              isDirector: person.isDirector,
               capacityHidden: person.capacityHidden,
               capacityHoursPerWeek: person.hoursPerWeek,
             })

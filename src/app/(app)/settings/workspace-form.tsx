@@ -11,6 +11,7 @@ type PersonRow = {
   name: string;
   canLead: boolean;
   capacityExempt: boolean;
+  isDirector: boolean;
   capacityHidden: boolean;
   hoursPerWeek: number;
 };
@@ -239,17 +240,18 @@ export function WorkspaceSettingsForm({
         </Card>
 
         <Card>
-          <CardHeader title="People" subtitle="Lead, exempt, hidden, and hours per week." />
+          <CardHeader title="People" subtitle="Lead, exempt, director, hidden, and hours per week." />
           <div className="overflow-x-auto p-4">
             {people.length === 0 ? (
               <p className="text-[12.5px] text-ink-3">No staff yet.</p>
             ) : (
-              <table className="w-full text-left text-[12.5px]">
+              <table className="w-full min-w-[640px] text-left text-[12.5px]">
                 <thead>
                   <tr className="text-ink-3">
                     <th className="pb-2 font-medium">Name</th>
                     <th className="pb-2 font-medium">Lead</th>
                     <th className="pb-2 font-medium">Exempt</th>
+                    <th className="pb-2 font-medium">Director</th>
                     <th className="pb-2 font-medium">Hidden</th>
                     <th className="pb-2 font-medium">Hours</th>
                   </tr>
@@ -263,6 +265,9 @@ export function WorkspaceSettingsForm({
                       </td>
                       <td className="py-1.5">
                         <Check name={`personExempt.${row.id}`} on={row.capacityExempt} />
+                      </td>
+                      <td className="py-1.5">
+                        <Check name={`personDirector.${row.id}`} on={row.isDirector} />
                       </td>
                       <td className="py-1.5">
                         <Check name={`personHidden.${row.id}`} on={row.capacityHidden} />

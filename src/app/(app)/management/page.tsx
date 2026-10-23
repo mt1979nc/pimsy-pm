@@ -174,7 +174,7 @@ export default async function ManagementHubPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="card-grid">
         <Card>
           <CardHeader
             title="Go-lives next 14 days"

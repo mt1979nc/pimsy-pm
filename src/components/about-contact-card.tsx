@@ -56,7 +56,7 @@ export function AboutContactCardGrid({
     return <p className="px-1 py-2 text-[13px] text-ink-3">{empty}</p>;
   }
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="card-grid">
       {cards.map((card) => (
         <AboutContactCardView key={card.id} card={card} showEmail={showEmail} />
       ))}
