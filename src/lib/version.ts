@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.32";
+export const APP_VERSION = "1.18.33";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.33",
+    date: "2026-10-23",
+    summary:
+      "Daily backfill stores a Dock gap file, or a day missing thread data, as a gap. It reads delivery-status metrics and prism-live markdown. PATH data jobs can dry-run a Prism diff or the backfill.",
+    highlights: [
+      "A dock-wip or dock-threads file with gap true is a gap row. Counts stay empty. A Dock WIP file with no thread file is a gap. WIP shape comes from the file's fields. Overdue is stored only when the file has it.",
+      "delivery-status.json metrics fill thread counts and the day-over-day note. prism-live markdown fills team hours, capacity, slip days, and the active, stalled, and special counts.",
+      "Actions → PATH data jobs runs prism-diff (dry-run, report artifact) or daily-brief-backfill. apply defaults to false. Snapshots come from an Actions artifact or snapshots/daily-brief. Customer files stay out of git.",
+    ],
+  },
   {
     version: "1.18.32",
     date: "2026-10-23",

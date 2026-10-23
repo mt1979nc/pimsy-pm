@@ -1,0 +1,7 @@
+{
+  "retrievedAt": "2026-09-10T13:00:00.000Z",
+  "totalIncluded": 2,
+  "workspaces": [
+    { "name": "Cedar", "acronym": "CEDAR", "owners": ["AM"], "targetEnd": "2026-12-01" }
+  ]
+}

@@ -22,3 +22,6 @@ uploads/
 content/template-attachments/*
 !content/template-attachments/README.md
 !content/template-attachments/.gitkeep
+# Customer morning snapshots. See snapshots/daily-brief/README.md.
+/snapshots/daily-brief/**
+!/snapshots/daily-brief/README.md
