@@ -618,6 +618,8 @@ export const projects = pgTable(
      */
     hubspotDealUrl: text("hubspot_deal_url"),
     prismClientId: text("prism_client_id"),
+    /** Prism completed-history era: legacy or current. */
+    prismEra: text("prism_era"),
     crmAcronym: text("crm_acronym"),
     crmKey: text("crm_key"),
     /** Legacy kickoff / specialist Zoom URL. Kept in sync with bookingUrls.kickoff. */

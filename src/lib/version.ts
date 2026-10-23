@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.30";
+export const APP_VERSION = "1.18.31";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.31",
+    date: "2026-10-23",
+    summary:
+      "Analysis adds era and an owner scorecard. The hire banner uses the Settings lead time. The morning snapshot includes that lead time, pipeline, slips, and the next 14 days.",
+    highlights: [
+      "Completed history stores prism_era (legacy or current). Analysis groups on-time % and variance by era. Older imports still match the era written in the description.",
+      "Owner scorecard stays the on-time table. Slip days stay split by customer and PIMSY.",
+      "Hire now names the Settings hire lead, default 8 weeks, on Overview and Forecast.",
+      "GET /api/prism/snapshot adds hireLeadWeeks. It still reads PATH only.",
+      "Migrate 0033_prism_era. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.30",
     date: "2026-10-23",

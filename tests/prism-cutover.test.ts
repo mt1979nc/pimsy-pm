@@ -297,6 +297,12 @@ describe("Director / morning snapshot", () => {
     expect(snap.kickoffsNext14.map((k) => k.acronym)).toContain("NEWKO");
     expect(snap.kickoffsNext14[0]?.id).toBe("3");
     expect(snap.analysisExclusions).toEqual(["SENSORI"]);
+    expect(snap.hireLeadWeeks).toBe(8);
+    expect(snap).toMatchObject({
+      hireNow: expect.any(Boolean),
+      pipelineCount: expect.any(Number),
+      slippedCount: expect.any(Number),
+    });
     expect(snap.team).toHaveLength(1);
     expect(snap.team[0]?.thisWeekHours).toBeGreaterThan(0);
     expect(snap.team[0]?.peakHours).toBeGreaterThanOrEqual(snap.team[0]!.thisWeekHours);

@@ -15,6 +15,7 @@ import {
   type EngagementLoadRow,
 } from "@/lib/forecast";
 import { utcDayKey } from "@/lib/dates";
+import { currentPathConfig } from "@/lib/path-config-store";
 
 export type SnapshotEngagement = {
   id: string;
@@ -62,6 +63,7 @@ export type DirectorSnapshot = {
   peakWeekOf: string | null;
   peakHeadroom: number;
   deptCapacityHours: number;
+  hireLeadWeeks: number;
   billableStaffCount: number;
   pipelineCount: number;
   activeCount: number;
@@ -175,6 +177,7 @@ export function buildDirectorSnapshot(input: {
     peakWeekOf: input.forecast.peakWeek ? utcDayKey(input.forecast.peakWeek.weekOf) : null,
     peakHeadroom: input.forecast.peakHeadroom,
     deptCapacityHours: input.forecast.deptCapacityHours,
+    hireLeadWeeks: currentPathConfig().hiring.leadWeeks,
     billableStaffCount: input.forecast.billableStaffCount,
     pipelineCount: pipeline.length,
     activeCount: engagements.filter((e) => e.countsTowardLoad).length,

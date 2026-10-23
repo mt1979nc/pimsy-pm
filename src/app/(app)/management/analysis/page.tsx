@@ -4,7 +4,9 @@ import {
   onTimeByComplexityTier,
   slipAttribution,
   listCompletedForAnalysis,
+  onTimeByEra,
 } from "@/lib/queries";
+import { eraTitle } from "@/lib/analysis-era";
 import { loadForecastExclusions } from "@/lib/forecast-data";
 import { isExcludedFromPrimaryAverages } from "@/lib/forecast";
 import { Card, CardHeader, Stat, EmptyState, Badge } from "@/components/ui";
@@ -24,12 +26,13 @@ const TIER_LABEL: Record<string, string> = {
 
 export default async function AnalysisPage() {
   const exclusions = await loadForecastExclusions();
-  const [accuracy, owners, tiers, slips, completed] = await Promise.all([
+  const [accuracy, owners, tiers, slips, completed, eras] = await Promise.all([
     forecastAccuracy(exclusions),
     onTimeByOwner(exclusions),
     onTimeByComplexityTier(exclusions),
     slipAttribution(),
     listCompletedForAnalysis(),
+    onTimeByEra(exclusions),
   ]);
 
   return (
@@ -86,8 +89,8 @@ export default async function AnalysisPage() {
         <div className="space-y-5">
           <Card>
             <CardHeader
-              title="On-time rate by owner"
-              subtitle="Consistency (on-time %) vs. severity (avg. days late when missed)"
+              title="Owner scorecard"
+              subtitle="On-time % and how late the misses were"
             />
             {owners.length === 0 ? (
               <EmptyState title="No owner data yet" />
@@ -132,6 +135,29 @@ export default async function AnalysisPage() {
                   ))}
                   </div>
                 </div>
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <CardHeader title="By era" subtitle="Legacy and current completed history" />
+            {eras.length === 0 ? (
+              <EmptyState title="No era data yet" />
+            ) : (
+              <div className="divide-y divide-border">
+                {eras.map((era) => (
+                  <div key={era.era} className="flex items-center justify-between gap-3 px-4 py-3 text-[13px]">
+                    <span className="font-medium text-ink">
+                      {eraTitle(era.era)} <span className="font-normal text-ink-3">({era.n})</span>
+                    </span>
+                    <span className="tabular-nums text-ink-2">
+                      {era.onTimeRate}% on time
+                      {era.avgVariance !== null
+                        ? ` · ${era.avgVariance > 0 ? "+" : ""}${era.avgVariance}d`
+                        : ""}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </Card>
@@ -229,6 +255,7 @@ export default async function AnalysisPage() {
                 <thead>
                   <tr className="border-b border-border bg-surface-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
                     <th className="px-3 py-2 text-left">Acronym</th>
+                    <th className="px-3 py-2 text-left">Era</th>
                     <th className="px-3 py-2 text-left">Owner</th>
                     <th className="px-3 py-2 text-left">Tier</th>
                     <th className="px-3 py-2 text-left">Kickoff</th>
@@ -251,6 +278,7 @@ export default async function AnalysisPage() {
                             </Badge>
                           ) : null}
                         </td>
+                        <td className="px-3 py-2 text-ink-2">{eraTitle(row.era)}</td>
                         <td className="px-3 py-2 text-ink-2">{row.leadName ?? "—"}</td>
                         <td className="px-3 py-2 text-ink-2">{row.complexityTier ?? "—"}</td>
                         <td className="px-3 py-2 text-ink-2">{fmtShort(row.startDate)}</td>
