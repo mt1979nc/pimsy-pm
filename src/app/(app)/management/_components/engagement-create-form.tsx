@@ -43,13 +43,19 @@ export function EngagementCreateForm({
   durationSamples,
   exclusions,
   estimator,
+  statuses,
 }: {
   leadOptions: LeadOption[];
   defaultLeadId: string;
   durationSamples: DurationSample[];
   exclusions: string[];
   estimator?: EstimatorWeights;
+  statuses?: { key: string; label: string }[];
 }) {
+  const statusOptions =
+    statuses && statuses.length > 0
+      ? statuses
+      : PRISM_STATUSES.map((key) => ({ key, label: PRISM_STATUS_LABELS[key] }));
   const lineLabels = estimator?.serviceLineLabels ?? SERVICE_LINE_LABELS;
   const lineKeys = Object.keys(lineLabels);
   const [state, action] = useActionState(createEngagement, {});
@@ -172,9 +178,9 @@ export function EngagementCreateForm({
                 onChange={(e) => setStatus(e.target.value as PrismStatus)}
                 className={inputClass}
               >
-                {PRISM_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {PRISM_STATUS_LABELS[s]}
+                {statusOptions.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
                   </option>
                 ))}
               </select>

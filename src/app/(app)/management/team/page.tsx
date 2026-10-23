@@ -9,7 +9,10 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Team — Prism" };
 
 export default async function ManagementTeamPage() {
-  const [team, forecast] = await Promise.all([listManagementTeam(), loadCapacityForecast(12)]);
+  const [{ active: team, former }, forecast] = await Promise.all([
+    listManagementTeam(),
+    loadCapacityForecast(12),
+  ]);
   const billable = team.filter((m) => !m.capacityExempt);
   const deptCap = billable.reduce((sum, m) => sum + m.capacityHoursPerWeek, 0);
   const loadById = new Map(memberLoadsFromForecast(forecast).map((m) => [m.id, m]));
@@ -57,6 +60,19 @@ export default async function ManagementTeamPage() {
           </div>
         )}
       </Card>
+      {former.length > 0 ? (
+        <details className="rounded-xl border border-border bg-surface px-4 py-3">
+          <summary className="cursor-pointer text-[13px] font-medium text-ink">Former ({former.length})</summary>
+          <ul className="mt-2 space-y-1 text-[12.5px] text-ink-2">
+            {former.map((member) => (
+              <li key={member.id}>
+                {member.name ?? member.email}
+                <span className="text-ink-3"> · {member.capacityHoursPerWeek}h</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </div>
   );
 }

@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.29";
+export const APP_VERSION = "1.18.30";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.30",
+    date: "2026-10-23",
+    summary:
+      "Roster, engagement edit, slips, team, capacity, and forecast read Settings. A Prism SQL dump can be diffed against PATH before any upsert. Dry-run only until --apply. No rows are deleted.",
+    highlights: [
+      "Roster filters, status lists, and slip causes come from Settings. The slip form says who has to approve and the threshold in days.",
+      "Team hours, lead, and exempt follow the Settings person row. Saving a flag writes that row and the user columns. Former staff sit behind Former.",
+      "npm run db:import:prism-diff prints a field diff from a Prism SQL dump (customers, slips, completed work). PATH keeps logins. --apply upserts. The script is not run by the app.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.29",
     date: "2026-10-23",

@@ -83,6 +83,9 @@ export default async function ManagementEngagementEditPage({
           exclusions={goLive.exclusions}
           excludeFromAnalytics={project.excludeFromAnalytics}
           estimator={currentPathConfig().estimator}
+          statuses={currentPathConfig().statuses}
+          slipCauses={currentPathConfig().slipCauses}
+          slipApproval={currentPathConfig().slipApproval}
         />
       </Card>
     </div>
