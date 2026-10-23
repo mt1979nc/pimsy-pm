@@ -45,6 +45,7 @@ export type ConfigPerson = {
   userId: string;
   canLead: boolean;
   capacityExempt: boolean;
+  isDirector: boolean;
   capacityHidden: boolean;
   hoursPerWeek: number;
 };

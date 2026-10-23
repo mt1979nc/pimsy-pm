@@ -1833,6 +1833,8 @@ export const pathConfigPerson = pgTable("path_config_person", {
     .references(() => users.id, { onDelete: "cascade" }),
   canLead: boolean("can_lead").notNull(),
   capacityExempt: boolean("capacity_exempt").notNull(),
+  /** Copied from user.is_director. Settings is the place that edits it. */
+  isDirector: boolean("is_director").notNull().default(false),
   capacityHidden: boolean("capacity_hidden").notNull(),
   hoursPerWeek: integer("hours_per_week").notNull(),
 });

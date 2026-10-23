@@ -287,7 +287,7 @@ export default async function CustomerViewPreviewPage({
         )}
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="card-grid">
         <Card>
           <CardHeader title="Updates" />
           {updates.length === 0 ? (

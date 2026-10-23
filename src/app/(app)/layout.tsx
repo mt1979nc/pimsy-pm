@@ -61,7 +61,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         />
       </div>
       <main className="row-start-3 min-w-0 px-4 pb-16 pt-4 sm:px-6 lg:col-start-2 lg:row-start-2 lg:pt-6 lg:px-8">
-        <div className="mx-auto w-full min-w-0 max-w-[1180px] has-[[data-page-width=full]]:max-w-none">
+        <div className="mx-auto w-full min-w-0 max-w-[1760px] has-[[data-page-width=full]]:max-w-none">
           {children}
         </div>
       </main>

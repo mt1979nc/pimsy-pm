@@ -268,7 +268,7 @@ export function MemberLoadCards({ members }: { members: MemberLoad[] }) {
     );
   }
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="card-grid">
       {members.map((m) => (
         <MemberLoadCard key={m.id} member={m} />
       ))}

@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 
-import { recordCapacityPhase, saveCapacityMember } from "@/actions/capacity-board";
+import { recordCapacityPhase } from "@/actions/capacity-board";
 import { recordProjectSlip } from "@/actions/projects";
 import { FormError, FormSuccess, SubmitButton } from "@/components/submit-button";
 import { SlipHistoryList } from "@/components/slip-history";
@@ -28,36 +28,29 @@ function hoursLabel(n: number): string {
 export function CapacityMemberBody({
   memberId,
   hoursPerWeek,
-  capacityExempt,
-  canLead,
-  isDirector,
   sites,
+  showSites,
 }: {
   memberId: string;
   hoursPerWeek: number;
-  capacityExempt: boolean;
-  canLead: boolean;
-  isDirector: boolean;
   sites: CapacitySiteRow[];
+  /** Site list stays hidden for an exempt non-lead with nothing assigned. Hours still show. */
+  showSites: boolean;
 }) {
   return (
     <div className="border-t border-border">
-      <MemberControls
-        memberId={memberId}
-        hoursPerWeek={hoursPerWeek}
-        capacityExempt={capacityExempt}
-        canLead={canLead}
-        isDirector={isDirector}
-      />
-      {sites.length === 0 ? (
-        <p className="px-3 py-2.5 text-[12px] text-ink-3">No sites assigned</p>
-      ) : (
-        <ul>
-          {sites.map((site) => (
-            <CapacitySiteRow key={site.id} site={site} />
-          ))}
-        </ul>
-      )}
+      <MemberControls memberId={memberId} hoursPerWeek={hoursPerWeek} />
+      {showSites ? (
+        sites.length === 0 ? (
+          <p className="px-3 py-2.5 text-[12px] text-ink-3">No sites assigned</p>
+        ) : (
+          <ul>
+            {sites.map((site) => (
+              <CapacitySiteRow key={site.id} site={site} />
+            ))}
+          </ul>
+        )
+      ) : null}
     </div>
   );
 }
@@ -80,121 +73,30 @@ export function CapacityUnassignedSites({ sites }: { sites: CapacitySiteRow[] })
 function MemberControls({
   memberId,
   hoursPerWeek,
-  capacityExempt,
-  canLead,
-  isDirector,
 }: {
   memberId: string;
   hoursPerWeek: number;
-  capacityExempt: boolean;
-  canLead: boolean;
-  isDirector: boolean;
 }) {
-  const [hours, setHours] = useState(String(hoursPerWeek));
-  const [exempt, setExempt] = useState(capacityExempt);
-  const [lead, setLead] = useState(canLead);
-  const [director, setDirector] = useState(isDirector);
-  const [error, setError] = useState<string | undefined>();
-  const [pending, start] = useTransition();
-
-  useEffect(() => {
-    setHours(String(hoursPerWeek));
-    setExempt(capacityExempt);
-    setLead(canLead);
-    setDirector(isDirector);
-  }, [hoursPerWeek, capacityExempt, canLead, isDirector]);
-
-  function save(next: {
-    capacityHoursPerWeek: number;
-    capacityExempt: boolean;
-    canLead: boolean;
-    isDirector: boolean;
-  }) {
-    setError(undefined);
-    start(async () => {
-      const res = await saveCapacityMember({ userId: memberId, ...next });
-      if (res.error) setError(res.error);
-    });
-  }
-
   return (
-    <div className="space-y-2 px-3 py-2.5">
+    <div className="px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-2">
         <label htmlFor={`cap-${memberId}`} className="text-[12px] text-ink-2">
           Impl hrs/wk
         </label>
         <input
           id={`cap-${memberId}`}
-          type="number"
-          min={0}
-          max={80}
-          step={1}
-          value={hours}
-          disabled={pending}
-          onChange={(e) => setHours(e.target.value)}
-          onBlur={() => {
-            const n = Number.parseInt(hours, 10);
-            if (!Number.isFinite(n) || n === hoursPerWeek) return;
-            save({ capacityHoursPerWeek: n, capacityExempt: exempt, canLead: lead, isDirector: director });
-          }}
-          className={cn(inputClass, "h-7 w-16 px-2 text-center text-[12.5px]")}
+          type="text"
+          inputMode="numeric"
+          readOnly
+          aria-readonly="true"
+          value={hoursPerWeek}
+          title="Edit hours on Settings"
+          className={cn(
+            inputClass,
+            "h-7 w-16 cursor-default bg-surface-2 px-2 text-center text-[12.5px] focus:ring-0",
+          )}
         />
-        {pending ? <span className="text-[11px] text-ink-3">Saving…</span> : null}
       </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-ink-2">
-        <label className="inline-flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={exempt}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setExempt(next);
-              save({
-                capacityHoursPerWeek: Number.parseInt(hours, 10),
-                capacityExempt: next,
-                canLead: lead,
-                isDirector: director,
-              });
-            }}
-          />
-          Exempt
-        </label>
-        <label className="inline-flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={lead}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setLead(next);
-              save({
-                capacityHoursPerWeek: Number.parseInt(hours, 10),
-                capacityExempt: exempt,
-                canLead: next,
-                isDirector: director,
-              });
-            }}
-          />
-          Can lead
-        </label>
-        <label className="inline-flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={director}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setDirector(next);
-              save({
-                capacityHoursPerWeek: Number.parseInt(hours, 10),
-                capacityExempt: exempt,
-                canLead: lead,
-                isDirector: next,
-              });
-            }}
-          />
-          Director
-        </label>
-      </div>
-      <FormError error={error} />
     </div>
   );
 }

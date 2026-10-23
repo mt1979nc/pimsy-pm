@@ -168,7 +168,7 @@ export function ReorderableMemberLoadCards({
         <p className="text-[12px] text-ink-3">Drag to reorder. Saved in this browser.</p>
       </div>
     </div>
-    <div ref={gridRef} className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <div ref={gridRef} className="card-grid">
       {shown.map((member, index) => {
         const label = personLabel(member);
         return (
@@ -252,14 +252,12 @@ export function ReorderableMemberLoadCards({
                 </div>
               }
             />
-            {sitesByMember && showSiteBody(member, sitesByMember[member.id] ?? []) ? (
+            {sitesByMember ? (
               <CapacityMemberBody
                 memberId={member.id}
                 hoursPerWeek={member.capacityHoursPerWeek}
-                capacityExempt={member.capacityExempt}
-                canLead={member.canLead !== false}
-                isDirector={Boolean(member.isDirector)}
                 sites={sitesByMember[member.id] ?? []}
+                showSites={showSiteBody(member, sitesByMember[member.id] ?? [])}
               />
             ) : null}
             </div>

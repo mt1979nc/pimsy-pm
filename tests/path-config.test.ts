@@ -140,5 +140,11 @@ describe("seeded PATH config", () => {
     }
     expect(action).toMatch(/isAdmin/);
     expect(action).toMatch(/Only an owner or admin/);
+    expect(form).toMatch(/personLead/);
+    expect(form).toMatch(/personExempt/);
+    expect(form).toMatch(/personDirector/);
+    expect(form).toMatch(/personHours/);
+    expect(action).toMatch(/isDirector: checked\(form, `personDirector\.\$\{userId\}`\)/);
+    expect(action).toMatch(/isDirector: person\.isDirector/);
   });
 });

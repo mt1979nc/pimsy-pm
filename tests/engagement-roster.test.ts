@@ -61,13 +61,15 @@ describe("Engagements roster vs edit form scope", () => {
     expect(form).toMatch(/Intake Assistant/);
   });
 
-  it("lets the engagements page opt out of the 1180px content cap", () => {
+  it("lets the engagements page opt out of the 1760px content cap", () => {
     const page = readFileSync(
       resolve(process.cwd(), "src/app/(app)/management/engagements/page.tsx"),
       "utf8",
     );
     const layout = readFileSync(resolve(process.cwd(), "src/app/(app)/layout.tsx"), "utf8");
     expect(page).toMatch(/data-page-width="full"/);
+    expect(layout).toMatch(/max-w-\[1760px\]/);
+    expect(layout).not.toMatch(/max-w-\[1180px\]/);
     expect(layout).toMatch(/has-\[\[data-page-width=full\]\]:max-w-none/);
   });
 

@@ -280,7 +280,7 @@ export default async function ManagementForecastPage() {
         ) : null}
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="card-grid">
         <Card>
           <CardHeader
             title="Analysis exclusions"

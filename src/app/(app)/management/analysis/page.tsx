@@ -162,7 +162,7 @@ export default async function AnalysisPage() {
             )}
           </Card>
 
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="card-grid">
             <Card>
               <CardHeader title="On-time rate by complexity tier" subtitle="Standard → Enterprise" />
               {tiers.length === 0 ? (

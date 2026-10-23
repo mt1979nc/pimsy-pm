@@ -74,7 +74,7 @@ export default async function AdminAlertsPage() {
         <TeamsPanel enabled={org.teamsEnabled} webhookUrl={org.teamsWebhookUrl} />
       </Card>
 
-      <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-2">
+      <div className="card-grid">
         <Card>
           <CardHeader
             title="Staff defaults"
