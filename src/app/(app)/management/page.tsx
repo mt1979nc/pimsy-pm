@@ -15,7 +15,7 @@ export default async function ManagementHubPage() {
       {snap.hireNow ? (
         <div className="rounded-xl border border-transparent bg-red-soft px-4 py-3 text-[13px] text-red">
           <strong className="font-semibold">Hire now.</strong> Peak week {snap.peakWeekOf ?? "—"} is
-          over billable capacity ({snap.deptCapacityHours}h/wk).
+          over billable capacity ({snap.deptCapacityHours}h/wk). Hire lead is {snap.hireLeadWeeks} weeks.
         </div>
       ) : snap.nearCapacity ? (
         <div className="rounded-xl border border-transparent bg-amber-soft px-4 py-3 text-[13px] text-amber">
@@ -172,13 +172,31 @@ export default async function ManagementHubPage() {
               </Link>
             }
           />
-          <div className="flex flex-wrap gap-1.5 px-4 py-3">
-            {snap.pipeline.map((p) => (
-              <Link key={p.id} href={`/management/engagements/${p.id}`}>
-                <Badge>{p.acronym}</Badge>
-              </Link>
+          <ul className="divide-y divide-border">
+            {snap.pipeline.slice(0, 8).map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]">
+                <Link href={`/management/engagements/${p.id}`} className="min-w-0 font-medium text-ink hover:text-brand">
+                  <span className="block truncate">{p.acronym}</span>
+                  <span className="block truncate text-[12px] font-normal text-ink-3">{p.name}</span>
+                </Link>
+                <span className="shrink-0 text-ink-3">Off the load</span>
+              </li>
             ))}
-          </div>
+          </ul>
+          {snap.pipeline.length > 8 ? (
+            <details className="border-t border-border px-4 py-3">
+              <summary className="cursor-pointer text-[12.5px] font-medium text-ink">
+                {snap.pipeline.length - 8} more
+              </summary>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {snap.pipeline.slice(8).map((p) => (
+                  <Link key={p.id} href={`/management/engagements/${p.id}`}>
+                    <Badge>{p.acronym}</Badge>
+                  </Link>
+                ))}
+              </div>
+            </details>
+          ) : null}
         </Card>
       ) : null}
 

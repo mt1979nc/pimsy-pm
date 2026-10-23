@@ -41,7 +41,7 @@ export default async function ManagementForecastPage() {
           {forecast.hire.peakWeekOf ? fmtShort(forecast.hire.peakWeekOf) : "—"} is short{" "}
           {forecast.hire.hoursShort}h versus billable capacity ({forecast.deptCapacityHours}h/wk).
           About {forecast.hire.fteHint || 1} specialist at {hireHours}h/wk would
-          cover the peak.
+          cover the peak. Hire lead is {currentPathConfig().hiring.leadWeeks} weeks.
         </div>
       ) : forecast.hire.nearCapacity ? (
         <div className="rounded-xl border border-transparent bg-amber-soft px-4 py-3 text-[13px] text-amber">

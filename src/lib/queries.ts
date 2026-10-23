@@ -26,6 +26,7 @@ import {
 } from "@/lib/forecast";
 import { includedInAnalytics, analyticsExcludedProjectIds, notInExcludedProjects } from "@/lib/analytics-scope";
 import { isExcludedFromAnalytics, keepAnalyticsByProject } from "@/lib/analytics-exclude";
+import { eraLabel } from "@/lib/analysis-era";
 
 export const OPEN_PROJECT_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "ON_HOLD", "BLOCKED"] as const;
 export type OpenProjectStatus = (typeof OPEN_PROJECT_STATUSES)[number];
@@ -581,6 +582,7 @@ type CompletedForAnalysis = {
   actualGoLiveDate: Date | null;
   variance: number | null; // actual - initial, in days. Positive = late.
   durationDays: number | null;
+  era: string;
 };
 
 export type CompletedImplementationRow = CompletedForAnalysis & {
@@ -605,6 +607,8 @@ export async function listCompletedForAnalysis(): Promise<CompletedImplementatio
       startDate: true,
       initialGoLiveDate: true,
       actualGoLiveDate: true,
+      prismEra: true,
+      description: true,
     },
     with: {
       lead: { columns: { id: true, name: true } },
@@ -635,6 +639,7 @@ export async function listCompletedForAnalysis(): Promise<CompletedImplementatio
       actualGoLiveDate: p.actualGoLiveDate,
       variance,
       durationDays,
+      era: eraLabel({ prismEra: p.prismEra, description: p.description }),
     };
   });
 }
@@ -725,6 +730,33 @@ export async function onTimeByComplexityTier(
       };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null);
+}
+
+/** On-time rate and variance, one row per Prism era (legacy / current). */
+export async function onTimeByEra(
+  exclusions: readonly string[] = DEFAULT_ANALYSIS_EXCLUSION_CODES,
+) {
+  const rows = applyPrimaryAverageExclusions(
+    (await completedImplementationsForAnalysis()).filter((row) => row.variance !== null),
+    exclusions,
+  ).primary;
+  const groups = new Map<string, CompletedForAnalysis[]>();
+  for (const row of rows) {
+    const list = groups.get(row.era) ?? [];
+    list.push(row);
+    groups.set(row.era, list);
+  }
+  return [...groups.entries()]
+    .map(([era, rs]) => {
+      const misses = rs.filter((row) => (row.variance ?? 0) > 0);
+      return {
+        era,
+        n: rs.length,
+        onTimeRate: Math.round(((rs.length - misses.length) / rs.length) * 100),
+        avgVariance: avg(rs.map((row) => row.variance!)),
+      };
+    })
+    .sort((a, b) => b.n - a.n);
 }
 
 /**
