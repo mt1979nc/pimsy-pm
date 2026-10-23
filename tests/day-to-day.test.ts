@@ -6,21 +6,29 @@ import { ADMIN_NAV } from "@/lib/area-nav";
 import { adminNavFor, dayToDayEnabled, staffHomeHref } from "@/lib/day-to-day";
 
 const original = process.env.PATH_DAY_TO_DAY;
+const originalArchive = process.env.PATH_ARCHIVED_MODULES;
 
 afterEach(() => {
   if (original === undefined) delete process.env.PATH_DAY_TO_DAY;
   else process.env.PATH_DAY_TO_DAY = original;
+  if (originalArchive === undefined) delete process.env.PATH_ARCHIVED_MODULES;
+  else process.env.PATH_ARCHIVED_MODULES = originalArchive;
 });
 
 describe("day-to-day feature flag", () => {
   it("hides day-to-day unless PATH_DAY_TO_DAY is on", () => {
     delete process.env.PATH_DAY_TO_DAY;
+    delete process.env.PATH_ARCHIVED_MODULES;
     expect(dayToDayEnabled()).toBe(false);
-    expect(staffHomeHref("OWNER")).toBe("/reports");
-    expect(staffHomeHref("ADMIN")).toBe("/reports");
-    expect(staffHomeHref("MANAGER")).toBe("/reports");
+    expect(staffHomeHref("OWNER")).toBe("/management");
+    expect(staffHomeHref("ADMIN")).toBe("/management");
+    expect(staffHomeHref("MANAGER")).toBe("/management");
     expect(staffHomeHref("SPECIALIST")).toBe("/settings");
     expect(staffHomeHref("MEMBER")).toBe("/settings");
+
+    process.env.PATH_ARCHIVED_MODULES = "1";
+    expect(staffHomeHref("OWNER")).toBe("/reports");
+    expect(staffHomeHref("SPECIALIST")).toBe("/settings");
 
     process.env.PATH_DAY_TO_DAY = "1";
     expect(dayToDayEnabled()).toBe(true);
@@ -40,7 +48,7 @@ describe("day-to-day feature flag", () => {
     expect(shown.map((item) => item.href)).toEqual(ADMIN_NAV.map((item) => item.href));
   });
 
-  it("keeps slip approval on Team capacity and lands staff on Portfolio", () => {
+  it("keeps slip approval on Team capacity and lands staff from the home helper", () => {
     const capacity = readFileSync(resolve(process.cwd(), "src/app/(app)/management/capacity/page.tsx"), "utf8");
     expect(capacity).toMatch(/slip history/);
     expect(capacity).toMatch(/approve the go-live/);

@@ -6,6 +6,7 @@
  * still open it. It is not a sidebar item.
  */
 
+import { isArchivedHref } from "@/lib/archived-modules";
 import { ADMIN_AREA_HREF, ADMIN_AREA_LABEL, PRISM_NAV } from "@/lib/area-nav";
 import { isNavLinkActive } from "@/lib/nav";
 
@@ -45,8 +46,14 @@ export function staffSidebarSections(input: {
   showTemplates: boolean;
   /** Default true so callers that predate the flag keep the full menu. */
   showDayToDay?: boolean;
+  /**
+   * Default true so existing callers keep the full menu.
+   * The app shell passes PATH_ARCHIVED_MODULES, which is off by default.
+   */
+  showArchivedModules?: boolean;
 }): StaffSidebarSection[] {
-  const showDayToDay = input.showDayToDay !== false;
+  const showArchived = input.showArchivedModules !== false;
+  const showDayToDay = showArchived && input.showDayToDay !== false;
   const dayToDay: StaffSidebarItem[] = showDayToDay
     ? [
         { href: "/dashboard", label: "Dashboard" },
@@ -69,7 +76,7 @@ export function staffSidebarSections(input: {
           label: item.label,
           exact: item.exact,
         })),
-      ]
+      ].filter((item) => showArchived || !isArchivedHref(item.href))
     : [];
 
   const settings: StaffSidebarItem[] = [];
@@ -84,11 +91,12 @@ export function staffSidebarSections(input: {
     { href: "/updates", label: "What's new" },
     { href: "/settings", label: "Settings" },
   );
+  const visibleSettings = settings.filter((item) => showArchived || !isArchivedHref(item.href));
 
   const sections: StaffSidebarSection[] = [
     { id: "day-to-day", label: STAFF_SIDEBAR_SECTION_LABELS["day-to-day"], items: dayToDay },
     { id: "analytics", label: STAFF_SIDEBAR_SECTION_LABELS.analytics, items: analytics },
-    { id: "settings", label: STAFF_SIDEBAR_SECTION_LABELS.settings, items: settings },
+    { id: "settings", label: STAFF_SIDEBAR_SECTION_LABELS.settings, items: visibleSettings },
   ];
   return sections.filter((section) => section.items.length > 0);
 }
