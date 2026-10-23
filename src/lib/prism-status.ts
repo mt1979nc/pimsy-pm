@@ -3,11 +3,23 @@
  * Native Postgres only — no Prism Azure SQL.
  */
 
-export const PRISM_STATUSES = ["active", "pre-kickoff", "pipeline"] as const;
+import { currentPathConfig } from "@/lib/path-config-store";
+
+/** Original three, plus stalled, special, and pre-go-live as first-class statuses. */
+export const PRISM_STATUSES = [
+  "active",
+  "stalled",
+  "special",
+  "pre-kickoff",
+  "pipeline",
+  "pre-go-live",
+] as const;
 export type PrismStatus = (typeof PRISM_STATUSES)[number];
 
 export function isPrismStatus(v: string | null | undefined): v is PrismStatus {
-  return !!v && (PRISM_STATUSES as readonly string[]).includes(v);
+  if (!v) return false;
+  if ((PRISM_STATUSES as readonly string[]).includes(v)) return true;
+  return currentPathConfig().statuses.some((row) => row.key === v);
 }
 
 /** Infer a Prism-like status when prismStatus column is null (legacy rows). */
@@ -35,6 +47,9 @@ export function mapPrismStatusToEnums(status: PrismStatus): {
     case "pre-kickoff":
       return { projectStatus: "NOT_STARTED", customerStatus: "ONBOARDING" };
     case "active":
+    case "stalled":
+    case "special":
+    case "pre-go-live":
     default:
       return { projectStatus: "IN_PROGRESS", customerStatus: "ONBOARDING" };
   }
@@ -42,6 +57,9 @@ export function mapPrismStatusToEnums(status: PrismStatus): {
 
 export const PRISM_STATUS_LABELS: Record<PrismStatus, string> = {
   active: "Active",
+  stalled: "Stalled",
+  special: "Special",
   "pre-kickoff": "Pre-kickoff",
   pipeline: "Pipeline",
+  "pre-go-live": "Pre Go-Live",
 };

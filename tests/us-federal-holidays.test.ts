@@ -107,23 +107,23 @@ describe("holiday-aware Forecast+ go-live", () => {
       skipUsFederalHolidays: false,
     });
     const typical = off.scenarios.find((s) => s.scenario === "TYPICAL")!;
-    expect(typical.calendarDays).toBe(14 + 21 + (4 * 7 + 2));
-    expect(typical.goLiveDate.toISOString().slice(0, 10)).toBe("2027-01-06");
+    expect(typical.calendarDays).toBe(14 + 14 + (4 * 7 + 2));
+    expect(typical.goLiveDate.toISOString().slice(0, 10)).toBe("2026-12-30");
   });
 
-  it("cascades when a pushed go-live lands on another federal holiday", () => {
-    // 65d from 2026-11-10 is 2027-01-14. Veterans / Thanksgiving / Christmas /
-    // New Year’s push onto MLK Day (2027-01-18), which is then skipped too.
+  it("skips the federal holidays inside a typical window", () => {
+    // 58d from 2026-11-10 is 2027-01-07 (14 discovery + 14 config + 30 training).
+    // Veterans / Thanksgiving / Christmas / New Year’s are skipped.
     const kickoff = d("2026-11-10");
     const off = forecastImplementation(DEFAULT_SCOPE, kickoff, { skipUsFederalHolidays: false });
     const on = forecastImplementation(DEFAULT_SCOPE, kickoff, { skipUsFederalHolidays: true });
     const typicalOff = off.scenarios.find((s) => s.scenario === "TYPICAL")!;
     const typicalOn = on.scenarios.find((s) => s.scenario === "TYPICAL")!;
-    expect(typicalOff.goLiveDate.toISOString().slice(0, 10)).toBe("2027-01-14");
+    expect(typicalOff.goLiveDate.toISOString().slice(0, 10)).toBe("2027-01-07");
     expect(typicalOn.holidaysSkipped.map((h) => h.date)).toEqual(
-      expect.arrayContaining(["2026-11-11", "2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18"]),
+      expect.arrayContaining(["2026-11-11", "2026-11-26", "2026-12-25", "2027-01-01"]),
     );
-    expect(typicalOn.goLiveDate.toISOString().slice(0, 10)).toBe("2027-01-19");
+    expect(typicalOn.goLiveDate.toISOString().slice(0, 10)).toBe("2027-01-11");
     expect(typicalOn.holidayDays).toBe(typicalOn.calendarDays - typicalOn.modelCalendarDays);
   });
 

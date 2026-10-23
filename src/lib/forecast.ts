@@ -19,6 +19,13 @@
 
 import { addDays, startOfDay, startOfWeek } from "date-fns";
 import { utcCalendarDaysBetween } from "@/lib/dates";
+import {
+  hiringThresholds,
+  loadModel,
+  phaseWeightScale,
+  statusCountsTowardLoad,
+  statusHoldHrsPerWeek,
+} from "@/lib/path-config-rules";
 import type { PrismStatus } from "@/lib/prism-status";
 
 /** Locked Prism Analysis exclusions — primary on-time / duration averages. */
@@ -143,8 +150,8 @@ export function isExcludedFromPrimaryAverages(
   return set.has(normalized);
 }
 
-export function countsTowardActiveLoad(status: PrismStatus): boolean {
-  return status === "active" || status === "pre-kickoff";
+export function countsTowardActiveLoad(status: PrismStatus | string): boolean {
+  return statusCountsTowardLoad(status);
 }
 
 export function startOfForecastWeek(d: Date): Date {
@@ -167,15 +174,19 @@ export function round1(n: number): number {
  * customHoursPerWeek wins. Otherwise estimatedHours spread across the
  * current kickoff → go-live window. Zero when we would have to guess.
  */
-export function weeklyHoursForEngagement(e: ForecastEngagement): number {
+export function weeklyHoursForEngagement(e: ForecastEngagement & { currentPhase?: string | null }): number {
   if (e.customHoursPerWeek != null && e.customHoursPerWeek > 0) {
     return round1(e.customHoursPerWeek);
   }
+  const hold = statusHoldHrsPerWeek(e.prismStatus);
+  if (hold != null) return round1(hold);
   if (!e.estimatedHours || e.estimatedHours <= 0) return 0;
   const start = e.startDate;
   const end = e.targetGoLiveDate ?? e.initialGoLiveDate;
   if (!start || !end) return 0;
-  return round1(e.estimatedHours / weeksInWindow(start, end));
+  const even = e.estimatedHours / weeksInWindow(start, end);
+  const scale = loadModel() === "phase" ? phaseWeightScale(e.currentPhase) : 1;
+  return round1(even * scale);
 }
 
 /**
@@ -301,12 +312,13 @@ export function hireNowSignal(peak: WeekAllocation | null, deptCapacity: number)
   }
   const util = peak.utilization;
   const hoursShort = Math.max(0, round1(peak.billableHours - deptCapacity));
+  const thresholds = hiringThresholds();
   return {
-    hireNow: util >= HIRE_NOW_THRESHOLD,
-    nearCapacity: util >= HIRE_NEAR_THRESHOLD && util < HIRE_NOW_THRESHOLD,
+    hireNow: util >= thresholds.now,
+    nearCapacity: util >= thresholds.near && util < thresholds.now,
     peakUtilization: util,
     hoursShort,
-    fteHint: hoursShort > 0 ? Math.round((hoursShort / TYPICAL_HIRE_HOURS_PER_WEEK) * 10) / 10 : 0,
+    fteHint: hoursShort > 0 ? Math.round((hoursShort / thresholds.typicalHours) * 10) / 10 : 0,
     peakWeekOf: peak.weekOf,
   };
 }

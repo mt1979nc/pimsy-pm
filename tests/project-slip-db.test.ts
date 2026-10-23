@@ -60,6 +60,11 @@ describe.skipIf(!dbOk)("slip persistence + permissions (postgres)", () => {
         startDate: parseDateInput("2026-10-01"),
       })
       .where(eq(tasks.id, fixture.tasks.shared));
+    await db.update(users).set({ isDirector: true }).where(eq(users.id, fixture.actors.specialist.id));
+    await db
+      .update(users)
+      .set({ isDirector: true })
+      .where(eq(users.id, fixture.actors.otherSpecialist.id));
   });
 
   it("specialist lead can record +N days with cause and note", async () => {
@@ -163,7 +168,7 @@ describe.skipIf(!dbOk)("slip persistence + permissions (postgres)", () => {
     expect(events).toHaveLength(1);
   });
 
-  it("observer members cannot write; contributing members can", async () => {
+  it("observer members cannot write; a contributing member still needs a director to slip", async () => {
     const [observer] = await db
       .insert(users)
       .values({
@@ -203,8 +208,13 @@ describe.skipIf(!dbOk)("slip persistence + permissions (postgres)", () => {
       slipNote: "staffing",
       source: "weekly",
     });
-    expect(result.ok).toBe(true);
-    if (!result.ok) throw new Error("expected member slip");
-    expect(result.days).toBe(3);
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected director gate");
+    expect(result.error).toBe("A director has to approve this slip.");
+
+    const events = await db.query.slipEvents.findMany({
+      where: eq(slipEvents.projectId, fixture.projects.a),
+    });
+    expect(events).toHaveLength(1);
   });
 });

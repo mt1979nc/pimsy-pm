@@ -1,6 +1,8 @@
 import { archivedModulesEnabled } from "@/lib/archived-modules";
 import { requireStaff } from "@/lib/guard";
-import { canManageTemplates } from "@/lib/authz";
+import { canManageTemplates, isAdmin } from "@/lib/authz";
+import { listPeopleForSettings, loadPathConfig } from "@/lib/path-config";
+import { WorkspaceSettingsForm } from "./workspace-form";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
@@ -22,12 +24,24 @@ export default async function SettingsPage() {
   const org = await getOrgSettings();
   const prefs = resolvePrefs(me, org);
   const alertTypes = typesFor("staff");
+  const canEdit = isAdmin(actor);
+  const config = await loadPathConfig();
+  const people = await listPeopleForSettings();
 
   return (
     <>
-      <PageHeader title="Settings" />
+      <PageHeader
+        title="Settings"
+        subtitle={
+          canEdit
+            ? "Workspace settings are on this page. Profile stays here too."
+            : "You can read workspace settings. An owner or admin can change them."
+        }
+      />
 
-      <div className="mx-auto max-w-[640px] space-y-5">
+      <div className="mx-auto max-w-3xl space-y-5">
+        <WorkspaceSettingsForm config={config} people={people} canEdit={canEdit} />
+
         <Card>
           <CardHeader
             title="Profile"

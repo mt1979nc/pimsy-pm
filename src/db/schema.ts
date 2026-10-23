@@ -1777,6 +1777,136 @@ export type LibraryAsset = typeof libraryAssets.$inferSelect;
 export type TaskChecklistItem = typeof taskChecklistItems.$inferSelect;
 export type LearningCenterSection = typeof learningCenterSections.$inferSelect;
 export type LearningCenterItem = typeof learningCenterItems.$inferSelect;
+/**
+ * Workspace settings (rebuild phase 1). Seeded with the v1.18.28 hardcoded
+ * values. Edits do not drop delivery tables.
+ */
+export const pathConfigLoad = pgTable("path_config_load", {
+  id: text("id").primaryKey().default("singleton"),
+  model: text("model").notNull().default("even"),
+});
+
+export const pathConfigPhase = pgTable("path_config_phase", {
+  key: text("key").primaryKey(),
+  label: text("label").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+  hoursWeight: real("hours_weight").notNull(),
+});
+
+export const pathConfigStatus = pgTable("path_config_status", {
+  key: text("key").primaryKey(),
+  label: text("label").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+  countsTowardLoad: boolean("counts_toward_load").notNull(),
+  holdHrsPerWeek: real("hold_hrs_per_week"),
+});
+
+export const pathConfigSlipCause = pgTable("path_config_slip_cause", {
+  key: text("key").primaryKey(),
+  label: text("label").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+});
+
+export const pathConfigSlipApproval = pgTable("path_config_slip_approval", {
+  id: text("id").primaryKey().default("singleton"),
+  approverRole: text("approver_role").notNull(),
+  thresholdDays: integer("threshold_days").notNull(),
+});
+
+export const pathConfigRole = pgTable(
+  "path_config_role",
+  {
+    key: text("key").notNull(),
+    kind: text("kind").notNull(),
+    label: text("label").notNull(),
+    sortOrder: integer("sort_order").notNull(),
+    permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
+  },
+  (t) => [primaryKey({ columns: [t.kind, t.key] })],
+);
+
+export const pathConfigPerson = pgTable("path_config_person", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  canLead: boolean("can_lead").notNull(),
+  capacityExempt: boolean("capacity_exempt").notNull(),
+  capacityHidden: boolean("capacity_hidden").notNull(),
+  hoursPerWeek: integer("hours_per_week").notNull(),
+});
+
+export const pathConfigEstimatorVersion = pgTable(
+  "path_config_estimator_version",
+  {
+    id: text("id").primaryKey(),
+    version: integer("version").notNull(),
+    active: boolean("active").notNull().default(false),
+    weights: jsonb("weights").$type<Record<string, unknown>>().notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("path_config_estimator_version_version_idx").on(t.version)],
+);
+
+export const pathConfigServiceLine = pgTable("path_config_service_line", {
+  key: text("key").primaryKey(),
+  label: text("label").notNull(),
+  hours: real("hours").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+  complexClinical: boolean("complex_clinical").notNull().default(false),
+});
+
+export const pathConfigAnalyticsExclusion = pgTable("path_config_analytics_exclusion", {
+  code: text("code").primaryKey(),
+});
+
+export const pathConfigHiring = pgTable("path_config_hiring", {
+  id: text("id").primaryKey().default("singleton"),
+  leadWeeks: integer("lead_weeks").notNull(),
+  utilizationPercent: real("utilization_percent").notNull(),
+  nearPercent: real("near_percent").notNull(),
+  typicalHoursPerWeek: integer("typical_hours_per_week").notNull(),
+});
+
+export const pathConfigHoliday = pgTable("path_config_holiday", {
+  id: text("id").primaryKey().default("singleton"),
+  skipUsFederal: boolean("skip_us_federal").notNull().default(true),
+});
+
+export const pathConfigHolidayDate = pgTable("path_config_holiday_date", {
+  observedOn: text("observed_on").primaryKey(),
+  name: text("name").notNull(),
+});
+
+export const pathConfigTag = pgTable("path_config_tag", {
+  name: text("name").primaryKey(),
+});
+
+export const pathConfigCustomField = pgTable(
+  "path_config_custom_field",
+  {
+    id: text("id").primaryKey(),
+    entity: text("entity").notNull(),
+    key: text("key").notNull(),
+    label: text("label").notNull(),
+    fieldType: text("field_type").notNull(),
+  },
+  (t) => [uniqueIndex("path_config_custom_field_entity_key_idx").on(t.entity, t.key)],
+);
+
+export const pathConfigTemplate = pgTable("path_config_template", {
+  key: text("key").primaryKey(),
+  name: text("name").notNull(),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull(),
+});
+
+export const pathConfigDockAllow = pgTable("path_config_dock_allow", {
+  acronym: text("acronym").primaryKey(),
+  included: boolean("included").notNull().default(true),
+  note: text("note").notNull().default(""),
+});
+
 export type Notification = typeof notifications.$inferSelect;
 export type ProjectTemplate = typeof projectTemplates.$inferSelect;
 

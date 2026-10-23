@@ -9,6 +9,7 @@
 
 import type { PrismStatus } from "@/lib/prism-status";
 import { parseDateInput, utcCalendarDaysBetween, utcDayKey } from "@/lib/dates";
+import { statusCountsTowardLoad } from "@/lib/path-config-rules";
 
 export const CAPACITY_PHASES = [
   "kickoff",
@@ -35,8 +36,8 @@ export function isCapacityPhase(value: string | null | undefined): value is Capa
 }
 
 /** Active and pre-kickoff sit on the capacity cards. Pipeline does not. */
-export function countsOnCapacityCards(status: PrismStatus): boolean {
-  return status === "active" || status === "pre-kickoff";
+export function countsOnCapacityCards(status: PrismStatus | string): boolean {
+  return statusCountsTowardLoad(status);
 }
 
 /**

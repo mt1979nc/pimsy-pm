@@ -3,6 +3,7 @@ import { Card, CardHeader, LinkButton } from "@/components/ui";
 import { listLeadOptions } from "@/actions/management-engagements";
 import { EngagementCreateForm } from "../../_components/engagement-create-form";
 import { loadRosterGoLiveContext } from "@/lib/forecast-data";
+import { currentPathConfig } from "@/lib/path-config-store";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Add engagement — Prism" };
@@ -31,6 +32,7 @@ export default async function NewEngagementPage() {
           defaultLeadId={defaultLeadId}
           durationSamples={goLive.samples}
           exclusions={goLive.exclusions}
+          estimator={currentPathConfig().estimator}
         />
       </Card>
     </div>

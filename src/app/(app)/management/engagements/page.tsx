@@ -11,7 +11,10 @@ export const metadata = { title: "Roster" };
 const FILTERS: Array<{ key: "all" | PrismStatus; label: string }> = [
   { key: "all", label: "All" },
   { key: "active", label: "Active" },
+  { key: "stalled", label: "Stalled" },
+  { key: "special", label: "Special" },
   { key: "pre-kickoff", label: "Pre-kickoff" },
+  { key: "pre-go-live", label: "Pre Go-Live" },
   { key: "pipeline", label: "Pipeline" },
 ];
 
@@ -25,10 +28,13 @@ export default async function ManagementEngagementsPage({
   const rows = await listEngagements();
   const visible =
     filter === "all" ? rows : rows.filter((r) => r.effectivePrismStatus === filter);
-  const counts = {
+  const counts: Record<(typeof FILTERS)[number]["key"], number> = {
     all: rows.length,
     active: rows.filter((r) => r.effectivePrismStatus === "active").length,
+    stalled: rows.filter((r) => r.effectivePrismStatus === "stalled").length,
+    special: rows.filter((r) => r.effectivePrismStatus === "special").length,
     "pre-kickoff": rows.filter((r) => r.effectivePrismStatus === "pre-kickoff").length,
+    "pre-go-live": rows.filter((r) => r.effectivePrismStatus === "pre-go-live").length,
     pipeline: rows.filter((r) => r.effectivePrismStatus === "pipeline").length,
   };
 

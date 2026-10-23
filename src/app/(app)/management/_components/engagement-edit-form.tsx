@@ -16,6 +16,7 @@ import { PRISM_STATUSES, PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/pri
 import { toDateInput } from "@/lib/dates";
 import type { DiscoveryScenario } from "@/db/schema";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
+import type { EstimatorWeights } from "@/lib/path-config-defaults";
 
 type LeadOption = {
   id: string;
@@ -56,6 +57,7 @@ export function EngagementEditForm({
   durationSamples,
   exclusions,
   excludeFromAnalytics,
+  estimator,
 }: {
   projectId: string;
   code: string;
@@ -88,7 +90,9 @@ export function EngagementEditForm({
   durationSamples: DurationSample[];
   exclusions: string[];
   excludeFromAnalytics: boolean;
+  estimator?: EstimatorWeights;
 }) {
+  const lineLabels = estimator?.serviceLineLabels ?? SERVICE_LINE_LABELS;
   const [state, action] = useActionState(updateEngagement, {});
   const initialLocked = !!initialGoLiveDate;
   const [kickoff, setKickoff] = useState(toDateInput(startDate));
@@ -122,8 +126,9 @@ export function EngagementEditForm({
       exclusions,
       customHoursPerWeek: Number.isFinite(customHoursParsed) ? customHoursParsed : null,
       skipUsFederalHolidays,
+      estimator,
     });
-  }, [scopeState, kickoff, durationSamples, exclusions, customHoursParsed, skipUsFederalHolidays]);
+  }, [scopeState, kickoff, durationSamples, exclusions, customHoursParsed, skipUsFederalHolidays, estimator]);
 
   const chosen =
     recommendation.scenarios.find((s) => s.scenario === scenario) ?? recommendation.scenarios[1];
@@ -459,7 +464,7 @@ export function EngagementEditForm({
         <div>
           <div className="mb-2 text-[12.5px] font-medium text-ink-2">Service lines</div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {Object.entries(SERVICE_LINE_LABELS).map(([key, label]) => (
+            {Object.entries(lineLabels).map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 text-[12.5px] text-ink-2">
                 <input
                   type="checkbox"

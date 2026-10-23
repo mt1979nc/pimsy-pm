@@ -5,6 +5,7 @@ import { getEngagementForEdit } from "@/actions/management-engagements";
 import { NotFoundError } from "@/lib/authz";
 import { EngagementEditForm } from "../../_components/engagement-edit-form";
 import { loadRosterGoLiveContext } from "@/lib/forecast-data";
+import { currentPathConfig } from "@/lib/path-config-store";
 import { parseDiscoveryScenario } from "@/lib/estimator";
 
 export const dynamic = "force-dynamic";
@@ -81,6 +82,7 @@ export default async function ManagementEngagementEditPage({
           durationSamples={goLive.samples}
           exclusions={goLive.exclusions}
           excludeFromAnalytics={project.excludeFromAnalytics}
+          estimator={currentPathConfig().estimator}
         />
       </Card>
     </div>
