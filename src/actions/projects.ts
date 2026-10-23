@@ -54,6 +54,7 @@ import { persistCustomerLogo } from "@/lib/customer-logo-store";
 import { completeHistoricalProjectOnTime } from "@/lib/historical-complete";
 import { parseDateInput, toDateInput } from "@/lib/dates";
 import { forecastImplementation, parseSkipUsFederalHolidays, type ImplementationScope } from "@/lib/estimator";
+import { loadPathConfig } from "@/lib/path-config";
 import {
   cascadeRescheduleProject,
   resolvePlaybookScale,
@@ -382,6 +383,7 @@ export async function createProject(
   // trusting whatever the client displayed.
   const scope = parseScope(d.scopeJson);
   const skipUsFederalHolidays = parseSkipUsFederalHolidays(d.skipUsFederalHolidays);
+  if (scope) await loadPathConfig();
   const forecast = scope ? forecastImplementation(scope, start, { skipUsFederalHolidays }) : null;
   const scenarioProjection = forecast?.scenarios.find(
     (s) => s.scenario === (d.discoveryScenario ?? "TYPICAL"),

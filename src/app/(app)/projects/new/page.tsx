@@ -7,6 +7,8 @@ import { canCreateProjects } from "@/lib/authz";
 import { PageHeader, LinkButton, Card, EmptyState } from "@/components/ui";
 import { NewProjectForm } from "./new-project-form";
 import { collectOptionalAreas, type LoadedTemplate } from "@/lib/playbook";
+import { loadPathConfig } from "@/lib/path-config";
+import { currentPathConfig } from "@/lib/path-config-store";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "New project" };
@@ -14,6 +16,7 @@ export const metadata = { title: "New project" };
 export default async function NewProjectPage() {
   const actor = await requireStaff();
   if (!canCreateProjects(actor)) redirect("/projects");
+  await loadPathConfig();
 
   const [customers, staff, templates, existingProjects] = await Promise.all([
     db.query.customerAccounts.findMany({
@@ -91,6 +94,7 @@ export default async function NewProjectPage() {
           templates={templateSummaries}
           existingProjects={existingProjects}
           defaultLeadId={actor.id}
+          estimator={currentPathConfig().estimator}
         />
       )}
     </>

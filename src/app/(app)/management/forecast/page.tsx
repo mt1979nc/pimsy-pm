@@ -5,8 +5,8 @@ import { Badge, Card, CardHeader, EmptyState, Stat } from "@/components/ui";
 import { HeadroomChart, MemberLoadCards } from "@/components/charts";
 import { fmtShort } from "@/lib/dates";
 import { cn } from "@/lib/cn";
-import { FORECAST_WEIGHTS, SERVICE_LINE_HOURS, SERVICE_LINE_LABELS } from "@/lib/estimator";
-import { memberLoadsFromForecast, TYPICAL_HIRE_HOURS_PER_WEEK } from "@/lib/forecast";
+import { memberLoadsFromForecast } from "@/lib/forecast";
+import { currentPathConfig } from "@/lib/path-config-store";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Forecast — Prism" };
@@ -21,6 +21,8 @@ function hoursLabel(n: number) {
 
 export default async function ManagementForecastPage() {
   const { forecast, exclusions, knownCodes } = await getManagementForecast(12);
+  const weights = currentPathConfig().estimator;
+  const hireHours = currentPathConfig().hiring.typicalHoursPerWeek;
   const nameById = new Map(forecast.staff.map((s) => [s.id, s.name ?? s.email ?? "—"]));
   const loadRows = forecast.engagements.filter((e) => e.countsTowardLoad);
   const pipeline = forecast.engagements.filter((e) => e.prismStatus === "pipeline");
@@ -38,7 +40,7 @@ export default async function ManagementForecastPage() {
           <strong className="font-semibold">Hire now.</strong> Peak week of{" "}
           {forecast.hire.peakWeekOf ? fmtShort(forecast.hire.peakWeekOf) : "—"} is short{" "}
           {forecast.hire.hoursShort}h versus billable capacity ({forecast.deptCapacityHours}h/wk).
-          About {forecast.hire.fteHint || 1} specialist at {TYPICAL_HIRE_HOURS_PER_WEEK}h/wk would
+          About {forecast.hire.fteHint || 1} specialist at {hireHours}h/wk would
           cover the peak.
         </div>
       ) : forecast.hire.nearCapacity ? (
@@ -302,50 +304,49 @@ export default async function ManagementForecastPage() {
           <div className="px-4 pb-4">
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12.5px]">
               <dt className="text-ink-3">Minutes / user</dt>
-              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.minutesPerUser}</dd>
+              <dd className="text-right tabular-nums text-ink">{weights.minutesPerUser}</dd>
               <dt className="text-ink-3">Minutes / location</dt>
-              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.minutesPerLocation}</dd>
+              <dd className="text-right tabular-nums text-ink">{weights.minutesPerLocation}</dd>
               <dt className="text-ink-3">Minutes / form page</dt>
-              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.minutesPerFormPage}</dd>
+              <dd className="text-right tabular-nums text-ink">{weights.minutesPerFormPage}</dd>
               <dt className="text-ink-3">Org / billing / other</dt>
               <dd className="text-right tabular-nums text-ink">
-                {FORECAST_WEIGHTS.orgSetupHours +
-                  FORECAST_WEIGHTS.billingConfigHours +
-                  FORECAST_WEIGHTS.otherSettingsHours}
-                h
+                {weights.orgSetupHours + weights.billingConfigHours + weights.otherSettingsHours}h
               </dd>
               <dt className="text-ink-3">State compliance</dt>
-              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.stateComplianceHours}h</dd>
+              <dd className="text-right tabular-nums text-ink">{weights.stateComplianceHours}h</dd>
               <dt className="text-ink-3">Minimal org structure</dt>
-              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.minimalOrgHours}h</dd>
+              <dd className="text-right tabular-nums text-ink">{weights.minimalOrgHours}h</dd>
               <dt className="text-ink-3">Intake Assistant</dt>
-              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.intakeAssistantHours}h</dd>
+              <dd className="text-right tabular-nums text-ink">{weights.intakeAssistantHours}h</dd>
               <dt className="text-ink-3">Discovery (opt / typ / pes)</dt>
-              <dd className="text-right tabular-nums text-ink">10 / 14 / 21d</dd>
+              <dd className="text-right tabular-nums text-ink">
+                {weights.discoveryDays.OPTIMISTIC} / {weights.discoveryDays.TYPICAL} /{" "}
+                {weights.discoveryDays.PESSIMISTIC}d
+              </dd>
               <dt className="text-ink-3">Config calendar</dt>
               <dd className="text-right tabular-nums text-ink">
-                {FORECAST_WEIGHTS.configDays}d base · extend if &gt;{FORECAST_WEIGHTS.maxConfigHoursPerDay}h/day
+                {weights.configDays}d base · extend if &gt;{weights.maxConfigHoursPerDay}h/day
               </dd>
               <dt className="text-ink-3">Core training sessions</dt>
-              <dd className="text-right tabular-nums text-ink">{FORECAST_WEIGHTS.coreTrainingSessions}</dd>
+              <dd className="text-right tabular-nums text-ink">{weights.coreTrainingSessions}</dd>
               <dt className="text-ink-3">Hours / training session</dt>
               <dd className="text-right tabular-nums text-ink">
-                {FORECAST_WEIGHTS.trainingHoursPerSession}h ({FORECAST_WEIGHTS.trainingSessionHours} +{" "}
-                {FORECAST_WEIGHTS.trainingPrepHours} prep)
+                {weights.trainingHoursPerSession}h ({weights.trainingSessionHours} + {weights.trainingPrepHours} prep)
               </dd>
               <dt className="text-ink-3">Payroll training</dt>
-              <dd className="text-right tabular-nums text-ink">+{FORECAST_WEIGHTS.payrollTrainingHours}h when selected</dd>
+              <dd className="text-right tabular-nums text-ink">+{weights.payrollTrainingHours}h when selected</dd>
             </dl>
             <div className="mt-3 border-t border-border pt-3">
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
                 Service-line hours
               </div>
               <ul className="columns-2 gap-4 text-[12px] text-ink-2">
-                {Object.entries(SERVICE_LINE_HOURS)
+                {Object.entries(weights.serviceLineHours)
                   .filter(([, hrs]) => hrs > 0)
                   .map(([key, hrs]) => (
                     <li key={key} className="flex justify-between gap-2">
-                      <span>{SERVICE_LINE_LABELS[key] ?? key}</span>
+                      <span>{weights.serviceLineLabels[key] ?? key}</span>
                       <span className="tabular-nums">{hrs}h</span>
                     </li>
                   ))}

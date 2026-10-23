@@ -20,6 +20,7 @@ import { PRISM_STATUSES, PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/pri
 import { toDateInput } from "@/lib/dates";
 import type { DiscoveryScenario } from "@/db/schema";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
+import type { EstimatorWeights } from "@/lib/path-config-defaults";
 
 type LeadOption = {
   id: string;
@@ -28,8 +29,6 @@ type LeadOption = {
   canLead: boolean;
   isDirector: boolean;
 };
-
-const SERVICE_LINE_KEYS = Object.keys(SERVICE_LINE_LABELS);
 
 const tierTone: Record<string, "green" | "amber" | "red" | "violet"> = {
   STANDARD: "green",
@@ -43,12 +42,16 @@ export function EngagementCreateForm({
   defaultLeadId,
   durationSamples,
   exclusions,
+  estimator,
 }: {
   leadOptions: LeadOption[];
   defaultLeadId: string;
   durationSamples: DurationSample[];
   exclusions: string[];
+  estimator?: EstimatorWeights;
 }) {
+  const lineLabels = estimator?.serviceLineLabels ?? SERVICE_LINE_LABELS;
+  const lineKeys = Object.keys(lineLabels);
   const [state, action] = useActionState(createEngagement, {});
   const [scope, setScope] = useState<ImplementationScope>(DEFAULT_SCOPE);
   const [kickoff, setKickoff] = useState("");
@@ -69,8 +72,9 @@ export function EngagementCreateForm({
       exclusions,
       customHoursPerWeek: Number.isFinite(customHoursPerWeek) ? customHoursPerWeek : null,
       skipUsFederalHolidays,
+      estimator,
     });
-  }, [scope, kickoff, durationSamples, exclusions, customHoursPerWeek, skipUsFederalHolidays]);
+  }, [scope, kickoff, durationSamples, exclusions, customHoursPerWeek, skipUsFederalHolidays, estimator]);
 
   const chosen =
     recommendation.scenarios.find((s) => s.scenario === scenario) ?? recommendation.scenarios[1];
@@ -276,7 +280,7 @@ export function EngagementCreateForm({
             </Field>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {SERVICE_LINE_KEYS.map((key) => (
+            {lineKeys.map((key) => (
               <label key={key} className="flex items-center gap-1.5 text-[12.5px] text-ink-2">
                 <input
                   type="checkbox"
@@ -285,7 +289,7 @@ export function EngagementCreateForm({
                   checked={scope.serviceLines.includes(key)}
                   onChange={() => toggleServiceLine(key)}
                 />
-                {SERVICE_LINE_LABELS[key]}
+                {lineLabels[key]}
               </label>
             ))}
           </div>

@@ -18,16 +18,23 @@ import type { DurationSample } from "@/lib/go-live-recommendation";
 import { listCompletedForAnalysis } from "@/lib/queries";
 import { inferPrismStatus } from "@/lib/prism-status";
 import { includedInAnalytics } from "@/lib/analytics-scope";
+import { loadPathConfig } from "@/lib/path-config";
+import { currentPathConfig } from "@/lib/path-config-store";
 
 export async function loadForecastExclusions(): Promise<string[]> {
+  await loadPathConfig();
   const org = await db.query.orgSettings.findFirst({
     where: eq(orgSettings.id, "singleton"),
     columns: { forecastAnalysisExclusions: true },
   });
-  return parseExclusionCodes(org?.forecastAnalysisExclusions);
+  if (org?.forecastAnalysisExclusions != null) return parseExclusionCodes(org.forecastAnalysisExclusions);
+  const fromSettings = currentPathConfig().analyticsExclusions;
+  if (fromSettings.length > 0) return [...fromSettings];
+  return parseExclusionCodes(null);
 }
 
 export async function loadForecastStaff(): Promise<ForecastStaffMember[]> {
+  const config = await loadPathConfig();
   const rows = await db.query.users.findMany({
     where: and(eq(users.isActive, true), ne(users.role, "CUSTOMER")),
     columns: {
@@ -43,7 +50,17 @@ export async function loadForecastStaff(): Promise<ForecastStaffMember[]> {
     },
     orderBy: [asc(users.name)],
   });
-  return rows;
+  return rows.map((row) => {
+    const person = config.people.find((item) => item.userId === row.id);
+    if (!person) return row;
+    return {
+      ...row,
+      capacityHoursPerWeek: person.hoursPerWeek,
+      capacityExempt: person.capacityExempt,
+      capacityHidden: person.capacityHidden,
+      canLead: person.canLead,
+    };
+  });
 }
 
 export async function loadForecastEngagements(): Promise<ForecastEngagement[]> {

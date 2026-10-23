@@ -225,6 +225,13 @@
       "when": 1789085000000,
       "tag": "0031_capacity_hidden",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1789086000000,
+      "tag": "0032_path_config",
+      "breakpoints": true
     }
   ]
 }

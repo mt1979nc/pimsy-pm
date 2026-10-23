@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.28";
+export const APP_VERSION = "1.18.29";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,19 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.29",
+    date: "2026-10-23",
+    summary:
+      "Workspace settings live on Settings. Estimator, capacity, statuses, slip approval, and the other hardcoded lists are seeded from today's values and can be edited by an owner or admin. Migrate 0032_path_config. A director approves every go-live slip.",
+    highlights: [
+      "/settings: one section each for load model, phases, statuses, slip causes, slip approval, roles, people, estimator weights, service lines, analytics exclusions, hiring, holidays, tags, custom fields, templates, and the Dock allowlist. Owners and admins can edit. Other staff can read.",
+      "Migrate 0032_path_config adds the settings tables and seeds the v1.18.28 numbers. Estimator and capacity stay the same until a setting changes. Empty tables fall back to those numbers.",
+      "Load model stays even spread. Phase curve is a setting. Stalled, special, and pre-go-live are statuses. Pre-go-live holds 2 hours a week.",
+      "A director approves every go-live change. Owners can always approve. Declining a slip stays with whoever can write the site. Approver role and threshold days are on Settings.",
+      "PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.28",
     date: "2026-10-13",

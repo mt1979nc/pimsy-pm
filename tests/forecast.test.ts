@@ -424,8 +424,9 @@ describe("Forecast+ weights card and scope pickers", () => {
     expect(page).toMatch(/trainingPrepHours/);
     expect(page).toMatch(/payrollTrainingHours/);
     expect(page).toMatch(/maxConfigHoursPerDay/);
-    expect(page).toMatch(/SERVICE_LINE_HOURS/);
-    expect(page).toMatch(/SERVICE_LINE_LABELS/);
+    expect(page).toMatch(/serviceLineHours/);
+    expect(page).toMatch(/serviceLineLabels/);
+    expect(page).toMatch(/currentPathConfig/);
   });
 
   it("exposes Intake Assistant and service-line labels on New project and Add to roster", () => {

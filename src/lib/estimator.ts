@@ -15,10 +15,13 @@
  * duration is a separate schedule scale and is not this estimate.
  */
 
-import { addDays, utcCalendarDaysBetween } from "@/lib/dates";
+import { addDays, utcCalendarDaysBetween, utcDayKey } from "@/lib/dates";
 import type { ComplexityTier, DiscoveryScenario } from "@/db/schema";
+import type { EstimatorWeights } from "@/lib/path-config-defaults";
+import { peekPathConfig } from "@/lib/path-config-store";
 import {
   addDaysSkippingUsFederalHolidays,
+  isUsFederalHoliday,
   usFederalHolidaysInWindow,
   type UsFederalHoliday,
 } from "@/lib/us-federal-holidays";
@@ -73,6 +76,39 @@ export const SERVICE_LINE_LABELS: Record<string, string> = {
 /** Service lines that pull in the optional advanced-clinical training. */
 const COMPLEX_CLINICAL_TRIGGERS = new Set(["MEDICATION_MANAGEMENT", "MAT", "PSYCH_TESTING"]);
 
+/** Hardcoded weights when Settings has not been loaded. Same numbers as the seed. */
+export function builtinEstimator(): EstimatorWeights {
+  return {
+    orgSetupHours: FORECAST_WEIGHTS.orgSetupHours,
+    billingConfigHours: FORECAST_WEIGHTS.billingConfigHours,
+    otherSettingsHours: FORECAST_WEIGHTS.otherSettingsHours,
+    minutesPerUser: FORECAST_WEIGHTS.minutesPerUser,
+    minutesPerLocation: FORECAST_WEIGHTS.minutesPerLocation,
+    minutesPerFormPage: FORECAST_WEIGHTS.minutesPerFormPage,
+    coreTrainingSessions: FORECAST_WEIGHTS.coreTrainingSessions,
+    stateComplianceHours: FORECAST_WEIGHTS.stateComplianceHours,
+    minimalOrgHours: FORECAST_WEIGHTS.minimalOrgHours,
+    intakeAssistantHours: FORECAST_WEIGHTS.intakeAssistantHours,
+    configDays: FORECAST_WEIGHTS.configDays,
+    maxConfigHoursPerDay: FORECAST_WEIGHTS.maxConfigHoursPerDay,
+    schedulingBufferDays: FORECAST_WEIGHTS.schedulingBufferDays,
+    trainingSessionHours: FORECAST_WEIGHTS.trainingSessionHours,
+    trainingPrepHours: FORECAST_WEIGHTS.trainingPrepHours,
+    trainingHoursPerSession: FORECAST_WEIGHTS.trainingHoursPerSession,
+    payrollTrainingHours: FORECAST_WEIGHTS.payrollTrainingHours,
+    discoveryDays: { ...DISCOVERY_DAYS },
+    complexClinical: [...COMPLEX_CLINICAL_TRIGGERS],
+    serviceLineHours: { ...SERVICE_LINE_HOURS },
+    serviceLineLabels: { ...SERVICE_LINE_LABELS },
+    skipUsFederalHolidays: DEFAULT_SKIP_US_FEDERAL_HOLIDAYS,
+  };
+}
+
+function activeEstimator(override?: EstimatorWeights): EstimatorWeights {
+  if (override) return override;
+  return peekPathConfig()?.estimator ?? builtinEstimator();
+}
+
 // ---------------------------------------------------------------------------
 // Input shape
 // ---------------------------------------------------------------------------
@@ -125,12 +161,12 @@ function bandConfigHours(hrs: number) {
 /** One-time config-hour adders from service lines + flags — the "how
  *  fiddly is the setup" component of the complexity score, as distinct from
  *  the base per-user/per-location/per-form work every implementation has. */
-function serviceLineConfigHours(scope: ImplementationScope) {
-  const lines = scope.serviceLines.reduce((sum, s) => sum + (SERVICE_LINE_HOURS[s] ?? 0), 0);
+function serviceLineConfigHours(scope: ImplementationScope, weights: EstimatorWeights = activeEstimator()) {
+  const lines = scope.serviceLines.reduce((sum, s) => sum + (weights.serviceLineHours[s] ?? 0), 0);
   return (
     lines +
-    (scope.stateCompliance ? FORECAST_WEIGHTS.stateComplianceHours : 0) +
-    (scope.intakeAssistant ? FORECAST_WEIGHTS.intakeAssistantHours : 0)
+    (scope.stateCompliance ? weights.stateComplianceHours : 0) +
+    (scope.intakeAssistant ? weights.intakeAssistantHours : 0)
   );
 }
 
@@ -138,11 +174,11 @@ function serviceLineConfigHours(scope: ImplementationScope) {
  * Standard → Enterprise, from users/locations/config-hour bands. Ported from
  * PRISM v5's scoring model.
  */
-export function complexityTier(scope: ImplementationScope): ComplexityTier {
+export function complexityTier(scope: ImplementationScope, weights?: EstimatorWeights): ComplexityTier {
   const score =
     bandUsers(scope.userCount) +
     bandLocations(scope.locationCount) +
-    bandConfigHours(serviceLineConfigHours(scope));
+    bandConfigHours(serviceLineConfigHours(scope, weights ?? activeEstimator()));
   if (score >= 6) return "ENTERPRISE";
   if (score >= 4) return "HIGH";
   if (score >= 2) return "MODERATE";
@@ -208,16 +244,9 @@ export const FORECAST_WEIGHTS = {
   payrollTrainingHours: 1,
 } as const;
 
-const ORG_SETUP_HOURS = FORECAST_WEIGHTS.orgSetupHours;
-const BILLING_CONFIG_HOURS = FORECAST_WEIGHTS.billingConfigHours;
-const OTHER_SETTINGS_HOURS = FORECAST_WEIGHTS.otherSettingsHours;
-const MINUTES_PER_USER = FORECAST_WEIGHTS.minutesPerUser;
-const MINUTES_PER_LOCATION = FORECAST_WEIGHTS.minutesPerLocation;
-const MINUTES_PER_FORM_PAGE = FORECAST_WEIGHTS.minutesPerFormPage;
-const CORE_TRAINING_SESSIONS = FORECAST_WEIGHTS.coreTrainingSessions;
-
-export function trainingSessionCount(scope: ImplementationScope): number {
-  return CORE_TRAINING_SESSIONS + (scope.serviceLines.some((l) => COMPLEX_CLINICAL_TRIGGERS.has(l)) ? 1 : 0);
+export function trainingSessionCount(scope: ImplementationScope, weights: EstimatorWeights = activeEstimator()): number {
+  const clinical = new Set(weights.complexClinical);
+  return weights.coreTrainingSessions + (scope.serviceLines.some((l) => clinical.has(l)) ? 1 : 0);
 }
 
 function hasPayroll(scope: ImplementationScope) {
@@ -231,59 +260,59 @@ function hasPayroll(scope: ImplementationScope) {
  * `configHours / 14`. If that would exceed `maxConfigHoursPerDay` (4h),
  * extend: `days = max(14, ceil(configHours / 4))`. Never shorter than 14.
  */
-export function configCalendarDays(configHours: number): number {
-  const base = FORECAST_WEIGHTS.configDays;
-  const cap = FORECAST_WEIGHTS.maxConfigHoursPerDay;
+export function configCalendarDays(configHours: number, weights: EstimatorWeights = activeEstimator()): number {
+  const base = weights.configDays;
+  const cap = weights.maxConfigHoursPerDay;
   if (!(configHours > 0) || !(cap > 0)) return base;
   return Math.max(base, Math.ceil(configHours / cap));
 }
 
 /** Display hrs/day against the 14-day base window (not the possibly extended span). */
-export function configHoursPerDay(configHours: number): number {
-  return round1(configHours / FORECAST_WEIGHTS.configDays);
+export function configHoursPerDay(configHours: number, weights: EstimatorWeights = activeEstimator()): number {
+  return round1(configHours / weights.configDays);
 }
 
-export function estimateHours(scope: ImplementationScope, _estimatedWeeks?: number): HourEstimate {
+export function estimateHours(scope: ImplementationScope, weights: EstimatorWeights = activeEstimator()): HourEstimate {
   const lineItems: HourLineItem[] = [
-    { label: "Org setup", hours: ORG_SETUP_HOURS },
-    { label: `User setup (${scope.userCount} × ${MINUTES_PER_USER}min)`, hours: round1((scope.userCount * MINUTES_PER_USER) / 60) },
+    { label: "Org setup", hours: weights.orgSetupHours },
+    { label: `User setup (${scope.userCount} × ${weights.minutesPerUser}min)`, hours: round1((scope.userCount * weights.minutesPerUser) / 60) },
     {
-      label: `Location setup (${scope.locationCount} × ${MINUTES_PER_LOCATION}min)`,
-      hours: round1((scope.locationCount * MINUTES_PER_LOCATION) / 60),
+      label: `Location setup (${scope.locationCount} × ${weights.minutesPerLocation}min)`,
+      hours: round1((scope.locationCount * weights.minutesPerLocation) / 60),
     },
-    { label: "Billing config", hours: BILLING_CONFIG_HOURS },
+    { label: "Billing config", hours: weights.billingConfigHours },
     {
-      label: `Forms (${scope.formPageCount}p × ${MINUTES_PER_FORM_PAGE}min)`,
-      hours: round1((scope.formPageCount * MINUTES_PER_FORM_PAGE) / 60),
+      label: `Forms (${scope.formPageCount}p × ${weights.minutesPerFormPage}min)`,
+      hours: round1((scope.formPageCount * weights.minutesPerFormPage) / 60),
     },
-    { label: "Other / settings", hours: OTHER_SETTINGS_HOURS },
+    { label: "Other / settings", hours: weights.otherSettingsHours },
   ];
 
   for (const line of scope.serviceLines) {
-    const hrs = SERVICE_LINE_HOURS[line];
-    if (hrs) lineItems.push({ label: SERVICE_LINE_LABELS[line] ?? line, hours: hrs });
+    const hrs = weights.serviceLineHours[line];
+    if (hrs) lineItems.push({ label: weights.serviceLineLabels[line] ?? line, hours: hrs });
   }
   if (scope.stateCompliance) {
-    lineItems.push({ label: "State compliance", hours: FORECAST_WEIGHTS.stateComplianceHours });
+    lineItems.push({ label: "State compliance", hours: weights.stateComplianceHours });
   }
 
   if (scope.minimalOrgStructure) {
     lineItems.push({
       label: "Minimal Org Structure",
-      hours: FORECAST_WEIGHTS.minimalOrgHours,
+      hours: weights.minimalOrgHours,
     });
   }
 
   if (scope.intakeAssistant) {
-    lineItems.push({ label: "Intake Assistant", hours: FORECAST_WEIGHTS.intakeAssistantHours });
+    lineItems.push({ label: "Intake Assistant", hours: weights.intakeAssistantHours });
   }
 
-  const trainingSessions = trainingSessionCount(scope);
-  const sessionTrainingHours = round1(trainingSessions * FORECAST_WEIGHTS.trainingHoursPerSession);
-  const payrollTrainingHours = hasPayroll(scope) ? FORECAST_WEIGHTS.payrollTrainingHours : 0;
+  const trainingSessions = trainingSessionCount(scope, weights);
+  const sessionTrainingHours = round1(trainingSessions * weights.trainingHoursPerSession);
+  const payrollTrainingHours = hasPayroll(scope) ? weights.payrollTrainingHours : 0;
   const trainingHours = round1(sessionTrainingHours + payrollTrainingHours);
   lineItems.push({
-    label: `Training (${trainingSessions} sessions × ${FORECAST_WEIGHTS.trainingHoursPerSession}h)`,
+    label: `Training (${trainingSessions} sessions × ${weights.trainingHoursPerSession}h)`,
     hours: sessionTrainingHours,
   });
   if (payrollTrainingHours) {
@@ -328,8 +357,6 @@ export type ForecastResult = {
   scenarios: ScenarioProjection[];
 };
 
-const SCHEDULING_BUFFER_DAYS = FORECAST_WEIGHTS.schedulingBufferDays;
-
 export const DISCOVERY_SCENARIOS = ["OPTIMISTIC", "TYPICAL", "PESSIMISTIC"] as const satisfies readonly DiscoveryScenario[];
 
 /** Prism Forecast+ discovery-responsiveness bands (not historical percentiles). */
@@ -365,16 +392,37 @@ export function parseSkipUsFederalHolidays(raw: unknown): boolean {
 export type ForecastOptions = {
   /** When true (default), skip observed US federal holidays in the kickoff → go-live window. */
   skipUsFederalHolidays?: boolean;
+  /** Settings snapshot. Omitted uses the cache, then the hardcoded weights. */
+  estimator?: EstimatorWeights;
 };
 
-function addProjectedDays(start: Date, days: number, skipHolidays: boolean): Date {
-  return skipHolidays ? addDaysSkippingUsFederalHolidays(start, days) : addDays(start, days);
+function holidayDateKeys(): Set<string> {
+  return new Set((peekPathConfig()?.holidayDates ?? []).map((row) => row.date));
+}
+
+function addProjectedDays(start: Date, days: number, skipHolidays: boolean, custom: Set<string>): Date {
+  if (custom.size === 0) {
+    return skipHolidays ? addDaysSkippingUsFederalHolidays(start, days) : addDays(start, days);
+  }
+  if (days <= 0) return start;
+  let remaining = days;
+  let current = start;
+  let stepped = 0;
+  const guard = days + custom.size + 400;
+  while (remaining > 0 && stepped < guard) {
+    current = addDays(current, 1);
+    stepped += 1;
+    if (custom.has(utcDayKey(current))) continue;
+    if (skipHolidays && isUsFederalHoliday(current)) continue;
+    remaining -= 1;
+  }
+  return current;
 }
 
 /** Training span: whole weeks of sessions plus Prism's 2-day scheduling buffer. */
-export function trainingDays(sessions: number, perWeek: number) {
+export function trainingDays(sessions: number, perWeek: number, weights: EstimatorWeights = activeEstimator()) {
   const weeks = Math.ceil(sessions / Math.max(1, perWeek));
-  return weeks * 7 + SCHEDULING_BUFFER_DAYS;
+  return weeks * 7 + weights.schedulingBufferDays;
 }
 
 /**
@@ -391,23 +439,26 @@ export function forecastImplementation(
   kickoffDate: Date,
   opts?: ForecastOptions,
 ): ForecastResult {
-  const tier = complexityTier(scope);
-  const hours = estimateHours(scope);
-  const skipHolidays = opts?.skipUsFederalHolidays ?? DEFAULT_SKIP_US_FEDERAL_HOLIDAYS;
-  const configDays = configCalendarDays(hours.configHours);
+  const weights = activeEstimator(opts?.estimator);
+  const tier = complexityTier(scope, weights);
+  const hours = estimateHours(scope, weights);
+  const skipHolidays = opts?.skipUsFederalHolidays ?? weights.skipUsFederalHolidays;
+  const configDays = configCalendarDays(hours.configHours, weights);
+  const customHolidayDates = holidayDateKeys();
 
   const scenarios: ScenarioProjection[] = DISCOVERY_SCENARIOS.map(
     (scenario) => {
-      const discoveryDays = DISCOVERY_DAYS[scenario];
-      const trainDays = trainingDays(hours.trainingSessions, scope.trainingsPerWeek);
+      const discoveryDays = weights.discoveryDays[scenario];
+      const trainDays = trainingDays(hours.trainingSessions, scope.trainingsPerWeek, weights);
       const modelCalendarDays = discoveryDays + configDays + trainDays;
 
-      const discoveryEnd = addProjectedDays(kickoffDate, discoveryDays, skipHolidays);
-      const configEnd = addProjectedDays(discoveryEnd, configDays, skipHolidays);
-      const goLiveDate = addProjectedDays(configEnd, trainDays, skipHolidays);
-      const calendarDays = skipHolidays
-        ? utcCalendarDaysBetween(kickoffDate, goLiveDate)
-        : modelCalendarDays;
+      const discoveryEnd = addProjectedDays(kickoffDate, discoveryDays, skipHolidays, customHolidayDates);
+      const configEnd = addProjectedDays(discoveryEnd, configDays, skipHolidays, customHolidayDates);
+      const goLiveDate = addProjectedDays(configEnd, trainDays, skipHolidays, customHolidayDates);
+      const calendarDays =
+        skipHolidays || customHolidayDates.size > 0
+          ? utcCalendarDaysBetween(kickoffDate, goLiveDate)
+          : modelCalendarDays;
       const holidaysSkipped = skipHolidays ? usFederalHolidaysInWindow(kickoffDate, goLiveDate) : [];
 
       const phases: PhaseProjection[] = [

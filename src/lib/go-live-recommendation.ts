@@ -14,6 +14,7 @@
  */
 
 import type { ComplexityTier, DiscoveryScenario } from "@/db/schema";
+import type { EstimatorWeights } from "@/lib/path-config-defaults";
 import {
   complexityTier,
   DISCOVERY_SCENARIOS,
@@ -186,8 +187,9 @@ function scenarioHours(
   kickoffDate: Date,
   goLiveDate: Date,
   customHoursPerWeek: number | null | undefined,
+  estimator?: EstimatorWeights,
 ): { estimatedHours: number; weeklyHours: number } {
-  const estimatedHours = estimateHours(scope).totalHours;
+  const estimatedHours = estimateHours(scope, estimator).totalHours;
   const weeklyHours =
     customHoursPerWeek != null && customHoursPerWeek > 0
       ? round1(customHoursPerWeek)
@@ -220,10 +222,14 @@ export function recommendGoLive(opts: {
   exclusions?: readonly string[];
   customHoursPerWeek?: number | null;
   skipUsFederalHolidays?: boolean;
+  estimator?: EstimatorWeights;
 }): GoLiveRecommendation {
-  const forecastOpts: ForecastOptions = { skipUsFederalHolidays: opts.skipUsFederalHolidays };
+  const forecastOpts: ForecastOptions = {
+    skipUsFederalHolidays: opts.skipUsFederalHolidays,
+    estimator: opts.estimator,
+  };
   const model = forecastImplementation(opts.scope, opts.kickoffDate, forecastOpts);
-  const tier = complexityTier(opts.scope);
+  const tier = complexityTier(opts.scope, opts.estimator);
   const historical = historicalDurationBands(opts.samples, {
     exclusions: opts.exclusions,
     complexityTier: tier,
@@ -241,6 +247,7 @@ export function recommendGoLive(opts: {
       opts.kickoffDate,
       s.goLiveDate,
       opts.customHoursPerWeek,
+      opts.estimator,
     );
     return {
       ...s,
@@ -254,7 +261,7 @@ export function recommendGoLive(opts: {
   return {
     scope: opts.scope,
     complexityTier: tier,
-    hours: estimateHours(opts.scope),
+    hours: estimateHours(opts.scope, opts.estimator),
     scenarios,
     goLiveSource,
     historical,

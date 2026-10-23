@@ -18,6 +18,7 @@
 import { and, eq, inArray, isNull, or, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { projects, projectMembers, type Role } from "@/db/schema";
+import { roleHas } from "@/lib/path-config-rules";
 
 export type Actor = {
   id: string;
@@ -35,49 +36,38 @@ export type Actor = {
 // ---------------------------------------------------------------------------
 
 const STAFF_ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER", "SPECIALIST", "MEMBER"];
-const ADMIN_ROLES: Role[] = ["OWNER", "ADMIN"];
-/** Roles allowed to see portfolio-wide reporting (the COO view). */
-const PORTFOLIO_ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER"];
 /**
- * Roles that can open and edit every project without being the named lead
- * or an explicit project member.
- *
- * Dock-parity for a small internal team (~15): any SPECIALIST can cover any
- * WIP site. Primary specialist / billing membership still drives auto-assignment
- * and staffing; it must not lock other specialists out.
- *
- * MEMBER (RCM / billing contributors) stay membership-scoped.
- * CUSTOMER stays portal-scoped.
- * Portfolio / Prism reporting stays OWNER/ADMIN/MANAGER only.
+ * App-role permissions live in Settings (`path_config_role`) and fall back to
+ * the seeded list: OWNER and ADMIN administer, managers see portfolio and
+ * create projects, specialists read every site, members stay on their sites.
+ * OWNER always keeps admin so a settings edit cannot lock the workspace out.
  */
-const READ_ALL_ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER", "SPECIALIST"];
 
 export const isStaff = (a: Pick<Actor, "role">) => STAFF_ROLES.includes(a.role);
 export const isCustomer = (a: Pick<Actor, "role">) => a.role === "CUSTOMER";
-export const isAdmin = (a: Pick<Actor, "role">) => ADMIN_ROLES.includes(a.role);
+/** OWNER always. Other roles need the `admin` permission (ADMIN by default). */
+export const isAdmin = (a: Pick<Actor, "role">) => a.role === "OWNER" || roleHas(a.role, "admin");
 /** Author or OWNER/ADMIN. Client-safe copy lives in authored-content.ts. */
 export { canEditAuthoredRecord } from "@/lib/authored-content";
-export const canSeePortfolio = (a: Pick<Actor, "role">) => PORTFOLIO_ROLES.includes(a.role);
+export const canSeePortfolio = (a: Pick<Actor, "role">) => roleHas(a.role, "portfolio");
 /** Alias: Prism Management staffing / engagement edit (OWNER/ADMIN/MANAGER). */
 export const canManagePrismCapacity = (a: Pick<Actor, "role">) => canSeePortfolio(a);
-export const canReadAllProjects = (a: Pick<Actor, "role">) => READ_ALL_ROLES.includes(a.role);
+export const canReadAllProjects = (a: Pick<Actor, "role">) => roleHas(a.role, "read_all");
 /** Team-wide open implies team-wide edit; create / delete / Prism stay leadership-only. */
 export const canWriteAllProjects = (a: Pick<Actor, "role">) => canReadAllProjects(a);
 
 /** Only staff may ever read INTERNAL rows. */
 export const canSeeInternal = (a: Pick<Actor, "role">) => isStaff(a);
 
-export const canManageUsers = (a: Pick<Actor, "role">) => isAdmin(a);
-export const canManageTemplates = (a: Pick<Actor, "role">) => isAdmin(a);
+export const canManageUsers = (a: Pick<Actor, "role">) => isAdmin(a) || roleHas(a.role, "users");
+export const canManageTemplates = (a: Pick<Actor, "role">) => roleHas(a.role, "templates");
 /** Learning Center curation uses the same OWNER/ADMIN bar as playbooks. */
 export const canManageLearningCenter = (a: Pick<Actor, "role">) => isAdmin(a);
 /** Leadership creates portfolio structure; specialists execute on existing sites. */
-export const canCreateProjects = (a: Pick<Actor, "role">) =>
-  ["OWNER", "ADMIN", "MANAGER"].includes(a.role);
+export const canCreateProjects = (a: Pick<Actor, "role">) => roleHas(a.role, "create_projects");
 
 /** Same gate as projects — specialists should not add customer accounts. */
-export const canCreateCustomers = (a: Pick<Actor, "role">) =>
-  ["OWNER", "ADMIN", "MANAGER"].includes(a.role);
+export const canCreateCustomers = (a: Pick<Actor, "role">) => canCreateProjects(a);
 
 /**
  * Permanent delete of a project or customer account.

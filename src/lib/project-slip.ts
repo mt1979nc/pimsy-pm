@@ -11,7 +11,8 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { projects, slipEvents } from "@/db/schema";
+import { projects, slipEvents, users } from "@/db/schema";
+import { slipGoLiveBlocked } from "@/lib/path-config-rules";
 import { audit } from "@/lib/audit";
 import type { Actor } from "@/lib/authz";
 import { fmtDate, parseDateInput, toDateInput, utcCalendarDaysBetween, utcDayKey } from "@/lib/dates";
@@ -160,7 +161,23 @@ export async function applyRequiredProjectSlip(opts: {
     return { ok: false, error: "That date does not move the go-live." };
   }
 
-  const plan = slipPersistencePlan(opts.approveGoLive !== false);
+  const approveGoLive = opts.approveGoLive !== false;
+  const approver = await db.query.users.findFirst({
+    where: eq(users.id, opts.actor.id),
+    columns: { isDirector: true, role: true },
+  });
+  if (
+    slipGoLiveBlocked({
+      days,
+      approveGoLive,
+      role: approver?.role ?? opts.actor.role,
+      isDirector: approver?.isDirector === true,
+    })
+  ) {
+    return { ok: false, error: "A director has to approve this slip." };
+  }
+
+  const plan = slipPersistencePlan(approveGoLive);
   const kickoff = project.startDate ? new Date(project.startDate) : null;
 
   if (plan.updateGoLive) {

@@ -18,6 +18,7 @@ import { PLAYBOOK_PATHS, PLAYBOOK_PATH_META, playbookDayCount } from "@/lib/play
 import { STAFFING_ROLES, STAFFING_ROLE_LABELS, MANAGER_OVERVIEW_ROLES } from "@/lib/staffing";
 import { UsFederalHolidayToggle } from "@/components/us-federal-holiday-toggle";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
+import type { EstimatorWeights } from "@/lib/path-config-defaults";
 import { PortalContactFields } from "@/components/portal-contact-fields";
 import { CustomerLogoFields } from "@/components/customer-logo-fields";
 
@@ -45,21 +46,23 @@ const tierTone: Record<ComplexityTier, "green" | "amber" | "red" | "violet"> = {
   ENTERPRISE: "violet",
 };
 
-const SERVICE_LINE_KEYS = Object.keys(SERVICE_LINE_LABELS);
-
 export function NewProjectForm({
   customers,
   staff,
   templates,
   existingProjects,
   defaultLeadId,
+  estimator,
 }: {
   customers: Option[];
   staff: Option[];
   templates: Template[];
   existingProjects: ExistingProject[];
   defaultLeadId: string;
+  estimator?: EstimatorWeights;
 }) {
+  const lineLabels = estimator?.serviceLineLabels ?? SERVICE_LINE_LABELS;
+  const lineKeys = Object.keys(lineLabels);
   const [state, action] = useActionState(createProject, {});
   const [type, setType] = useState("IMPLEMENTATION");
   const defaultPath =
@@ -92,8 +95,8 @@ export function NewProjectForm({
 
   const forecast = useMemo(() => {
     const kickoff = startDate ? new Date(`${startDate}T12:00:00.000Z`) : new Date();
-    return forecastImplementation(scope, kickoff, { skipUsFederalHolidays });
-  }, [scope, startDate, skipUsFederalHolidays]);
+    return forecastImplementation(scope, kickoff, { skipUsFederalHolidays, estimator });
+  }, [scope, startDate, skipUsFederalHolidays, estimator]);
 
   const chosen = forecast.scenarios.find((s) => s.scenario === scenario) ?? forecast.scenarios[1];
 
@@ -431,7 +434,7 @@ export function NewProjectForm({
               <div>
                 <div className="mb-1.5 text-[12.5px] font-medium text-ink-2">Service lines</div>
                 <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3">
-                  {SERVICE_LINE_KEYS.map((key) => (
+                  {lineKeys.map((key) => (
                     <label
                       key={key}
                       className="flex cursor-pointer items-center gap-2 text-[12.5px] text-ink-2"
@@ -442,7 +445,7 @@ export function NewProjectForm({
                         onChange={() => toggleServiceLine(key)}
                         className="size-4 shrink-0 accent-[var(--color-brand)]"
                       />
-                      {SERVICE_LINE_LABELS[key]}
+                      {lineLabels[key]}
                     </label>
                   ))}
                 </div>

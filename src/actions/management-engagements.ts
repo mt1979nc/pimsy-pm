@@ -204,7 +204,7 @@ export async function updateEngagement(
 
   const prismStatusRaw = formData.get("prismStatus")?.toString() ?? "";
   if (!isPrismStatus(prismStatusRaw)) {
-    return { error: "Status must be active, pre-kickoff, or pipeline." };
+    return { error: "Status is not one of the configured statuses." };
   }
   const prismStatus = prismStatusRaw as PrismStatus;
   const prismNote = formData.get("prismNote")?.toString().trim() || null;
@@ -510,7 +510,7 @@ export async function createEngagement(
 
   const prismStatusRaw = formData.get("prismStatus")?.toString() ?? "pipeline";
   if (!isPrismStatus(prismStatusRaw)) {
-    return { error: "Status must be active, pre-kickoff, or pipeline." };
+    return { error: "Status is not one of the configured statuses." };
   }
   const prismStatus = prismStatusRaw as PrismStatus;
   const prismNote = formData.get("prismNote")?.toString().trim() || null;
