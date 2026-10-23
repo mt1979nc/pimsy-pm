@@ -2,11 +2,14 @@
  * Day-to-day project work: the dashboard queue, My work, Inbox, Projects,
  * Customers, Waiting on, and task tracking.
  *
- * Hidden unless PATH_DAY_TO_DAY is 1, true, yes, or on. Analytics pages stay
- * either way. Set the variable to bring those sections back.
+ * Hidden unless PATH_DAY_TO_DAY is 1, true, yes, or on. Those routes are also
+ * behind PATH_ARCHIVED_MODULES (see archived-modules.ts). Analytics pages that
+ * were not archived stay either way.
  *
  * Portfolio landing matches canSeePortfolio (OWNER, ADMIN, MANAGER).
  */
+
+import { archivedModulesEnabled } from "@/lib/archived-modules";
 
 const PORTFOLIO_ROLES = new Set(["OWNER", "ADMIN", "MANAGER"]);
 
@@ -18,8 +21,17 @@ export function dayToDayEnabled(): boolean {
   return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
 }
 
-/** Where staff land. Customers stay on the portal; this is the staff path. */
+/**
+ * Where staff land. Customers stay on the portal when that module is restored.
+ * While archives are off, Portfolio (`/reports`) is hidden, so leadership lands
+ * on the Prism overview. Day-to-day (`/dashboard`) is only the home when both
+ * PATH_ARCHIVED_MODULES and PATH_DAY_TO_DAY are on.
+ */
 export function staffHomeHref(role: string): string {
+  if (!archivedModulesEnabled()) {
+    if (PORTFOLIO_ROLES.has(role)) return "/management";
+    return "/settings";
+  }
   if (dayToDayEnabled()) return "/dashboard";
   if (PORTFOLIO_ROLES.has(role)) return "/reports";
   return "/settings";

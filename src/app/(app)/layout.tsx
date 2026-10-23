@@ -7,6 +7,7 @@ import { StaffUtilityBar } from "@/components/staff-utility-bar";
 import { APP_VERSION } from "@/lib/version";
 import { PRODUCT_EXPANSION, PRODUCT_NAME } from "@/lib/brand";
 import { staffSidebarSections } from "@/lib/staff-sidebar";
+import { archivedModulesEnabled } from "@/lib/archived-modules";
 import { dayToDayEnabled } from "@/lib/day-to-day";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (actor.mustChangePassword) redirect("/change-password");
   const unread = await unreadThreadCount(actor);
   const showPortfolio = canSeePortfolio(actor);
-  const showDayToDay = dayToDayEnabled();
+  const showArchivedModules = archivedModulesEnabled();
+  const showDayToDay = showArchivedModules && dayToDayEnabled();
 
   return (
     <div className="grid min-h-screen w-full min-w-0 grid-cols-1 overflow-x-clip bg-bg lg:grid-cols-[228px_minmax(0,1fr)]">
@@ -40,6 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             showPortfolio,
             showTemplates: canManageTemplates(actor),
             showDayToDay,
+            showArchivedModules,
           })}
         />
 

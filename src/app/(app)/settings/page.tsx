@@ -1,3 +1,4 @@
+import { archivedModulesEnabled } from "@/lib/archived-modules";
 import { requireStaff } from "@/lib/guard";
 import { canManageTemplates } from "@/lib/authz";
 import { eq } from "drizzle-orm";
@@ -64,7 +65,7 @@ export default async function SettingsPage() {
           />
         </Card>
 
-        {canManageTemplates(actor) ? (
+        {canManageTemplates(actor) && archivedModulesEnabled() ? (
           <Card>
             <CardHeader title="Playbooks" />
             <div className="flex flex-wrap gap-2 px-4 py-3">
@@ -85,9 +86,11 @@ export default async function SettingsPage() {
           <CardHeader
             title="Update History"
             action={
-              <LinkButton href="/updates" size="sm" variant="secondary">
-                What&apos;s new
-              </LinkButton>
+              archivedModulesEnabled() ? (
+                <LinkButton href="/updates" size="sm" variant="secondary">
+                  What&apos;s new
+                </LinkButton>
+              ) : null
             }
           />
           <div className="px-4 py-3 text-[13px] text-ink-2">
