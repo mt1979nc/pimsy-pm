@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.31";
+export const APP_VERSION = "1.18.32";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,18 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.32",
+    date: "2026-10-23",
+    summary:
+      "Dashboard home charts weekday snapshots: Dock WIP, threads, Prism load, slips, and Zendesk. Pre-Oct 5 and post-Oct 5 WIP shapes share one fact row. Missing weekdays are gap days.",
+    highlights: [
+      "daily_facts and daily_fact_owners store WIP sites, overdue tasks, task progress, target passed, owner and team mix, threads waiting on PIMSY vs customer, Prism load and capacity, slip days, and Zendesk open tickets.",
+      "POST /api/internal/daily-brief/ingest accepts one JSON snapshot. npm run db:ingest:daily-brief and npm run db:backfill:daily-brief print a dry-run until --apply. Sample files are not in this change.",
+      "Prism Overview is the dashboard home. Gap days and the latest owner mix sit behind Gaps and owner mix.",
+      "Migrate 0034_daily_facts. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.31",
     date: "2026-10-23",

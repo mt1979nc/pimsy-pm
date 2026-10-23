@@ -135,6 +135,13 @@ export const env = {
     return optional("DOCK_DELIVERY_INGEST_SECRET");
   },
   /**
+   * Bearer token for POST /api/internal/daily-brief/ingest.
+   * Falls back to DOCK_DELIVERY_INGEST_SECRET when unset.
+   */
+  get DAILY_BRIEF_INGEST_SECRET() {
+    return optional("DAILY_BRIEF_INGEST_SECRET") || optional("DOCK_DELIVERY_INGEST_SECRET");
+  },
+  /**
    * Bearer token for POST /api/discovery-wizard/workbook (Power Automate
    * delivering the wizard Excel). Falls back to PRISM_READ_API_KEY when unset.
    */

@@ -1,17 +1,112 @@
 import Link from "next/link";
 import { loadDirectorSnapshot } from "@/lib/prism-snapshot";
+import { listDailyFacts } from "@/lib/daily-brief-store";
 import { Card, CardHeader, Stat, Badge } from "@/components/ui";
 import { HeadroomChart, MemberLoadCards } from "@/components/charts";
+import { TrendChart } from "@/components/trend-chart";
 import { fmtShort } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Overview — Prism" };
+export const metadata = { title: "Dashboard — Prism" };
+
+function missingFactsTable(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /daily_facts|42P01|does not exist/i.test(message);
+}
 
 export default async function ManagementHubPage() {
   const snap = await loadDirectorSnapshot(12);
+  let facts: Awaited<ReturnType<typeof listDailyFacts>> = [];
+  let factsReady = true;
+  try {
+    facts = await listDailyFacts();
+  } catch (err) {
+    if (!missingFactsTable(err)) throw err;
+    factsReady = false;
+  }
+  const plotted = facts.filter((fact) => !fact.gap);
+  const latest = plotted[plotted.length - 1];
+  const gaps = facts.filter((fact) => fact.gap);
 
   return (
     <div className="space-y-5">
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-[15px] font-semibold text-ink">Trends</h2>
+          {latest ? <span className="text-[12px] text-ink-3">Through {latest.factDate}</span> : null}
+        </div>
+        {!factsReady ? (
+          <p className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-[13px] text-ink-2">
+            Daily facts are not in this database yet. Apply migration 0034_daily_facts.
+          </p>
+        ) : plotted.length === 0 ? (
+          <Card>
+            <CardHeader title="No snapshots yet" subtitle="Weekday Dock, Prism, and Zendesk files fill this in." />
+            <details className="px-4 pb-4 text-[12.5px] text-ink-2">
+              <summary className="cursor-pointer font-medium text-ink">How to load</summary>
+              <p className="mt-2">
+                Put one folder per day under snapshots/, then run{" "}
+                <code className="text-[12px]">npm run db:backfill:daily-brief -- --dir ./snapshots</code>.
+                That prints a dry-run. Add --apply to write. Sample files are loaded separately.
+              </p>
+            </details>
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <TrendChart label="WIP sites" points={plotted.map((fact) => ({ date: fact.factDate, value: fact.wipSites }))} />
+              <TrendChart label="Overdue tasks" points={plotted.map((fact) => ({ date: fact.factDate, value: fact.overdueTasks }))} />
+              <TrendChart
+                label="Waiting on PIMSY"
+                points={plotted.map((fact) => ({ date: fact.factDate, value: fact.waitingOnPimsy }))}
+              />
+              <TrendChart
+                label="Waiting on customer"
+                points={plotted.map((fact) => ({ date: fact.factDate, value: fact.waitingOnCustomer }))}
+              />
+              <TrendChart
+                label="Prism load"
+                points={plotted.map((fact) => ({ date: fact.factDate, value: fact.prismLoadHours }))}
+              />
+              <TrendChart
+                label="Capacity"
+                points={plotted.map((fact) => ({ date: fact.factDate, value: fact.prismCapacityHours }))}
+              />
+              <TrendChart label="Slip days" points={plotted.map((fact) => ({ date: fact.factDate, value: fact.slipDays }))} />
+              <TrendChart
+                label="Zendesk open"
+                points={plotted.map((fact) => ({ date: fact.factDate, value: fact.zendeskOpen }))}
+              />
+            </div>
+            {latest ? (
+              <p className="text-[12.5px] text-ink-3">
+                Task progress {latest.taskDone ?? "—"}/{latest.taskTotal ?? "—"} · target passed {latest.targetPassed ?? "—"}
+                {latest.note ? ` · ${latest.note}` : ""}
+              </p>
+            ) : null}
+            {gaps.length > 0 || (latest?.owners.length ?? 0) > 0 ? (
+              <details className="rounded-xl border border-border bg-surface px-4 py-3">
+                <summary className="cursor-pointer text-[13px] font-medium text-ink">Gaps and owner mix</summary>
+                {gaps.length > 0 ? (
+                  <p className="mt-2 text-[12.5px] text-ink-2">
+                    Gap days: {gaps.map((fact) => fact.factDate).join(", ")}
+                  </p>
+                ) : null}
+                {latest && latest.owners.length > 0 ? (
+                  <ul className="mt-2 space-y-1 text-[12.5px] text-ink-2">
+                    {latest.owners.map((owner) => (
+                      <li key={`${owner.owner}-${owner.team}`}>
+                        {owner.owner}
+                        {owner.team ? ` · ${owner.team}` : ""} — {owner.wipSites} sites
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </details>
+            ) : null}
+          </>
+        )}
+      </section>
       {snap.hireNow ? (
         <div className="rounded-xl border border-transparent bg-red-soft px-4 py-3 text-[13px] text-red">
           <strong className="font-semibold">Hire now.</strong> Peak week {snap.peakWeekOf ?? "—"} is

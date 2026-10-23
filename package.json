@@ -1,6 +1,6 @@
 {
   "name": "pimsy-pm",
-  "version": "1.18.31",
+  "version": "1.18.32",
   "description": "Implementation & project management platform with customer portal for PIMSY EHR",
   "scripts": {
     "dev": "next dev",
@@ -25,6 +25,8 @@
     "db:import:dock-wip": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/import-dock-wip.ts",
     "db:import:dock-logos": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/import-dock-logos.ts",
     "db:ingest:dock-delivery": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/ingest-dock-delivery.ts",
+    "db:ingest:daily-brief": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/ingest-daily-brief.ts",
+    "db:backfill:daily-brief": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/backfill-daily-brief.ts",
     "db:cleanup:demo": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/cleanup-demo.ts",
     "db:cleanup:non-dock": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/cleanup-non-dock.ts",
     "db:rename:dock-acronym": "tsx --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/rename-dock-acronym.ts",
