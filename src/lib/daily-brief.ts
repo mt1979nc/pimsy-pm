@@ -3,8 +3,11 @@
  *
  * Dock WIP changed shape on 2026-10-05. Before that, sites have targetEnd
  * and owners. After that, they also have overdue counts, task progress,
- * a targetPassed flag, and team. Both shapes land in the same columns.
- * Weekends are absent on purpose. A weekday with no file is a gap.
+ * a targetPassed flag, and team. Shape is read from the file's fields,
+ * not from the date. Both shapes land in the same columns.
+ * A file with `"gap": true` is a gap row (counts stay empty). A Dock WIP
+ * file with no thread file is a gap too. Weekends are absent on purpose.
+ * A weekday with no file is a gap. Overdue is stored only when present.
  */
 
 export type WipShape = "pre-oct-5" | "post-oct-5" | "unknown";
@@ -41,6 +44,12 @@ export type DailyBriefInput = {
   dockThreads?: unknown;
   prism?: unknown;
   zendesk?: unknown;
+  /** delivery-status.json. Metrics fill thread columns the threads file left empty. */
+  deliveryStatus?: unknown;
+  /** prism-live markdown. Fills Prism columns the JSON left empty. Status counts go in the note. */
+  prismMarkdown?: string | null;
+  /** A Dock WIP file was present and dock-threads.json was not. That day is a gap. */
+  threadsMissing?: boolean;
 };
 
 type Loose = Record<string, unknown>;
@@ -122,6 +131,21 @@ function workspacesOf(wip: Loose | null): Loose[] {
   return wip.workspaces.map(asObj).filter((row): row is Loose => row != null);
 }
 
+/** A capture that says the day failed (`{"gap":true,"reason":"box_no_egress"}`). */
+export function isExplicitGap(value: unknown): boolean {
+  return asObj(value)?.gap === true;
+}
+
+function gapReason(value: unknown): string | null {
+  return asText(asObj(value)?.reason);
+}
+
+function explicitGapNote(label: string, value: unknown): string | null {
+  if (!isExplicitGap(value)) return null;
+  const reason = gapReason(value);
+  return reason ? `Gap: ${reason}.` : `${label} gap.`;
+}
+
 export function detectWipShape(wip: unknown): WipShape {
   const file = asObj(wip);
   if (!file) return "unknown";
@@ -168,11 +192,82 @@ function passedTarget(row: Loose, factDate: string, shape: WipShape): boolean {
   return Boolean(target && target < factDate);
 }
 
+/**
+ * delivery-status.json. `metrics` holds thread totals and day-over-day
+ * counts. `vsWed` is the change versus Wednesday. Day-over-day text stays
+ * in the note. There is no column for it.
+ */
+export function parseDeliveryStatus(value: unknown): {
+  openThreads: number | null;
+  waitingOnPimsy: number | null;
+  waitingOnCustomer: number | null;
+  note: string;
+} {
+  const root = asObj(value);
+  const metrics = asObj(root?.metrics) ?? root;
+  const vsWed = asObj(root?.vsWed ?? root?.vs_wed);
+  const parts: string[] = [];
+  const newer = asNumber(metrics?.newThreads ?? metrics?.new_threads);
+  const gone = asNumber(metrics?.goneThreads ?? metrics?.gone_threads);
+  const moves = asNumber(metrics?.targetMoves ?? metrics?.target_moves);
+  if (newer != null) parts.push(`New threads ${newer}.`);
+  if (gone != null) parts.push(`Gone threads ${gone}.`);
+  if (moves != null) parts.push(`Target moves ${moves}.`);
+  const vsThreads = asNumber(vsWed?.threads ?? vsWed?.openThreads);
+  if (vsThreads != null) parts.push(`Vs Wed threads ${vsThreads > 0 ? "+" : ""}${vsThreads}.`);
+  return {
+    openThreads: asNumber(metrics?.threads ?? metrics?.openThreads ?? metrics?.open_threads),
+    waitingOnPimsy: asNumber(metrics?.waiting_on_pimsy ?? metrics?.waitingOnPimsy),
+    waitingOnCustomer: asNumber(metrics?.waiting_on_customer ?? metrics?.waitingOnCustomer),
+    note: parts.join(" "),
+  };
+}
+
+/**
+ * prism-live markdown. Team hours vs cap become load and capacity.
+ * Active, stalled, and special counts have no columns, so they stay in
+ * the note. The slip summary becomes slip days.
+ */
+export function parsePrismLiveMarkdown(markdown: string): {
+  loadHours: number | null;
+  capacityHours: number | null;
+  slipDays: number | null;
+  note: string;
+} {
+  const text = markdown.replace(/\r\n/g, "\n");
+  let loadHours: number | null = null;
+  let capacityHours: number | null = null;
+  const ofCap = /(\d+(?:\.\d+)?)\s*h\s+of\s+(\d+(?:\.\d+)?)\s*h/i.exec(text);
+  const versus =
+    ofCap ??
+    /team hours?\s*:?\s*(\d+(?:\.\d+)?)\s*h?\s*(?:vs\.?|\/)\s*(?:cap(?:acity)?\s*)?(\d+(?:\.\d+)?)\s*h?/i.exec(text);
+  if (versus) {
+    loadHours = Number(versus[1]);
+    capacityHours = Number(versus[2]);
+  }
+  const status: string[] = [];
+  const active = /(?:^|[^\w])active\s+(\d+)/im.exec(text);
+  const stalled = /(?:^|[^\w])stalled\s+(\d+)/im.exec(text);
+  const special = /(?:^|[^\w])special\s+(\d+)/im.exec(text);
+  if (active) status.push(`Active ${active[1]}`);
+  if (stalled) status.push(`Stalled ${stalled[1]}`);
+  if (special) status.push(`Special ${special[1]}`);
+  const slip = /slip days?\s*:?\s*(\d+)/i.exec(text) ?? /slip summary[^\d]{0,40}(\d+)/i.exec(text);
+  return {
+    loadHours,
+    capacityHours,
+    slipDays: slip ? Number(slip[1]) : null,
+    note: status.length ? `${status.join(". ")}.` : "",
+  };
+}
+
 export function normalizeDailyBrief(input: DailyBriefInput): { ok: true; fact: DailyFactDraft } | { ok: false; error: string } {
   const wip = asObj(input.dockWip);
   const threads = asObj(input.dockThreads);
   const prism = asObj(input.prism);
   const zendesk = asObj(input.zendesk);
+  const wipGap = isExplicitGap(wip);
+  const threadsGap = isExplicitGap(threads);
   const factDate =
     dayKey(input.date) ||
     dayKey(wip?.retrievedAt) ||
@@ -181,19 +276,23 @@ export function normalizeDailyBrief(input: DailyBriefInput): { ok: true; fact: D
   if (!factDate) return { ok: false, error: "A snapshot needs a date (YYYY-MM-DD) or retrievedAt." };
 
   const shape = detectWipShape(wip);
-  const rows = workspacesOf(wip);
-  const emptyBoard = wip != null && rows.length === 0 && asNumber(wip.totalIncluded) === 0;
+  const rows = wipGap ? [] : workspacesOf(wip);
+  const emptyBoard = !wipGap && wip != null && rows.length === 0 && asNumber(wip.totalIncluded) === 0;
   const notes: string[] = [];
-  if (shape === "pre-oct-5") notes.push("Dock WIP shape is pre-Oct 5.");
-  if (shape === "post-oct-5") notes.push("Dock WIP shape is post-Oct 5.");
+  for (const note of [explicitGapNote("Dock WIP", wip), explicitGapNote("Dock threads", threads)]) {
+    if (note && !notes.includes(note)) notes.push(note);
+  }
+  if (input.threadsMissing) notes.push("Missing thread data.");
+  if (!wipGap && shape === "pre-oct-5") notes.push("Dock WIP shape is pre-Oct 5.");
+  if (!wipGap && shape === "post-oct-5") notes.push("Dock WIP shape is post-Oct 5.");
 
-  let overdueTasks: number | null = asNumber(wip?.overdueTaskTotal);
+  let overdueTasks: number | null = wipGap ? null : asNumber(wip?.overdueTaskTotal);
   let sawOverdue = overdueTasks != null;
   let taskDone = 0;
   let taskTotal = 0;
   let sawProgress = false;
   let targetPassed = 0;
-  let sawTarget = shape === "pre-oct-5";
+  let sawTarget = !wipGap && shape === "pre-oct-5";
   const owners = new Map<string, DailyOwnerFact>();
 
   for (const row of rows) {
@@ -222,14 +321,23 @@ export function normalizeDailyBrief(input: DailyBriefInput): { ok: true; fact: D
     }
   }
 
-  const totals = asObj(threads?.totals);
-  const waitingPimsy = asNumber(totals?.waiting_on_pimsy ?? totals?.waitingOnPimsy);
-  const waitingCustomer = asNumber(totals?.waiting_on_customer ?? totals?.waitingOnCustomer);
-  const openThreads = asNumber(totals?.threads ?? totals?.openThreads ?? threads?.threadCount);
+  const totals = threadsGap ? null : asObj(threads?.totals);
+  let waitingPimsy = asNumber(totals?.waiting_on_pimsy ?? totals?.waitingOnPimsy);
+  let waitingCustomer = asNumber(totals?.waiting_on_customer ?? totals?.waitingOnCustomer);
+  let openThreads = asNumber(totals?.threads ?? totals?.openThreads ?? (threadsGap ? null : threads?.threadCount));
+
+  if (input.deliveryStatus != null) {
+    const delivery = parseDeliveryStatus(input.deliveryStatus);
+    if (openThreads == null) openThreads = delivery.openThreads;
+    if (waitingPimsy == null) waitingPimsy = delivery.waitingOnPimsy;
+    if (waitingCustomer == null) waitingCustomer = delivery.waitingOnCustomer;
+    if (delivery.note) notes.push(delivery.note);
+  }
 
   let zendeskOpen: number | null = null;
   if (zendesk) {
-    if (zendesk.gap === true || zendesk.tickets == null && zendesk.open == null && zendesk.openTickets == null) {
+    const zendeskEmpty = zendesk.tickets == null && zendesk.open == null && zendesk.openTickets == null;
+    if (isExplicitGap(zendesk) || zendeskEmpty) {
       notes.push("Zendesk gap.");
     } else if (Array.isArray(zendesk.tickets)) {
       zendeskOpen = zendesk.tickets.length;
@@ -238,13 +346,16 @@ export function normalizeDailyBrief(input: DailyBriefInput): { ok: true; fact: D
     }
   }
 
-  const wipSites = asNumber(wip?.totalIncluded) ?? (rows.length > 0 ? rows.length : wip ? 0 : null);
+  const fromMarkdown = input.prismMarkdown ? parsePrismLiveMarkdown(input.prismMarkdown) : null;
+  if (fromMarkdown?.note) notes.push(fromMarkdown.note);
+
+  const wipSites = wipGap || !wip ? null : (asNumber(wip.totalIncluded) ?? (rows.length > 0 ? rows.length : 0));
 
   return {
     ok: true,
     fact: {
       factDate,
-      gap: emptyBoard,
+      gap: emptyBoard || wipGap || threadsGap || input.threadsMissing === true,
       wipShape: shape,
       wipSites,
       overdueTasks: sawOverdue ? overdueTasks : null,
@@ -254,9 +365,13 @@ export function normalizeDailyBrief(input: DailyBriefInput): { ok: true; fact: D
       openThreads,
       waitingOnPimsy: waitingPimsy,
       waitingOnCustomer: waitingCustomer,
-      prismLoadHours: asNumber(prism?.loadHours ?? prism?.thisWeekLoad ?? prism?.load),
-      prismCapacityHours: asNumber(prism?.capacityHours ?? prism?.deptCapacityHours ?? prism?.capacity),
-      slipDays: asNumber(prism?.slipDays ?? prism?.slip_days),
+      prismLoadHours:
+        asNumber(prism?.loadHours ?? prism?.thisWeekLoad ?? prism?.load) ?? fromMarkdown?.loadHours ?? null,
+      prismCapacityHours:
+        asNumber(prism?.capacityHours ?? prism?.deptCapacityHours ?? prism?.capacity) ??
+        fromMarkdown?.capacityHours ??
+        null,
+      slipDays: asNumber(prism?.slipDays ?? prism?.slip_days) ?? fromMarkdown?.slipDays ?? null,
       zendeskOpen,
       note: notes.join(" "),
       owners: [...owners.values()].sort((a, b) => b.wipSites - a.wipSites || a.owner.localeCompare(b.owner)),

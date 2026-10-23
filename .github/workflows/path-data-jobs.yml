@@ -1,0 +1,175 @@
+name: PATH data jobs
+
+# Manual Dock/Prism data jobs. Nothing here runs on push.
+#
+# job=prism-diff
+#   Dry-run only. Never passes --apply. Uploads prism-diff-report.
+#   Needs prism-dump.json from an Actions artifact (artifact_name +
+#   artifact_run_id) or, if those inputs are empty, from the repo root.
+#   Opens the Postgres firewall because the diff reads PATH.
+#
+# job=daily-brief-backfill
+#   Reads a snapshot folder. Default is the committed snapshots/daily-brief
+#   directory (see its README — do not commit customer files). Set
+#   artifact_name and artifact_run_id to download a snapshot artifact
+#   instead. The artifact root must be the snapshot directory.
+#   apply defaults to false. The firewall opens only when apply is true.
+#
+# Secrets match Deploy to Azure: AZURE_CREDENTIALS, AZURE_RESOURCE_GROUP,
+# AZURE_POSTGRES_SERVER_NAME, DATABASE_URL. The firewall rule name is
+# github-actions-data-jobs so it does not collide with a deploy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which job to run
+        required: true
+        type: choice
+        options:
+          - prism-diff
+          - daily-brief-backfill
+      apply:
+        description: Write daily facts (backfill only). prism-diff stays a dry-run.
+        required: false
+        type: boolean
+        default: false
+      artifact_name:
+        description: Existing artifact with snapshots or prism-dump.json. Empty uses the repo.
+        required: false
+        type: string
+        default: ""
+      artifact_run_id:
+        description: Run id that published artifact_name. Required when artifact_name is set.
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: path-data-jobs
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check artifact inputs
+        if: inputs.artifact_name != '' && inputs.artifact_run_id == ''
+        run: |
+          echo "artifact_run_id is required when artifact_name is set."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download the snapshot or dump artifact
+        if: inputs.artifact_name != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          run-id: ${{ inputs.artifact_run_id }}
+          github-token: ${{ github.token }}
+          path: incoming
+
+      - name: Log in to Azure
+        if: inputs.job == 'prism-diff' || (inputs.job == 'daily-brief-backfill' && inputs.apply)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Temporarily allow this runner through the Postgres firewall
+        id: fw
+        if: inputs.job == 'prism-diff' || (inputs.job == 'daily-brief-backfill' && inputs.apply)
+        env:
+          POSTGRES_SERVER: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
+        run: |
+          RUNNER_IP="$(curl -s https://api.ipify.org)"
+          echo "runner_ip=$RUNNER_IP" >> "$GITHUB_OUTPUT"
+          az postgres flexible-server firewall-rule create \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --server-name "$POSTGRES_SERVER" \
+            --name "github-actions-data-jobs" \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" \
+            --output none
+
+      - name: Prism diff (dry-run)
+        if: inputs.job == 'prism-diff'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          set -euo pipefail
+          if [ "$APPLY" = "true" ]; then
+            echo "apply=true is ignored for prism-diff. This job never passes --apply."
+          fi
+          DUMP=""
+          if [ -n "${{ inputs.artifact_name }}" ]; then
+            if [ -z "${{ inputs.artifact_run_id }}" ]; then
+              echo "artifact_run_id is required when artifact_name is set."
+              exit 1
+            fi
+            DUMP="$(find incoming -name prism-dump.json -print -quit || true)"
+          elif [ -f prism-dump.json ]; then
+            DUMP="prism-dump.json"
+          fi
+          if [ -z "$DUMP" ]; then
+            echo "No prism-dump.json. Upload an artifact that contains it (npm run db:dump:prism -- --out prism-dump.json) and pass artifact_name plus artifact_run_id."
+            exit 1
+          fi
+          npm run db:import:prism-diff -- "$DUMP" | tee prism-diff-report.txt
+
+      - name: Upload the Prism diff report
+        if: always() && inputs.job == 'prism-diff'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-diff-report
+          path: prism-diff-report.txt
+          if-no-files-found: ignore
+
+      - name: Daily brief backfill
+        if: inputs.job == 'daily-brief-backfill'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.artifact_name }}" ] && [ -z "${{ inputs.artifact_run_id }}" ]; then
+            echo "artifact_run_id is required when artifact_name is set."
+            exit 1
+          fi
+          if [ -n "${{ inputs.artifact_name }}" ]; then
+            DIR="incoming"
+          else
+            DIR="snapshots/daily-brief"
+          fi
+          if [ "$APPLY" = "true" ]; then
+            npm run db:backfill:daily-brief -- --dir "$DIR" --apply
+          else
+            npm run db:backfill:daily-brief -- --dir "$DIR"
+          fi
+
+      - name: Remove the temporary firewall rule
+        if: always() && (inputs.job == 'prism-diff' || (inputs.job == 'daily-brief-backfill' && inputs.apply))
+        env:
+          POSTGRES_SERVER: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
+        run: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --server-name "$POSTGRES_SERVER" \
+            --name "github-actions-data-jobs" \
+            --yes \
+            --output none || true

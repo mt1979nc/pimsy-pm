@@ -1,0 +1,11 @@
+{
+  "metrics": {
+    "threads": 8,
+    "waiting_on_pimsy": 5,
+    "waiting_on_customer": 3,
+    "newThreads": 2,
+    "goneThreads": 1,
+    "targetMoves": 1
+  },
+  "vsWed": { "threads": 2 }
+}
