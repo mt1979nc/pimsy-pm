@@ -58,6 +58,9 @@ export function EngagementEditForm({
   exclusions,
   excludeFromAnalytics,
   estimator,
+  statuses,
+  slipCauses,
+  slipApproval,
 }: {
   projectId: string;
   code: string;
@@ -91,7 +94,21 @@ export function EngagementEditForm({
   exclusions: string[];
   excludeFromAnalytics: boolean;
   estimator?: EstimatorWeights;
+  statuses?: { key: string; label: string }[];
+  slipCauses?: { key: string; label: string }[];
+  slipApproval?: { approverRole: string; thresholdDays: number };
 }) {
+  const statusOptions =
+    statuses && statuses.length > 0
+      ? statuses
+      : PRISM_STATUSES.map((key) => ({ key, label: PRISM_STATUS_LABELS[key] }));
+  const causeOptions =
+    slipCauses && slipCauses.length > 0
+      ? slipCauses
+      : [
+          { key: "CUSTOMER", label: "Customer" },
+          { key: "PIMSY", label: "PIMSY" },
+        ];
   const lineLabels = estimator?.serviceLineLabels ?? SERVICE_LINE_LABELS;
   const [state, action] = useActionState(updateEngagement, {});
   const initialLocked = !!initialGoLiveDate;
@@ -225,9 +242,9 @@ export function EngagementEditForm({
               defaultValue={prismStatus}
               className={inputClass}
             >
-              {PRISM_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {PRISM_STATUS_LABELS[s]}
+              {statusOptions.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
                 </option>
               ))}
             </select>
@@ -343,6 +360,14 @@ export function EngagementEditForm({
             </p>
           ) : null}
         </div>
+        {slipApproval ? (
+          <p className="text-[12.5px] text-ink-3">
+            {slipApproval.thresholdDays <= 0
+              ? `A ${slipApproval.approverRole.toLowerCase()} approves every slip.`
+              : `A ${slipApproval.approverRole.toLowerCase()} approves slips of ${slipApproval.thresholdDays}+ days.`}{" "}
+            Owners can always approve.
+          </p>
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-3">
           <Field
             label="Slip days (+N)"
@@ -361,8 +386,11 @@ export function EngagementEditForm({
           <Field label="Slip cause" htmlFor="slipCause">
             <select id="slipCause" name="slipCause" defaultValue="" className={inputClass}>
               <option value="">— Untagged —</option>
-              <option value="CUSTOMER">Customer</option>
-              <option value="PIMSY">PIMSY</option>
+              {causeOptions.map((cause) => (
+                <option key={cause.key} value={cause.key}>
+                  {cause.label}
+                </option>
+              ))}
             </select>
           </Field>
           <Field label="Slip note" htmlFor="slipNote">

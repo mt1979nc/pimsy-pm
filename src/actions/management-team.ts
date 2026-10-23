@@ -1,35 +1,54 @@
 "use server";
 
 import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
-import { and, asc, eq, ne } from "drizzle-orm";
+import { asc, eq, ne } from "drizzle-orm";
 
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { pathConfigPerson, users } from "@/db/schema";
 import { requirePortfolioAccess } from "@/lib/guard";
 import { canManagePrismCapacity, ForbiddenError } from "@/lib/authz";
 import { audit } from "@/lib/audit";
+import { loadPathConfig, resetPathConfigCache } from "@/lib/path-config";
 import type { ActionState } from "@/actions/messages";
 
-/** Active internal staff for the Management team roster. */
+const teamColumns = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  title: true,
+  capacityHoursPerWeek: true,
+  capacityExempt: true,
+  canLead: true,
+  isDirector: true,
+  prismTeamId: true,
+  image: true,
+  isActive: true,
+} as const;
+
+/** Staff roster. Flags and hours come from Settings when a person row exists. */
 export async function listManagementTeam() {
   await requirePortfolioAccess();
-  return db.query.users.findMany({
-    where: and(eq(users.isActive, true), ne(users.role, "CUSTOMER")),
-    columns: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      title: true,
-      capacityHoursPerWeek: true,
-      capacityExempt: true,
-      canLead: true,
-      isDirector: true,
-      prismTeamId: true,
-      image: true,
-    },
+  const config = await loadPathConfig();
+  const rows = await db.query.users.findMany({
+    where: ne(users.role, "CUSTOMER"),
+    columns: teamColumns,
     orderBy: [asc(users.name)],
   });
+  const overlay = new Map(config.people.map((person) => [person.userId, person]));
+  const mapped = rows.map((row) => {
+    const saved = overlay.get(row.id);
+    return {
+      ...row,
+      canLead: saved?.canLead ?? row.canLead,
+      capacityExempt: saved?.capacityExempt ?? row.capacityExempt,
+      capacityHoursPerWeek: saved?.hoursPerWeek ?? row.capacityHoursPerWeek,
+    };
+  });
+  return {
+    active: mapped.filter((row) => row.isActive),
+    former: mapped.filter((row) => !row.isActive),
+  };
 }
 
 export async function updateTeamMemberFlags(
@@ -53,6 +72,7 @@ export async function updateTeamMemberFlags(
       role: true,
       isActive: true,
       capacityHoursPerWeek: true,
+      capacityHidden: true,
     },
   });
   if (!target || target.role === "CUSTOMER" || !target.isActive) {
@@ -82,6 +102,21 @@ export async function updateTeamMemberFlags(
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId));
+
+  await db
+    .insert(pathConfigPerson)
+    .values({
+      userId,
+      canLead,
+      capacityExempt,
+      capacityHidden: target.capacityHidden,
+      hoursPerWeek: hrs,
+    })
+    .onConflictDoUpdate({
+      target: pathConfigPerson.userId,
+      set: { canLead, capacityExempt, hoursPerWeek: hrs },
+    });
+  resetPathConfigCache();
 
   await audit({
     actor,

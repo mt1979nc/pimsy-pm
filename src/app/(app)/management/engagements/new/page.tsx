@@ -33,6 +33,7 @@ export default async function NewEngagementPage() {
           durationSamples={goLive.samples}
           exclusions={goLive.exclusions}
           estimator={currentPathConfig().estimator}
+          statuses={currentPathConfig().statuses}
         />
       </Card>
     </div>

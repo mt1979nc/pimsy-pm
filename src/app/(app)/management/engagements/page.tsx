@@ -2,21 +2,11 @@ import Link from "next/link";
 import { Card, CardHeader, EmptyState, LinkButton } from "@/components/ui";
 import { listEngagements } from "@/actions/management-engagements";
 import { EngagementRosterTable } from "../_components/engagement-roster-table";
-import { PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
 import { cn } from "@/lib/cn";
+import { loadPathConfig } from "@/lib/path-config";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Roster" };
-
-const FILTERS: Array<{ key: "all" | PrismStatus; label: string }> = [
-  { key: "all", label: "All" },
-  { key: "active", label: "Active" },
-  { key: "stalled", label: "Stalled" },
-  { key: "special", label: "Special" },
-  { key: "pre-kickoff", label: "Pre-kickoff" },
-  { key: "pre-go-live", label: "Pre Go-Live" },
-  { key: "pipeline", label: "Pipeline" },
-];
 
 export default async function ManagementEngagementsPage({
   searchParams,
@@ -24,25 +14,22 @@ export default async function ManagementEngagementsPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status: statusParam } = await searchParams;
-  const filter = FILTERS.some((f) => f.key === statusParam) ? (statusParam as (typeof FILTERS)[number]["key"]) : "all";
+  const config = await loadPathConfig();
+  const filters = [{ key: "all", label: "All" }, ...config.statuses.map((row) => ({ key: row.key, label: row.label }))];
+  const filter = filters.some((item) => item.key === statusParam) ? statusParam! : "all";
   const rows = await listEngagements();
-  const visible =
-    filter === "all" ? rows : rows.filter((r) => r.effectivePrismStatus === filter);
-  const counts: Record<(typeof FILTERS)[number]["key"], number> = {
-    all: rows.length,
-    active: rows.filter((r) => r.effectivePrismStatus === "active").length,
-    stalled: rows.filter((r) => r.effectivePrismStatus === "stalled").length,
-    special: rows.filter((r) => r.effectivePrismStatus === "special").length,
-    "pre-kickoff": rows.filter((r) => r.effectivePrismStatus === "pre-kickoff").length,
-    "pre-go-live": rows.filter((r) => r.effectivePrismStatus === "pre-go-live").length,
-    pipeline: rows.filter((r) => r.effectivePrismStatus === "pipeline").length,
-  };
+  const visible = filter === "all" ? rows : rows.filter((row) => row.effectivePrismStatus === filter);
+  const counts = new Map<string, number>([["all", rows.length]]);
+  for (const row of rows) {
+    counts.set(row.effectivePrismStatus, (counts.get(row.effectivePrismStatus) ?? 0) + 1);
+  }
+  const filterLabel = filters.find((item) => item.key === filter)?.label ?? "Roster";
 
   return (
     <div className="space-y-4" data-page-width="full">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-surface-2 p-1">
-          {FILTERS.map((f) => (
+          {filters.map((f) => (
             <Link
               key={f.key}
               href={f.key === "all" ? "/management/engagements" : `/management/engagements?status=${f.key}`}
@@ -52,7 +39,7 @@ export default async function ManagementEngagementsPage({
               )}
             >
               {f.label}
-              <span className="ml-1 tabular-nums text-ink-3">{counts[f.key]}</span>
+              <span className="ml-1 tabular-nums text-ink-3">{counts.get(f.key) ?? 0}</span>
             </Link>
           ))}
         </div>
@@ -62,7 +49,7 @@ export default async function ManagementEngagementsPage({
       </div>
       <Card className="min-w-0">
         <CardHeader
-          title={filter === "all" ? "Roster" : PRISM_STATUS_LABELS[filter]}
+          title={filter === "all" ? "Roster" : filterLabel}
           subtitle={
             filter === "pipeline"
               ? "Not counted in weekly hours."
