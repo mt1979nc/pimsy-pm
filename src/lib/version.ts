@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.34";
+export const APP_VERSION = "1.18.35";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.35",
+    date: "2026-10-26",
+    summary:
+      "PATH data jobs can dump Prism SQL itself before a dry-run diff. Leave the artifact inputs blank and it writes a fresh prism-dump.json, then uploads the dump and the diff report.",
+    highlights: [
+      "prism-diff still never passes --apply. apply stays false unless a backfill should write.",
+      "A blank artifact opens a temporary firewall rule on pimsy-prism-sql, runs the Prism dump, then removes that rule. An uploaded dump is still accepted as an override.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.34",
     date: "2026-10-23",
