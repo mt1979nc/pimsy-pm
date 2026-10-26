@@ -3,10 +3,13 @@ name: PATH data jobs
 # Manual Dock/Prism data jobs. Nothing here runs on push.
 #
 # job=prism-diff
-#   Dry-run only. Never passes --apply. Uploads prism-diff-report.
-#   Needs prism-dump.json from an Actions artifact (artifact_name +
-#   artifact_run_id) or, if those inputs are empty, from the repo root.
-#   Opens the Postgres firewall because the diff reads PATH.
+#   Dry-run only. Never passes --apply.
+#   With artifact_name empty, it opens a temporary firewall rule on Azure SQL
+#   server pimsy-prism-sql, runs npm run db:dump:prism, then diffs that file.
+#   artifact_name + artifact_run_id still override that and supply
+#   prism-dump.json instead. Either way it uploads prism-dump.json and
+#   prism-diff-report.txt. Opens the Postgres firewall because the diff
+#   reads PATH.
 #
 # job=daily-brief-backfill
 #   Reads a snapshot folder. Default is the committed snapshots/daily-brief
@@ -16,8 +19,10 @@ name: PATH data jobs
 #   apply defaults to false. The firewall opens only when apply is true.
 #
 # Secrets match Deploy to Azure: AZURE_CREDENTIALS, AZURE_RESOURCE_GROUP,
-# AZURE_POSTGRES_SERVER_NAME, DATABASE_URL. The firewall rule name is
-# github-actions-data-jobs so it does not collide with a deploy.
+# AZURE_POSTGRES_SERVER_NAME, DATABASE_URL. A fresh dump also needs
+# PRISM_SQL_CONNECTION_STRING (the Prism SWA SQL_CONNECTION_STRING). The
+# Postgres rule name is github-actions-data-jobs. The Prism SQL rule name
+# is github-actions-prism-sql. Both are removed on the way out.
 
 on:
   workflow_dispatch:
@@ -35,7 +40,7 @@ on:
         type: boolean
         default: false
       artifact_name:
-        description: Existing artifact with snapshots or prism-dump.json. Empty uses the repo.
+        description: Optional artifact with snapshots or prism-dump.json. Empty backfill uses snapshots/daily-brief. Empty prism-diff dumps Prism SQL.
         required: false
         type: string
         default: ""
@@ -104,6 +109,44 @@ jobs:
             --end-ip-address "$RUNNER_IP" \
             --output none
 
+      - name: Temporarily allow this runner through the Prism SQL firewall
+        id: prismfw
+        if: inputs.job == 'prism-diff' && inputs.artifact_name == ''
+        env:
+          FALLBACK_RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        run: |
+          set -euo pipefail
+          RUNNER_IP="$(curl -s https://api.ipify.org)"
+          echo "runner_ip=$RUNNER_IP" >> "$GITHUB_OUTPUT"
+          RG="$(az sql server list --query "[?name=='pimsy-prism-sql'].resourceGroup | [0]" -o tsv 2>/dev/null || true)"
+          if [ -z "$RG" ] || [ "$RG" = "null" ]; then
+            RG="$FALLBACK_RG"
+          fi
+          echo "resource_group=$RG" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$RG" > prism-sql-rg.txt
+          az sql server firewall-rule create \
+            --resource-group "$RG" \
+            --server pimsy-prism-sql \
+            --name github-actions-prism-sql \
+            --start-ip-address "$RUNNER_IP" \
+            --end-ip-address "$RUNNER_IP" \
+            --output none
+
+      - name: Dump Prism SQL
+        if: inputs.job == 'prism-diff' && inputs.artifact_name == ''
+        env:
+          PRISM_SQL_CONNECTION_STRING: ${{ secrets.PRISM_SQL_CONNECTION_STRING }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PRISM_SQL_CONNECTION_STRING}" ]; then
+            echo "PRISM_SQL_CONNECTION_STRING is empty. Add the Prism Static Web App SQL_CONNECTION_STRING as that Actions secret."
+            exit 1
+          fi
+          if ! node -e "require.resolve('mssql')" >/dev/null 2>&1; then
+            npm install mssql --no-save
+          fi
+          npm run db:dump:prism -- --out prism-dump.json
+
       - name: Prism diff (dry-run)
         if: inputs.job == 'prism-diff'
         env:
@@ -115,21 +158,28 @@ jobs:
           if [ "$APPLY" = "true" ]; then
             echo "apply=true is ignored for prism-diff. This job never passes --apply."
           fi
-          DUMP=""
           if [ -n "${{ inputs.artifact_name }}" ]; then
-            if [ -z "${{ inputs.artifact_run_id }}" ]; then
-              echo "artifact_run_id is required when artifact_name is set."
+            DUMP="$(find incoming -name prism-dump.json -print -quit || true)"
+            if [ -z "$DUMP" ]; then
+              echo "Artifact has no prism-dump.json."
               exit 1
             fi
-            DUMP="$(find incoming -name prism-dump.json -print -quit || true)"
-          elif [ -f prism-dump.json ]; then
-            DUMP="prism-dump.json"
-          fi
-          if [ -z "$DUMP" ]; then
-            echo "No prism-dump.json. Upload an artifact that contains it (npm run db:dump:prism -- --out prism-dump.json) and pass artifact_name plus artifact_run_id."
+            if [ "$DUMP" != "prism-dump.json" ]; then
+              cp "$DUMP" prism-dump.json
+            fi
+          elif [ ! -f prism-dump.json ]; then
+            echo "prism-dump.json was not written. The dump step should have created it."
             exit 1
           fi
-          npm run db:import:prism-diff -- "$DUMP" | tee prism-diff-report.txt
+          npm run db:import:prism-diff -- prism-dump.json | tee prism-diff-report.txt
+
+      - name: Upload the Prism dump
+        if: always() && inputs.job == 'prism-diff'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-dump
+          path: prism-dump.json
+          if-no-files-found: ignore
 
       - name: Upload the Prism diff report
         if: always() && inputs.job == 'prism-diff'
@@ -171,5 +221,22 @@ jobs:
             --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
             --server-name "$POSTGRES_SERVER" \
             --name "github-actions-data-jobs" \
+            --yes \
+            --output none || true
+
+      - name: Remove the temporary Prism SQL firewall rule
+        if: always() && inputs.job == 'prism-diff' && inputs.artifact_name == ''
+        run: |
+          RG="$(cat prism-sql-rg.txt 2>/dev/null || true)"
+          if [ -z "$RG" ]; then
+            RG="$(az sql server list --query "[?name=='pimsy-prism-sql'].resourceGroup | [0]" -o tsv 2>/dev/null || true)"
+          fi
+          if [ -z "$RG" ] || [ "$RG" = "null" ]; then
+            RG="${{ secrets.AZURE_RESOURCE_GROUP }}"
+          fi
+          az sql server firewall-rule delete \
+            --resource-group "$RG" \
+            --server pimsy-prism-sql \
+            --name github-actions-prism-sql \
             --yes \
             --output none || true

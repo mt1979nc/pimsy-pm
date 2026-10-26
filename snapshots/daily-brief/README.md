@@ -38,12 +38,12 @@ Actions → **PATH data jobs** (`workflow_dispatch`).
 | --- | --- |
 | `job` | `prism-diff` or `daily-brief-backfill` |
 | `apply` | Default false. Backfill writes only when this is true. `prism-diff` never passes `--apply`. |
-| `artifact_name` | Name of an existing Actions artifact that holds the files. Leave empty to use this folder from the commit. |
+| `artifact_name` | Optional. An existing Actions artifact that holds the files. Leave empty for the default below. |
 | `artifact_run_id` | Run id that published `artifact_name`. Required when `artifact_name` is set. |
 
 Upload the artifact from a private run, or with `gh` against a workflow you already trust. Do not add the files to this repository.
 
 - **Backfill artifact.** The artifact root is the snapshot directory: day folders (`2026-09-08/dock-wip.json`) or flat names (`dock-wip-2026-09-08.json`). The job runs `npm run db:backfill:daily-brief -- --dir <that folder>`. It opens the database firewall only when `apply` is true.
-- **Prism diff artifact.** The artifact must contain `prism-dump.json` (from `npm run db:dump:prism -- --out prism-dump.json`). The job runs `npm run db:import:prism-diff` in dry-run and uploads `prism-diff-report`.
+- **Prism diff.** With `artifact_name` empty, the job opens a temporary firewall rule on Azure SQL server `pimsy-prism-sql`, runs `npm run db:dump:prism -- --out prism-dump.json` with `PRISM_SQL_CONNECTION_STRING`, then dry-runs the diff. It never passes `--apply`. It uploads `prism-dump.json` and `prism-diff-report.txt`, and removes the SQL firewall rule on the way out. Pass `artifact_name` and `artifact_run_id` only to diff an existing dump instead. That artifact must contain `prism-dump.json`.
 
-With `artifact_name` empty, backfill reads this committed folder (documentation only, unless you add files on a private branch you do not push). Prism diff then looks for `prism-dump.json` in the repo root and fails if it is not there.
+With `artifact_name` empty, backfill reads this committed folder (documentation only, unless you add files on a private branch you do not push).
