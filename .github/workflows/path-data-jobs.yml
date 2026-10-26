@@ -20,9 +20,12 @@ name: PATH data jobs
 #
 # Secrets match Deploy to Azure: AZURE_CREDENTIALS, AZURE_RESOURCE_GROUP,
 # AZURE_POSTGRES_SERVER_NAME, DATABASE_URL. A fresh dump also needs
-# PRISM_SQL_CONNECTION_STRING (the Prism SWA SQL_CONNECTION_STRING). The
-# Postgres rule name is github-actions-data-jobs. The Prism SQL rule name
-# is github-actions-prism-sql. Both are removed on the way out.
+# PRISM_SQL_CONNECTION_STRING (the Prism SWA SQL_CONNECTION_STRING).
+# pimsy-prism-sql is not in AZURE_RESOURCE_GROUP. Its group comes from
+# `az sql server list`, then optional PRISM_SQL_RESOURCE_GROUP, then
+# pimsy-implementations. The Postgres rule name is github-actions-data-jobs.
+# The Prism SQL rule name is github-actions-prism-sql. Both are removed
+# on the way out.
 
 on:
   workflow_dispatch:
@@ -113,15 +116,24 @@ jobs:
         id: prismfw
         if: inputs.job == 'prism-diff' && inputs.artifact_name == ''
         env:
-          FALLBACK_RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          PRISM_SQL_RESOURCE_GROUP: ${{ secrets.PRISM_SQL_RESOURCE_GROUP }}
         run: |
           set -euo pipefail
           RUNNER_IP="$(curl -s https://api.ipify.org)"
           echo "runner_ip=$RUNNER_IP" >> "$GITHUB_OUTPUT"
-          RG="$(az sql server list --query "[?name=='pimsy-prism-sql'].resourceGroup | [0]" -o tsv 2>/dev/null || true)"
+          RG="$(az sql server list --query "[?name=='pimsy-prism-sql'].resourceGroup | [0]" -o tsv || true)"
           if [ -z "$RG" ] || [ "$RG" = "null" ]; then
-            RG="$FALLBACK_RG"
+            echo "az sql server list did not return a resource group for pimsy-prism-sql."
+            RG="${PRISM_SQL_RESOURCE_GROUP:-}"
           fi
+          if [ -z "$RG" ]; then
+            RG="pimsy-implementations"
+          fi
+          if [ -z "$RG" ]; then
+            echo "Could not resolve a resource group for Azure SQL server pimsy-prism-sql. The service principal cannot see Microsoft.Sql/servers/pimsy-prism-sql. Grant it Reader on that server, or set PRISM_SQL_RESOURCE_GROUP."
+            exit 1
+          fi
+          echo "Prism SQL resource group: $RG"
           echo "resource_group=$RG" >> "$GITHUB_OUTPUT"
           printf '%s\n' "$RG" > prism-sql-rg.txt
           az sql server firewall-rule create \
@@ -226,14 +238,24 @@ jobs:
 
       - name: Remove the temporary Prism SQL firewall rule
         if: always() && inputs.job == 'prism-diff' && inputs.artifact_name == ''
+        env:
+          PRISM_SQL_RESOURCE_GROUP: ${{ secrets.PRISM_SQL_RESOURCE_GROUP }}
         run: |
           RG="$(cat prism-sql-rg.txt 2>/dev/null || true)"
-          if [ -z "$RG" ]; then
-            RG="$(az sql server list --query "[?name=='pimsy-prism-sql'].resourceGroup | [0]" -o tsv 2>/dev/null || true)"
+          if [ -z "$RG" ] || [ "$RG" = "null" ]; then
+            RG="$(az sql server list --query "[?name=='pimsy-prism-sql'].resourceGroup | [0]" -o tsv || true)"
           fi
           if [ -z "$RG" ] || [ "$RG" = "null" ]; then
-            RG="${{ secrets.AZURE_RESOURCE_GROUP }}"
+            RG="${PRISM_SQL_RESOURCE_GROUP:-}"
           fi
+          if [ -z "$RG" ]; then
+            RG="pimsy-implementations"
+          fi
+          if [ -z "$RG" ]; then
+            echo "Could not resolve a resource group for Azure SQL server pimsy-prism-sql. The service principal cannot see Microsoft.Sql/servers/pimsy-prism-sql. Skipping firewall delete."
+            exit 0
+          fi
+          echo "Removing Prism SQL firewall rule in $RG"
           az sql server firewall-rule delete \
             --resource-group "$RG" \
             --server pimsy-prism-sql \

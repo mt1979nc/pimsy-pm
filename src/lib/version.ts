@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.35";
+export const APP_VERSION = "1.18.36";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,16 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.36",
+    date: "2026-10-26",
+    summary:
+      "PATH data jobs opens the Prism SQL firewall in the server's own resource group. pimsy-prism-sql is not in the PATH group.",
+    highlights: [
+      "The group comes from az sql server list, then optional PRISM_SQL_RESOURCE_GROUP, then pimsy-implementations. The same group is used to remove the rule.",
+      "No schema migrate. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.35",
     date: "2026-10-26",
