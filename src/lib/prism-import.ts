@@ -52,6 +52,8 @@ export type ExistingUserSnapshot = {
   prismTeamId: string | null;
   name: string | null;
   role: string;
+  /** Added in Settings → People. Import must not rewrite or deactivate them. */
+  pathManaged?: boolean;
 };
 
 export type ExistingPmState = {
@@ -173,12 +175,21 @@ export function planPrismImport(dump: PrismDump, existing: ExistingPmState): Imp
       });
       continue;
     }
+    if (hit?.pathManaged) {
+      team.push({
+        kind: "team",
+        key: m.teamId,
+        action: "skip",
+        detail: `${hit.email} was added in PATH — left alone`,
+      });
+      continue;
+    }
     team.push({
       kind: "team",
       key: m.teamId,
       action: hit ? "update" : email ? "insert" : "skip",
       detail: hit
-        ? `update ${hit.email} hours=${m.hoursPerWeek}`
+        ? `update ${hit.email} hours=${m.hoursPerWeek}; lead, exempt, and director kept`
         : email
           ? `insert ${email}`
           : `no email for teamId ${m.teamId} (${m.name}) — skipped`,
@@ -192,11 +203,20 @@ export function planPrismImport(dump: PrismDump, existing: ExistingPmState): Imp
     const email = emailForTeamMember(m);
     const hit = matchUser(m.teamId, email, existing.users);
     if (hit && isProtectedEmail(hit.email)) continue;
+    if (hit?.pathManaged) {
+      team.push({
+        kind: "team",
+        key: m.teamId || email || m.name,
+        action: "skip",
+        detail: `${hit.email} was added in PATH — left alone`,
+      });
+      continue;
+    }
     team.push({
       kind: "team",
       key: m.teamId || email || m.name,
       action: hit ? "update" : "skip",
-      detail: hit ? `mark inactive ${hit.email}` : `former ${m.name} not in PATH`,
+      detail: hit ? `mark inactive ${hit.email}; lead, exempt, and director kept` : `former ${m.name} not in PATH`,
     });
   }
 
@@ -292,7 +312,7 @@ function estimatedHoursFor(c: PrismDumpCustomer, kickoff: Date | null): number {
 async function loadExistingState(): Promise<ExistingPmState> {
   const [people, rows] = await Promise.all([
     db.query.users.findMany({
-      columns: { id: true, email: true, prismTeamId: true, name: true, role: true },
+      columns: { id: true, email: true, prismTeamId: true, name: true, role: true, pathManaged: true },
     }),
     db.query.projects.findMany({
       columns: {
@@ -441,15 +461,16 @@ async function applyTeam(
       ids.set(m.teamId, hit.id);
       return;
     }
+    if (hit?.pathManaged) {
+      ids.set(m.teamId, hit.id);
+      return;
+    }
     if (hit) {
       await db
         .update(users)
         .set({
           name: hit.name ?? m.name,
           capacityHoursPerWeek: Math.round(m.hoursPerWeek),
-          capacityExempt: m.flags.capacityExempt,
-          canLead: m.flags.canLead,
-          isDirector: m.flags.director,
           prismTeamId: m.teamId,
           isActive: active,
           updatedAt: new Date(),

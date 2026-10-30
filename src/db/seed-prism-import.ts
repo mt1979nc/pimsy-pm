@@ -36,6 +36,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "./index";
 import { staffingRoleFromTitle } from "@/lib/staffing";
+import { preserveExistingStaff } from "@/lib/team-member";
 import { customerAccounts, users, projects, projectMembers, projectScopes, slipEvents } from "./schema";
 import { audit } from "@/lib/audit";
 import { env } from "@/lib/env";
@@ -209,13 +210,17 @@ async function upsertStaff(): Promise<Record<StaffKey, string>> {
   for (const s of PRISM_STAFF) {
     const existing = await db.query.users.findFirst({
       where: eq(users.email, s.email),
-      columns: { id: true, name: true, capacityHoursPerWeek: true },
+      columns: { id: true, name: true, capacityHoursPerWeek: true, pathManaged: true },
     });
+    if (existing?.pathManaged) {
+      ids[s.key] = existing.id;
+      console.log(`  · ${s.email} was added in PATH — left alone`);
+      continue;
+    }
     if (existing) {
       ids[s.key] = existing.id;
-      await db
-        .update(users)
-        .set({
+      const kept = preserveExistingStaff(
+        {
           name: existing.name ?? s.name,
           capacityHoursPerWeek: s.capacityHoursPerWeek,
           isActive: s.active,
@@ -223,11 +228,14 @@ async function upsertStaff(): Promise<Record<StaffKey, string>> {
           canLead: s.canLead,
           isDirector: s.isDirector,
           prismTeamId: s.prismTeamId || null,
-          // Prefer Outlook-canonical short emails; title reflects Dock-ish function.
           title: s.title,
           staffingRole: staffingRoleFromTitle(s.title),
-        })
-        .where(eq(users.id, existing.id));
+        },
+        { pathManaged: false },
+      );
+      if (kept !== "skip") {
+        await db.update(users).set(kept).where(eq(users.id, existing.id));
+      }
       continue;
     }
     // Auth.js only promotes an address to OWNER the moment it creates that
