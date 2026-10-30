@@ -103,6 +103,44 @@ describe("import plan (idempotent, WIP-safe)", () => {
     expect(pipe.action).toBe("insert");
     const teamAm = plan.team.find((r) => r.key === "am")!;
     expect(teamAm.action).toBe("update");
+    expect(teamAm.detail).toMatch(/lead, exempt, and director kept/);
+  });
+
+  it("leaves a person added in PATH alone and keeps flags on everyone else", () => {
+    const added = parsePrismDump({
+      team: [
+        { TeamId: "sam", Name: "Sam Balaz", HoursPerWeek: 40, Flags: { canLead: false, capacityExempt: true, director: true } },
+        { TeamId: "md", Name: "Morgan Davis", HoursPerWeek: 10, Flags: { canLead: false } },
+      ],
+      customers: [],
+      completed: [],
+    });
+    const plan = planPrismImport(added, {
+      users: [
+        {
+          id: "sam",
+          email: "sam@pimsyehr.com",
+          prismTeamId: "sam",
+          name: "Sam Balaz",
+          role: "SPECIALIST",
+          pathManaged: true,
+        },
+        {
+          id: "md",
+          email: "morgan@pimsyehr.com",
+          prismTeamId: "md",
+          name: "Morgan Davis",
+          role: "SPECIALIST",
+        },
+      ],
+      projects: [],
+    });
+    const sam = plan.team.find((row) => row.key === "sam");
+    const morgan = plan.team.find((row) => row.key === "md");
+    expect(sam?.action).toBe("skip");
+    expect(sam?.detail).toMatch(/added in PATH — left alone/);
+    expect(morgan?.action).toBe("update");
+    expect(morgan?.detail).toMatch(/lead, exempt, and director kept/);
   });
 
   it("does not overwrite demo logins or IMP-9001", () => {

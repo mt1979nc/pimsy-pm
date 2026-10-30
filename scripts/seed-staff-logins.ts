@@ -5,6 +5,9 @@
  * Morgan Davis     — SPECIALIST, capacityExempt, canLead=false, password + mustChangePassword
  * Other roster     — staff rows without forcing a password
  *
+ * An existing person keeps lead, exempt, and director (so a Settings change
+ * to Morgan is not undone). Someone added in Settings (path_managed) is skipped.
+ *
  * Temporary password for Alexander + Morgan (must change on first login):
  *   Demo-Nathan-2026!
  *
@@ -18,6 +21,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
 import { staffingRoleFromTitle } from "@/lib/staffing";
+import { preserveExistingStaff } from "@/lib/team-member";
 
 const TEMP_PASSWORD = "Demo-Nathan-2026!";
 
@@ -142,8 +146,12 @@ async function main() {
   for (const s of ROSTER) {
     const existing = await db.query.users.findFirst({
       where: eq(users.email, s.email),
-      columns: { id: true, role: true },
+      columns: { id: true, role: true, pathManaged: true },
     });
+    if (existing?.pathManaged) {
+      console.log(`  · ${s.email.padEnd(28)} added in PATH — left alone`);
+      continue;
+    }
 
     const base = {
       name: s.name,
@@ -159,10 +167,12 @@ async function main() {
     } as const;
 
     if (existing) {
+      const kept = preserveExistingStaff(base, { pathManaged: false });
+      if (kept === "skip") continue;
       await db
         .update(users)
         .set({
-          ...base,
+          ...kept,
           ...(s.forcePassword
             ? { passwordHash, mustChangePassword: true }
             : {}),

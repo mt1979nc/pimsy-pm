@@ -240,7 +240,10 @@ export function WorkspaceSettingsForm({
         </Card>
 
         <Card>
-          <CardHeader title="People" subtitle="Lead, exempt, director, hidden, and hours per week." />
+          <CardHeader
+            title="People"
+            subtitle="Lead, exempt, director, hidden, and hours. New people are added above."
+          />
           <div className="overflow-x-auto p-4">
             {people.length === 0 ? (
               <p className="text-[12.5px] text-ink-3">No staff yet.</p>

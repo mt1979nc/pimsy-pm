@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.36";
+export const APP_VERSION = "1.18.37";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.37",
+    date: "2026-10-30",
+    summary:
+      "An owner or admin can add a team member from Settings. Prism import and the staff seed leave that person alone, and they no longer reset lead, exempt, or director on people already in PATH.",
+    highlights: [
+      "Settings → Add team member asks for name, email, role, lead, exempt, and director. Hours start at 30. The person is stored on the user and on Settings → People.",
+      "A person added there is marked path-managed. Import and seed-staff-logins skip them. Existing people keep the lead, exempt, and director flags already saved.",
+      "Migrate 0036_path_managed. PATH remains Plan · Assign · Track · Handoff; Prism is the analytics module only.",
+    ],
+  },
   {
     version: "1.18.36",
     date: "2026-10-26",

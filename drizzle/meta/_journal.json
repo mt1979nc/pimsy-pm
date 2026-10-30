@@ -253,6 +253,13 @@
       "when": 1789089000000,
       "tag": "0035_person_director",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1789090000000,
+      "tag": "0036_path_managed",
+      "breakpoints": true
     }
   ]
 }

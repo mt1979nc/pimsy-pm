@@ -2,6 +2,7 @@ import { archivedModulesEnabled } from "@/lib/archived-modules";
 import { requireStaff } from "@/lib/guard";
 import { canManageTemplates, isAdmin } from "@/lib/authz";
 import { listPeopleForSettings, loadPathConfig } from "@/lib/path-config";
+import { AddTeamMemberForm } from "./add-team-member-form";
 import { WorkspaceSettingsForm } from "./workspace-form";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -40,6 +41,7 @@ export default async function SettingsPage() {
       />
 
       <div className="mx-auto max-w-3xl space-y-5">
+        {canEdit ? <AddTeamMemberForm /> : null}
         <WorkspaceSettingsForm config={config} people={people} canEdit={canEdit} />
 
         <Card>

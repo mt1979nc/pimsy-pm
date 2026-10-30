@@ -286,6 +286,11 @@ export const users = pgTable(
     capacityHidden: boolean("capacity_hidden").notNull().default(false),
     canLead: boolean("can_lead").notNull().default(true),
     isDirector: boolean("is_director").notNull().default(false),
+    /**
+     * Created in Settings → People. Prism import and the staff seed do not
+     * rewrite or deactivate this row.
+     */
+    pathManaged: boolean("path_managed").notNull().default(false),
     /** Optional map to Prism TeamId (am / dp / jr / md). */
     prismTeamId: text("prism_team_id"),
 
