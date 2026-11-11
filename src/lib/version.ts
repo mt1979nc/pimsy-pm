@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.37";
+export const APP_VERSION = "1.18.39";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,29 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.39",
+    date: "2026-11-11",
+    summary:
+      "Prism import keeps a co-lead when Prism has no co-owner, and adds only the slip events that are not already on the project. PATH data jobs can write that import when the job is prism-apply and apply is turned on.",
+    highlights: [
+      "An empty Prism co-owner does not clear the PATH co-lead. A co-owner in Prism is set, and the dry-run shows the co-lead.",
+      "Slips already on a project stay. Prism slips with a new from-date and to-date are appended. Nothing slip-related is deleted.",
+      "Actions → PATH data jobs → prism-apply writes only when apply is true. prism-diff stays a dry-run. No schema migrate.",
+    ],
+  },
+  {
+    version: "1.18.38",
+    date: "2026-11-11",
+    summary:
+      "Prism import matches an existing PATH customer before it adds one. A second run does not create another roster row. Archived and unclear matches are reported and left alone. ReShawn Beard is not imported. FBH is live on 21 Oct 2026. TLA is Discovery when that acronym is in the dump.",
+    highlights: [
+      "Match order is Prism id, then PATH code or acronym, then the customer name. Blank keys do not match. Two candidates are reported as ambiguous and not written. An archived-only match on a live customer is skipped.",
+      "Dry-run lists each customer and slip as matched, new, ambiguous, or skipped, with status, go-live, kickoff, and lead. Oct 1 roster shells that duplicate a PATH customer are listed and not deleted.",
+      "TLA was added in Prism after the 1 Oct 2026 dump. The Discovery override is keyed by acronym and applies when a dump includes TLA. FBH's customer status is Live and the go-live date is 2026-10-21.",
+      "Lead, exempt, and director on people already in PATH stay as saved. People added in Settings stay path-managed. No schema migrate.",
+    ],
+  },
   {
     version: "1.18.37",
     date: "2026-10-30",

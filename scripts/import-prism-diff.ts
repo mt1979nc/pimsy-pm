@@ -162,8 +162,14 @@ async function main() {
   console.log(
     `Applied — team ${applied.teamUpserted}, customers +${applied.customersInserted}/~${applied.customersUpdated}, completed +${applied.completedInserted}/~${applied.completedUpdated}, skipped ${applied.skipped}.`,
   );
+  if (applied.overrideNotes.length) {
+    for (const note of applied.overrideNotes) console.log(`  ${note}`);
+  }
   if (applied.warnings.length) {
     for (const warning of applied.warnings) console.log(`  ! ${warning}`);
+  }
+  if (applied.duplicateShells.length) {
+    console.log(`Roster shells that look like duplicates: ${applied.duplicateShells.length} (not deleted).`);
   }
 }
 
