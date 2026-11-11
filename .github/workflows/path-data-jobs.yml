@@ -7,9 +7,10 @@ name: PATH data jobs
 #   With artifact_name empty, it opens a temporary firewall rule on Azure SQL
 #   server pimsy-prism-sql, runs npm run db:dump:prism, then diffs that file.
 #   artifact_name + artifact_run_id still override that and supply
-#   prism-dump.json instead. Either way it uploads prism-dump.json and
-#   prism-diff-report.txt. Opens the Postgres firewall because the diff
-#   reads PATH.
+#   prism-dump.json instead. Either way it also dry-runs the import plan
+#   (npm run db:import:prism -- --dry-run). It never passes --apply.
+#   Uploads prism-dump.json, prism-diff-report.txt, and prism-import-plan.txt.
+#   Opens the Postgres firewall because the diff and the plan read PATH.
 #
 # job=daily-brief-backfill
 #   Reads a snapshot folder. Default is the committed snapshots/daily-brief
@@ -185,6 +186,19 @@ jobs:
           fi
           npm run db:import:prism-diff -- prism-dump.json | tee prism-diff-report.txt
 
+      - name: Prism import plan (dry-run)
+        if: inputs.job == 'prism-diff'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ ! -f prism-dump.json ]; then
+            echo "prism-dump.json was not written. The diff step should have created it."
+            exit 1
+          fi
+          npm run db:import:prism -- --dry-run prism-dump.json | tee prism-import-plan.txt
+
       - name: Upload the Prism dump
         if: always() && inputs.job == 'prism-diff'
         uses: actions/upload-artifact@v4
@@ -199,6 +213,14 @@ jobs:
         with:
           name: prism-diff-report
           path: prism-diff-report.txt
+          if-no-files-found: ignore
+
+      - name: Upload the Prism import plan
+        if: always() && inputs.job == 'prism-diff'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-import-plan
+          path: prism-import-plan.txt
           if-no-files-found: ignore
 
       - name: Daily brief backfill
