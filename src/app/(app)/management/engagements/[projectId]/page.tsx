@@ -38,7 +38,7 @@ export default async function ManagementEngagementEditPage({
           ← Roster
         </Link>
         <LinkButton href={`/projects/${project.id}`} size="sm" variant="secondary">
-          Open project
+          Profile
         </LinkButton>
       </div>
       <Card>

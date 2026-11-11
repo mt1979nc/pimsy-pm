@@ -2,9 +2,12 @@
  * Alexander's corrections for the Prism → PATH import.
  *
  * Add a row here. Do not scatter one-off checks through the importer.
- * Acronyms are compared trimmed and uppercased. A row applies only when that
- * acronym is in the dump. TLA was added in Prism after the 1 Oct 2026 dump,
- * so that file will not contain it; a later dump that includes TLA will.
+ * Acronyms are compared trimmed and uppercased. A row in the dump is patched
+ * before matching. A row that is not in the dump is still applied to an
+ * existing PATH project with that acronym (FBH left Prism after go-live).
+ * Nothing is inserted or archived just because an override is missing from
+ * the dump. TLA was added in Prism after the 1 Oct 2026 dump; Discovery
+ * applies when a dump or an existing PATH project has that acronym.
  */
 
 import type { CapacityPhase } from "@/lib/capacity-phase";
@@ -110,11 +113,20 @@ function missingNote(override: PrismCustomerOverride): string {
   return `${override.acronym}: no Prism customer with acronym ${override.acronym} was found in this dump. ${what || override.note} was not applied.`;
 }
 
+export function missingOverrideNote(override: PrismCustomerOverride): string {
+  return missingNote(override);
+}
+
 /**
  * Copy the dump with override dates applied. Does not mutate the input.
- * Notes include one line per override: applied, or a clear miss.
+ * Notes cover overrides that were in the dump. Absent acronyms are returned
+ * so the planner can apply them to an existing PATH project.
  */
-export function applyPrismCustomerOverrides(dump: PrismDump): { dump: PrismDump; notes: string[] } {
+export function applyPrismCustomerOverrides(dump: PrismDump): {
+  dump: PrismDump;
+  notes: string[];
+  absent: PrismCustomerOverride[];
+} {
   const notes: string[] = [];
   const seen = new Set<string>();
 
@@ -134,12 +146,11 @@ export function applyPrismCustomerOverrides(dump: PrismDump): { dump: PrismDump;
     return patchCustomer(row, override);
   });
 
-  for (const override of PRISM_IMPORT_OVERRIDES.customers) {
-    if (!seen.has(acronymKey(override.acronym))) notes.push(missingNote(override));
-  }
+  const absent = PRISM_IMPORT_OVERRIDES.customers.filter((override) => !seen.has(acronymKey(override.acronym)));
 
   return {
     dump: { ...dump, customers, completed },
     notes,
+    absent,
   };
 }

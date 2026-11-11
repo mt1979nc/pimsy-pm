@@ -12,6 +12,7 @@ import { HealthBadge, ProjectStatusBadge, ProgressBar, Avatar, Badge, BrandMark 
 import { customerLogoSrc } from "@/lib/customer-logo";
 import { cn } from "@/lib/cn";
 import { projectHasRcmTrack } from "@/lib/add-rcm";
+import { archivedModulesEnabled } from "@/lib/archived-modules";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,10 @@ export default async function ProjectLayout({
     },
   });
   if (!project) notFound();
+
+  if (!archivedModulesEnabled()) {
+    return children;
+  }
 
   const pct = pctComplete(project.taskCountDone, project.taskCountTotal);
   const days = daysUntil(project.targetGoLiveDate);

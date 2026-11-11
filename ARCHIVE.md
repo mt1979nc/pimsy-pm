@@ -40,7 +40,7 @@ Hidden from navigation, and 404, while the flag is off:
 | --- | --- |
 | Customer portal | `/portal` and `/portal/*` (including Learning Center at `/portal/learn`) |
 | Learning Center | `/learning` |
-| Day-to-day PM | `/dashboard`, `/my-work`, `/inbox`, `/projects`, `/customers`, `/templates` |
+| Day-to-day PM | `/dashboard`, `/my-work`, `/inbox`, `/projects` (the list and every subpage), `/customers`, `/templates` |
 | Executive | `/management/executive` |
 | Weekly meeting | `/management/weekly` |
 | Reports | `/reports` and `/reports/*` except the two redirects below |
@@ -52,6 +52,7 @@ Hidden from navigation, and 404, while the flag is off:
 Still available:
 
 - `/management` overview, roster, team, team capacity, forecast, analysis, Dock delivery
+- `/projects/{id}` only: the read-only customer profile opened from those Prism pages (status, lead, co-lead, kickoff, go-live, slips). `/projects`, `/projects/new`, and `/projects/{id}/tasks` (and the other project tabs) stay archived
 - `/settings` and sign-in, password reset, change password
 - `/reports/capacity` → `/management/capacity` and `/reports/analysis` → `/management/analysis`
 - Auth, Prism snapshot, Dock delivery ingest, and cron routes

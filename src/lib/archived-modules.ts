@@ -6,7 +6,9 @@
  * On: those routes work again, including the older PATH_DAY_TO_DAY gate.
  *
  * Kept: Prism roster, team, capacity, forecast, analysis, Dock delivery,
- * the /management overview, settings, and sign-in. Bookmarks for
+ * the /management overview, settings, and sign-in. A Prism customer name
+ * opens /projects/{id}, a short read-only profile. The project list and
+ * every page under that profile stay archived. Bookmarks for
  * /reports/capacity and /reports/analysis still redirect to Prism.
  */
 
@@ -39,6 +41,9 @@ const ARCHIVED_SECTIONS = ["/management/executive", "/management/weekly"] as con
  */
 const ARCHIVE_EXCEPTIONS = new Set(["/reports/capacity", "/reports/analysis"]);
 
+/** /projects/{id} only. Not the list, not /projects/new, not tasks or settings. */
+const PROJECT_PROFILE = /^\/projects\/(?!new$)[^/]+$/;
+
 export function archivedModulesEnabled(): boolean {
   const raw = (process.env.PATH_ARCHIVED_MODULES ?? "").trim().toLowerCase();
   return ON.has(raw);
@@ -53,9 +58,14 @@ export function isArchivedHref(href: string): boolean {
   return isArchivedRequestPath(href);
 }
 
+export function isCustomerProfilePath(pathname: string): boolean {
+  return PROJECT_PROFILE.test(normalizePath(pathname));
+}
+
 export function isArchivedRequestPath(pathname: string): boolean {
   const path = normalizePath(pathname);
   if (ARCHIVE_EXCEPTIONS.has(path)) return false;
+  if (isCustomerProfilePath(path)) return false;
   if (ARCHIVED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
     return true;
   }
