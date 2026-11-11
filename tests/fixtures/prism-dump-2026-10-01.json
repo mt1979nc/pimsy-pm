@@ -1,0 +1,1403 @@
+{
+  "version": 1,
+  "exportedAt": "2026-10-01T21:40:33.948Z",
+  "source": "azure-sql:pimsy-prism-sql/prism",
+  "team": [
+    {
+      "teamId": "am",
+      "name": "Alexander Morse",
+      "hoursPerWeek": 25,
+      "flags": {
+        "capacityExempt": false,
+        "canLead": true,
+        "director": true
+      },
+      "email": null,
+      "active": true
+    },
+    {
+      "teamId": "dp",
+      "name": "Danielle Piper",
+      "hoursPerWeek": 30,
+      "flags": {
+        "capacityExempt": false,
+        "canLead": true,
+        "director": false
+      },
+      "email": null,
+      "active": true
+    },
+    {
+      "teamId": "jr",
+      "name": "Jeremy Reals",
+      "hoursPerWeek": 30,
+      "flags": {
+        "capacityExempt": false,
+        "canLead": true,
+        "director": false
+      },
+      "email": null,
+      "active": true
+    },
+    {
+      "teamId": "md",
+      "name": "Morgan Davis",
+      "hoursPerWeek": 23,
+      "flags": {
+        "capacityExempt": true,
+        "canLead": false,
+        "director": false
+      },
+      "email": null,
+      "active": true
+    }
+  ],
+  "formerTeam": [
+    {
+      "teamId": "rb",
+      "name": "ReShawn Beard",
+      "hoursPerWeek": 30,
+      "flags": {
+        "capacityExempt": false,
+        "canLead": true,
+        "director": false
+      },
+      "email": null,
+      "active": false
+    }
+  ],
+  "customers": [
+    {
+      "id": "BDMH",
+      "acct": "Better Days Mental Health",
+      "owner": "am",
+      "owner2": null,
+      "split": 100,
+      "users": 20,
+      "fp": 25,
+      "locations": 2,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "eprescribe": true,
+        "groupnotes": true,
+        "messaging": true,
+        "payroll": true,
+        "other": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "MEDICATION_MANAGEMENT",
+        "GROUP_THERAPY",
+        "MESSAGING",
+        "PAYROLL",
+        "OTHER_SERVICES"
+      ],
+      "status": "active",
+      "note": "special",
+      "kickoffDate": "2026-08-28",
+      "goliveDate": "2027-02-01",
+      "initialGolive": "2027-02-01",
+      "stateComp": true,
+      "supportStruct": false,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-11-06",
+          "to": "2027-02-01",
+          "days": 87,
+          "cause": "CUSTOMER",
+          "note": "Customer Extended Go-Live"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "BHC",
+      "acct": "BridgeHill Crossing",
+      "owner": "jr",
+      "owner2": null,
+      "split": 100,
+      "users": 6,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "eprescribe": true,
+        "mat": true,
+        "other": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "MEDICATION_MANAGEMENT",
+        "MAT",
+        "OTHER_SERVICES"
+      ],
+      "status": "active",
+      "note": "stalled",
+      "kickoffDate": "2026-08-24",
+      "goliveDate": "2026-11-23",
+      "initialGolive": "2026-10-05",
+      "stateComp": false,
+      "supportStruct": true,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-10-19",
+          "to": "2026-11-23",
+          "days": 35,
+          "cause": "CUSTOMER",
+          "note": "Delayed DIscovery"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "CCCCARE",
+      "acct": "Connected Community Care",
+      "owner": "dp",
+      "owner2": "md",
+      "split": 90,
+      "users": 12,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "groupnotes": true,
+        "messaging": true,
+        "payroll": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "GROUP_THERAPY",
+        "MESSAGING",
+        "PAYROLL"
+      ],
+      "status": "active",
+      "note": "stalled",
+      "kickoffDate": "2026-08-07",
+      "goliveDate": "2026-11-02",
+      "initialGolive": "2026-09-28",
+      "stateComp": true,
+      "supportStruct": true,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-10-05",
+          "to": "2026-11-02",
+          "days": 28,
+          "cause": "CUSTOMER",
+          "note": "Non Responsive/ No Show"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "CEDAR",
+      "acct": "CEDAR Health",
+      "owner": "am",
+      "owner2": "md",
+      "split": 90,
+      "users": 9,
+      "fp": 60,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "eprescribe": true,
+        "iop": true,
+        "groupnotes": true,
+        "messaging": true,
+        "labs": true,
+        "other": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "MEDICATION_MANAGEMENT",
+        "IOP",
+        "GROUP_THERAPY",
+        "MESSAGING",
+        "LABS",
+        "OTHER_SERVICES"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-08-12",
+      "goliveDate": "2026-10-19",
+      "initialGolive": "2026-10-05",
+      "stateComp": false,
+      "supportStruct": false,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-10-05",
+          "to": "2026-10-19",
+          "days": 14,
+          "cause": "CUSTOMER",
+          "note": "Late RCM Contract"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "DYM",
+      "acct": "DYM BHSO",
+      "owner": "dp",
+      "owner2": null,
+      "split": 100,
+      "users": 10,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 3,
+      "sel": {
+        "outpatient": true,
+        "groupnotes": true,
+        "other": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "GROUP_THERAPY",
+        "OTHER_SERVICES"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-08-26",
+      "goliveDate": "2026-11-02",
+      "initialGolive": "2026-09-28",
+      "stateComp": false,
+      "supportStruct": true,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-09-28",
+          "to": "2026-10-12",
+          "days": 14,
+          "cause": "CUSTOMER",
+          "note": null
+        },
+        {
+          "from": "2026-10-12",
+          "to": "2026-10-19",
+          "days": 7,
+          "cause": "CUSTOMER",
+          "note": "Delayed Discovery"
+        },
+        {
+          "from": "2026-10-19",
+          "to": "2026-11-02",
+          "days": 14,
+          "cause": "CUSTOMER",
+          "note": "Delayed Discovery"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "EBHKY",
+      "acct": "Epic Behavioral Health - KY",
+      "owner": "dp",
+      "owner2": "md",
+      "split": 80,
+      "users": 15,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "eprescribe": true,
+        "mat": true,
+        "iop": true,
+        "groupnotes": true,
+        "psychtesting": true,
+        "messaging": true,
+        "other": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "MEDICATION_MANAGEMENT",
+        "MAT",
+        "IOP",
+        "GROUP_THERAPY",
+        "PSYCH_TESTING",
+        "MESSAGING",
+        "OTHER_SERVICES"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-07-07",
+      "goliveDate": "2026-11-09",
+      "initialGolive": "2026-08-31",
+      "stateComp": false,
+      "supportStruct": false,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-09-21",
+          "to": "2026-10-01",
+          "days": 10,
+          "cause": "CUSTOMER",
+          "note": null
+        },
+        {
+          "from": "2026-10-12",
+          "to": "2026-11-09",
+          "days": 28,
+          "cause": "CUSTOMER",
+          "note": "Non Responsive"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "FBH",
+      "acct": "FBH",
+      "owner": "jr",
+      "owner2": null,
+      "split": 100,
+      "users": 2,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "iop": true,
+        "php": true,
+        "psychtesting": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "IOP",
+        "PHP",
+        "PSYCH_TESTING"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-09-11",
+      "goliveDate": "2026-11-09",
+      "initialGolive": "2026-11-02",
+      "stateComp": true,
+      "supportStruct": false,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-11-05",
+          "to": "2026-11-09",
+          "days": 4,
+          "cause": "CUSTOMER",
+          "note": "Slow Discovery"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "LECHRIS",
+      "acct": "Le Chris Health Systems",
+      "owner": "am",
+      "owner2": "dp",
+      "split": 40,
+      "users": 170,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "eprescribe": true,
+        "iop": true,
+        "groupnotes": true,
+        "psr": true,
+        "prp": true,
+        "messaging": true,
+        "evv": true,
+        "payroll": true,
+        "other": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "MEDICATION_MANAGEMENT",
+        "IOP",
+        "GROUP_THERAPY",
+        "PSR_PSYCHOSOCIAL_REHAB",
+        "PRP_PSYCHIATRIC_REHAB",
+        "MESSAGING",
+        "EVV",
+        "PAYROLL",
+        "OTHER_SERVICES"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-03-11",
+      "goliveDate": "2026-11-02",
+      "initialGolive": "2026-06-08",
+      "stateComp": true,
+      "supportStruct": true,
+      "customHpw": 0,
+      "slipLog": [
+        {
+          "from": "2026-06-29",
+          "to": "2026-07-20",
+          "days": 21,
+          "cause": "PIMSY",
+          "note": "release delay of ncpcp"
+        },
+        {
+          "from": "2026-07-20",
+          "to": "2026-07-27",
+          "days": 7,
+          "cause": "CUSTOMER",
+          "note": "waiting on import"
+        },
+        {
+          "from": "2026-07-27",
+          "to": "2026-10-26",
+          "days": 91,
+          "cause": "PIMSY",
+          "note": "TP Update & Data Import (still waiting on data)"
+        },
+        {
+          "from": "2026-10-26",
+          "to": "2026-11-02",
+          "days": 7,
+          "cause": "CUSTOMER",
+          "note": null
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "MMHSS",
+      "acct": "Mid-Maine Homeless Shelter & Services",
+      "owner": "dp",
+      "owner2": null,
+      "split": 100,
+      "users": 15,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "iop": true,
+        "groupnotes": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "IOP",
+        "GROUP_THERAPY"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-08-06",
+      "goliveDate": "2026-11-02",
+      "initialGolive": "2026-09-21",
+      "stateComp": true,
+      "supportStruct": true,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-09-21",
+          "to": "2026-10-01",
+          "days": 10,
+          "cause": "CUSTOMER",
+          "note": null
+        },
+        {
+          "from": "2026-10-01",
+          "to": "2026-11-02",
+          "days": 32,
+          "cause": "CUSTOMER",
+          "note": "Training delays/ Workflow discussions"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "NSPLHC",
+      "acct": "North Shore Psychotherapy Associates",
+      "owner": "dp",
+      "owner2": null,
+      "split": 100,
+      "users": 15,
+      "fp": 33,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "eprescribe": true,
+        "iop": true,
+        "groupnotes": true,
+        "psychtesting": true,
+        "psr": true,
+        "prp": true,
+        "messaging": true,
+        "labs": true,
+        "payroll": true,
+        "other": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "MEDICATION_MANAGEMENT",
+        "IOP",
+        "GROUP_THERAPY",
+        "PSYCH_TESTING",
+        "PSR_PSYCHOSOCIAL_REHAB",
+        "PRP_PSYCHIATRIC_REHAB",
+        "MESSAGING",
+        "LABS",
+        "PAYROLL",
+        "OTHER_SERVICES"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-09-22",
+      "goliveDate": "2026-12-06",
+      "initialGolive": "2026-12-06",
+      "stateComp": true,
+      "supportStruct": false,
+      "customHpw": null,
+      "slipLog": [],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "OCE",
+      "acct": "O'Connor Evaluations",
+      "owner": "jr",
+      "owner2": "md",
+      "split": 90,
+      "users": 2,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "iop": true,
+        "groupnotes": true,
+        "messaging": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "IOP",
+        "GROUP_THERAPY",
+        "MESSAGING"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-09-11",
+      "goliveDate": "2026-11-09",
+      "initialGolive": "2026-11-09",
+      "stateComp": false,
+      "supportStruct": false,
+      "customHpw": null,
+      "slipLog": [],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "PWMI",
+      "acct": "Project Wellness",
+      "owner": "am",
+      "owner2": "md",
+      "split": 90,
+      "users": 3,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "eprescribe": true,
+        "messaging": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "MEDICATION_MANAGEMENT",
+        "MESSAGING"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-08-25",
+      "goliveDate": "2026-11-02",
+      "initialGolive": "2026-10-05",
+      "stateComp": false,
+      "supportStruct": false,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-10-05",
+          "to": "2026-10-12",
+          "days": 7,
+          "cause": "CUSTOMER",
+          "note": "Delayed Discovery"
+        },
+        {
+          "from": "2026-10-12",
+          "to": "2026-11-02",
+          "days": 21,
+          "cause": "CUSTOMER",
+          "note": "Discovery Delayed"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "RBH",
+      "acct": "Riverview Behavioral Health",
+      "owner": "jr",
+      "owner2": null,
+      "split": 100,
+      "users": 5,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "php": true,
+        "groupnotes": true
+      },
+      "serviceLines": [
+        "PHP",
+        "GROUP_THERAPY"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-07-29",
+      "goliveDate": "2026-11-02",
+      "initialGolive": "2026-09-28",
+      "stateComp": false,
+      "supportStruct": true,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-09-28",
+          "to": "2026-10-05",
+          "days": 7,
+          "cause": "CUSTOMER",
+          "note": "lack of movement on discovery"
+        },
+        {
+          "from": "2026-10-05",
+          "to": "2026-11-02",
+          "days": 28,
+          "cause": "CUSTOMER",
+          "note": "Not engaged yet"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "SWMCCC",
+      "acct": "SWMCCC Community Treatment Program",
+      "owner": "am",
+      "owner2": null,
+      "split": 100,
+      "users": 4,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "mat": true,
+        "iop": true,
+        "groupnotes": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "MAT",
+        "IOP",
+        "GROUP_THERAPY"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-07-29",
+      "goliveDate": "2026-11-30",
+      "initialGolive": "2026-09-21",
+      "stateComp": true,
+      "supportStruct": false,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-09-21",
+          "to": "2026-09-28",
+          "days": 7,
+          "cause": "CUSTOMER",
+          "note": "no shows"
+        },
+        {
+          "from": "2026-09-28",
+          "to": "2026-10-05",
+          "days": 7,
+          "cause": "CUSTOMER",
+          "note": "no shows"
+        },
+        {
+          "from": "2026-10-05",
+          "to": "2026-10-26",
+          "days": 21,
+          "cause": "CUSTOMER",
+          "note": "no movement / no communication"
+        },
+        {
+          "from": "2026-10-26",
+          "to": "2026-11-09",
+          "days": 14,
+          "cause": "CUSTOMER",
+          "note": "Non responsive"
+        },
+        {
+          "from": "2026-11-09",
+          "to": "2026-11-16",
+          "days": 7,
+          "cause": "CUSTOMER",
+          "note": null
+        },
+        {
+          "from": "2026-11-16",
+          "to": "2026-11-23",
+          "days": 7,
+          "cause": "CUSTOMER",
+          "note": "Re-Engaged Meeting set for 9/15/26"
+        },
+        {
+          "from": "2026-11-23",
+          "to": "2026-11-30",
+          "days": 7,
+          "cause": "CUSTOMER",
+          "note": "Not Engaged/ Missed TP"
+        }
+      ],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "TAC",
+      "acct": "The Anxiety Center",
+      "owner": "jr",
+      "owner2": "md",
+      "split": 100,
+      "users": 15,
+      "fp": 25,
+      "locations": 2,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "iop": true,
+        "groupnotes": true,
+        "messaging": true,
+        "other": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "IOP",
+        "GROUP_THERAPY",
+        "MESSAGING",
+        "OTHER_SERVICES"
+      ],
+      "status": "pre-kickoff",
+      "note": null,
+      "kickoffDate": "2026-09-30",
+      "goliveDate": "2026-12-09",
+      "initialGolive": "2026-12-09",
+      "stateComp": true,
+      "supportStruct": false,
+      "customHpw": null,
+      "slipLog": [],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "TANC",
+      "acct": "Transformation A New",
+      "owner": "dp",
+      "owner2": null,
+      "split": 100,
+      "users": 4,
+      "fp": 25,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "iop": true,
+        "groupnotes": true,
+        "psr": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "IOP",
+        "GROUP_THERAPY",
+        "PSR_PSYCHOSOCIAL_REHAB"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-09-14",
+      "goliveDate": "2026-11-11",
+      "initialGolive": "2026-11-11",
+      "stateComp": true,
+      "supportStruct": false,
+      "customHpw": 1,
+      "slipLog": [],
+      "dockWorkspaceId": null
+    },
+    {
+      "id": "THS",
+      "acct": "Triangle Health Services",
+      "owner": "jr",
+      "owner2": "md",
+      "split": 85,
+      "users": 8,
+      "fp": 42,
+      "locations": 1,
+      "trainingsPerWeek": 2,
+      "sel": {
+        "outpatient": true,
+        "iop": true,
+        "groupnotes": true,
+        "psr": true,
+        "efax": true,
+        "evv": true
+      },
+      "serviceLines": [
+        "OUTPATIENT_THERAPY",
+        "IOP",
+        "GROUP_THERAPY",
+        "PSR_PSYCHOSOCIAL_REHAB",
+        "EFAX",
+        "EVV"
+      ],
+      "status": "active",
+      "note": null,
+      "kickoffDate": "2026-08-14",
+      "goliveDate": "2026-10-19",
+      "initialGolive": "2026-10-05",
+      "stateComp": false,
+      "supportStruct": true,
+      "customHpw": null,
+      "slipLog": [
+        {
+          "from": "2026-10-05",
+          "to": "2026-10-19",
+          "days": 14,
+          "cause": "CUSTOMER",
+          "note": "Slow Discovery/ Training delay"
+        }
+      ],
+      "dockWorkspaceId": null
+    }
+  ],
+  "completed": [
+    {
+      "id": "ABOVE",
+      "acct": "Above it All",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 10,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-06-06",
+      "goliveDate": "2025-07-14",
+      "initialGolive": "2025-08-01",
+      "forecastDays": null
+    },
+    {
+      "id": "ABQW",
+      "acct": "ABQ Wellness",
+      "era": "current",
+      "owner": "jr",
+      "users": 6,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-03-06",
+      "goliveDate": "2026-05-05",
+      "initialGolive": "2026-04-13",
+      "forecastDays": null
+    },
+    {
+      "id": "AVOH",
+      "acct": "Anthony's Villa",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 25,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-11-06",
+      "goliveDate": "2026-02-16",
+      "initialGolive": "2026-02-02",
+      "forecastDays": null
+    },
+    {
+      "id": "C2C",
+      "acct": "Courage to Caregivers",
+      "era": "legacy",
+      "owner": "rb",
+      "users": 5,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-07-24",
+      "goliveDate": "2025-09-15",
+      "initialGolive": "2025-08-24",
+      "forecastDays": null
+    },
+    {
+      "id": "CANVAS",
+      "acct": "Canvas Outpatient",
+      "era": "legacy",
+      "owner": "rb",
+      "users": 4,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-12-10",
+      "goliveDate": "2026-01-05",
+      "initialGolive": "2026-01-05",
+      "forecastDays": null
+    },
+    {
+      "id": "CAPSTONE",
+      "acct": "Capstone Behavioral",
+      "era": "current",
+      "owner": "am",
+      "users": 30,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-05-12",
+      "goliveDate": "2026-07-28",
+      "initialGolive": "2026-07-13",
+      "forecastDays": null
+    },
+    {
+      "id": "CCSIC",
+      "acct": "Congruent Counseling/Integrative Counseling",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 79,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-02-27",
+      "goliveDate": "2025-05-12",
+      "initialGolive": "2025-05-01",
+      "forecastDays": null
+    },
+    {
+      "id": "CPP",
+      "acct": "Creative Passion Partners",
+      "era": "legacy",
+      "owner": "jr",
+      "users": 5,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-08-11",
+      "goliveDate": "2025-10-07",
+      "initialGolive": "2025-09-19",
+      "forecastDays": null
+    },
+    {
+      "id": "CRC",
+      "acct": "Crossroads",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 3,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-02-28",
+      "goliveDate": "2025-06-02",
+      "initialGolive": "2025-06-02",
+      "forecastDays": null
+    },
+    {
+      "id": "CVMH",
+      "acct": "Central Valley Mental Health",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 6,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-12-22",
+      "goliveDate": "2026-01-19",
+      "initialGolive": "2026-01-19",
+      "forecastDays": null
+    },
+    {
+      "id": "DPS",
+      "acct": "Dickinson Psychological Services",
+      "era": "current",
+      "owner": "jr",
+      "users": 2,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-01-29",
+      "goliveDate": "2026-03-30",
+      "initialGolive": "2026-03-09",
+      "forecastDays": null
+    },
+    {
+      "id": "EAVES",
+      "acct": "Eaves Health Partners",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 21,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-02-13",
+      "goliveDate": "2025-06-02",
+      "initialGolive": "2025-06-02",
+      "forecastDays": null
+    },
+    {
+      "id": "EHW",
+      "acct": "Elevate Health & Wellness",
+      "era": "legacy",
+      "owner": "jr",
+      "users": 6,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-11-21",
+      "goliveDate": "2026-06-01",
+      "initialGolive": "2026-03-09",
+      "forecastDays": null
+    },
+    {
+      "id": "EMPNV",
+      "acct": "The Empowerment Center",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 16,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-06-10",
+      "goliveDate": "2026-01-23",
+      "initialGolive": "2026-03-22",
+      "forecastDays": null
+    },
+    {
+      "id": "FFCS",
+      "acct": "Family First Community Services",
+      "era": "current",
+      "owner": "jr",
+      "users": 40,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-06-05",
+      "goliveDate": "2026-08-31",
+      "initialGolive": "2026-08-05",
+      "forecastDays": null
+    },
+    {
+      "id": "FIRM",
+      "acct": "Firm Foundation to Thrive",
+      "era": "legacy",
+      "owner": "jr",
+      "users": 10,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-04-23",
+      "goliveDate": "2025-08-04",
+      "initialGolive": "2025-06-30",
+      "forecastDays": null
+    },
+    {
+      "id": "FORTALEZA",
+      "acct": "Fortaleza",
+      "era": "legacy",
+      "owner": "rb",
+      "users": 3,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-08-07",
+      "goliveDate": "2025-09-22",
+      "initialGolive": "2025-08-25",
+      "forecastDays": null
+    },
+    {
+      "id": "GGNC",
+      "acct": "Growth & Grace",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 5,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-11-04",
+      "goliveDate": "2025-12-12",
+      "initialGolive": "2025-12-12",
+      "forecastDays": null
+    },
+    {
+      "id": "GHW",
+      "acct": "Greentree",
+      "era": "current",
+      "owner": "md",
+      "users": 7,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-05-18",
+      "goliveDate": "2026-07-20",
+      "initialGolive": "2026-07-20",
+      "forecastDays": null
+    },
+    {
+      "id": "GTS",
+      "acct": "Gard Therapeutic Services",
+      "era": "current",
+      "owner": "dp",
+      "users": 1,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-01-28",
+      "goliveDate": "2026-03-27",
+      "initialGolive": "2026-03-27",
+      "forecastDays": null
+    },
+    {
+      "id": "ICT",
+      "acct": "ICT Case Management",
+      "era": "legacy",
+      "owner": "rb",
+      "users": 15,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-09-25",
+      "goliveDate": "2025-12-01",
+      "initialGolive": "2025-11-17",
+      "forecastDays": null
+    },
+    {
+      "id": "ITOWA",
+      "acct": "ITOWA Services",
+      "era": "legacy",
+      "owner": "jr",
+      "users": 4,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-06-18",
+      "goliveDate": "2025-09-01",
+      "initialGolive": "2025-07-01",
+      "forecastDays": null
+    },
+    {
+      "id": "LBH",
+      "acct": "Lakeside Behavioral Health",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 14,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-01-21",
+      "goliveDate": "2026-07-20",
+      "initialGolive": "2026-03-16",
+      "forecastDays": null
+    },
+    {
+      "id": "LIFECONN",
+      "acct": "Life Connections",
+      "era": "current",
+      "owner": "am",
+      "users": 100,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-06-01",
+      "goliveDate": "2026-08-17",
+      "initialGolive": "2026-08-03",
+      "forecastDays": null
+    },
+    {
+      "id": "MHC",
+      "acct": "Mental Health Connecticut",
+      "era": "legacy",
+      "owner": "jr",
+      "users": 200,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-01-05",
+      "goliveDate": "2026-09-01",
+      "initialGolive": "2026-03-01",
+      "forecastDays": null
+    },
+    {
+      "id": "MPA",
+      "acct": "McAlester Psychological Associates",
+      "era": "current",
+      "owner": "md",
+      "users": 10,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-03-12",
+      "goliveDate": "2026-04-27",
+      "initialGolive": "2026-04-27",
+      "forecastDays": null
+    },
+    {
+      "id": "MPB",
+      "acct": "MPB Group",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 40,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-10-22",
+      "goliveDate": "2026-02-02",
+      "initialGolive": "2026-01-02",
+      "forecastDays": null
+    },
+    {
+      "id": "NEOES",
+      "acct": "Easterseals of NE Ohio",
+      "era": "current",
+      "owner": "am",
+      "users": 30,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-01-14",
+      "goliveDate": "2026-05-18",
+      "initialGolive": "2026-05-18",
+      "forecastDays": null
+    },
+    {
+      "id": "OMEGA",
+      "acct": "Omega Behavior Health Solutions",
+      "era": "legacy",
+      "owner": "rb",
+      "users": 6,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-06-17",
+      "goliveDate": "2025-12-10",
+      "initialGolive": "2025-08-11",
+      "forecastDays": null
+    },
+    {
+      "id": "PPSYCH",
+      "acct": "Professional Psychiatric Services",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 11,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-03-20",
+      "goliveDate": "2025-08-25",
+      "initialGolive": "2025-06-15",
+      "forecastDays": null
+    },
+    {
+      "id": "RCA",
+      "acct": "Recovery Club America",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 15,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-03-21",
+      "goliveDate": "2025-06-02",
+      "initialGolive": "2025-06-02",
+      "forecastDays": null
+    },
+    {
+      "id": "RENEW",
+      "acct": "Renew Counseling Center",
+      "era": "legacy",
+      "owner": "rb",
+      "users": 9,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-09-02",
+      "goliveDate": "2025-10-06",
+      "initialGolive": "2025-10-06",
+      "forecastDays": null
+    },
+    {
+      "id": "RENWICK",
+      "acct": "Renwick Recovery",
+      "era": "current",
+      "owner": "jr",
+      "users": 5,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-01-13",
+      "goliveDate": "2026-07-27",
+      "initialGolive": "2026-03-02",
+      "forecastDays": null
+    },
+    {
+      "id": "ROH",
+      "acct": "Rae of Hope",
+      "era": "current",
+      "owner": "dp",
+      "users": 8,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-04-27",
+      "goliveDate": "2026-06-22",
+      "initialGolive": "2026-06-01",
+      "forecastDays": null
+    },
+    {
+      "id": "RPI",
+      "acct": "Resilient",
+      "era": "current",
+      "owner": "dp",
+      "users": 2,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-04-07",
+      "goliveDate": "2026-05-11",
+      "initialGolive": "2026-05-19",
+      "forecastDays": null
+    },
+    {
+      "id": "SENSORI",
+      "acct": "SensoriWorks",
+      "era": "current",
+      "owner": "jr",
+      "users": 7,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-02-03",
+      "goliveDate": "2026-08-10",
+      "initialGolive": "2026-03-23",
+      "forecastDays": null
+    },
+    {
+      "id": "SMSS",
+      "acct": "Southern Maine Support Services",
+      "era": "current",
+      "owner": "am",
+      "users": 2,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-04-06",
+      "goliveDate": "2026-05-18",
+      "initialGolive": "2026-05-04",
+      "forecastDays": null
+    },
+    {
+      "id": "SWC",
+      "acct": "Serenity Wellness Center",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 21,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-06-02",
+      "goliveDate": "2025-08-01",
+      "initialGolive": "2025-08-01",
+      "forecastDays": null
+    },
+    {
+      "id": "TMSNC",
+      "acct": "TMS of the Carolinas",
+      "era": "legacy",
+      "owner": "dp",
+      "users": 18,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2025-07-08",
+      "goliveDate": "2025-09-02",
+      "initialGolive": "2025-09-02",
+      "forecastDays": null
+    },
+    {
+      "id": "UES",
+      "acct": "Urban Evaluation Solution",
+      "era": "current",
+      "owner": "am",
+      "users": 7,
+      "complexity": null,
+      "estimatedHours": null,
+      "kickoffDate": "2026-02-06",
+      "goliveDate": "2026-03-18",
+      "initialGolive": "2026-03-23",
+      "forecastDays": null
+    }
+  ]
+}

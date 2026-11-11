@@ -12,6 +12,7 @@ import { resolve } from "node:path";
 
 import { parsePrismDumpJson } from "@/lib/prism-dump";
 import { applyPrismImport } from "@/lib/prism-import";
+import { formatPrismImportPlan } from "@/lib/prism-import-report";
 
 function hasFlag(flag: string): boolean {
   return process.argv.includes(flag);
@@ -29,9 +30,15 @@ async function main() {
       [
         "Usage: npm run db:import:prism -- [--dry-run] <prism-dump.json>",
         "",
-        "Produce a dump with:",
-        "  PRISM_SQL_CONNECTION_STRING=... npm run db:dump:prism -- --out prism-dump.json",
-        "or follow the Azure Cloud Shell steps in v1.11-PRISM-CUTOVER.md.",
+        "From Azure Cloud Shell (sqlcmd, no Node mssql package):",
+        "  export PRISM_SQL_CONNECTION_STRING='...'   # Prism SWA SQL_CONNECTION_STRING",
+        "  python3 scripts/azure-cloud-shell-dump.py prism-dump.json",
+        "Then, on a machine that can reach PATH Postgres:",
+        "  npm run db:import:prism -- --dry-run ./prism-dump.json",
+        "  npm run db:import:prism -- ./prism-dump.json",
+        "",
+        "Dry-run does not write. Nothing is deleted. Read the match line for each",
+        "customer (MATCHED / NEW / AMBIGUOUS / SKIPPED) before applying.",
       ].join("\n"),
     );
     process.exit(1);
@@ -49,18 +56,9 @@ async function main() {
 
   const result = await applyPrismImport(dump, { dryRun });
 
-  const rows = [...result.team, ...result.customers, ...result.completed];
-  for (const row of rows) {
-    const mark =
-      row.action === "insert" ? "+" : row.action === "update" || row.action === "protect-wip" ? "~" : ".";
-    console.log(`  ${mark} [${row.kind}] ${row.key} ${row.action} — ${row.detail}`);
-  }
-  if (result.warnings.length) {
-    console.log("\nWarnings:");
-    for (const w of result.warnings) console.log(`  ! ${w}`);
-  }
+  console.log(formatPrismImportPlan(result));
   console.log(
-    `\nDone${dryRun ? " (dry-run)" : ""} — team ${result.teamUpserted}, customers +${result.customersInserted}/~${result.customersUpdated}, completed +${result.completedInserted}/~${result.completedUpdated}, skipped ${result.skipped}.`,
+    `\n${dryRun ? "Would apply" : "Done"} — team ${result.teamUpserted}, customers +${result.customersInserted}/~${result.customersUpdated}, completed +${result.completedInserted}/~${result.completedUpdated}, skipped ${result.skipped}.`,
   );
 }
 
