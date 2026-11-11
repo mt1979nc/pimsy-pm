@@ -13,7 +13,8 @@ name: PATH data jobs
 #
 # job=prism-apply
 #   Same fresh dump (or the same artifact override) and the same dry-run plan.
-#   Writes only when apply is true, via
+#   Writes only when apply is checked. The checkbox may arrive as a
+#   boolean or the string "true"; both count. Command:
 #   npm run db:import:prism -- --apply prism-dump.json.
 #   Uploads prism-dump.json, prism-import-plan.txt, and prism-apply-log.txt.
 #   Opens the Postgres firewall because the plan and the apply read PATH.
@@ -99,14 +100,14 @@ jobs:
           path: incoming
 
       - name: Log in to Azure
-        if: inputs.job == 'prism-diff' || inputs.job == 'prism-apply' || (inputs.job == 'daily-brief-backfill' && inputs.apply)
+        if: inputs.job == 'prism-diff' || inputs.job == 'prism-apply' || (inputs.job == 'daily-brief-backfill' && (inputs.apply == true || inputs.apply == 'true'))
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Temporarily allow this runner through the Postgres firewall
         id: fw
-        if: inputs.job == 'prism-diff' || inputs.job == 'prism-apply' || (inputs.job == 'daily-brief-backfill' && inputs.apply)
+        if: inputs.job == 'prism-diff' || inputs.job == 'prism-apply' || (inputs.job == 'daily-brief-backfill' && (inputs.apply == true || inputs.apply == 'true'))
         env:
           POSTGRES_SERVER: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
         run: |
@@ -208,7 +209,7 @@ jobs:
           npm run db:import:prism -- --dry-run prism-dump.json | tee prism-import-plan.txt
 
       - name: Prism apply
-        if: inputs.job == 'prism-apply' && inputs.apply == true
+        if: inputs.job == 'prism-apply' && (inputs.apply == true || inputs.apply == 'true')
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DATABASE_URL }}
@@ -217,9 +218,12 @@ jobs:
           npm run db:import:prism -- --apply prism-dump.json | tee prism-apply-log.txt
 
       - name: Record that prism-apply did not write
-        if: inputs.job == 'prism-apply' && inputs.apply != true
+        if: inputs.job == 'prism-apply' && inputs.apply != true && inputs.apply != 'true'
         run: |
-          echo "job=prism-apply but apply is not true. Dry-run only. No rows were written." | tee prism-apply-log.txt
+          {
+            echo "inputs.apply=${{ toJSON(inputs.apply) }}"
+            echo "job=prism-apply but apply is not true. Dry-run only. No rows were written."
+          } | tee prism-apply-log.txt
 
       - name: Upload the Prism dump
         if: always() && (inputs.job == 'prism-diff' || inputs.job == 'prism-apply')
@@ -277,7 +281,7 @@ jobs:
           fi
 
       - name: Remove the temporary firewall rule
-        if: always() && (inputs.job == 'prism-diff' || inputs.job == 'prism-apply' || (inputs.job == 'daily-brief-backfill' && inputs.apply))
+        if: always() && (inputs.job == 'prism-diff' || inputs.job == 'prism-apply' || (inputs.job == 'daily-brief-backfill' && (inputs.apply == true || inputs.apply == 'true')))
         env:
           POSTGRES_SERVER: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
         run: |

@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.39";
+export const APP_VERSION = "1.18.40";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,16 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.40",
+    date: "2026-11-11",
+    summary:
+      "PATH data jobs treats the apply checkbox as on whether Actions sends it as a boolean or the word true. prism-diff still does not write.",
+    highlights: [
+      "prism-apply writes when apply is checked. A manual dispatch was skipping that step because the checkbox arrived as the text true.",
+      "The daily-brief backfill uses the same check before it opens the database firewall or writes. No schema migrate.",
+    ],
+  },
   {
     version: "1.18.39",
     date: "2026-11-11",
