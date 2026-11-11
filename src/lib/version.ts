@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.40";
+export const APP_VERSION = "1.18.41";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.41",
+    date: "2026-11-11",
+    summary:
+      "A customer name on Prism opens a short read-only profile. FBH is set live on 21 Oct 2026 even when that acronym is no longer in the Prism dump. The data-jobs apply checkbox says that it writes.",
+    highlights: [
+      "Prism customer names open /projects/{id}: status, lead, co-lead, kickoff, go-live, and slips. The project list, tasks, and the customer editor stay archived.",
+      "PATH data jobs → prism-apply with apply checked updates the existing FBH project to Live and go-live 2026-10-21. It does not add or archive other customers.",
+      "No schema migrate.",
+    ],
+  },
   {
     version: "1.18.40",
     date: "2026-11-11",

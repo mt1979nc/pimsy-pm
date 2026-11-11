@@ -37,6 +37,9 @@ describe("PATH_ARCHIVED_MODULES", () => {
     expect(isArchivedRequestPath("/my-work")).toBe(true);
     expect(isArchivedRequestPath("/inbox/thread")).toBe(true);
     expect(isArchivedRequestPath("/projects/site/tasks/1")).toBe(true);
+    expect(isArchivedRequestPath("/projects/site")).toBe(false);
+    expect(isArchivedRequestPath("/projects/new")).toBe(true);
+    expect(isArchivedRequestPath("/customers/acct")).toBe(true);
     expect(isArchivedRequestPath("/customers/new")).toBe(true);
     expect(isArchivedRequestPath("/templates/playbook")).toBe(true);
     expect(isArchivedRequestPath("/library")).toBe(true);

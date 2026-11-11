@@ -349,6 +349,47 @@ describe("1 Oct 2026 Prism dump", () => {
   });
 });
 
+describe("FBH when it has left Prism", () => {
+  it("sets the existing PATH project live on 2026-10-21 and does not insert another", () => {
+    const dump = parsePrismDump({
+      team: [{ id: "am", name: "Alexander Morse", hoursPerWeek: 25 }],
+      customers: [{ id: "CEDAR", acct: "CEDAR Health", status: "active" }],
+    });
+    const plan = planPrismImport(dump, {
+      users: [],
+      projects: [
+        project({
+          id: "fbh-path",
+          code: "FBH",
+          prismClientId: "FBH",
+          crmAcronym: "FBH",
+          name: "FBH — PIMSY implementation",
+          customerName: "FBH",
+          customerStatus: "ONBOARDING",
+          startDate: new Date("2026-09-11T12:00:00.000Z"),
+          targetGoLiveDate: new Date("2026-11-09T12:00:00.000Z"),
+          initialGoLiveDate: new Date("2026-11-02T12:00:00.000Z"),
+          actualGoLiveDate: null,
+          currentPhase: null,
+        }),
+      ],
+    });
+    const fbh = plan.customers.find((row) => row.key === "FBH");
+    expect(fbh?.action).toBe("update");
+    expect(fbh?.matchLabel).toBe("MATCHED");
+    expect(fbh?.projectId).toBe("fbh-path");
+    expect(fbh?.outsideDump).toBe(true);
+    const changes = fbh?.changes?.join("\n") ?? "";
+    expect(changes).toMatch(/status  ONBOARDING → LIVE \(override\)/);
+    expect(changes).toMatch(/go-live  2026-11-09 → 2026-10-21 \(override\)/);
+    expect(changes).toMatch(/actual go-live  — → 2026-10-21 \(override\)/);
+    expect(plan.customers.some((row) => row.key === "FBH" && row.action === "insert")).toBe(false);
+    expect(plan.overrideNotes.join("\n")).toMatch(/not in this Prism dump/);
+    expect(plan.overrideNotes.join("\n")).toMatch(/2026-10-21/);
+    expect(formatPrismImportPlan(plan)).toMatch(/fbh-path/);
+  });
+});
+
 describe("co-lead and slip append", () => {
   it("keeps a PATH co-lead when Prism has no co-owner and sets one when Prism has one", () => {
     expect(nextCoLeadId(null, "user-md", () => "other")).toBe("user-md");

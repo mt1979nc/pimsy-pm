@@ -27,6 +27,7 @@ import { parseDateInput, utcDayKey } from "@/lib/dates";
 import { complexityTier, forecastImplementation, type ImplementationScope } from "@/lib/estimator";
 import { mapPrismStatusToEnums, PRISM_STATUS_LABELS, isPrismStatus, type PrismStatus } from "@/lib/prism-status";
 import {
+  acronymKey,
   emailForTeamMember,
   isProtectedEmail,
   isProtectedProjectCode,
@@ -55,6 +56,8 @@ import {
   applyPrismCustomerOverrides,
   customerOverride,
   excludedTeam,
+  missingOverrideNote,
+  type PrismCustomerOverride,
   type PrismCustomerStatus,
 } from "@/lib/prism-import-overrides";
 import { staffingRoleFromTitle } from "@/lib/staffing";
@@ -110,6 +113,8 @@ export type ImportPlanRow = {
   accountName?: string;
   parentKey?: string;
   slipSummary?: string;
+  /** Set when this row is an override for a PATH project that is not in the dump. */
+  outsideDump?: boolean;
 };
 
 export type ImportPlan = {
@@ -557,6 +562,116 @@ function markCollisions(rows: ImportPlanRow[], warnings: string[]) {
   }
 }
 
+function absentOverrideChanges(override: PrismCustomerOverride, project: ExistingProjectSnapshot): string[] {
+  const lines: string[] = [];
+  if (override.customerStatus) {
+    const from = known(project, "customerStatus") ? project.customerStatus ?? null : null;
+    const line = changeLine("status", from, override.customerStatus, "override");
+    if (line) lines.push(line);
+  }
+  if (override.phase) {
+    const from = known(project, "currentPhase") ? phaseLabel(project.currentPhase) : null;
+    const line = changeLine("status", from, phaseLabel(override.phase), "override");
+    if (line) lines.push(line);
+  }
+  if (override.kickoff) {
+    const from = known(project, "startDate") ? dayKey(project.startDate) : null;
+    const line = changeLine("kickoff", from, override.kickoff, "override");
+    if (line) lines.push(line);
+  }
+  if (override.goLive) {
+    const from = known(project, "targetGoLiveDate") ? dayKey(project.targetGoLiveDate) : null;
+    const line = changeLine("go-live", from, override.goLive, "override");
+    if (line) lines.push(line);
+  }
+  if (override.initialGoLive) {
+    const from = known(project, "initialGoLiveDate") ? dayKey(project.initialGoLiveDate) : null;
+    const line = changeLine("initial go-live", from, override.initialGoLive, "override");
+    if (line) lines.push(line);
+  }
+  if (override.customerStatus === "LIVE" && override.goLive) {
+    const from = known(project, "actualGoLiveDate") ? dayKey(project.actualGoLiveDate) : null;
+    const line = changeLine("actual go-live", from, override.goLive, "override");
+    if (line) lines.push(line);
+  }
+  return lines;
+}
+
+function planAbsentOverrides(
+  absent: PrismCustomerOverride[],
+  existing: ExistingPmState,
+  customers: ImportPlanRow[],
+  overrideNotes: string[],
+  warnings: string[],
+) {
+  for (const override of absent) {
+    const key = acronymKey(override.acronym);
+    const match = resolveProjectMatch(key, existing.projects);
+    if (match.kind === "none") {
+      overrideNotes.push(missingOverrideNote(override));
+      continue;
+    }
+    if (match.kind === "ambiguous") {
+      const detail = `AMBIGUOUS — ${match.candidates.map(projectLabel).join("; ")}. Not in this Prism dump. Not written.`;
+      customers.push({
+        kind: "customer",
+        key,
+        accountName: override.acronym,
+        action: "ambiguous",
+        matchLabel: "AMBIGUOUS",
+        via: match.via,
+        outsideDump: true,
+        detail,
+        changes: [],
+      });
+      warnings.push(`${key}: ${detail}`);
+      overrideNotes.push(`${key}: not in this Prism dump. ${detail}`);
+      continue;
+    }
+    if (match.kind === "archived") {
+      const detail = `SKIPPED — archived ${match.candidates.map(projectLabel).join("; ")}. Not in this Prism dump. Not written.`;
+      customers.push({
+        kind: "customer",
+        key,
+        accountName: override.acronym,
+        action: "skip",
+        matchLabel: "SKIPPED",
+        via: match.via,
+        outsideDump: true,
+        detail,
+        changes: [],
+      });
+      warnings.push(`${key}: ${detail}`);
+      overrideNotes.push(`${key}: not in this Prism dump. ${detail}`);
+      continue;
+    }
+    if (isProtectedProjectCode(match.project.code)) {
+      customers.push({
+        kind: "customer",
+        key,
+        accountName: match.project.customerName || match.project.name || key,
+        action: "protect-demo",
+        matchLabel: "SKIPPED",
+        outsideDump: true,
+        detail: `SKIPPED — ${projectLabel(match.project)} is the demo project and is left alone.`,
+        changes: [],
+      });
+      continue;
+    }
+    const changes = absentOverrideChanges(override, match.project);
+    customers.push({
+      ...matchedRow("customer", key, match.project.customerName || match.project.name || key, match, changes),
+      action: "update",
+      matchLabel: "MATCHED",
+      outsideDump: true,
+      detail: `Not in this Prism dump. Override applied to the existing PATH project. Playbook, slips, and other customers are not changed. ${matchNote(match)}`.trim(),
+    });
+    overrideNotes.push(
+      `${key}: not in this Prism dump. ${override.note} Applied to PATH ${match.project.id} (${projectAcronym(match.project) || match.project.code}).`,
+    );
+  }
+}
+
 function countSkipped(rows: ImportPlanRow[]): number {
   return rows.filter((row) => row.action === "skip" || row.action === "ambiguous" || row.action.startsWith("protect")).length;
 }
@@ -761,6 +876,8 @@ export function planPrismImport(dump: PrismDump, existing: ExistingPmState): Imp
     });
   }
 
+  planAbsentOverrides(preparedResult.absent, existing, customers, overrideNotes, warnings);
+
   markCollisions([...customers, ...completed], warnings);
 
   const slips = source.customers.flatMap((customer) => {
@@ -819,6 +936,33 @@ function estimatedHoursFor(c: PrismDumpCustomer, kickoff: Date | null): number {
   const scope = scopeFromCustomer(c);
   const estimate = forecastImplementation(scope, kickoff ?? new Date());
   return estimate.hours.totalHours;
+}
+
+async function applyExistingOverride(project: ExistingProjectSnapshot, override: PrismCustomerOverride) {
+  const goLive = override.goLive ? parseDateInput(override.goLive) : null;
+  const initial = override.initialGoLive ? parseDateInput(override.initialGoLive) : null;
+  const kickoff = override.kickoff ? parseDateInput(override.kickoff) : null;
+  await db
+    .update(projects)
+    .set({
+      updatedAt: new Date(),
+      ...(kickoff ? { startDate: kickoff } : {}),
+      ...(goLive ? { targetGoLiveDate: goLive } : {}),
+      ...(override.customerStatus === "LIVE" && goLive ? { actualGoLiveDate: goLive } : {}),
+      ...(initial ? { initialGoLiveDate: initial } : {}),
+      ...(override.phase ? { currentPhase: override.phase, phaseRecordedAt: new Date() } : {}),
+    })
+    .where(eq(projects.id, project.id));
+  if (!override.customerStatus) return;
+  const row = await db.query.projects.findFirst({
+    where: eq(projects.id, project.id),
+    columns: { customerAccountId: true },
+  });
+  if (!row?.customerAccountId) return;
+  await db
+    .update(customerAccounts)
+    .set({ status: override.customerStatus, updatedAt: new Date() })
+    .where(eq(customerAccounts.id, row.customerAccountId));
 }
 
 function resolveOwnerId(
@@ -1342,6 +1486,22 @@ export async function applyPrismImport(dump: PrismDump, opts: { dryRun?: boolean
     if (result === "insert") customersInserted++;
     else if (result === "update") customersUpdated++;
     else skipped++;
+  }
+
+  for (const row of plan.customers) {
+    if (!row.outsideDump) continue;
+    if (row.action !== "update" || !row.projectId) {
+      skipped++;
+      continue;
+    }
+    const project = existing.projects.find((item) => item.id === row.projectId);
+    const override = customerOverride(row.key);
+    if (!project || !override || project.archivedAt) {
+      skipped++;
+      continue;
+    }
+    await applyExistingOverride(project, override);
+    customersUpdated++;
   }
 
   const donePlan = new Map(plan.completed.map((row) => [row.key, row]));

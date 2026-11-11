@@ -79,7 +79,9 @@ export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
                   {row.acronym}
                 </td>
                 <td className={`${td} truncate text-ink-2`} title={customer}>
-                  {customer}
+                  <Link href={`/projects/${row.id}`} className="text-ink hover:text-brand">
+                    {customer}
+                  </Link>
                 </td>
                 <td className={`${td} truncate text-ink-2`} title={owners ?? undefined}>
                   <SheetText value={owners} label="No owner" />

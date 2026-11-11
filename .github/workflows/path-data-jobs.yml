@@ -47,7 +47,7 @@ on:
           - prism-apply
           - daily-brief-backfill
       apply:
-        description: Write when job is prism-apply or daily-brief-backfill. prism-diff stays a dry-run.
+        description: Apply changes (writes to PATH for prism-apply or daily-brief-backfill; prism-diff is always a dry run)
         required: false
         type: boolean
         default: false

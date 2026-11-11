@@ -29,6 +29,8 @@ import { countWaitingOnByArea, formatWaitingOnAreaHint } from "@/lib/waiting-on-
 import { ContactCard } from "@/components/contact-card";
 import { listMentionCandidates } from "@/lib/mention-candidates";
 import { CutoverBanner } from "@/components/cutover-banner";
+import { archivedModulesEnabled } from "@/lib/archived-modules";
+import { ReadOnlyCustomerProfile } from "./read-only-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +40,9 @@ export default async function ProjectOverviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!archivedModulesEnabled()) {
+    return <ReadOnlyCustomerProfile projectId={id} />;
+  }
   const actor = await requireStaff();
   await assertProjectAccess(actor, id);
 
