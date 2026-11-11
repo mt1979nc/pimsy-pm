@@ -32,6 +32,10 @@ export type ExistingProjectSnapshot = {
   coLeadId?: string | null;
   leadName?: string | null;
   leadPrismTeamId?: string | null;
+  coLeadName?: string | null;
+  coLeadPrismTeamId?: string | null;
+  /** Dated slips already stored on this project. Used to append, not replace. */
+  existingSlips?: { from: string; to: string }[];
   startDate?: Date | null;
   initialGoLiveDate?: Date | null;
   targetGoLiveDate?: Date | null;

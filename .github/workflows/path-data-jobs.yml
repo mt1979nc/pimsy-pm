@@ -3,14 +3,20 @@ name: PATH data jobs
 # Manual Dock/Prism data jobs. Nothing here runs on push.
 #
 # job=prism-diff
-#   Dry-run only. Never passes --apply.
+#   Dry-run only. Never passes --apply, even if the apply input is true.
 #   With artifact_name empty, it opens a temporary firewall rule on Azure SQL
 #   server pimsy-prism-sql, runs npm run db:dump:prism, then diffs that file.
 #   artifact_name + artifact_run_id still override that and supply
 #   prism-dump.json instead. Either way it also dry-runs the import plan
-#   (npm run db:import:prism -- --dry-run). It never passes --apply.
+#   (npm run db:import:prism -- --dry-run).
 #   Uploads prism-dump.json, prism-diff-report.txt, and prism-import-plan.txt.
-#   Opens the Postgres firewall because the diff and the plan read PATH.
+#
+# job=prism-apply
+#   Same fresh dump (or the same artifact override) and the same dry-run plan.
+#   Writes only when apply is true, via
+#   npm run db:import:prism -- --apply prism-dump.json.
+#   Uploads prism-dump.json, prism-import-plan.txt, and prism-apply-log.txt.
+#   Opens the Postgres firewall because the plan and the apply read PATH.
 #
 # job=daily-brief-backfill
 #   Reads a snapshot folder. Default is the committed snapshots/daily-brief
@@ -37,9 +43,10 @@ on:
         type: choice
         options:
           - prism-diff
+          - prism-apply
           - daily-brief-backfill
       apply:
-        description: Write daily facts (backfill only). prism-diff stays a dry-run.
+        description: Write when job is prism-apply or daily-brief-backfill. prism-diff stays a dry-run.
         required: false
         type: boolean
         default: false
@@ -92,14 +99,14 @@ jobs:
           path: incoming
 
       - name: Log in to Azure
-        if: inputs.job == 'prism-diff' || (inputs.job == 'daily-brief-backfill' && inputs.apply)
+        if: inputs.job == 'prism-diff' || inputs.job == 'prism-apply' || (inputs.job == 'daily-brief-backfill' && inputs.apply)
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Temporarily allow this runner through the Postgres firewall
         id: fw
-        if: inputs.job == 'prism-diff' || (inputs.job == 'daily-brief-backfill' && inputs.apply)
+        if: inputs.job == 'prism-diff' || inputs.job == 'prism-apply' || (inputs.job == 'daily-brief-backfill' && inputs.apply)
         env:
           POSTGRES_SERVER: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
         run: |
@@ -115,7 +122,7 @@ jobs:
 
       - name: Temporarily allow this runner through the Prism SQL firewall
         id: prismfw
-        if: inputs.job == 'prism-diff' && inputs.artifact_name == ''
+        if: (inputs.job == 'prism-diff' || inputs.job == 'prism-apply') && inputs.artifact_name == ''
         env:
           PRISM_SQL_RESOURCE_GROUP: ${{ secrets.PRISM_SQL_RESOURCE_GROUP }}
         run: |
@@ -146,7 +153,7 @@ jobs:
             --output none
 
       - name: Dump Prism SQL
-        if: inputs.job == 'prism-diff' && inputs.artifact_name == ''
+        if: (inputs.job == 'prism-diff' || inputs.job == 'prism-apply') && inputs.artifact_name == ''
         env:
           PRISM_SQL_CONNECTION_STRING: ${{ secrets.PRISM_SQL_CONNECTION_STRING }}
         run: |
@@ -160,17 +167,10 @@ jobs:
           fi
           npm run db:dump:prism -- --out prism-dump.json
 
-      - name: Prism diff (dry-run)
-        if: inputs.job == 'prism-diff'
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DATABASE_URL }}
-          APPLY: ${{ inputs.apply }}
+      - name: Place the Prism dump
+        if: inputs.job == 'prism-diff' || inputs.job == 'prism-apply'
         run: |
           set -euo pipefail
-          if [ "$APPLY" = "true" ]; then
-            echo "apply=true is ignored for prism-diff. This job never passes --apply."
-          fi
           if [ -n "${{ inputs.artifact_name }}" ]; then
             DUMP="$(find incoming -name prism-dump.json -print -quit || true)"
             if [ -z "$DUMP" ]; then
@@ -184,23 +184,45 @@ jobs:
             echo "prism-dump.json was not written. The dump step should have created it."
             exit 1
           fi
+
+      - name: Prism diff (dry-run)
+        if: inputs.job == 'prism-diff'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          set -euo pipefail
+          if [ "$APPLY" = "true" ]; then
+            echo "apply=true is ignored for prism-diff. This job never passes --apply."
+          fi
           npm run db:import:prism-diff -- prism-dump.json | tee prism-diff-report.txt
 
       - name: Prism import plan (dry-run)
-        if: inputs.job == 'prism-diff'
+        if: inputs.job == 'prism-diff' || inputs.job == 'prism-apply'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -euo pipefail
-          if [ ! -f prism-dump.json ]; then
-            echo "prism-dump.json was not written. The diff step should have created it."
-            exit 1
-          fi
           npm run db:import:prism -- --dry-run prism-dump.json | tee prism-import-plan.txt
 
+      - name: Prism apply
+        if: inputs.job == 'prism-apply' && inputs.apply == true
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          npm run db:import:prism -- --apply prism-dump.json | tee prism-apply-log.txt
+
+      - name: Record that prism-apply did not write
+        if: inputs.job == 'prism-apply' && inputs.apply != true
+        run: |
+          echo "job=prism-apply but apply is not true. Dry-run only. No rows were written." | tee prism-apply-log.txt
+
       - name: Upload the Prism dump
-        if: always() && inputs.job == 'prism-diff'
+        if: always() && (inputs.job == 'prism-diff' || inputs.job == 'prism-apply')
         uses: actions/upload-artifact@v4
         with:
           name: prism-dump
@@ -216,11 +238,19 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload the Prism import plan
-        if: always() && inputs.job == 'prism-diff'
+        if: always() && (inputs.job == 'prism-diff' || inputs.job == 'prism-apply')
         uses: actions/upload-artifact@v4
         with:
           name: prism-import-plan
           path: prism-import-plan.txt
+          if-no-files-found: ignore
+
+      - name: Upload the Prism apply log
+        if: always() && inputs.job == 'prism-apply'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-apply-log
+          path: prism-apply-log.txt
           if-no-files-found: ignore
 
       - name: Daily brief backfill
@@ -247,7 +277,7 @@ jobs:
           fi
 
       - name: Remove the temporary firewall rule
-        if: always() && (inputs.job == 'prism-diff' || (inputs.job == 'daily-brief-backfill' && inputs.apply))
+        if: always() && (inputs.job == 'prism-diff' || inputs.job == 'prism-apply' || (inputs.job == 'daily-brief-backfill' && inputs.apply))
         env:
           POSTGRES_SERVER: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
         run: |
@@ -259,7 +289,7 @@ jobs:
             --output none || true
 
       - name: Remove the temporary Prism SQL firewall rule
-        if: always() && inputs.job == 'prism-diff' && inputs.artifact_name == ''
+        if: always() && (inputs.job == 'prism-diff' || inputs.job == 'prism-apply') && inputs.artifact_name == ''
         env:
           PRISM_SQL_RESOURCE_GROUP: ${{ secrets.PRISM_SQL_RESOURCE_GROUP }}
         run: |

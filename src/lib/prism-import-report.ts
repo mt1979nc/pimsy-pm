@@ -38,7 +38,8 @@ function formatSlip(slip: ImportPlanRow): string[] {
     const reason = slip.detail ? `  ${slip.detail}` : "";
     return [`    slip  ${summary}`, `      SKIPPED${who ? `  ${who}` : ""}${reason}`];
   }
-  return [`    slip  ${summary}`, `      MATCHED  ${who ?? slip.key}`];
+  const reason = slip.detail ? `  ${slip.detail}` : "";
+  return [`    slip  ${summary}`, `      MATCHED  ${who ?? slip.key}${reason}`];
 }
 
 function formatEngagement(row: ImportPlanRow, slips: ImportPlanRow[]): string[] {

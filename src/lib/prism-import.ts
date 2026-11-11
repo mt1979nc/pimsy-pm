@@ -9,7 +9,7 @@
  * prism-import-overrides.ts.
  */
 
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -253,6 +253,40 @@ function leadChangeLines(
   return line ? [line] : [];
 }
 
+function coLeadLabel(project: ExistingProjectSnapshot, users: ExistingUserSnapshot[]): string {
+  if (project.coLeadName || project.coLeadPrismTeamId) return personLabel(project.coLeadName, project.coLeadPrismTeamId);
+  if (project.coLeadId) {
+    const user = users.find((row) => row.id === project.coLeadId);
+    return user ? personLabel(user.name, user.prismTeamId, user.email) : project.coLeadId;
+  }
+  return "—";
+}
+
+function coLeadChangeLines(
+  owner2: string | null,
+  project: ExistingProjectSnapshot | undefined,
+  users: ExistingUserSnapshot[],
+): string[] {
+  const owner = (owner2 ?? "").trim();
+  const current = project ? coLeadLabel(project, users) : "—";
+  const hasCurrent = Boolean(project && current !== "—");
+  if (!owner) {
+    if (!hasCurrent) return [];
+    return [`co-lead  ${current}  kept (Prism co-owner empty)`];
+  }
+  const ban = excludedTeam(owner);
+  if (ban) return [`co-lead  ${hasCurrent ? current : "—"}  kept — ${ban.name} (${ban.teamId}) is excluded`];
+  const incoming = users.find((user) => (user.prismTeamId ?? "").toLowerCase() === owner.toLowerCase());
+  const next = incoming ? personLabel(incoming.name, incoming.prismTeamId ?? owner, incoming.email) : owner;
+  if (!project) {
+    const line = changeLine("co-lead", null, next);
+    return line ? [line] : [];
+  }
+  if (!known(project, "coLeadId") && !known(project, "coLeadName") && !known(project, "coLeadPrismTeamId")) return [];
+  const line = changeLine("co-lead", current, next);
+  return line ? [line] : [];
+}
+
 function customerFieldChanges(
   customer: PrismDumpCustomer,
   project: ExistingProjectSnapshot | undefined,
@@ -312,6 +346,7 @@ function customerFieldChanges(
     if (line) lines.push(line);
   }
   lines.push(...leadChangeLines(customer.owner, project, users));
+  lines.push(...coLeadChangeLines(customer.owner2, project, users));
   return lines;
 }
 
@@ -406,15 +441,43 @@ function matchNote(match: Extract<ProjectMatchResult, { kind: "match" }>): strin
   return [archived, also].filter(Boolean).join(" ");
 }
 
-function slipRows(customer: PrismDumpCustomer, parent: ImportPlanRow, slipCount: number): ImportPlanRow[] {
+/** Stable identity for a slip: calendar from-date and to-date. Notes and cause are not part of the key. */
+export function slipKey(from: string | null | undefined, to: string | null | undefined): string | null {
+  const start = (from ?? "").trim().slice(0, 10);
+  const end = (to ?? "").trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) return null;
+  return `${start}|${end}`;
+}
+
+/**
+ * Co-lead is never cleared because Prism left owner2 empty.
+ * A Prism co-owner is written only when that person is already resolved.
+ */
+export function nextCoLeadId(
+  owner2: string | null | undefined,
+  existingCoLeadId: string | null | undefined,
+  lookup: (teamId: string) => string | null,
+): string | null {
+  const owner = (owner2 ?? "").trim();
+  if (!owner || excludedTeam(owner)) return existingCoLeadId ?? null;
+  return lookup(owner) ?? existingCoLeadId ?? null;
+}
+
+function slipRows(
+  customer: PrismDumpCustomer,
+  parent: ImportPlanRow,
+  existingKeys: Set<string>,
+): ImportPlanRow[] {
   const blockedByGoLive = Boolean(customerOverride(customer.id)?.goLive);
+  const seen = new Set<string>();
   return customer.slipLog.map((slip) => {
     const summary = [slip.from && slip.to ? `${slip.from} → ${slip.to}` : `${slip.from ?? "?"} → ${slip.to ?? "?"}`, slip.days != null ? `${slip.days}d` : null, slip.cause, slip.note]
       .filter(Boolean)
       .join("  ");
+    const key = slipKey(slip.from, slip.to);
     const base = {
       kind: "slip" as const,
-      key: `${customer.id}:${slip.from ?? ""}:${slip.to ?? ""}:${slip.days ?? ""}`,
+      key: `${customer.id}:${key ?? `${slip.from ?? ""}:${slip.to ?? ""}`}`,
       parentKey: customer.id,
       accountName: customer.acct,
       projectId: parent.projectId,
@@ -437,19 +500,36 @@ function slipRows(customer: PrismDumpCustomer, parent: ImportPlanRow, slipCount:
         detail: "go-live is overridden; Prism slips are not imported",
       };
     }
-    if (slipCount > 0 && parent.action !== "insert") {
+    if (!key) {
+      return { ...base, action: "skip" as const, matchLabel: "SKIPPED" as const, detail: "missing from or to date" };
+    }
+    if (existingKeys.has(key) || seen.has(key)) {
       return {
         ...base,
         action: "skip" as const,
         matchLabel: "SKIPPED" as const,
-        detail: "project already has slips; not overwritten",
+        detail: existingKeys.has(key)
+          ? "already in PATH; not overwritten"
+          : "duplicate in this dump; not imported twice",
       };
     }
+    seen.add(key);
     if (parent.matchLabel === "NEW" || parent.action === "insert") {
-      return { ...base, action: "insert" as const, matchLabel: "NEW" as const, detail: "" };
+      return { ...base, action: "insert" as const, matchLabel: "NEW" as const, detail: "will add" };
     }
-    return { ...base, action: "insert" as const, matchLabel: "MATCHED" as const, detail: "" };
+    return { ...base, action: "insert" as const, matchLabel: "MATCHED" as const, detail: "will append" };
   });
+}
+
+function slipAddLine(rows: ImportPlanRow[]): string | null {
+  if (!rows.length) return null;
+  const adds = rows.filter((row) => row.action === "insert").length;
+  const present = rows.filter((row) => row.detail?.includes("already in PATH")).length;
+  const held = rows.length - adds - present;
+  const parts = [`${adds} to add`];
+  if (present) parts.push(`${present} already in PATH`);
+  if (held) parts.push(`${held} not imported`);
+  return `slips  ${parts.join(", ")}`;
 }
 
 function markCollisions(rows: ImportPlanRow[], warnings: string[]) {
@@ -687,8 +767,18 @@ export function planPrismImport(dump: PrismDump, existing: ExistingPmState): Imp
     const parent = customers.find((row) => row.key === customer.id);
     if (!parent) return [];
     const project = parent.projectId ? existing.projects.find((row) => row.id === parent.projectId) : undefined;
-    return slipRows(customer, parent, project?.slipCount ?? 0);
+    const existingKeys = new Set<string>();
+    for (const slip of project?.existingSlips ?? []) {
+      const key = slipKey(slip.from, slip.to);
+      if (key) existingKeys.add(key);
+    }
+    return slipRows(customer, parent, existingKeys);
   });
+  for (const customer of customers) {
+    const line = slipAddLine(slips.filter((row) => row.parentKey === customer.key));
+    if (!line) continue;
+    customer.changes = [...(customer.changes ?? []), line];
+  }
 
   return {
     team,
@@ -743,8 +833,16 @@ function resolveOwnerId(
   return existingId ?? null;
 }
 
+function resolveCoLeadId(
+  owner2: string | null,
+  teamIds: Map<string, string>,
+  existingId: string | null | undefined,
+): string | null {
+  return nextCoLeadId(owner2, existingId, (teamId) => teamIds.get(teamId) ?? null);
+}
+
 async function loadExistingState(): Promise<ExistingPmState> {
-  const [people, rows, slipCountRows] = await Promise.all([
+  const [people, rows, slipRowsLoaded] = await Promise.all([
     db.query.users.findMany({
       columns: { id: true, email: true, prismTeamId: true, name: true, role: true, pathManaged: true },
     }),
@@ -773,14 +871,25 @@ async function loadExistingState(): Promise<ExistingPmState> {
       with: {
         customerAccount: { columns: { name: true, status: true } },
         lead: { columns: { name: true, prismTeamId: true } },
+        coLead: { columns: { name: true, prismTeamId: true } },
       },
     }),
     db
-      .select({ projectId: slipEvents.projectId, n: sql<number>`count(*)::int` })
-      .from(slipEvents)
-      .groupBy(slipEvents.projectId),
+      .select({
+        projectId: slipEvents.projectId,
+        fromDate: slipEvents.fromDate,
+        toDate: slipEvents.toDate,
+      })
+      .from(slipEvents),
   ]);
-  const slipCounts = new Map(slipCountRows.map((row) => [row.projectId, Number(row.n)]));
+  const slipsByProject = new Map<string, { from: string; to: string }[]>();
+  for (const slip of slipRowsLoaded) {
+    const from = utcDayKey(slip.fromDate);
+    const to = utcDayKey(slip.toDate);
+    const list = slipsByProject.get(slip.projectId) ?? [];
+    list.push({ from, to });
+    slipsByProject.set(slip.projectId, list);
+  }
   return {
     users: people,
     projects: rows.map((row) => ({
@@ -801,13 +910,16 @@ async function loadExistingState(): Promise<ExistingPmState> {
       coLeadId: row.coLeadId,
       leadName: row.lead?.name ?? null,
       leadPrismTeamId: row.lead?.prismTeamId ?? null,
+      coLeadName: row.coLead?.name ?? null,
+      coLeadPrismTeamId: row.coLead?.prismTeamId ?? null,
       startDate: row.startDate,
       initialGoLiveDate: row.initialGoLiveDate,
       targetGoLiveDate: row.targetGoLiveDate,
       actualGoLiveDate: row.actualGoLiveDate,
       prismStatus: row.prismStatus,
       currentPhase: row.currentPhase,
-      slipCount: slipCounts.get(row.id) ?? 0,
+      existingSlips: slipsByProject.get(row.id) ?? [],
+      slipCount: slipsByProject.get(row.id)?.length ?? 0,
     })),
   };
 }
@@ -887,43 +999,48 @@ async function upsertScope(
   }
 }
 
-async function importSlipsIfEmpty(projectId: string, slips: PrismDumpSlip[], kickoff: Date | null, initial: Date | null, current: Date | null) {
-  const existing = await db.query.slipEvents.findFirst({
+async function importMissingSlips(projectId: string, slips: PrismDumpSlip[], kickoff: Date | null, initial: Date | null, current: Date | null) {
+  const existing = await db.query.slipEvents.findMany({
     where: eq(slipEvents.projectId, projectId),
-    columns: { id: true },
+    columns: { fromDate: true, toDate: true },
   });
-  if (existing) return;
-
-  if (slips.length > 0) {
-    for (const s of slips) {
-      const from = s.from ? parseDateInput(s.from) : null;
-      const to = s.to ? parseDateInput(s.to) : null;
-      if (!from || !to) continue;
-      const days = s.days ?? Math.round((to.getTime() - from.getTime()) / 86_400_000);
-      if (days === 0) continue;
-      await db.insert(slipEvents).values({
-        projectId,
-        fromDate: from,
-        toDate: to,
-        days,
-        cause: s.cause,
-        note: s.note ?? "Imported from Prism slipLog",
-        createdById: null,
-      });
-    }
-    return;
+  const seen = new Set<string>();
+  for (const row of existing) {
+    const key = slipKey(utcDayKey(row.fromDate), utcDayKey(row.toDate));
+    if (key) seen.add(key);
   }
 
-  if (initial && current && initial.getTime() !== current.getTime()) {
-    const days = Math.round((current.getTime() - initial.getTime()) / 86_400_000);
-    if (days === 0) return;
+  const incoming: PrismDumpSlip[] =
+    slips.length > 0
+      ? slips
+      : initial && current && initial.getTime() !== current.getTime()
+        ? [
+            {
+              from: utcDayKey(initial),
+              to: utcDayKey(current),
+              days: Math.round((current.getTime() - initial.getTime()) / 86_400_000),
+              cause: null,
+              note: "Aggregate imported from Prism (no per-event slipLog).",
+            },
+          ]
+        : [];
+
+  for (const slip of incoming) {
+    const from = slip.from ? parseDateInput(slip.from) : null;
+    const to = slip.to ? parseDateInput(slip.to) : null;
+    if (!from || !to) continue;
+    const key = slipKey(utcDayKey(from), utcDayKey(to));
+    if (!key || seen.has(key)) continue;
+    const days = slip.days ?? Math.round((to.getTime() - from.getTime()) / 86_400_000);
+    if (days === 0) continue;
+    seen.add(key);
     await db.insert(slipEvents).values({
       projectId,
-      fromDate: initial,
-      toDate: current,
+      fromDate: from,
+      toDate: to,
       days,
-      cause: null,
-      note: "Aggregate imported from Prism (no per-event slipLog).",
+      cause: slip.cause,
+      note: slip.note ?? "Imported from Prism slipLog",
       createdById: null,
     });
   }
@@ -1005,7 +1122,7 @@ async function applyActiveCustomer(
   if (existing?.archivedAt) return "skip" as const;
   const override = customerOverride(customer.id);
   const leadId = resolveOwnerId(customer.owner, teamIds, existing?.leadId);
-  const coLeadId = resolveOwnerId(customer.owner2, teamIds, existing?.coLeadId);
+  const coLeadId = resolveCoLeadId(customer.owner2, teamIds, existing?.coLeadId);
   const kickoff = customer.kickoffDate ? parseDateInput(customer.kickoffDate) : null;
   const initial = customer.initialGolive ? parseDateInput(customer.initialGolive) : null;
   const current = customer.goliveDate ? parseDateInput(customer.goliveDate) : initial;
@@ -1050,7 +1167,7 @@ async function applyActiveCustomer(
       .returning({ id: projects.id });
     await ensureLeadMembership(project.id, leadId, coLeadId);
     await upsertScope(project.id, scope, hours, tier);
-    if (!override?.goLive) await importSlipsIfEmpty(project.id, customer.slipLog, kickoff, initial, current);
+    if (!override?.goLive) await importMissingSlips(project.id, customer.slipLog, kickoff, initial, current);
     return "insert" as const;
   }
 
@@ -1099,7 +1216,7 @@ async function applyActiveCustomer(
   }
   await ensureLeadMembership(existing.id, leadId, coLeadId);
   await upsertScope(existing.id, scope, hours, tier);
-  if (!override?.goLive) await importSlipsIfEmpty(existing.id, customer.slipLog, kickoff, initial, current);
+  if (!override?.goLive) await importMissingSlips(existing.id, customer.slipLog, kickoff, initial, current);
   return "update" as const;
 }
 
@@ -1161,7 +1278,7 @@ async function applyCompleted(
     await ensureLeadMembership(project.id, leadId, null);
     await upsertScope(project.id, scope, hours, tier);
     if (!override?.goLive && initial && actual && initial.getTime() !== actual.getTime()) {
-      await importSlipsIfEmpty(project.id, [], kickoff, initial, actual);
+      await importMissingSlips(project.id, [], kickoff, initial, actual);
     }
     return "insert" as const;
   }

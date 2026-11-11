@@ -1,8 +1,8 @@
 /**
  * Apply a Prism JSON dump to PATH Postgres. Idempotent by acronym / prism_team_id.
  *
- *   npm run db:import:prism -- ./prism-dump.json
  *   npm run db:import:prism -- --dry-run ./prism-dump.json
+ *   npm run db:import:prism -- --apply ./prism-dump.json
  *
  * Does not invent credentials. Does not write back to Prism SQL.
  */
@@ -28,7 +28,7 @@ async function main() {
   if (!file) {
     console.error(
       [
-        "Usage: npm run db:import:prism -- [--dry-run] <prism-dump.json>",
+        "Usage: npm run db:import:prism -- [--dry-run | --apply] <prism-dump.json>",
         "",
         "From Azure Cloud Shell (sqlcmd, no Node mssql package):",
         "  export PRISM_SQL_CONNECTION_STRING='...'   # Prism SWA SQL_CONNECTION_STRING",
@@ -46,7 +46,13 @@ async function main() {
 
   const text = readFileSync(resolve(file), "utf8");
   const dump = parsePrismDumpJson(text);
-  const dryRun = hasFlag("--dry-run") || hasFlag("-n");
+  const apply = hasFlag("--apply");
+  const dryRunFlag = hasFlag("--dry-run") || hasFlag("-n");
+  if (apply && dryRunFlag) {
+    console.error("Pass either --apply or --dry-run, not both.");
+    process.exit(1);
+  }
+  const dryRun = dryRunFlag;
 
   console.log(
     `Prism dump: ${dump.team.length} team, ${dump.formerTeam.length} former, ${dump.customers.length} customers, ${dump.completed.length} completed` +

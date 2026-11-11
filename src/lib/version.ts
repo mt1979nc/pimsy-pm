@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.38";
+export const APP_VERSION = "1.18.39";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.39",
+    date: "2026-11-11",
+    summary:
+      "Prism import keeps a co-lead when Prism has no co-owner, and adds only the slip events that are not already on the project. PATH data jobs can write that import when the job is prism-apply and apply is turned on.",
+    highlights: [
+      "An empty Prism co-owner does not clear the PATH co-lead. A co-owner in Prism is set, and the dry-run shows the co-lead.",
+      "Slips already on a project stay. Prism slips with a new from-date and to-date are appended. Nothing slip-related is deleted.",
+      "Actions → PATH data jobs → prism-apply writes only when apply is true. prism-diff stays a dry-run. No schema migrate.",
+    ],
+  },
   {
     version: "1.18.38",
     date: "2026-11-11",

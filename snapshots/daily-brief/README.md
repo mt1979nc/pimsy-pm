@@ -36,14 +36,15 @@ Actions → **PATH data jobs** (`workflow_dispatch`).
 
 | Input | Meaning |
 | --- | --- |
-| `job` | `prism-diff` or `daily-brief-backfill` |
-| `apply` | Default false. Backfill writes only when this is true. `prism-diff` never passes `--apply`. |
+| `job` | `prism-diff`, `prism-apply`, or `daily-brief-backfill` |
+| `apply` | Default false. Backfill writes only when this is true. `prism-apply` writes only when this is true. `prism-diff` never passes `--apply`. |
 | `artifact_name` | Optional. An existing Actions artifact that holds the files. Leave empty for the default below. |
 | `artifact_run_id` | Run id that published `artifact_name`. Required when `artifact_name` is set. |
 
 Upload the artifact from a private run, or with `gh` against a workflow you already trust. Do not add the files to this repository.
 
 - **Backfill artifact.** The artifact root is the snapshot directory: day folders (`2026-09-08/dock-wip.json`) or flat names (`dock-wip-2026-09-08.json`). The job runs `npm run db:backfill:daily-brief -- --dir <that folder>`. It opens the database firewall only when `apply` is true.
-- **Prism diff.** With `artifact_name` empty, the job opens a temporary firewall rule on Azure SQL server `pimsy-prism-sql` in that server's resource group (`az sql server list`, then optional `PRISM_SQL_RESOURCE_GROUP`, then `pimsy-implementations` — not the PATH group), runs `npm run db:dump:prism -- --out prism-dump.json` with `PRISM_SQL_CONNECTION_STRING`, then dry-runs the diff and the import plan (`npm run db:import:prism -- --dry-run`). It never passes `--apply`. It uploads `prism-dump.json`, `prism-diff-report.txt`, and `prism-import-plan.txt`, and removes the SQL firewall rule on the way out. Pass `artifact_name` and `artifact_run_id` only to diff an existing dump instead. That artifact must contain `prism-dump.json`.
+- **Prism diff.** With `artifact_name` empty, the job opens a temporary firewall rule on Azure SQL server `pimsy-prism-sql` in that server's resource group (`az sql server list`, then optional `PRISM_SQL_RESOURCE_GROUP`, then `pimsy-implementations` — not the PATH group), runs `npm run db:dump:prism -- --out prism-dump.json` with `PRISM_SQL_CONNECTION_STRING`, then dry-runs the diff and the import plan (`npm run db:import:prism -- --dry-run`). It never passes `--apply`. It uploads `prism-dump.json`, `prism-diff-report.txt`, and `prism-import-plan.txt`, and removes the SQL firewall rule on the way out. Pass `artifact_name` and `artifact_run_id` only to use an existing dump instead. That artifact must contain `prism-dump.json`.
+- **Prism apply.** Same dump and the same dry-run plan. It runs `npm run db:import:prism -- --apply prism-dump.json` only when `apply` is true. It uploads `prism-dump.json`, `prism-import-plan.txt`, and `prism-apply-log.txt`.
 
 With `artifact_name` empty, backfill reads this committed folder (documentation only, unless you add files on a private branch you do not push).

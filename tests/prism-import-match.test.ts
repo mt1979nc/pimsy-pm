@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import { parsePrismDump, parsePrismDumpJson } from "@/lib/prism-dump";
 import {
+  nextCoLeadId,
   planPrismImport,
   prismTeamUpdateFields,
+  slipKey,
   type ExistingPmState,
   type ExistingProjectSnapshot,
 } from "@/lib/prism-import";
@@ -275,6 +277,9 @@ describe("1 Oct 2026 Prism dump", () => {
         initialGoLiveDate: customer.initialGolive ? new Date(`${customer.initialGolive}T12:00:00Z`) : null,
         actualGoLiveDate: null,
         currentPhase: null,
+        existingSlips: customer.slipLog.flatMap((slip) =>
+          slip.from && slip.to ? [{ from: slip.from, to: slip.to }] : [],
+        ),
         slipCount: customer.slipLog.length,
       }),
     );
@@ -341,5 +346,97 @@ describe("1 Oct 2026 Prism dump", () => {
     const report = formatPrismImportPlan(plan);
     expect(report).toContain("AMBIGUOUS");
     expect(report).toContain("SKIPPED");
+  });
+});
+
+describe("co-lead and slip append", () => {
+  it("keeps a PATH co-lead when Prism has no co-owner and sets one when Prism has one", () => {
+    expect(nextCoLeadId(null, "user-md", () => "other")).toBe("user-md");
+    expect(nextCoLeadId("", "user-md", () => "other")).toBe("user-md");
+    expect(nextCoLeadId("jr", "user-md", (teamId) => (teamId === "jr" ? "user-jr" : null))).toBe("user-jr");
+    expect(nextCoLeadId("jr", "user-md", () => null)).toBe("user-md");
+    expect(nextCoLeadId("rb", "user-md", () => "user-rb")).toBe("user-md");
+
+    const dump = parsePrismDump({
+      team: [
+        { id: "jr", name: "Jeremy Reals", hoursPerWeek: 30 },
+        { id: "md", name: "Morgan Davis", hoursPerWeek: 23 },
+      ],
+      customers: [
+        { id: "DYM", acct: "DYM BHSO", owner: "jr", status: "active" },
+        { id: "EBHKY", acct: "Epic Behavioral Health - KY", owner: "jr", owner2: "md", status: "active" },
+      ],
+    });
+    const plan = planPrismImport(dump, {
+      users: [
+        { id: "user-jr", email: "jeremy@pimsyehr.com", prismTeamId: "jr", name: "Jeremy Reals", role: "SPECIALIST" },
+        { id: "user-md", email: "morgan@pimsyehr.com", prismTeamId: "md", name: "Morgan Davis", role: "SPECIALIST" },
+      ],
+      projects: [
+        project({
+          id: "dym",
+          code: "DYM",
+          prismClientId: "DYM",
+          coLeadId: "user-md",
+          coLeadName: "Morgan Davis",
+          coLeadPrismTeamId: "md",
+        }),
+        project({
+          id: "ebh",
+          code: "EBHKY",
+          prismClientId: "EBHKY",
+          coLeadId: null,
+          coLeadName: null,
+          coLeadPrismTeamId: null,
+        }),
+      ],
+    });
+    const dym = plan.customers.find((row) => row.key === "DYM");
+    const ebh = plan.customers.find((row) => row.key === "EBHKY");
+    expect(dym?.changes?.join("\n")).toMatch(/co-lead  Morgan Davis \(md\)  kept \(Prism co-owner empty\)/);
+    expect(ebh?.changes?.join("\n")).toMatch(/co-lead  — → Morgan Davis \(md\)/);
+    expect(formatPrismImportPlan(plan)).toMatch(/co-lead/);
+  });
+
+  it("appends Prism slips that are not already on the project and does not repeat one", () => {
+    expect(slipKey("2026-11-02", "2026-11-16")).toBe("2026-11-02|2026-11-16");
+    expect(slipKey("2026-11-02T12:00:00.000Z", "2026-11-16")).toBe("2026-11-02|2026-11-16");
+    expect(slipKey("", "2026-11-16")).toBeNull();
+
+    const dump = parsePrismDump({
+      team: [],
+      customers: [
+        {
+          id: "DYM",
+          acct: "DYM BHSO",
+          status: "active",
+          slipLog: [
+            { from: "2026-10-12", to: "2026-11-02", days: 21, cause: "customer" },
+            { from: "2026-11-02", to: "2026-11-16", days: 14, cause: "customer", note: "new since last import" },
+            { from: "2026-11-02", to: "2026-11-16", days: 14, cause: "customer", note: "same dates again" },
+          ],
+        },
+      ],
+    });
+    const plan = planPrismImport(dump, {
+      users: [],
+      projects: [
+        project({
+          id: "dym",
+          code: "DYM",
+          prismClientId: "DYM",
+          existingSlips: [{ from: "2026-10-12", to: "2026-11-02" }],
+          slipCount: 1,
+        }),
+      ],
+    });
+    const slips = plan.slips.filter((row) => row.parentKey === "DYM");
+    expect(slips.map((row) => `${row.matchLabel} ${row.detail}`)).toEqual([
+      "SKIPPED already in PATH; not overwritten",
+      "MATCHED will append",
+      "SKIPPED duplicate in this dump; not imported twice",
+    ]);
+    expect(plan.customers.find((row) => row.key === "DYM")?.changes?.join("\n")).toMatch(/slips  1 to add, 1 already in PATH/);
+    expect(formatPrismImportPlan(plan)).toMatch(/will append/);
   });
 });
