@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { updateProjectCoLead } from "@/actions/management-engagements";
+import { ownerSelectState } from "@/lib/co-lead";
 import { FormError, FormSuccess, SubmitButton } from "@/components/submit-button";
 import { inputClass } from "@/components/ui";
 
@@ -20,14 +21,18 @@ export function CoLeadForm({
   options: Option[];
 }) {
   const [state, action] = useActionState(updateProjectCoLead, {});
+  const owners = ownerSelectState(
+    { leadId: null, coLeadId, ownerSplitPercent },
+    options.map((person) => person.id),
+  );
 
   return (
     <form action={action} className="border-t border-border px-4 py-3">
       <input type="hidden" name="projectId" value={projectId} />
-      <div className="flex flex-wrap items-end gap-3">
+      <div key={owners.key} className="flex flex-wrap items-end gap-3">
         <label className="min-w-[12rem] flex-1 text-[12.5px] text-ink-2">
           Co-lead
-          <select name="coLeadId" defaultValue={coLeadId ?? ""} className={`${inputClass} mt-1`}>
+          <select name="coLeadId" defaultValue={owners.coLeadId} className={`${inputClass} mt-1`}>
             <option value="">None</option>
             {options.map((person) => (
               <option key={person.id} value={person.id}>
@@ -43,7 +48,7 @@ export function CoLeadForm({
             type="number"
             min={1}
             max={100}
-            defaultValue={ownerSplitPercent}
+            defaultValue={owners.ownerSplitPercent}
             className={`${inputClass} mt-1`}
           />
         </label>

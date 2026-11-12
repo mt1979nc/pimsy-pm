@@ -42,7 +42,7 @@ import {
 } from "@/lib/project-timeline";
 import { parseDateInput, toDateInput } from "@/lib/dates";
 import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
-import { coLeadChoiceError, effectiveCanLead } from "@/lib/co-lead";
+import { coLeadChoiceError, effectiveCanLead, ownerFieldsFromForm, visibleLeadOptions } from "@/lib/co-lead";
 import { loadPathConfig } from "@/lib/path-config";
 import { acronymKey } from "@/lib/prism-dump";
 import { sumSlipDays } from "@/lib/engagement-roster";
@@ -166,13 +166,13 @@ export async function updateEngagement(
   });
   if (!before || before.archivedAt) return { error: "Engagement not found." };
 
-  const leadId = formData.get("leadId")?.toString() || null;
-  const coLeadId = formData.get("coLeadId")?.toString() || null;
-  const splitRaw = formData.get("ownerSplitPercent")?.toString() ?? "100";
-  const ownerSplitPercent = Number.parseInt(splitRaw, 10);
-  if (!Number.isFinite(ownerSplitPercent) || ownerSplitPercent < 1 || ownerSplitPercent > 100) {
-    return { error: "Owner split must be 1–100." };
-  }
+  const owners = ownerFieldsFromForm({
+    leadId: formData.get("leadId")?.toString() ?? "",
+    coLeadId: formData.get("coLeadId")?.toString() ?? "",
+    ownerSplitPercent: formData.get("ownerSplitPercent")?.toString() ?? "",
+  });
+  if ("error" in owners) return { error: owners.error };
+  const { leadId, coLeadId, ownerSplitPercent } = owners.fields;
   const coLeadError = await validateCoLeadChoice(leadId, coLeadId, before.coLeadId);
   if (coLeadError) return { error: coLeadError };
 
@@ -393,13 +393,13 @@ export async function listLeadOptions(keepIds: string[] = []) {
           where: inArray(users.id, missing),
           columns: { id: true, name: true, email: true, canLead: true, isDirector: true },
         });
-  return [...rows, ...extras]
-    .map((row) => ({
+  return visibleLeadOptions(
+    [...rows, ...extras].map((row) => ({
       ...row,
       canLead: effectiveCanLead(row.id, row.canLead, config.people),
-    }))
-    .filter((row) => row.canLead || keep.has(row.id))
-    .sort((a, b) => (a.name ?? a.email).localeCompare(b.name ?? b.email));
+    })),
+    [...keep],
+  ).sort((a, b) => (a.name ?? a.email).localeCompare(b.name ?? b.email));
 }
 
 async function validateCoLeadChoice(
@@ -445,12 +445,15 @@ export async function updateProjectCoLead(
   });
   if (!before || before.archivedAt) return { error: "Engagement not found." };
 
-  const coLeadId = formData.get("coLeadId")?.toString().trim() || null;
-  const splitRaw = formData.get("ownerSplitPercent")?.toString() ?? "";
-  const ownerSplitPercent = splitRaw.trim() === "" ? before.ownerSplitPercent : Number.parseInt(splitRaw, 10);
-  if (!Number.isFinite(ownerSplitPercent) || ownerSplitPercent < 1 || ownerSplitPercent > 100) {
-    return { error: "Lead share must be 1–100." };
+  const owners = ownerFieldsFromForm({
+    leadId: before.leadId ?? "",
+    coLeadId: formData.get("coLeadId")?.toString() ?? "",
+    ownerSplitPercent: formData.get("ownerSplitPercent")?.toString() ?? String(before.ownerSplitPercent),
+  });
+  if ("error" in owners) {
+    return { error: owners.error === "Owner split must be 1–100." ? "Lead share must be 1–100." : owners.error };
   }
+  const { coLeadId, ownerSplitPercent } = owners.fields;
   const coLeadError = await validateCoLeadChoice(before.leadId, coLeadId, before.coLeadId);
   if (coLeadError) return { error: coLeadError };
 
@@ -563,13 +566,13 @@ export async function createEngagement(
   });
   if (clash) return { error: `Acronym ${acronym} already exists (${clash.code}).` };
 
-  const leadId = formData.get("leadId")?.toString() || null;
-  const coLeadId = formData.get("coLeadId")?.toString() || null;
-  const splitRaw = formData.get("ownerSplitPercent")?.toString() ?? "100";
-  const ownerSplitPercent = Number.parseInt(splitRaw, 10);
-  if (!Number.isFinite(ownerSplitPercent) || ownerSplitPercent < 1 || ownerSplitPercent > 100) {
-    return { error: "Owner split must be 1–100." };
-  }
+  const owners = ownerFieldsFromForm({
+    leadId: formData.get("leadId")?.toString() ?? "",
+    coLeadId: formData.get("coLeadId")?.toString() ?? "",
+    ownerSplitPercent: formData.get("ownerSplitPercent")?.toString() ?? "",
+  });
+  if ("error" in owners) return { error: owners.error };
+  const { leadId, coLeadId, ownerSplitPercent } = owners.fields;
   const coLeadError = await validateCoLeadChoice(leadId, coLeadId, null);
   if (coLeadError) return { error: coLeadError };
 

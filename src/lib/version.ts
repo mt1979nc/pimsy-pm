@@ -27,8 +27,9 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: "1.18.42",
     date: "2026-11-12",
     summary:
-      "A co-lead can be saved on the Prism customer profile. The project settings page stays archived. Only an active teammate marked Can lead, and not the lead, can be chosen.",
+      "Roster → Edit engagement keeps the co-lead after Save. The customer profile can set it too. Project settings stays archived. Only an active teammate marked Can lead, and not the lead, can be chosen.",
     highlights: [
+      "Edit engagement writes co-lead and remounts that dropdown from the saved person, so Save no longer snaps it back to None.",
       "The profile opened from a Prism customer name has Co-lead and lead share. Save writes those two fields and leaves dates and slips alone.",
       "The co-lead list follows Settings → Can lead, including a person whose flag is stored on the settings row.",
       "No schema migrate.",
