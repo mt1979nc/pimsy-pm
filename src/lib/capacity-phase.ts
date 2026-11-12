@@ -8,6 +8,7 @@
  */
 
 import type { PrismStatus } from "@/lib/prism-status";
+import { resolveOwnerShares } from "@/lib/co-lead";
 import { parseDateInput, utcCalendarDaysBetween, utcDayKey } from "@/lib/dates";
 import { statusCountsTowardLoad } from "@/lib/path-config-rules";
 
@@ -94,37 +95,45 @@ export type CapacityPlacement = {
 
 /**
  * Share of this site that belongs on one specialist's card.
- * Primary owner gets `ownerSplitPercent`. Co-lead gets the rest.
- * A sole owner gets 100 even if the stored split is lower.
+ * Each assigned person gets their own percent. A sole owner gets 100.
+ * Co-lead and 3rd specialist are marked secondary.
  */
 export function placementForMember(
   memberId: string,
   site: {
     leadId: string | null;
     coLeadId: string | null;
+    thirdSpecialistId?: string | null;
     ownerSplitPercent: number;
+    leadSplitPercent?: number | null;
+    coLeadSplitPercent?: number | null;
+    thirdSplitPercent?: number | null;
   },
 ): CapacityPlacement | null {
-  const isPrimary = site.leadId === memberId;
-  const isCo = site.coLeadId === memberId && site.leadId !== memberId;
-  if (!isPrimary && !isCo) return null;
-  if (isPrimary) {
-    const split = site.coLeadId ? clampSplit(site.ownerSplitPercent) : 100;
-    return { splitPercent: split, isSecondary: false };
+  const shares = resolveOwnerShares(site);
+  if (site.leadId === memberId) return { splitPercent: shares.leadSplitPercent, isSecondary: false };
+  if (site.coLeadId === memberId && site.coLeadId !== site.leadId) {
+    return { splitPercent: shares.coLeadSplitPercent, isSecondary: true };
   }
-  return { splitPercent: 100 - clampSplit(site.ownerSplitPercent), isSecondary: true };
-}
-
-function clampSplit(n: number): number {
-  if (!Number.isFinite(n)) return 100;
-  return Math.min(100, Math.max(0, Math.round(n)));
+  if (
+    site.thirdSpecialistId === memberId &&
+    site.thirdSpecialistId !== site.leadId &&
+    site.thirdSpecialistId !== site.coLeadId
+  ) {
+    return { splitPercent: shares.thirdSplitPercent, isSecondary: true };
+  }
+  return null;
 }
 
 export type CapacityGroupSite = {
   id: string;
   leadId: string | null;
   coLeadId: string | null;
+  thirdSpecialistId?: string | null;
   ownerSplitPercent: number;
+  leadSplitPercent?: number | null;
+  coLeadSplitPercent?: number | null;
+  thirdSplitPercent?: number | null;
   prismStatus: PrismStatus;
   acronym: string;
 };

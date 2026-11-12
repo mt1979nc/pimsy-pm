@@ -5,7 +5,8 @@
  *   weeklyHrs = customHoursPerWeek  OR  estimatedHours / weeks(kickoff → current go-live)
  * Pipeline is excluded from active load. Capacity-exempt staff still show
  * personal load but are left out of department cap / headroom / hire-now.
- * Owner split assigns the same weekly figure across lead + co-lead.
+ * Owner percents assign the same weekly figure across lead, co-lead, and
+ * an optional 3rd specialist.
  *
  * A go-live slip lengthens the window and drops weekly hours unless the
  * engagement has a custom hrs/wk override (Prism customHpw).
@@ -19,6 +20,7 @@
 
 import { addDays, startOfDay, startOfWeek } from "date-fns";
 import { utcCalendarDaysBetween } from "@/lib/dates";
+import { allocateOwnerHours, resolveOwnerShares } from "@/lib/co-lead";
 import {
   hiringThresholds,
   loadModel,
@@ -59,7 +61,11 @@ export type ForecastEngagement = {
   prismStatus: PrismStatus;
   leadId: string | null;
   coLeadId: string | null;
+  thirdSpecialistId?: string | null;
   ownerSplitPercent: number;
+  leadSplitPercent?: number | null;
+  coLeadSplitPercent?: number | null;
+  thirdSplitPercent?: number | null;
   estimatedHours: number | null;
   customHoursPerWeek: number | null;
   startDate: Date | null;
@@ -88,7 +94,11 @@ export type EngagementLoadRow = {
   onCalendar: boolean;
   leadId: string | null;
   coLeadId: string | null;
+  thirdSpecialistId: string | null;
   ownerSplitPercent: number;
+  leadSplitPercent: number;
+  coLeadSplitPercent: number;
+  thirdSplitPercent: number;
   customHoursPerWeek: number | null;
   estimatedHours: number | null;
   startDate: Date | null;
@@ -228,10 +238,12 @@ export function splitWeeklyHours(
   ownerSplitPercent: number,
   hasCoLead: boolean,
 ): { lead: number; coLead: number } {
-  if (!hasCoLead) return { lead: weeklyHours, coLead: 0 };
-  const pct = Math.min(100, Math.max(0, ownerSplitPercent));
-  const lead = round1((weeklyHours * pct) / 100);
-  return { lead, coLead: round1(weeklyHours - lead) };
+  const hours = allocateOwnerHours(weeklyHours, {
+    leadId: "lead",
+    coLeadId: hasCoLead ? "co" : null,
+    ownerSplitPercent,
+  });
+  return { lead: hours.lead, coLead: hours.coLead };
 }
 
 export function engagementOverlapsWeek(
@@ -327,6 +339,7 @@ function engagementRow(e: ForecastEngagement): EngagementLoadRow {
   const weeklyHours = weeklyHoursForEngagement(e);
   const slip = slipWeeklyImpact(e);
   const onCalendar = Boolean(e.startDate && (e.targetGoLiveDate || e.initialGoLiveDate) && weeklyHours > 0);
+  const shares = resolveOwnerShares(e);
   return {
     id: e.id,
     code: e.code,
@@ -337,7 +350,11 @@ function engagementRow(e: ForecastEngagement): EngagementLoadRow {
     onCalendar,
     leadId: e.leadId,
     coLeadId: e.coLeadId,
-    ownerSplitPercent: e.ownerSplitPercent,
+    thirdSpecialistId: shares.thirdSpecialistId,
+    ownerSplitPercent: shares.ownerSplitPercent,
+    leadSplitPercent: shares.leadSplitPercent,
+    coLeadSplitPercent: shares.coLeadSplitPercent,
+    thirdSplitPercent: shares.thirdSplitPercent,
     customHoursPerWeek: e.customHoursPerWeek,
     estimatedHours: e.estimatedHours,
     startDate: e.startDate,
@@ -371,9 +388,14 @@ export function buildCapacityForecast(input: {
     for (const e of active) {
       const weekly = weeklyById.get(e.id) ?? 0;
       if (!engagementOverlapsWeek(e, weekOf, weekly)) continue;
-      const split = splitWeeklyHours(weekly, e.ownerSplitPercent, Boolean(e.coLeadId));
+      const split = allocateOwnerHours(weekly, e);
       if (e.leadId) perPerson.set(e.leadId, (perPerson.get(e.leadId) ?? 0) + split.lead);
-      if (e.coLeadId) perPerson.set(e.coLeadId, (perPerson.get(e.coLeadId) ?? 0) + split.coLead);
+      if (e.coLeadId && e.coLeadId !== e.leadId) {
+        perPerson.set(e.coLeadId, (perPerson.get(e.coLeadId) ?? 0) + split.coLead);
+      }
+      if (e.thirdSpecialistId && e.thirdSpecialistId !== e.leadId && e.thirdSpecialistId !== e.coLeadId) {
+        perPerson.set(e.thirdSpecialistId, (perPerson.get(e.thirdSpecialistId) ?? 0) + split.third);
+      }
     }
 
     const byPerson = staff.map((s) => ({

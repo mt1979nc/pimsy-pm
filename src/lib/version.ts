@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.42";
+export const APP_VERSION = "1.18.43";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.43",
+    date: "2026-11-12",
+    summary:
+      "An engagement can have an optional 3rd specialist. Primary, co-lead, and 3rd specialist each have a percent, and those percents total 100.",
+    highlights: [
+      "Roster → Edit engagement shows Primary owner, Co-lead, and 3rd specialist. An empty slot has no percent. Save keeps the people you picked.",
+      "Team capacity, Forecast, and the customer profile count the 3rd specialist's share of the hours.",
+      "Migration 0037 adds the 3rd specialist and backfills percents from the current split. Prism import does not clear a path-set 3rd specialist or those percents.",
+    ],
+  },
   {
     version: "1.18.42",
     date: "2026-11-12",

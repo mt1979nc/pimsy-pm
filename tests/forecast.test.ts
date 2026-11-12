@@ -129,6 +129,35 @@ describe("slip impact", () => {
 });
 
 describe("owner split and load gates", () => {
+  it("gives the 3rd specialist their percent of weekly hours", () => {
+    const forecast = buildCapacityForecast({
+      asOf: d("2026-09-14"),
+      weeksAhead: 2,
+      staff,
+      engagements: [
+        engagement({
+          id: "THREE",
+          leadId: "alex",
+          coLeadId: "jeremy",
+          thirdSpecialistId: "morgan",
+          leadSplitPercent: 50,
+          coLeadSplitPercent: 30,
+          thirdSplitPercent: 20,
+          customHoursPerWeek: 10,
+          estimatedHours: 40,
+          startDate: d("2026-09-14"),
+          targetGoLiveDate: d("2026-10-12"),
+        }),
+      ],
+    });
+    const hours = new Map(forecast.thisWeek?.byPerson.map((person) => [person.id, person.hours]));
+    expect(hours.get("alex")).toBe(5);
+    expect(hours.get("jeremy")).toBe(3);
+    expect(hours.get("morgan")).toBe(2);
+    expect(forecast.thisWeek?.totalHours).toBe(10);
+    expect(forecast.thisWeek?.billableHours).toBe(8);
+  });
+
   it("splits weekly hours across lead and co-lead", () => {
     expect(splitWeeklyHours(10, 60, true)).toEqual({ lead: 6, coLead: 4 });
     expect(splitWeeklyHours(10, 100, false)).toEqual({ lead: 10, coLead: 0 });

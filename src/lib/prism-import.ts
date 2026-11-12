@@ -60,6 +60,7 @@ import {
   type PrismCustomerOverride,
   type PrismCustomerStatus,
 } from "@/lib/prism-import-overrides";
+import { prismPercentWrite } from "@/lib/co-lead";
 import { staffingRoleFromTitle } from "@/lib/staffing";
 import { env } from "@/lib/env";
 
@@ -352,7 +353,14 @@ function customerFieldChanges(
   }
   lines.push(...leadChangeLines(customer.owner, project, users));
   lines.push(...coLeadChangeLines(customer.owner2, project, users));
+  lines.push(...thirdSpecialistKeepLines(project));
   return lines;
+}
+
+function thirdSpecialistKeepLines(project: ExistingProjectSnapshot | undefined): string[] {
+  if (!project?.thirdSpecialistId && !project?.thirdSpecialistName) return [];
+  const who = project.thirdSpecialistName || project.thirdSpecialistId;
+  return [`3rd specialist  ${who}  kept (path-managed)`, "owner percents kept (path-managed)"];
 }
 
 function completedFieldChanges(
@@ -1005,6 +1013,7 @@ async function loadExistingState(): Promise<ExistingPmState> {
         archivedAt: true,
         leadId: true,
         coLeadId: true,
+        thirdSpecialistId: true,
         startDate: true,
         initialGoLiveDate: true,
         targetGoLiveDate: true,
@@ -1016,6 +1025,7 @@ async function loadExistingState(): Promise<ExistingPmState> {
         customerAccount: { columns: { name: true, status: true } },
         lead: { columns: { name: true, prismTeamId: true } },
         coLead: { columns: { name: true, prismTeamId: true } },
+        thirdSpecialist: { columns: { name: true } },
       },
     }),
     db
@@ -1052,6 +1062,8 @@ async function loadExistingState(): Promise<ExistingPmState> {
       archivedAt: row.archivedAt,
       leadId: row.leadId,
       coLeadId: row.coLeadId,
+      thirdSpecialistId: row.thirdSpecialistId,
+      thirdSpecialistName: row.thirdSpecialist?.name ?? null,
       leadName: row.lead?.name ?? null,
       leadPrismTeamId: row.lead?.prismTeamId ?? null,
       coLeadName: row.coLead?.name ?? null,
@@ -1101,15 +1113,22 @@ async function upsertCustomerAccount(
   return row.id;
 }
 
-async function ensureLeadMembership(projectId: string, leadId: string | null, coLeadId: string | null) {
+async function ensureLeadMembership(
+  projectId: string,
+  leadId: string | null,
+  coLeadId: string | null,
+  thirdSpecialistId: string | null = null,
+) {
   if (leadId) {
     await db
       .insert(projectMembers)
       .values({ projectId, userId: leadId, role: "LEAD" })
       .onConflictDoNothing();
   }
-  if (coLeadId && coLeadId !== leadId) {
-    await db.insert(projectMembers).values({ projectId, userId: coLeadId, role: "CONTRIBUTOR" }).onConflictDoNothing();
+  for (const userId of [coLeadId, thirdSpecialistId]) {
+    if (userId && userId !== leadId) {
+      await db.insert(projectMembers).values({ projectId, userId, role: "CONTRIBUTOR" }).onConflictDoNothing();
+    }
   }
 }
 
@@ -1293,7 +1312,7 @@ async function applyActiveCustomer(
         customerAccountId: customerId,
         leadId,
         coLeadId,
-        ownerSplitPercent: customer.split,
+        ...prismPercentWrite(false, customer.split ?? 100, coLeadId),
         customHoursPerWeek: customer.customHpw,
         prismStatus: customer.status,
         prismNote: customer.note,
@@ -1309,7 +1328,7 @@ async function applyActiveCustomer(
         ...actualPatch,
       })
       .returning({ id: projects.id });
-    await ensureLeadMembership(project.id, leadId, coLeadId);
+    await ensureLeadMembership(project.id, leadId, coLeadId, null);
     await upsertScope(project.id, scope, hours, tier);
     if (!override?.goLive) await importMissingSlips(project.id, customer.slipLog, kickoff, initial, current);
     return "insert" as const;
@@ -1324,7 +1343,7 @@ async function applyActiveCustomer(
     .set({
       leadId,
       coLeadId,
-      ownerSplitPercent: customer.split,
+      ...prismPercentWrite(true, customer.split ?? 100, coLeadId),
       customHoursPerWeek: customer.customHpw,
       prismStatus: customer.status,
       prismNote: customer.note,
@@ -1358,7 +1377,7 @@ async function applyActiveCustomer(
       .set(accountPatch)
       .where(eq(customerAccounts.id, before.customerAccountId));
   }
-  await ensureLeadMembership(existing.id, leadId, coLeadId);
+  await ensureLeadMembership(existing.id, leadId, coLeadId, existing.thirdSpecialistId ?? null);
   await upsertScope(existing.id, scope, hours, tier);
   if (!override?.goLive) await importMissingSlips(existing.id, customer.slipLog, kickoff, initial, current);
   return "update" as const;
