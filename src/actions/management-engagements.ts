@@ -42,7 +42,7 @@ import {
 } from "@/lib/project-timeline";
 import { parseDateInput, toDateInput } from "@/lib/dates";
 import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
-import { coLeadChoiceError, effectiveCanLead, ownerFieldsFromForm, visibleLeadOptions } from "@/lib/co-lead";
+import { coLeadChoiceError, effectiveCanLead, ownerFieldsFromForm, thirdSpecialistChoiceError, visibleLeadOptions } from "@/lib/co-lead";
 import { loadPathConfig } from "@/lib/path-config";
 import { acronymKey } from "@/lib/prism-dump";
 import { sumSlipDays } from "@/lib/engagement-roster";
@@ -69,6 +69,7 @@ export async function listEngagements() {
       scope: true,
       lead: { columns: { id: true, name: true, email: true } },
       coLead: { columns: { id: true, name: true, email: true } },
+      thirdSpecialist: { columns: { id: true, name: true, email: true } },
       slipEvents: { columns: { days: true, goLiveApplied: true } },
     },
     orderBy: [asc(projects.code)],
@@ -81,7 +82,11 @@ export async function listEngagements() {
     status: r.status,
     leadId: r.leadId,
     coLeadId: r.coLeadId,
+    thirdSpecialistId: r.thirdSpecialistId,
     ownerSplitPercent: r.ownerSplitPercent,
+    leadSplitPercent: r.leadSplitPercent,
+    coLeadSplitPercent: r.coLeadSplitPercent,
+    thirdSplitPercent: r.thirdSplitPercent,
     customHoursPerWeek: r.customHoursPerWeek,
     prismStatus: r.prismStatus,
     prismNote: r.prismNote,
@@ -96,6 +101,7 @@ export async function listEngagements() {
     customerStatus: r.customerAccount?.status ?? null,
     leadName: r.lead?.name ?? r.lead?.email ?? null,
     coLeadName: r.coLead?.name ?? r.coLead?.email ?? null,
+    thirdSpecialistName: r.thirdSpecialist?.name ?? r.thirdSpecialist?.email ?? null,
     userCount: r.scope?.userCount ?? null,
     locationCount: r.scope?.locationCount ?? null,
     trainingsPerWeek: r.scope?.trainingsPerWeek ?? null,
@@ -124,6 +130,7 @@ export async function getEngagementForEdit(projectId: string) {
       scope: true,
       lead: { columns: { id: true, name: true, email: true, canLead: true } },
       coLead: { columns: { id: true, name: true, email: true, canLead: true } },
+      thirdSpecialist: { columns: { id: true, name: true, email: true, canLead: true } },
       slipEvents: {
         orderBy: [desc(slipEvents.createdAt)],
         limit: 20,
@@ -133,7 +140,7 @@ export async function getEngagementForEdit(projectId: string) {
   if (!project || project.archivedAt) throw new NotFoundError("Engagement not found.");
 
   const leadOptions = await listLeadOptions(
-    [project.leadId, project.coLeadId].filter((id): id is string => Boolean(id)),
+    [project.leadId, project.coLeadId, project.thirdSpecialistId].filter((id): id is string => Boolean(id)),
   );
 
   return {
@@ -169,12 +176,18 @@ export async function updateEngagement(
   const owners = ownerFieldsFromForm({
     leadId: formData.get("leadId")?.toString() ?? "",
     coLeadId: formData.get("coLeadId")?.toString() ?? "",
-    ownerSplitPercent: formData.get("ownerSplitPercent")?.toString() ?? "",
+    thirdSpecialistId: formData.get("thirdSpecialistId")?.toString() ?? "",
+    leadSplitPercent: formData.get("leadSplitPercent")?.toString() ?? "",
+    coLeadSplitPercent: formData.get("coLeadSplitPercent")?.toString() ?? "",
+    thirdSplitPercent: formData.get("thirdSplitPercent")?.toString() ?? "",
   });
   if ("error" in owners) return { error: owners.error };
-  const { leadId, coLeadId, ownerSplitPercent } = owners.fields;
+  const { leadId, coLeadId, thirdSpecialistId, leadSplitPercent, coLeadSplitPercent, thirdSplitPercent, ownerSplitPercent } =
+    owners.fields;
   const coLeadError = await validateCoLeadChoice(leadId, coLeadId, before.coLeadId);
   if (coLeadError) return { error: coLeadError };
+  const thirdError = await validateThirdChoice(thirdSpecialistId, before.thirdSpecialistId);
+  if (thirdError) return { error: thirdError };
 
   const customHpwRaw = formData.get("customHoursPerWeek")?.toString().trim() ?? "";
   let customHoursPerWeek: number | null = null;
@@ -261,7 +274,11 @@ export async function updateEngagement(
     .set({
       leadId,
       coLeadId,
+      thirdSpecialistId,
       ownerSplitPercent,
+      leadSplitPercent,
+      coLeadSplitPercent,
+      thirdSplitPercent,
       customHoursPerWeek,
       prismStatus,
       prismNote,
@@ -276,6 +293,15 @@ export async function updateEngagement(
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId));
+
+  for (const userId of [coLeadId, thirdSpecialistId]) {
+    if (userId && userId !== leadId) {
+      await db
+        .insert(projectMembers)
+        .values({ projectId, userId, role: "CONTRIBUTOR" })
+        .onConflictDoNothing();
+    }
+  }
 
   if (before.customerAccountId) {
     // Don't demote LIVE/AT_RISK/CHURNED customers just because prism status changed.
@@ -359,7 +385,11 @@ export async function updateEngagement(
       prismStatus,
       leadId,
       coLeadId,
+      thirdSpecialistId,
       ownerSplitPercent,
+      leadSplitPercent,
+      coLeadSplitPercent,
+      thirdSplitPercent,
       customHoursPerWeek,
     },
   });
@@ -427,7 +457,41 @@ async function validateCoLeadChoice(
   });
 }
 
-/** Save co-lead from the Prism customer profile. Does not touch dates, slips, or other projects. */
+async function validateThirdChoice(
+  thirdSpecialistId: string | null,
+  existingThirdSpecialistId: string | null,
+): Promise<string | null> {
+  if (!thirdSpecialistId) return thirdSpecialistChoiceError({ thirdSpecialistId, existingThirdSpecialistId, person: null });
+  const config = await loadPathConfig();
+  const person = await db.query.users.findFirst({
+    where: eq(users.id, thirdSpecialistId),
+    columns: { id: true, role: true, isActive: true, canLead: true },
+  });
+  return thirdSpecialistChoiceError({
+    thirdSpecialistId,
+    existingThirdSpecialistId,
+    person: person
+      ? {
+          role: person.role,
+          isActive: person.isActive,
+          canLead: effectiveCanLead(person.id, person.canLead, config.people),
+        }
+      : null,
+  });
+}
+
+function ownersFromForm(formData: FormData) {
+  return ownerFieldsFromForm({
+    leadId: formData.get("leadId")?.toString() ?? "",
+    coLeadId: formData.get("coLeadId")?.toString() ?? "",
+    thirdSpecialistId: formData.get("thirdSpecialistId")?.toString() ?? "",
+    leadSplitPercent: formData.get("leadSplitPercent")?.toString() ?? "",
+    coLeadSplitPercent: formData.get("coLeadSplitPercent")?.toString() ?? "",
+    thirdSplitPercent: formData.get("thirdSplitPercent")?.toString() ?? "",
+  });
+}
+
+/** Save owners from the Prism customer profile. Does not touch dates, slips, or other projects. */
 export async function updateProjectCoLead(
   _prev: ActionState,
   formData: FormData,
@@ -441,31 +505,46 @@ export async function updateProjectCoLead(
   if (!projectId) return { error: "Missing project." };
   const before = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
-    columns: { id: true, code: true, leadId: true, coLeadId: true, ownerSplitPercent: true, archivedAt: true },
+    columns: {
+      id: true,
+      code: true,
+      leadId: true,
+      coLeadId: true,
+      thirdSpecialistId: true,
+      archivedAt: true,
+    },
   });
   if (!before || before.archivedAt) return { error: "Engagement not found." };
 
-  const owners = ownerFieldsFromForm({
-    leadId: before.leadId ?? "",
-    coLeadId: formData.get("coLeadId")?.toString() ?? "",
-    ownerSplitPercent: formData.get("ownerSplitPercent")?.toString() ?? String(before.ownerSplitPercent),
-  });
-  if ("error" in owners) {
-    return { error: owners.error === "Owner split must be 1–100." ? "Lead share must be 1–100." : owners.error };
-  }
-  const { coLeadId, ownerSplitPercent } = owners.fields;
-  const coLeadError = await validateCoLeadChoice(before.leadId, coLeadId, before.coLeadId);
+  const owners = ownersFromForm(formData);
+  if ("error" in owners) return { error: owners.error };
+  const { leadId, coLeadId, thirdSpecialistId, leadSplitPercent, coLeadSplitPercent, thirdSplitPercent, ownerSplitPercent } =
+    owners.fields;
+  const coLeadError = await validateCoLeadChoice(leadId, coLeadId, before.coLeadId);
   if (coLeadError) return { error: coLeadError };
+  const thirdError = await validateThirdChoice(thirdSpecialistId, before.thirdSpecialistId);
+  if (thirdError) return { error: thirdError };
 
   await db
     .update(projects)
-    .set({ coLeadId, ownerSplitPercent, updatedAt: new Date() })
+    .set({
+      leadId,
+      coLeadId,
+      thirdSpecialistId,
+      ownerSplitPercent,
+      leadSplitPercent,
+      coLeadSplitPercent,
+      thirdSplitPercent,
+      updatedAt: new Date(),
+    })
     .where(eq(projects.id, projectId));
-  if (coLeadId && coLeadId !== before.leadId) {
-    await db
-      .insert(projectMembers)
-      .values({ projectId, userId: coLeadId, role: "CONTRIBUTOR" })
-      .onConflictDoNothing();
+  for (const userId of [coLeadId, thirdSpecialistId]) {
+    if (userId && userId !== leadId) {
+      await db
+        .insert(projectMembers)
+        .values({ projectId, userId, role: "CONTRIBUTOR" })
+        .onConflictDoNothing();
+    }
   }
 
   await audit({
@@ -566,15 +645,14 @@ export async function createEngagement(
   });
   if (clash) return { error: `Acronym ${acronym} already exists (${clash.code}).` };
 
-  const owners = ownerFieldsFromForm({
-    leadId: formData.get("leadId")?.toString() ?? "",
-    coLeadId: formData.get("coLeadId")?.toString() ?? "",
-    ownerSplitPercent: formData.get("ownerSplitPercent")?.toString() ?? "",
-  });
+  const owners = ownersFromForm(formData);
   if ("error" in owners) return { error: owners.error };
-  const { leadId, coLeadId, ownerSplitPercent } = owners.fields;
+  const { leadId, coLeadId, thirdSpecialistId, leadSplitPercent, coLeadSplitPercent, thirdSplitPercent, ownerSplitPercent } =
+    owners.fields;
   const coLeadError = await validateCoLeadChoice(leadId, coLeadId, null);
   if (coLeadError) return { error: coLeadError };
+  const thirdError = await validateThirdChoice(thirdSpecialistId, null);
+  if (thirdError) return { error: thirdError };
 
   const customHpwRaw = formData.get("customHoursPerWeek")?.toString().trim() ?? "";
   let customHoursPerWeek: number | null = null;
@@ -644,7 +722,11 @@ export async function createEngagement(
       customerAccountId: customerId,
       leadId,
       coLeadId,
+      thirdSpecialistId,
       ownerSplitPercent,
+      leadSplitPercent,
+      coLeadSplitPercent,
+      thirdSplitPercent,
       customHoursPerWeek,
       prismStatus,
       prismNote,
@@ -664,11 +746,13 @@ export async function createEngagement(
   if (leadId) {
     await db.insert(projectMembers).values({ projectId: project.id, userId: leadId, role: "LEAD" }).onConflictDoNothing();
   }
-  if (coLeadId && coLeadId !== leadId) {
-    await db
-      .insert(projectMembers)
-      .values({ projectId: project.id, userId: coLeadId, role: "CONTRIBUTOR" })
-      .onConflictDoNothing();
+  for (const userId of [coLeadId, thirdSpecialistId]) {
+    if (userId && userId !== leadId) {
+      await db
+        .insert(projectMembers)
+        .values({ projectId: project.id, userId, role: "CONTRIBUTOR" })
+        .onConflictDoNothing();
+    }
   }
 
   await db.insert(projectScopes).values({

@@ -27,7 +27,11 @@ export type SnapshotEngagement = {
   estimatedHours: number | null;
   leadId: string | null;
   coLeadId: string | null;
+  thirdSpecialistId: string | null;
   ownerSplitPercent: number;
+  leadSplitPercent: number;
+  coLeadSplitPercent: number;
+  thirdSplitPercent: number;
   kickoff: string | null;
   goLive: string | null;
   slipDays: number | null;
@@ -110,7 +114,11 @@ function toEngagement(e: EngagementLoadRow, nameById: Map<string, string>): Snap
     estimatedHours: e.estimatedHours,
     leadId: e.leadId,
     coLeadId: e.coLeadId,
+    thirdSpecialistId: e.thirdSpecialistId,
     ownerSplitPercent: e.ownerSplitPercent,
+    leadSplitPercent: e.leadSplitPercent,
+    coLeadSplitPercent: e.coLeadSplitPercent,
+    thirdSplitPercent: e.thirdSplitPercent,
     kickoff: isoDay(e.startDate),
     goLive: isoDay(e.targetGoLiveDate),
     slipDays: e.slipDays,

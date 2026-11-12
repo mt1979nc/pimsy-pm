@@ -1,61 +1,64 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { updateProjectCoLead } from "@/actions/management-engagements";
-import { ownerSelectState } from "@/lib/co-lead";
+import { EngagementOwnersFields } from "@/app/(app)/management/_components/engagement-owners-fields";
 import { FormError, FormSuccess, SubmitButton } from "@/components/submit-button";
-import { inputClass } from "@/components/ui";
+import { ownerFormError, ownerSelectState } from "@/lib/co-lead";
 
 type Option = { id: string; name: string | null; email: string };
 
 export function CoLeadForm({
   projectId,
+  leadId,
   coLeadId,
-  ownerSplitPercent,
+  thirdSpecialistId,
+  leadSplitPercent,
+  coLeadSplitPercent,
+  thirdSplitPercent,
   options,
 }: {
   projectId: string;
+  leadId: string | null;
   coLeadId: string | null;
-  ownerSplitPercent: number;
+  thirdSpecialistId: string | null;
+  leadSplitPercent: number;
+  coLeadSplitPercent: number;
+  thirdSplitPercent: number;
   options: Option[];
 }) {
   const [state, action] = useActionState(updateProjectCoLead, {});
+  const [ownerError, setOwnerError] = useState<string | undefined>();
   const owners = ownerSelectState(
-    { leadId: null, coLeadId, ownerSplitPercent },
+    { leadId, coLeadId, thirdSpecialistId, leadSplitPercent, coLeadSplitPercent, thirdSplitPercent },
     options.map((person) => person.id),
   );
 
   return (
-    <form action={action} className="border-t border-border px-4 py-3">
+    <form
+      action={action}
+      className="space-y-3 border-t border-border px-4 py-3"
+      onSubmit={(event) => {
+        const error = ownerFormError(new FormData(event.currentTarget));
+        setOwnerError(error ?? undefined);
+        if (error) event.preventDefault();
+      }}
+    >
       <input type="hidden" name="projectId" value={projectId} />
-      <div key={owners.key} className="flex flex-wrap items-end gap-3">
-        <label className="min-w-[12rem] flex-1 text-[12.5px] text-ink-2">
-          Co-lead
-          <select name="coLeadId" defaultValue={owners.coLeadId} className={`${inputClass} mt-1`}>
-            <option value="">None</option>
-            {options.map((person) => (
-              <option key={person.id} value={person.id}>
-                {person.name?.trim() || person.email}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="w-28 text-[12.5px] text-ink-2">
-          Lead share %
-          <input
-            name="ownerSplitPercent"
-            type="number"
-            min={1}
-            max={100}
-            defaultValue={owners.ownerSplitPercent}
-            className={`${inputClass} mt-1`}
-          />
-        </label>
-        <SubmitButton pendingLabel="Saving…">Save co-lead</SubmitButton>
-      </div>
-      <p className="mt-1.5 text-[12px] text-ink-3">The co-lead gets the rest of the hours. Only people marked Can lead are listed.</p>
-      <FormError error={state.error} />
+      <EngagementOwnersFields
+        remountKey={owners.key}
+        leadId={owners.leadId}
+        coLeadId={owners.coLeadId}
+        thirdSpecialistId={owners.thirdSpecialistId}
+        leadSplitPercent={owners.leadSplitPercent}
+        coLeadSplitPercent={owners.coLeadSplitPercent}
+        thirdSplitPercent={owners.thirdSplitPercent}
+        options={options}
+      />
+      <p className="text-[12px] text-ink-3">Percents for the people you assign must total 100. An empty slot has no percent.</p>
+      <SubmitButton pendingLabel="Saving…">Save owners</SubmitButton>
+      <FormError error={ownerError ?? state.error} />
       <FormSuccess message={state.ok ? (state.message ?? "Saved.") : undefined} />
     </form>
   );

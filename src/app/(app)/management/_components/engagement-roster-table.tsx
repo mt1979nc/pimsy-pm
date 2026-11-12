@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Badge, QuietBlank } from "@/components/ui";
 import { fmtShort } from "@/lib/dates";
 import { formatRosterSlipDays } from "@/lib/engagement-roster";
+import { formatOwnerShares } from "@/lib/co-lead";
 import { PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
 
 export type EngagementRow = {
@@ -11,7 +12,10 @@ export type EngagementRow = {
   name: string;
   leadName: string | null;
   coLeadName: string | null;
-  ownerSplitPercent: number;
+  thirdSpecialistName: string | null;
+  leadSplitPercent: number;
+  coLeadSplitPercent: number;
+  thirdSplitPercent: number;
   userCount: number | null;
   locationCount: number | null;
   trainingsPerWeek: number | null;
@@ -33,11 +37,11 @@ function statusTone(s: PrismStatus): "green" | "amber" | "neutral" | "slate" {
 }
 
 function ownersLabel(row: EngagementRow) {
-  const primary = row.leadName;
-  if (!primary && !row.coLeadName) return null;
-  if (!row.coLeadName) return primary;
-  if (!primary) return row.coLeadName;
-  return `${primary} / ${row.coLeadName} (${row.ownerSplitPercent}/${100 - row.ownerSplitPercent})`;
+  return formatOwnerShares([
+    { name: row.leadName, percent: row.leadSplitPercent },
+    { name: row.coLeadName, percent: row.coLeadSplitPercent },
+    { name: row.thirdSpecialistName, percent: row.thirdSplitPercent },
+  ]);
 }
 
 function SheetText({ value, label = "Empty" }: { value: string | number | null | undefined; label?: string }) {

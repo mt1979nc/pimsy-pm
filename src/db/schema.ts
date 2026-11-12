@@ -555,8 +555,16 @@ export const projects = pgTable(
     leadId: text("lead_id").references((): AnyPgColumn => users.id, { onDelete: "set null" }),
     /** Prism co-owner / co-lead (v1.8 Management). */
     coLeadId: text("co_lead_id").references((): AnyPgColumn => users.id, { onDelete: "set null" }),
-    /** Primary owner share of workload, 1–100. Co-lead gets the remainder. */
+    /** Optional third owner. Empty on every row that predates this column. */
+    thirdSpecialistId: text("third_specialist_id").references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+    /** Primary owner share. Kept equal to leadSplitPercent for older readers. */
     ownerSplitPercent: integer("owner_split_percent").notNull().default(100),
+    /** Percent of the site's hours for the primary owner. 0 when unassigned. */
+    leadSplitPercent: integer("lead_split_percent").notNull().default(100),
+    /** Percent for the co-lead. 0 when that slot is empty. */
+    coLeadSplitPercent: integer("co_lead_split_percent").notNull().default(0),
+    /** Percent for the 3rd specialist. 0 when that slot is empty. */
+    thirdSplitPercent: integer("third_split_percent").notNull().default(0),
     /** Manual hrs/wk override; null means use phase/estimator math. */
     customHoursPerWeek: real("custom_hours_per_week"),
     /**
@@ -685,6 +693,7 @@ export const projects = pgTable(
     index("project_customer_idx").on(t.customerAccountId),
     index("project_lead_idx").on(t.leadId),
     index("project_co_lead_idx").on(t.coLeadId),
+    index("project_third_specialist_idx").on(t.thirdSpecialistId),
     index("project_prism_status_idx").on(t.prismStatus),
     index("project_status_idx").on(t.status),
     index("project_health_idx").on(t.health),
@@ -1513,6 +1522,11 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     fields: [projects.coLeadId],
     references: [users.id],
     relationName: "ProjectCoLead",
+  }),
+  thirdSpecialist: one(users, {
+    fields: [projects.thirdSpecialistId],
+    references: [users.id],
+    relationName: "ProjectThirdSpecialist",
   }),
   template: one(projectTemplates, {
     fields: [projects.templateId],

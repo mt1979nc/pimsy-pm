@@ -51,6 +51,35 @@ describe("capacity site grouping", () => {
     );
   });
 
+  it("puts the 3rd specialist on their own card with their percent", () => {
+    const morgan = "morgan";
+    const grouped = groupSitesUnderSpecialists([alex, danielle, morgan], [
+      site({
+        id: "ever",
+        acronym: "EVER",
+        leadId: alex,
+        coLeadId: danielle,
+        thirdSpecialistId: morgan,
+        ownerSplitPercent: 50,
+        leadSplitPercent: 50,
+        coLeadSplitPercent: 30,
+        thirdSplitPercent: 20,
+      }),
+    ]);
+    expect(grouped.byMember[alex]?.find((s) => s.acronym === "EVER")).toMatchObject({
+      splitPercent: 50,
+      isSecondary: false,
+    });
+    expect(grouped.byMember[danielle]?.find((s) => s.acronym === "EVER")).toMatchObject({
+      splitPercent: 30,
+      isSecondary: true,
+    });
+    expect(grouped.byMember[morgan]?.find((s) => s.acronym === "EVER")).toMatchObject({
+      splitPercent: 20,
+      isSecondary: true,
+    });
+  });
+
   it("splits a co-led site and marks the co-lead as secondary", () => {
     const grouped = groupSitesUnderSpecialists([alex, danielle], sites);
     const primary = grouped.byMember[alex]?.find((s) => s.acronym === "CEDAR");

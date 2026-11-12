@@ -20,6 +20,8 @@ import { PRISM_STATUSES, PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/pri
 import { toDateInput } from "@/lib/dates";
 import type { DiscoveryScenario } from "@/db/schema";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
+import { ownerFormError } from "@/lib/co-lead";
+import { EngagementOwnersFields } from "./engagement-owners-fields";
 import type { EstimatorWeights } from "@/lib/path-config-defaults";
 
 type LeadOption = {
@@ -59,6 +61,7 @@ export function EngagementCreateForm({
   const lineLabels = estimator?.serviceLineLabels ?? SERVICE_LINE_LABELS;
   const lineKeys = Object.keys(lineLabels);
   const [state, action] = useActionState(createEngagement, {});
+  const [ownerError, setOwnerError] = useState<string | undefined>();
   const [scope, setScope] = useState<ImplementationScope>(DEFAULT_SCOPE);
   const [kickoff, setKickoff] = useState("");
   const [status, setStatus] = useState<PrismStatus>("pipeline");
@@ -102,9 +105,17 @@ export function EngagementCreateForm({
   }
 
   return (
-    <form action={action} className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+    <form
+      action={action}
+      className="grid gap-5 lg:grid-cols-[1.4fr_1fr]"
+      onSubmit={(event) => {
+        const error = ownerFormError(new FormData(event.currentTarget));
+        setOwnerError(error ?? undefined);
+        if (error) event.preventDefault();
+      }}
+    >
       <div className="space-y-6 p-5">
-        <FormError error={state.error} />
+        <FormError error={ownerError ?? state.error} />
         <section className="space-y-4">
           <h3 className="text-[12px] font-semibold uppercase tracking-wide text-ink-3">Roster</h3>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -135,40 +146,17 @@ export function EngagementCreateForm({
               className={inputClass}
             />
           </Field>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Primary owner" htmlFor="leadId">
-              <select id="leadId" name="leadId" defaultValue={defaultLeadId} className={inputClass}>
-                <option value="">— Unassigned —</option>
-                {leadOptions.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name ?? u.email}
-                    {u.isDirector ? " (Director)" : ""}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Co-lead" htmlFor="coLeadId">
-              <select id="coLeadId" name="coLeadId" defaultValue="" className={inputClass}>
-                <option value="">— None —</option>
-                {leadOptions.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name ?? u.email}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Owner split %" htmlFor="ownerSplitPercent">
-              <input
-                id="ownerSplitPercent"
-                name="ownerSplitPercent"
-                type="number"
-                min={1}
-                max={100}
-                defaultValue={100}
-                className={inputClass}
-              />
-            </Field>
-          </div>
+          <EngagementOwnersFields
+            remountKey="new"
+            leadId={defaultLeadId}
+            coLeadId=""
+            thirdSpecialistId=""
+            leadSplitPercent={defaultLeadId ? 100 : 0}
+            coLeadSplitPercent={0}
+            thirdSplitPercent={0}
+            options={leadOptions}
+          />
+          <p className="text-[12px] text-ink-3">Percents for the people you assign must total 100. An empty slot has no percent.</p>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Status" htmlFor="prismStatus">
               <select

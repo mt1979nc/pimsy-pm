@@ -14,13 +14,12 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.42");
+    expect(APP_VERSION).toBe("1.18.43");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
-    expect(RELEASE_NOTES[0]?.summary).toMatch(/co-lead/i);
-    expect(RELEASE_NOTES[0]?.summary).toMatch(/archived/i);
-    expect(RELEASE_NOTES[0]?.highlights?.join(" ")).toMatch(/No schema migrate/i);
+    expect(RELEASE_NOTES[0]?.summary).toMatch(/3rd specialist/i);
+    expect(RELEASE_NOTES[0]?.highlights?.join(" ")).toMatch(/0037/);
   });
 
   it("lists releases newest-first with unique versions", () => {

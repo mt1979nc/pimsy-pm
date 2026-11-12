@@ -237,6 +237,7 @@ export default async function ManagementForecastPage() {
                     <td className="px-3 py-2 text-ink-2">
                       {e.leadId ? nameById.get(e.leadId) : "—"}
                       {e.coLeadId ? ` / ${nameById.get(e.coLeadId)}` : ""}
+                      {e.thirdSpecialistId ? ` / ${nameById.get(e.thirdSpecialistId)}` : ""}
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums text-ink">
                       {e.weeklyHours > 0 ? e.weeklyHours : "—"}

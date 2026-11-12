@@ -43,6 +43,7 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
       customerAccount: { columns: { name: true, status: true } },
       lead: { columns: { id: true, name: true } },
       coLead: { columns: { id: true, name: true } },
+      thirdSpecialist: { columns: { id: true, name: true } },
       slipEvents: {
         orderBy: [asc(slipEvents.fromDate)],
         columns: { id: true, fromDate: true, toDate: true, days: true, cause: true, note: true },
@@ -53,9 +54,15 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
 
   const options = canEditCoLead
     ? await listLeadOptions(
-        [project.leadId, project.coLeadId].filter((id): id is string => Boolean(id)),
+        [project.leadId, project.coLeadId, project.thirdSpecialistId].filter((id): id is string => Boolean(id)),
       )
     : [];
+  const ownerCount = [project.leadId, project.coLeadId, project.thirdSpecialistId].filter(Boolean).length;
+  function named(name: string | null | undefined, percent: number) {
+    const label = person(name);
+    if (label === "—" || ownerCount < 2) return label;
+    return `${label} · ${percent}%`;
+  }
   const title = project.customerAccount?.name?.trim() || project.name;
   const acronym = project.crmAcronym || project.prismClientId || project.code;
   const status = isPrismStatus(project.prismStatus)
@@ -66,8 +73,9 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
   const facts: [string, string][] = [
     ["Status", status],
     ["Customer", project.customerAccount?.status?.replace(/_/g, " ").toLowerCase() || "—"],
-    ["Lead", person(project.lead?.name)],
-    ["Co-lead", person(project.coLead?.name)],
+    ["Lead", named(project.lead?.name, project.leadSplitPercent)],
+    ["Co-lead", named(project.coLead?.name, project.coLeadSplitPercent)],
+    ["3rd specialist", named(project.thirdSpecialist?.name, project.thirdSplitPercent)],
     ["Kickoff", project.startDate ? fmtDate(project.startDate) : "—"],
     ["Go-live", goLive ? fmtDate(goLive) : "—"],
   ];
@@ -96,8 +104,12 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
         {canEditCoLead ? (
           <CoLeadForm
             projectId={project.id}
+            leadId={project.leadId}
             coLeadId={project.coLeadId}
-            ownerSplitPercent={project.ownerSplitPercent}
+            thirdSpecialistId={project.thirdSpecialistId}
+            leadSplitPercent={project.leadSplitPercent}
+            coLeadSplitPercent={project.coLeadSplitPercent}
+            thirdSplitPercent={project.thirdSplitPercent}
             options={options}
           />
         ) : null}

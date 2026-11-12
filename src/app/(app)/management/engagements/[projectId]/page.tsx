@@ -52,7 +52,10 @@ export default async function ManagementEngagementEditPage({
           customerName={project.customerAccount?.name ?? null}
           leadId={project.leadId}
           coLeadId={project.coLeadId}
-          ownerSplitPercent={project.ownerSplitPercent}
+          thirdSpecialistId={project.thirdSpecialistId}
+          leadSplitPercent={project.leadSplitPercent}
+          coLeadSplitPercent={project.coLeadSplitPercent}
+          thirdSplitPercent={project.thirdSplitPercent}
           customHoursPerWeek={project.customHoursPerWeek}
           prismStatus={effectivePrismStatus}
           prismNote={project.prismNote}

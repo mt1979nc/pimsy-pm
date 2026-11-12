@@ -30,6 +30,8 @@ export type ExistingProjectSnapshot = {
   archivedAt: Date | null;
   leadId?: string | null;
   coLeadId?: string | null;
+  thirdSpecialistId?: string | null;
+  thirdSpecialistName?: string | null;
   leadName?: string | null;
   leadPrismTeamId?: string | null;
   coLeadName?: string | null;

@@ -12,7 +12,8 @@ import {
   recommendGoLive,
   type DurationSample,
 } from "@/lib/go-live-recommendation";
-import { ownerSelectState } from "@/lib/co-lead";
+import { ownerFormError, ownerSelectState } from "@/lib/co-lead";
+import { EngagementOwnersFields } from "./engagement-owners-fields";
 import { PRISM_STATUSES, PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
 import { toDateInput } from "@/lib/dates";
 import type { DiscoveryScenario } from "@/db/schema";
@@ -43,7 +44,10 @@ export function EngagementEditForm({
   customerName,
   leadId,
   coLeadId,
-  ownerSplitPercent,
+  thirdSpecialistId,
+  leadSplitPercent,
+  coLeadSplitPercent,
+  thirdSplitPercent,
   customHoursPerWeek,
   prismStatus,
   prismNote,
@@ -68,7 +72,10 @@ export function EngagementEditForm({
   customerName: string | null;
   leadId: string | null;
   coLeadId: string | null;
-  ownerSplitPercent: number;
+  thirdSpecialistId: string | null;
+  leadSplitPercent: number;
+  coLeadSplitPercent: number;
+  thirdSplitPercent: number;
   customHoursPerWeek: number | null;
   prismStatus: PrismStatus;
   prismNote: string | null;
@@ -112,6 +119,7 @@ export function EngagementEditForm({
         ];
   const lineLabels = estimator?.serviceLineLabels ?? SERVICE_LINE_LABELS;
   const [state, action] = useActionState(updateEngagement, {});
+  const [ownerError, setOwnerError] = useState<string | undefined>();
   const initialLocked = !!initialGoLiveDate;
   const [kickoff, setKickoff] = useState(toDateInput(startDate));
   const [targetGoLive, setTargetGoLive] = useState(toDateInput(targetGoLiveDate));
@@ -151,7 +159,7 @@ export function EngagementEditForm({
   const chosen =
     recommendation.scenarios.find((s) => s.scenario === scenario) ?? recommendation.scenarios[1];
   const owners = ownerSelectState(
-    { leadId, coLeadId, ownerSplitPercent },
+    { leadId, coLeadId, thirdSpecialistId, leadSplitPercent, coLeadSplitPercent, thirdSplitPercent },
     leadOptions.map((person) => person.id),
   );
 
@@ -171,9 +179,17 @@ export function EngagementEditForm({
   }
 
   return (
-    <form action={action} className="space-y-6 p-5">
+    <form
+      action={action}
+      className="space-y-6 p-5"
+      onSubmit={(event) => {
+        const error = ownerFormError(new FormData(event.currentTarget));
+        setOwnerError(error ?? undefined);
+        if (error) event.preventDefault();
+      }}
+    >
       <input type="hidden" name="projectId" value={projectId} />
-      <FormError error={state.error} />
+      <FormError error={ownerError ?? state.error} />
       <FormSuccess
         message={state.ok ? (state.message ?? (state.slipped ? "Slip recorded." : "Saved.")) : undefined}
       />
@@ -185,55 +201,17 @@ export function EngagementEditForm({
 
       <section className="space-y-4">
         <h3 className="text-[12px] font-semibold uppercase tracking-wide text-ink-3">Owners</h3>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Primary owner" htmlFor="leadId">
-            <select
-              id="leadId"
-              name="leadId"
-              defaultValue={leadId ?? ""}
-              className={inputClass}
-            >
-              <option value="">— Unassigned —</option>
-              {leadOptions.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name ?? u.email}
-                  {u.isDirector ? " (Director)" : ""}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Co-lead" htmlFor="coLeadId">
-            <select
-              key={owners.key}
-              id="coLeadId"
-              name="coLeadId"
-              defaultValue={owners.coLeadId}
-              className={inputClass}
-            >
-              <option value="">— None —</option>
-              {leadOptions.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name ?? u.email}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field
-            label="Owner split %"
-            htmlFor="ownerSplitPercent"
-            hint="Primary owner's share. Co-lead gets the rest."
-          >
-            <input
-              id="ownerSplitPercent"
-              name="ownerSplitPercent"
-              type="number"
-              min={1}
-              max={100}
-              defaultValue={ownerSplitPercent}
-              className={inputClass}
-            />
-          </Field>
-        </div>
+        <EngagementOwnersFields
+          remountKey={owners.key}
+          leadId={owners.leadId}
+          coLeadId={owners.coLeadId}
+          thirdSpecialistId={owners.thirdSpecialistId}
+          leadSplitPercent={owners.leadSplitPercent}
+          coLeadSplitPercent={owners.coLeadSplitPercent}
+          thirdSplitPercent={owners.thirdSplitPercent}
+          options={leadOptions}
+        />
+        <p className="text-[12px] text-ink-3">Percents for the people you assign must total 100. An empty slot has no percent.</p>
       </section>
 
       <section className="space-y-4">
