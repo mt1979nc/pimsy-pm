@@ -1,6 +1,6 @@
 {
   "name": "pimsy-pm",
-  "version": "1.18.41",
+  "version": "1.18.42",
   "description": "Implementation & project management platform with customer portal for PIMSY EHR",
   "scripts": {
     "dev": "next dev",

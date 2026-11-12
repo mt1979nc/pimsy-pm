@@ -7,8 +7,10 @@ import { projects, slipEvents } from "@/db/schema";
 import { Card } from "@/components/ui";
 import { fmtDate } from "@/lib/dates";
 import { requireStaff } from "@/lib/guard";
-import { assertProjectAccess, ForbiddenError, NotFoundError } from "@/lib/authz";
+import { assertProjectAccess, canSeePortfolio, ForbiddenError, NotFoundError } from "@/lib/authz";
 import { PRISM_STATUS_LABELS, isPrismStatus } from "@/lib/prism-status";
+import { listLeadOptions } from "@/actions/management-engagements";
+import { CoLeadForm } from "./co-lead-form";
 
 function person(name: string | null | undefined): string {
   const trimmed = name?.trim();
@@ -22,8 +24,8 @@ function slipCause(cause: string | null): string | null {
 }
 
 /**
- * Short read-only profile for a Prism customer. Used while the rest of
- * /projects stays archived.
+ * Prism customer profile. The rest of /projects stays archived.
+ * Portfolio staff can set the co-lead here; everyone else sees the facts only.
  */
 export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string }) {
   const actor = await requireStaff();
@@ -33,13 +35,14 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
     if (err instanceof NotFoundError || err instanceof ForbiddenError) notFound();
     throw err;
   }
+  const canEditCoLead = canSeePortfolio(actor);
 
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
     with: {
       customerAccount: { columns: { name: true, status: true } },
-      lead: { columns: { name: true } },
-      coLead: { columns: { name: true } },
+      lead: { columns: { id: true, name: true } },
+      coLead: { columns: { id: true, name: true } },
       slipEvents: {
         orderBy: [asc(slipEvents.fromDate)],
         columns: { id: true, fromDate: true, toDate: true, days: true, cause: true, note: true },
@@ -48,6 +51,11 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
   });
   if (!project) notFound();
 
+  const options = canEditCoLead
+    ? await listLeadOptions(
+        [project.leadId, project.coLeadId].filter((id): id is string => Boolean(id)),
+      )
+    : [];
   const title = project.customerAccount?.name?.trim() || project.name;
   const acronym = project.crmAcronym || project.prismClientId || project.code;
   const status = isPrismStatus(project.prismStatus)
@@ -85,6 +93,14 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
             </div>
           ))}
         </dl>
+        {canEditCoLead ? (
+          <CoLeadForm
+            projectId={project.id}
+            coLeadId={project.coLeadId}
+            ownerSplitPercent={project.ownerSplitPercent}
+            options={options}
+          />
+        ) : null}
       </Card>
 
       <Card>

@@ -7,7 +7,7 @@
  *
  * Kept: Prism roster, team, capacity, forecast, analysis, Dock delivery,
  * the /management overview, settings, and sign-in. A Prism customer name
- * opens /projects/{id}, a short read-only profile. The project list and
+ * opens /projects/{id}, a short profile where portfolio staff can set the co-lead. The project list and
  * every page under that profile stay archived. Bookmarks for
  * /reports/capacity and /reports/analysis still redirect to Prism.
  */

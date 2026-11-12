@@ -42,6 +42,8 @@ import {
 } from "@/lib/project-timeline";
 import { parseDateInput, toDateInput } from "@/lib/dates";
 import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
+import { coLeadChoiceError, effectiveCanLead } from "@/lib/co-lead";
+import { loadPathConfig } from "@/lib/path-config";
 import { acronymKey } from "@/lib/prism-dump";
 import { sumSlipDays } from "@/lib/engagement-roster";
 import type { ActionState } from "@/actions/messages";
@@ -130,25 +132,8 @@ export async function getEngagementForEdit(projectId: string) {
   });
   if (!project || project.archivedAt) throw new NotFoundError("Engagement not found.");
 
-  const leadCandidates = await db.query.users.findMany({
-    where: and(eq(users.isActive, true), ne(users.role, "CUSTOMER"), eq(users.canLead, true)),
-    columns: { id: true, name: true, email: true, canLead: true, isDirector: true },
-    orderBy: [asc(users.name)],
-  });
-
-  const extraIds = [project.leadId, project.coLeadId].filter(
-    (id): id is string => !!id && !leadCandidates.some((u) => u.id === id),
-  );
-  const extras =
-    extraIds.length === 0
-      ? []
-      : await db.query.users.findMany({
-          where: inArray(users.id, extraIds),
-          columns: { id: true, name: true, email: true, canLead: true, isDirector: true },
-        });
-
-  const leadOptions = [...leadCandidates, ...extras].sort((a, b) =>
-    (a.name ?? a.email).localeCompare(b.name ?? b.email),
+  const leadOptions = await listLeadOptions(
+    [project.leadId, project.coLeadId].filter((id): id is string => Boolean(id)),
   );
 
   return {
@@ -188,9 +173,8 @@ export async function updateEngagement(
   if (!Number.isFinite(ownerSplitPercent) || ownerSplitPercent < 1 || ownerSplitPercent > 100) {
     return { error: "Owner split must be 1–100." };
   }
-  if (coLeadId && coLeadId === leadId) {
-    return { error: "Co-lead must be different from primary owner." };
-  }
+  const coLeadError = await validateCoLeadChoice(leadId, coLeadId, before.coLeadId);
+  if (coLeadError) return { error: coLeadError };
 
   const customHpwRaw = formData.get("customHoursPerWeek")?.toString().trim() ?? "";
   let customHoursPerWeek: number | null = null;
@@ -392,13 +376,105 @@ export async function updateEngagement(
   return { ok: true, message: "Saved." };
 }
 
-export async function listLeadOptions() {
+export async function listLeadOptions(keepIds: string[] = []) {
   await requirePortfolioAccess();
-  return db.query.users.findMany({
-    where: and(eq(users.isActive, true), ne(users.role, "CUSTOMER"), eq(users.canLead, true)),
+  const config = await loadPathConfig();
+  const rows = await db.query.users.findMany({
+    where: and(eq(users.isActive, true), ne(users.role, "CUSTOMER")),
     columns: { id: true, name: true, email: true, canLead: true, isDirector: true },
     orderBy: [asc(users.name)],
   });
+  const keep = new Set(keepIds);
+  const missing = keepIds.filter((id) => !rows.some((row) => row.id === id));
+  const extras =
+    missing.length === 0
+      ? []
+      : await db.query.users.findMany({
+          where: inArray(users.id, missing),
+          columns: { id: true, name: true, email: true, canLead: true, isDirector: true },
+        });
+  return [...rows, ...extras]
+    .map((row) => ({
+      ...row,
+      canLead: effectiveCanLead(row.id, row.canLead, config.people),
+    }))
+    .filter((row) => row.canLead || keep.has(row.id))
+    .sort((a, b) => (a.name ?? a.email).localeCompare(b.name ?? b.email));
+}
+
+async function validateCoLeadChoice(
+  leadId: string | null,
+  coLeadId: string | null,
+  existingCoLeadId: string | null,
+): Promise<string | null> {
+  if (!coLeadId) return coLeadChoiceError({ leadId, coLeadId, existingCoLeadId, coLead: null });
+  const config = await loadPathConfig();
+  const person = await db.query.users.findFirst({
+    where: eq(users.id, coLeadId),
+    columns: { id: true, role: true, isActive: true, canLead: true },
+  });
+  return coLeadChoiceError({
+    leadId,
+    coLeadId,
+    existingCoLeadId,
+    coLead: person
+      ? {
+          role: person.role,
+          isActive: person.isActive,
+          canLead: effectiveCanLead(person.id, person.canLead, config.people),
+        }
+      : null,
+  });
+}
+
+/** Save co-lead from the Prism customer profile. Does not touch dates, slips, or other projects. */
+export async function updateProjectCoLead(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requirePortfolioAccess();
+  if (!canManagePrismCapacity(actor)) {
+    throw new ForbiddenError("Prism access required.");
+  }
+
+  const projectId = String(formData.get("projectId") ?? "");
+  if (!projectId) return { error: "Missing project." };
+  const before = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { id: true, code: true, leadId: true, coLeadId: true, ownerSplitPercent: true, archivedAt: true },
+  });
+  if (!before || before.archivedAt) return { error: "Engagement not found." };
+
+  const coLeadId = formData.get("coLeadId")?.toString().trim() || null;
+  const splitRaw = formData.get("ownerSplitPercent")?.toString() ?? "";
+  const ownerSplitPercent = splitRaw.trim() === "" ? before.ownerSplitPercent : Number.parseInt(splitRaw, 10);
+  if (!Number.isFinite(ownerSplitPercent) || ownerSplitPercent < 1 || ownerSplitPercent > 100) {
+    return { error: "Lead share must be 1–100." };
+  }
+  const coLeadError = await validateCoLeadChoice(before.leadId, coLeadId, before.coLeadId);
+  if (coLeadError) return { error: coLeadError };
+
+  await db
+    .update(projects)
+    .set({ coLeadId, ownerSplitPercent, updatedAt: new Date() })
+    .where(eq(projects.id, projectId));
+  if (coLeadId && coLeadId !== before.leadId) {
+    await db
+      .insert(projectMembers)
+      .values({ projectId, userId: coLeadId, role: "CONTRIBUTOR" })
+      .onConflictDoNothing();
+  }
+
+  await audit({
+    actor,
+    action: "management.engagement.updated",
+    entityType: "project",
+    entityId: projectId,
+    summary: `${before.code}: co-lead updated`,
+    metadata: { coLeadId, ownerSplitPercent },
+  });
+  revalidatePrismSurfaces(projectId);
+  return { ok: true, message: "Co-lead saved." };
 }
 
 function slugify(s: string) {
@@ -494,9 +570,8 @@ export async function createEngagement(
   if (!Number.isFinite(ownerSplitPercent) || ownerSplitPercent < 1 || ownerSplitPercent > 100) {
     return { error: "Owner split must be 1–100." };
   }
-  if (coLeadId && coLeadId === leadId) {
-    return { error: "Co-lead must be different from primary owner." };
-  }
+  const coLeadError = await validateCoLeadChoice(leadId, coLeadId, null);
+  if (coLeadError) return { error: coLeadError };
 
   const customHpwRaw = formData.get("customHoursPerWeek")?.toString().trim() ?? "";
   let customHoursPerWeek: number | null = null;

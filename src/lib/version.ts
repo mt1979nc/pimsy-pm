@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.41";
+export const APP_VERSION = "1.18.42";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.42",
+    date: "2026-11-12",
+    summary:
+      "A co-lead can be saved on the Prism customer profile. The project settings page stays archived. Only an active teammate marked Can lead, and not the lead, can be chosen.",
+    highlights: [
+      "The profile opened from a Prism customer name has Co-lead and lead share. Save writes those two fields and leaves dates and slips alone.",
+      "The co-lead list follows Settings → Can lead, including a person whose flag is stored on the settings row.",
+      "No schema migrate.",
+    ],
+  },
   {
     version: "1.18.41",
     date: "2026-11-11",

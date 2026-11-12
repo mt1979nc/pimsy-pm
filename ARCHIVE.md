@@ -52,7 +52,7 @@ Hidden from navigation, and 404, while the flag is off:
 Still available:
 
 - `/management` overview, roster, team, team capacity, forecast, analysis, Dock delivery
-- `/projects/{id}` only: the read-only customer profile opened from those Prism pages (status, lead, co-lead, kickoff, go-live, slips). `/projects`, `/projects/new`, and `/projects/{id}/tasks` (and the other project tabs) stay archived
+- `/projects/{id}` only: the customer profile opened from those Prism pages (status, lead, co-lead, kickoff, go-live, slips). Portfolio staff can save the co-lead and lead share on that page. `/projects`, `/projects/new`, and `/projects/{id}/tasks` (and the other project tabs) stay archived
 - `/settings` and sign-in, password reset, change password
 - `/reports/capacity` → `/management/capacity` and `/reports/analysis` → `/management/analysis`
 - Auth, Prism snapshot, Dock delivery ingest, and cron routes
