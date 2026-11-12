@@ -12,6 +12,7 @@ import {
   recommendGoLive,
   type DurationSample,
 } from "@/lib/go-live-recommendation";
+import { ownerSelectState } from "@/lib/co-lead";
 import { PRISM_STATUSES, PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
 import { toDateInput } from "@/lib/dates";
 import type { DiscoveryScenario } from "@/db/schema";
@@ -149,6 +150,10 @@ export function EngagementEditForm({
 
   const chosen =
     recommendation.scenarios.find((s) => s.scenario === scenario) ?? recommendation.scenarios[1];
+  const owners = ownerSelectState(
+    { leadId, coLeadId, ownerSplitPercent },
+    leadOptions.map((person) => person.id),
+  );
 
   function applyScenario(next: DiscoveryScenario) {
     setScenario(next);
@@ -199,9 +204,10 @@ export function EngagementEditForm({
           </Field>
           <Field label="Co-lead" htmlFor="coLeadId">
             <select
+              key={owners.key}
               id="coLeadId"
               name="coLeadId"
-              defaultValue={coLeadId ?? ""}
+              defaultValue={owners.coLeadId}
               className={inputClass}
             >
               <option value="">— None —</option>
