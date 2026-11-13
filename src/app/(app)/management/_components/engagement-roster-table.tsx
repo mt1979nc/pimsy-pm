@@ -1,15 +1,21 @@
+"use client";
+
 import Link from "next/link";
 import { Badge, QuietBlank } from "@/components/ui";
 import { fmtShort } from "@/lib/dates";
 import { formatRosterSlipDays } from "@/lib/engagement-roster";
 import { formatOwnerShares } from "@/lib/co-lead";
 import { PRISM_STATUS_LABELS, type PrismStatus } from "@/lib/prism-status";
+import type { RosterSortColumn, RosterSortDirection } from "@/lib/roster-view";
 
 export type EngagementRow = {
   id: string;
   acronym: string;
   customerName: string | null;
   name: string;
+  leadId: string | null;
+  coLeadId: string | null;
+  thirdSpecialistId: string | null;
   leadName: string | null;
   coLeadName: string | null;
   thirdSpecialistName: string | null;
@@ -52,24 +58,53 @@ function SheetText({ value, label = "Empty" }: { value: string | number | null |
 const th = "overflow-hidden break-words px-2 py-2 font-semibold leading-tight text-white";
 const td = "overflow-hidden px-2 py-2";
 
-export function EngagementRosterTable({ rows }: { rows: EngagementRow[] }) {
+const COLUMNS: { key: RosterSortColumn; label: string; className: string }[] = [
+  { key: "acronym", label: "Acronym", className: "w-[9%] text-left" },
+  { key: "customer", label: "Customer", className: "text-left" },
+  { key: "owners", label: "Owner(s)", className: "w-[12%] text-left" },
+  { key: "users", label: "Users", className: "w-[5%] text-right" },
+  { key: "locations", label: "Locs", className: "w-[5%] text-right" },
+  { key: "complexity", label: "Complexity", className: "w-[8%] text-left" },
+  { key: "hours", label: "Est. hrs", className: "w-[6%] text-right" },
+  { key: "kickoff", label: "Kickoff", className: "w-[7%] text-left" },
+  { key: "initialGoLive", label: "Initial GL", className: "w-[7%] text-left" },
+  { key: "goLive", label: "Current GL", className: "w-[7%] text-left" },
+  { key: "status", label: "Status", className: "w-[9%] text-left" },
+  { key: "slips", label: "Slip days", className: "w-[6%] text-right leading-tight" },
+];
+
+export function EngagementRosterTable({
+  rows,
+  sort,
+  dir,
+  onSort,
+}: {
+  rows: EngagementRow[];
+  sort: RosterSortColumn | null;
+  dir: RosterSortDirection;
+  onSort: (column: RosterSortColumn) => void;
+}) {
   return (
     <div className="min-w-0 w-full max-w-full overflow-hidden [contain:paint]">
       <table className="w-full min-w-0 table-fixed border-collapse text-[12.5px]">
         <thead>
           <tr className="border-b border-[#0d2f4f] bg-[#113c64] text-[11px] uppercase tracking-wide text-white">
-            <th className={`${th} w-[9%] text-left`}>Acronym</th>
-            <th className={`${th} text-left`}>Customer</th>
-            <th className={`${th} w-[12%] text-left`}>Owner(s)</th>
-            <th className={`${th} w-[5%] text-right`}>Users</th>
-            <th className={`${th} w-[5%] text-right`}>Locs</th>
-            <th className={`${th} w-[8%] text-left`}>Complexity</th>
-            <th className={`${th} w-[6%] text-right`}>Est. hrs</th>
-            <th className={`${th} w-[7%] text-left`}>Kickoff</th>
-            <th className={`${th} w-[7%] text-left`}>Initial GL</th>
-            <th className={`${th} w-[7%] text-left`}>Current GL</th>
-            <th className={`${th} w-[9%] text-left`}>Status</th>
-            <th className={`${th} w-[6%] text-right leading-tight`}>Slip days</th>
+            {COLUMNS.map((column) => {
+              const active = sort === column.key;
+              const mark = active ? (dir === "asc" ? " ↑" : " ↓") : "";
+              return (
+                <th key={column.key} className={`${th} ${column.className}`} aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}>
+                  <button
+                    type="button"
+                    className={`w-full text-inherit hover:underline ${column.className.includes("text-right") ? "text-right" : "text-left"}`}
+                    onClick={() => onSort(column.key)}
+                  >
+                    {column.label}
+                    {mark ? <span aria-hidden="true">{mark}</span> : null}
+                  </button>
+                </th>
+              );
+            })}
             <th className={`${th} w-[4%] text-right`}> </th>
           </tr>
         </thead>

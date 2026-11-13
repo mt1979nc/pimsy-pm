@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.43";
+export const APP_VERSION = "1.18.44";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.44",
+    date: "2026-11-13",
+    summary:
+      "The Prism roster sorts and filters from the address bar. Portfolio staff can edit customer details, and Prism import leaves those edited fields alone.",
+    highlights: [
+      "Click a roster column to sort. Search by customer or acronym, and filter by owner or status. Reload keeps the same list.",
+      "Edit engagement and the customer profile save name, acronym, practice type, contact fields, logo URL, CRM link, contract date, and expected ARR.",
+      "Migration 0038 records which of those fields were edited. A later Prism import does not overwrite them. Product type still comes from the playbook.",
+    ],
+  },
   {
     version: "1.18.43",
     date: "2026-11-12",

@@ -234,6 +234,11 @@ export const customerAccounts = pgTable(
      * uploading clears logoUrl.
      */
     logoStorageKey: text("logo_storage_key"),
+    /**
+     * Detail fields a person edited in PATH. Prism import does not write them.
+     * Empty until the first edit of that field.
+     */
+    pathManagedFields: jsonb("path_managed_fields").$type<string[]>().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -683,6 +688,11 @@ export const projects = pgTable(
      * sync fills it. Not the latest status update.
      */
     ceoComments: text("ceo_comments"),
+    /**
+     * Site detail fields a person edited in PATH (acronym, CRM link, contract,
+     * ARR). Prism import does not write a field once it is listed here.
+     */
+    pathManagedFields: jsonb("path_managed_fields").$type<string[]>().notNull().default([]),
 
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
