@@ -24,6 +24,8 @@ export type ExistingProjectSnapshot = {
   customerAccountId?: string | null;
   customerName?: string | null;
   customerStatus?: string | null;
+  customerPathManagedFields?: string[] | null;
+  projectPathManagedFields?: string[] | null;
   templateId: string | null;
   taskCountTotal: number;
   status: string;

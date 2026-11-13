@@ -7,6 +7,9 @@ import { EngagementEditForm } from "../../_components/engagement-edit-form";
 import { loadRosterGoLiveContext } from "@/lib/forecast-data";
 import { currentPathConfig } from "@/lib/path-config-store";
 import { parseDiscoveryScenario } from "@/lib/estimator";
+import { expectedArrInputValue } from "@/lib/ceo-book";
+import { toDateInput } from "@/lib/dates";
+import { EngagementDetailsForm } from "../../_components/engagement-details-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Edit engagement — Prism" };
@@ -91,6 +94,33 @@ export default async function ManagementEngagementEditPage({
           slipApproval={currentPathConfig().slipApproval}
         />
       </Card>
+      {project.customerAccount ? (
+        <Card>
+          <CardHeader
+            title="Customer details"
+            subtitle="Saved fields stay on the next Prism import. Product type still comes from the playbook."
+          />
+          <EngagementDetailsForm
+            details={{
+              projectId: project.id,
+              name: project.customerAccount.name,
+              practiceType: project.customerAccount.practiceType ?? "",
+              website: project.customerAccount.website ?? "",
+              phone: project.customerAccount.phone ?? "",
+              city: project.customerAccount.city ?? "",
+              state: project.customerAccount.state ?? "",
+              priorSystem: project.customerAccount.priorSystem ?? "",
+              seatCount: project.customerAccount.seatCount == null ? "" : String(project.customerAccount.seatCount),
+              logoUrl: project.customerAccount.logoUrl ?? "",
+              status: project.customerAccount.status,
+              acronym: project.crmAcronym || project.prismClientId || project.code,
+              hubspotDealUrl: project.hubspotDealUrl ?? "",
+              contractDate: toDateInput(project.contractDate),
+              expectedArr: expectedArrInputValue(project.expectedArr),
+            }}
+          />
+        </Card>
+      ) : null}
     </div>
   );
 }

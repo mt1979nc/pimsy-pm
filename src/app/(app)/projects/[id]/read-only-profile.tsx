@@ -5,7 +5,9 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { projects, slipEvents } from "@/db/schema";
 import { Card } from "@/components/ui";
-import { fmtDate } from "@/lib/dates";
+import { fmtDate, toDateInput } from "@/lib/dates";
+import { expectedArrInputValue } from "@/lib/ceo-book";
+import { EngagementDetailsForm } from "@/app/(app)/management/_components/engagement-details-form";
 import { requireStaff } from "@/lib/guard";
 import { assertProjectAccess, canSeePortfolio, ForbiddenError, NotFoundError } from "@/lib/authz";
 import { PRISM_STATUS_LABELS, isPrismStatus } from "@/lib/prism-status";
@@ -40,7 +42,20 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
     with: {
-      customerAccount: { columns: { name: true, status: true } },
+      customerAccount: {
+        columns: {
+          name: true,
+          status: true,
+          practiceType: true,
+          website: true,
+          phone: true,
+          city: true,
+          state: true,
+          priorSystem: true,
+          seatCount: true,
+          logoUrl: true,
+        },
+      },
       lead: { columns: { id: true, name: true } },
       coLead: { columns: { id: true, name: true } },
       thirdSpecialist: { columns: { id: true, name: true } },
@@ -114,6 +129,31 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
           />
         ) : null}
       </Card>
+
+      {canEditCoLead && project.customerAccount ? (
+        <Card>
+          <h2 className="border-b border-border px-4 py-3 text-[13px] font-semibold text-ink">Customer details</h2>
+          <EngagementDetailsForm
+            details={{
+              projectId: project.id,
+              name: project.customerAccount.name,
+              practiceType: project.customerAccount.practiceType ?? "",
+              website: project.customerAccount.website ?? "",
+              phone: project.customerAccount.phone ?? "",
+              city: project.customerAccount.city ?? "",
+              state: project.customerAccount.state ?? "",
+              priorSystem: project.customerAccount.priorSystem ?? "",
+              seatCount: project.customerAccount.seatCount == null ? "" : String(project.customerAccount.seatCount),
+              logoUrl: project.customerAccount.logoUrl ?? "",
+              status: project.customerAccount.status,
+              acronym,
+              hubspotDealUrl: project.hubspotDealUrl ?? "",
+              contractDate: toDateInput(project.contractDate),
+              expectedArr: expectedArrInputValue(project.expectedArr),
+            }}
+          />
+        </Card>
+      ) : null}
 
       <Card>
         <h2 className="border-b border-border px-4 py-3 text-[13px] font-semibold text-ink">Slips</h2>

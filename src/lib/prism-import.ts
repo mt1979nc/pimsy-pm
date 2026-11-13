@@ -61,6 +61,7 @@ import {
   type PrismCustomerStatus,
 } from "@/lib/prism-import-overrides";
 import { prismPercentWrite } from "@/lib/co-lead";
+import { isFieldLocked, lockedCustomerUpdate } from "@/lib/detail-locks";
 import { staffingRoleFromTitle } from "@/lib/staffing";
 import { env } from "@/lib/env";
 
@@ -961,7 +962,7 @@ async function applyExistingOverride(project: ExistingProjectSnapshot, override:
       ...(override.phase ? { currentPhase: override.phase, phaseRecordedAt: new Date() } : {}),
     })
     .where(eq(projects.id, project.id));
-  if (!override.customerStatus) return;
+  if (!override.customerStatus || isFieldLocked(project.customerPathManagedFields, "status")) return;
   const row = await db.query.projects.findFirst({
     where: eq(projects.id, project.id),
     columns: { customerAccountId: true },
@@ -1020,9 +1021,10 @@ async function loadExistingState(): Promise<ExistingPmState> {
         actualGoLiveDate: true,
         prismStatus: true,
         currentPhase: true,
+        pathManagedFields: true,
       },
       with: {
-        customerAccount: { columns: { name: true, status: true } },
+        customerAccount: { columns: { name: true, status: true, pathManagedFields: true } },
         lead: { columns: { name: true, prismTeamId: true } },
         coLead: { columns: { name: true, prismTeamId: true } },
         thirdSpecialist: { columns: { name: true } },
@@ -1056,6 +1058,8 @@ async function loadExistingState(): Promise<ExistingPmState> {
       customerAccountId: row.customerAccountId,
       customerName: row.customerAccount?.name ?? null,
       customerStatus: row.customerAccount?.status ?? null,
+      customerPathManagedFields: row.customerAccount?.pathManagedFields ?? [],
+      projectPathManagedFields: row.pathManagedFields ?? [],
       templateId: row.templateId,
       taskCountTotal: row.taskCountTotal,
       status: row.status,
@@ -1092,12 +1096,17 @@ async function upsertCustomerAccount(
     const sticky = ["LIVE", "AT_RISK", "CHURNED"].includes(existing.status);
     await db
       .update(customerAccounts)
-      .set({
-        name,
-        seatCount,
-        status: forceStatus || !sticky ? status : existing.status,
-        updatedAt: new Date(),
-      })
+      .set(
+        lockedCustomerUpdate(
+          {
+            name,
+            seatCount,
+            status: forceStatus || !sticky ? status : existing.status,
+            updatedAt: new Date(),
+          },
+          existing.pathManagedFields,
+        ),
+      )
       .where(eq(customerAccounts.id, existing.id));
     return existing.id;
   }
@@ -1350,8 +1359,12 @@ async function applyActiveCustomer(
       startDate: kickoff,
       targetGoLiveDate: current,
       estimatedHours: Math.round(hours),
-      prismClientId: fillBlankAcronym(existing.prismClientId, customer.id),
-      crmAcronym: fillBlankAcronym(existing.crmAcronym, customer.id),
+      ...(isFieldLocked(existing.projectPathManagedFields, "acronym")
+        ? {}
+        : {
+            prismClientId: fillBlankAcronym(existing.prismClientId, customer.id),
+            crmAcronym: fillBlankAcronym(existing.crmAcronym, customer.id),
+          }),
       updatedAt: new Date(),
       ...(!wipProtect ? { status: projectStatusForPrism(customer.status, false) } : {}),
       ...(override?.initialGoLive
@@ -1364,14 +1377,15 @@ async function applyActiveCustomer(
     })
     .where(eq(projects.id, existing.id));
   if (before?.customerAccountId) {
-    const accountPatch: {
-      seatCount: number;
-      updatedAt: Date;
-      name?: string;
-      status?: PrismCustomerStatus;
-    } = { seatCount: customer.users, updatedAt: new Date() };
-    if (namesCompatible(existing.customerName, customer.acct)) accountPatch.name = customer.acct;
-    if (override?.customerStatus) accountPatch.status = override.customerStatus;
+    const accountPatch = lockedCustomerUpdate(
+      {
+        seatCount: customer.users,
+        updatedAt: new Date(),
+        ...(namesCompatible(existing.customerName, customer.acct) ? { name: customer.acct } : {}),
+        ...(override?.customerStatus ? { status: override.customerStatus } : {}),
+      },
+      existing.customerPathManagedFields,
+    );
     await db
       .update(customerAccounts)
       .set(accountPatch)
@@ -1458,8 +1472,12 @@ async function applyCompleted(
           ? { initialGoLiveDate: initial }
           : {}),
       ...(hours > 0 ? { estimatedHours: Math.round(hours) } : {}),
-      prismClientId: fillBlankAcronym(existing.prismClientId, row.id),
-      crmAcronym: fillBlankAcronym(existing.crmAcronym, row.id),
+      ...(isFieldLocked(existing.projectPathManagedFields, "acronym")
+        ? {}
+        : {
+            prismClientId: fillBlankAcronym(existing.prismClientId, row.id),
+            crmAcronym: fillBlankAcronym(existing.crmAcronym, row.id),
+          }),
       prismEra: row.era === "legacy" || row.era === "current" ? row.era : null,
       status: "COMPLETED",
       archivedAt: existing.archivedAt ?? new Date(),
