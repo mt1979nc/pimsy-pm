@@ -1,12 +1,15 @@
+import Link from "next/link";
 import {
   forecastAccuracy,
   onTimeByOwner,
   onTimeByComplexityTier,
   slipAttribution,
   listCompletedForAnalysis,
+  listAnalysisStaff,
   onTimeByEra,
 } from "@/lib/queries";
 import { eraTitle } from "@/lib/analysis-era";
+import { assembleOwnerScorecard } from "@/lib/analysis-scorecard";
 import { loadForecastExclusions } from "@/lib/forecast-data";
 import { isExcludedFromPrimaryAverages } from "@/lib/forecast";
 import { Card, CardHeader, Stat, EmptyState, Badge } from "@/components/ui";
@@ -24,16 +27,23 @@ const TIER_LABEL: Record<string, string> = {
   ENTERPRISE: "Enterprise",
 };
 
-export default async function AnalysisPage() {
+export default async function AnalysisPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ former?: string }>;
+}) {
+  const includeFormer = (await searchParams).former === "1";
   const exclusions = await loadForecastExclusions();
-  const [accuracy, owners, tiers, slips, completed, eras] = await Promise.all([
+  const [accuracy, ownerStats, staff, tiers, slips, completed, eras] = await Promise.all([
     forecastAccuracy(exclusions),
     onTimeByOwner(exclusions),
+    listAnalysisStaff(),
     onTimeByComplexityTier(exclusions),
     slipAttribution(),
     listCompletedForAnalysis(),
     onTimeByEra(exclusions),
   ]);
+  const owners = assembleOwnerScorecard(ownerStats, staff, includeFormer);
 
   return (
     <>
@@ -90,22 +100,39 @@ export default async function AnalysisPage() {
           <Card>
             <CardHeader
               title="Owner scorecard"
-              subtitle="On-time % and how late the misses were"
+              subtitle="Active staff. Completed sites count for the lead. A 0% bar means every site was late."
+              action={
+                <Link
+                  href={includeFormer ? "/management/analysis" : "/management/analysis?former=1"}
+                  className="text-[12.5px] font-medium text-brand hover:underline"
+                >
+                  {includeFormer ? "Hide former" : "Include former"}
+                </Link>
+              }
             />
             {owners.length === 0 ? (
               <EmptyState title="No owner data yet" />
             ) : (
               <div className="space-y-4 p-4">
                 <div className="space-y-2.5">
-                  {owners.map((o) => (
-                    <RateBar
-                      key={o.leadId}
-                      label={o.name}
-                      value={o.onTimeRate}
-                      hint={`${o.onTimeRate}% · ${o.completed}`}
-                      tone={o.onTimeRate >= 80 ? "green" : o.onTimeRate >= 50 ? "amber" : "red"}
-                    />
-                  ))}
+                  {owners.map((o) =>
+                    o.empty || o.onTimeRate == null ? (
+                      <div key={o.leadId} className="flex items-center gap-3">
+                        <div className="w-[140px] shrink-0 truncate text-[13px] font-medium text-ink" title={o.name}>
+                          {o.name}
+                        </div>
+                        <p className="text-[12.5px] text-ink-3">No completed sites yet</p>
+                      </div>
+                    ) : (
+                      <RateBar
+                        key={o.leadId}
+                        label={o.name}
+                        value={o.onTimeRate}
+                        hint={o.onTimeRate === 0 ? `0% · ${o.completed} completed` : `${o.onTimeRate}% · ${o.completed}`}
+                        tone={o.onTimeRate >= 80 ? "green" : o.onTimeRate >= 50 ? "amber" : "red"}
+                      />
+                    ),
+                  )}
                 </div>
                 <div className="min-w-0 overflow-x-auto [contain:paint] rounded-lg border border-border">
                   <div className="min-w-[40rem] divide-y divide-border">
@@ -118,19 +145,28 @@ export default async function AnalysisPage() {
                   </div>
                   {owners.map((o) => (
                     <div key={`${o.leadId}-row`} className="flex items-center gap-4 px-4 py-3">
-                      <div className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-ink" title={o.name}>{o.name}</div>
-                      <div className="w-[90px] text-right text-[13px] text-ink-2">{o.completed}</div>
-                      <div className="w-[100px] text-right">
-                        <Badge tone={o.onTimeRate >= 80 ? "green" : o.onTimeRate >= 50 ? "amber" : "red"}>
-                          {o.onTimeRate}%
-                        </Badge>
+                      <div className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-ink" title={o.name}>
+                        {o.name}
+                        {!o.isActive ? <span className="ml-2 text-[11px] font-normal text-ink-3">Former</span> : null}
                       </div>
-                      <div className="w-[110px] text-right text-[13px] text-ink-2">
-                        {o.avgVariance !== null ? `${o.avgVariance > 0 ? "+" : ""}${o.avgVariance}d` : "—"}
-                      </div>
-                      <div className="w-[140px] shrink-0 text-right text-[13px] text-ink-2">
-                        {o.misses > 0 ? `+${o.avgDaysLateOnMisses}d (${o.misses})` : "no misses"}
-                      </div>
+                      {o.empty || o.onTimeRate == null ? (
+                        <div className="text-[13px] text-ink-3">No completed sites yet</div>
+                      ) : (
+                        <>
+                          <div className="w-[90px] text-right text-[13px] text-ink-2">{o.completed}</div>
+                          <div className="w-[100px] text-right">
+                            <Badge tone={o.onTimeRate >= 80 ? "green" : o.onTimeRate >= 50 ? "amber" : "red"}>
+                              {o.onTimeRate}%
+                            </Badge>
+                          </div>
+                          <div className="w-[110px] text-right text-[13px] text-ink-2">
+                            {o.avgVariance !== null ? `${o.avgVariance > 0 ? "+" : ""}${o.avgVariance}d` : "—"}
+                          </div>
+                          <div className="w-[140px] shrink-0 text-right text-[13px] text-ink-2">
+                            {o.misses > 0 ? `+${o.avgDaysLateOnMisses}d (${o.misses})` : "no misses"}
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                   </div>
