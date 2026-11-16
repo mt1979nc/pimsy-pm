@@ -22,6 +22,7 @@ import type { DiscoveryScenario } from "@/db/schema";
 import { AnalyticsExcludeToggle } from "@/components/analytics-exclude-toggle";
 import { ownerFormError } from "@/lib/co-lead";
 import { EngagementOwnersFields } from "./engagement-owners-fields";
+import { rankLeadHeadroom, type LeadLoad } from "@/lib/lead-headroom";
 import type { EstimatorWeights } from "@/lib/path-config-defaults";
 
 type LeadOption = {
@@ -46,6 +47,8 @@ export function EngagementCreateForm({
   exclusions,
   estimator,
   statuses,
+  leadLoads,
+  weekStarts,
 }: {
   leadOptions: LeadOption[];
   defaultLeadId: string;
@@ -53,6 +56,8 @@ export function EngagementCreateForm({
   exclusions: string[];
   estimator?: EstimatorWeights;
   statuses?: { key: string; label: string }[];
+  leadLoads?: LeadLoad[];
+  weekStarts?: string[];
 }) {
   const statusOptions =
     statuses && statuses.length > 0
@@ -89,6 +94,16 @@ export function EngagementCreateForm({
     recommendation.scenarios.find((s) => s.scenario === scenario) ?? recommendation.scenarios[1];
   const recommendedGoLive = chosen ? toDateInput(chosen.goLiveDate) : "";
   const goLiveValue = goLiveOverride ?? recommendedGoLive;
+  const leadPick = useMemo(() => {
+    const start = kickoffOrToday(kickoff ? new Date(`${kickoff}T12:00:00.000Z`) : null);
+    const end = goLiveValue ? new Date(`${goLiveValue}T12:00:00.000Z`) : start;
+    return rankLeadHeadroom({
+      candidates: leadLoads ?? [],
+      weekStarts: weekStarts ?? [],
+      kickoff: start,
+      goLive: end,
+    });
+  }, [kickoff, goLiveValue, leadLoads, weekStarts]);
 
   function selectScenario(next: DiscoveryScenario) {
     setScenario(next);
@@ -148,7 +163,8 @@ export function EngagementCreateForm({
           </Field>
           <EngagementOwnersFields
             remountKey="new"
-            leadId={defaultLeadId}
+            leadId={leadPick.suggested?.id || defaultLeadId}
+            suggestedLeadId={leadPick.suggested?.id || defaultLeadId}
             coLeadId=""
             thirdSpecialistId=""
             leadSplitPercent={defaultLeadId ? 100 : 0}
@@ -356,7 +372,13 @@ export function EngagementCreateForm({
             <span className="text-ink">{status === "pipeline" ? "No" : "Yes"}</span>
           </div>
         </div>
-        <div className="mt-5 border-t border-border pt-4">
+          {leadPick.suggested ? (
+            <p className="mt-4 text-[13px] text-ink">
+              Suggested lead: {leadPick.suggested.name}. {leadPick.suggested.reason}.
+              {leadPick.runnerUp ? ` ${leadPick.runnerUp.reason}.` : ""}
+            </p>
+          ) : null}
+          <div className="mt-5 border-t border-border pt-4">
           <GoLiveScenarioPicker
             recommendation={recommendation}
             scenario={scenario}

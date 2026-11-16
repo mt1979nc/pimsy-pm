@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.46";
+export const APP_VERSION = "1.18.47";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.47",
+    date: "2026-11-16",
+    summary:
+      "Forecast+ suggests the lead with the most room and sits in the sidebar. The archived playbook button is gone.",
+    highlights: [
+      "Add to roster ranks active people marked Can lead by free hours in the projected window. The suggestion is pre-selected and can be changed.",
+      "Data analytics has Forecast+ next to Forecast. It opens /management/engagements/new.",
+      "No schema migrate.",
+    ],
+  },
   {
     version: "1.18.46",
     date: "2026-11-16",

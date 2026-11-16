@@ -71,11 +71,11 @@ export function staffSidebarSections(input: {
     ? [
         { href: "/reports", label: "Portfolio", exact: true },
         { href: ADMIN_AREA_HREF, label: ADMIN_AREA_LABEL },
-        ...PRISM_NAV.filter((item) => !HIDDEN.has(item.href)).map((item) => ({
-          href: item.href,
-          label: item.label,
-          exact: item.exact,
-        })),
+        ...PRISM_NAV.filter((item) => !HIDDEN.has(item.href)).flatMap((item) => {
+          const link = { href: item.href, label: item.label, exact: item.exact };
+          if (item.href !== "/management/forecast") return [link];
+          return [link, { href: "/management/engagements/new", label: "Forecast+", exact: true }];
+        }),
       ].filter((item) => showArchived || !isArchivedHref(item.href))
     : [];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Field, inputClass } from "@/components/ui";
 
@@ -75,6 +75,7 @@ function OwnerSlots({
   coLeadSplitPercent,
   thirdSplitPercent,
   options,
+  suggestedLeadId,
 }: {
   leadId: string;
   coLeadId: string;
@@ -83,8 +84,14 @@ function OwnerSlots({
   coLeadSplitPercent: number;
   thirdSplitPercent: number;
   options: Option[];
+  /** While the user has not picked a lead, follow this suggestion. */
+  suggestedLeadId?: string;
 }) {
   const [lead, setLead] = useState(leadId);
+  const [leadTouched, setLeadTouched] = useState(false);
+  useEffect(() => {
+    if (!leadTouched && suggestedLeadId) setLead(suggestedLeadId);
+  }, [suggestedLeadId, leadTouched]);
   const [coLead, setCoLead] = useState(coLeadId);
   const [third, setThird] = useState(thirdSpecialistId);
   const [leadPct, setLeadPct] = useState(leadSplitPercent);
@@ -107,7 +114,10 @@ function OwnerSlots({
         percent={leadPct}
         options={choices(lead, [coLead, third])}
         markDirector
-        onChange={setLead}
+        onChange={(id) => {
+          setLeadTouched(true);
+          setLead(id);
+        }}
         onPercent={setLeadPct}
       />
       <OwnerSlot
@@ -146,6 +156,7 @@ export function EngagementOwnersFields(props: {
   coLeadSplitPercent: number;
   thirdSplitPercent: number;
   options: Option[];
+  suggestedLeadId?: string;
 }) {
   const { remountKey, ...slotProps } = props;
   return <OwnerSlots key={remountKey} {...slotProps} />;
