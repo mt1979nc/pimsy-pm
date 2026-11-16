@@ -9,6 +9,7 @@
 
 import type { PrismStatus } from "@/lib/prism-status";
 import { resolveOwnerShares } from "@/lib/co-lead";
+import { isRemovedFromCapacity } from "@/lib/capacity-handoff";
 import { parseDateInput, utcCalendarDaysBetween, utcDayKey } from "@/lib/dates";
 import { statusCountsTowardLoad } from "@/lib/path-config-rules";
 
@@ -131,6 +132,8 @@ export type CapacityGroupSite = {
   coLeadId: string | null;
   thirdSpecialistId?: string | null;
   ownerSplitPercent: number;
+  /** When set to today or earlier, the site leaves the capacity cards. */
+  capacityHandoffOn?: Date | string | null;
   leadSplitPercent?: number | null;
   coLeadSplitPercent?: number | null;
   thirdSplitPercent?: number | null;
@@ -148,6 +151,7 @@ export type PlacedCapacitySite<T> = T & CapacityPlacement;
 export function groupSitesUnderSpecialists<T extends CapacityGroupSite>(
   memberIds: readonly string[],
   sites: readonly T[],
+  asOf: Date = new Date(),
 ): {
   byMember: Record<string, PlacedCapacitySite<T>[]>;
   unassigned: PlacedCapacitySite<T>[];
@@ -159,6 +163,7 @@ export function groupSitesUnderSpecialists<T extends CapacityGroupSite>(
   const ordered = [...sites].sort((a, b) => a.acronym.localeCompare(b.acronym));
   for (const site of ordered) {
     if (!countsOnCapacityCards(site.prismStatus)) continue;
+    if (isRemovedFromCapacity(site.capacityHandoffOn, asOf)) continue;
     let placed = false;
     for (const memberId of memberIds) {
       const placement = placementForMember(memberId, site);

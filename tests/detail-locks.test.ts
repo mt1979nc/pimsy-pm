@@ -10,7 +10,9 @@ import {
   isFieldLocked,
   lockedCustomerUpdate,
   nextPathManagedFields,
+  stripLockedProjectFields,
 } from "@/lib/detail-locks";
+import { isRemovedFromCapacity } from "@/lib/capacity-handoff";
 import { fillBlankAcronym } from "@/lib/prism-import-match";
 
 describe("customer details", () => {
@@ -82,6 +84,19 @@ describe("customer details", () => {
       next: "everwood",
       codeTaken: false,
     })).toEqual({ crmAcronym: "EVERWOOD", code: "EVERWOOD", prismClientId: "EVERWOOD" });
+
+    const asOf = new Date("2026-11-16T18:00:00.000Z");
+    expect(isRemovedFromCapacity("2026-11-16", asOf)).toBe(true);
+    expect(isRemovedFromCapacity("2026-11-15", asOf)).toBe(true);
+    expect(isRemovedFromCapacity("2026-11-17", asOf)).toBe(false);
+    expect(isRemovedFromCapacity(null, asOf)).toBe(false);
+    const kept = stripLockedProjectFields(
+      { capacityHandoffOn: null, prismStatus: "active" },
+      ["capacityHandoffOn"],
+    );
+    expect(kept.capacityHandoffOn).toBeUndefined();
+    expect(kept.prismStatus).toBe("active");
+    expect(isFieldLocked(["capacityHandoffOn"], "capacityHandoffOn")).toBe(true);
 
     const sql = readFileSync(resolve(process.cwd(), "drizzle/0038_detail_locks.sql"), "utf8");
     expect(sql).toMatch(/customer_account/);

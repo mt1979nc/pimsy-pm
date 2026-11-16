@@ -9,6 +9,7 @@ import { currentPathConfig } from "@/lib/path-config-store";
 import { parseDiscoveryScenario } from "@/lib/estimator";
 import { expectedArrInputValue } from "@/lib/ceo-book";
 import { toDateInput } from "@/lib/dates";
+import { HandoffDateForm } from "../../_components/handoff-date-form";
 import { EngagementDetailsForm } from "../../_components/engagement-details-form";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +94,7 @@ export default async function ManagementEngagementEditPage({
           slipCauses={currentPathConfig().slipCauses}
           slipApproval={currentPathConfig().slipApproval}
         />
+        <HandoffDateForm projectId={project.id} capacityHandoffOn={toDateInput(project.capacityHandoffOn)} />
       </Card>
       {project.customerAccount ? (
         <Card>

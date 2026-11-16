@@ -88,6 +88,21 @@ describe("capacity site grouping", () => {
     expect(secondary).toMatchObject({ splitPercent: 40, isSecondary: true });
   });
 
+  it("drops a site whose handoff date is today or earlier", () => {
+    const asOf = new Date("2026-11-16T18:00:00.000Z");
+    const grouped = groupSitesUnderSpecialists(
+      [alex],
+      [
+        site({ id: "live", acronym: "LIVE", leadId: alex, capacityHandoffOn: "2026-11-16" }),
+        site({ id: "soon", acronym: "SOON", leadId: alex, capacityHandoffOn: "2026-11-20" }),
+        site({ id: "open", acronym: "OPEN", leadId: alex }),
+      ],
+      asOf,
+    );
+    expect(grouped.byMember[alex]?.map((s) => s.acronym)).toEqual(["OPEN", "SOON"]);
+    expect(grouped.unassigned).toEqual([]);
+  });
+
   it("drops pipeline and parks ownerless sites instead of flattening the roster", () => {
     const grouped = groupSitesUnderSpecialists([alex, danielle], sites);
     const allIds = [

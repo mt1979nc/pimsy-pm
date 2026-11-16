@@ -16,7 +16,13 @@ export const CUSTOMER_LOCK_FIELDS = [
   "status",
 ] as const;
 
-export const PROJECT_LOCK_FIELDS = ["acronym", "hubspotDealUrl", "contractDate", "expectedArr"] as const;
+export const PROJECT_LOCK_FIELDS = [
+  "acronym",
+  "hubspotDealUrl",
+  "contractDate",
+  "expectedArr",
+  "capacityHandoffOn",
+] as const;
 
 export type CustomerLockField = (typeof CUSTOMER_LOCK_FIELDS)[number];
 export type ProjectLockField = (typeof PROJECT_LOCK_FIELDS)[number];
@@ -41,6 +47,20 @@ export function changedDetailFields(
 
 export function isFieldLocked(locked: readonly string[] | null | undefined, field: string): boolean {
   return (locked ?? []).includes(field);
+}
+
+/** Drop project columns Prism import must not write once PATH has edited them. */
+export function stripLockedProjectFields<T extends object>(
+  patch: T,
+  locked: readonly string[] | null | undefined,
+): T {
+  const out = { ...patch } as T & Record<string, unknown>;
+  for (const field of PROJECT_LOCK_FIELDS) {
+    if (field !== "acronym" && isFieldLocked(locked, field) && field in out) {
+      delete out[field];
+    }
+  }
+  return out;
 }
 
 /** Drop customer columns Prism import must not write once PATH has edited them. */
