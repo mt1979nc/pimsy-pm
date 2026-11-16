@@ -303,7 +303,10 @@ export function RateBar({
     <div className="flex items-center gap-3">
       <div className="w-[140px] shrink-0 truncate text-[13px] font-medium text-ink">{label}</div>
       <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-border">
-        <div className={cn("h-full rounded-full", color)} style={{ width: `${Math.min(pct, 100)}%` }} />
+        <div
+          className={cn("h-full rounded-full", color)}
+          style={{ width: `${Math.min(pct, 100)}%`, minWidth: value <= 0 ? 4 : undefined }}
+        />
       </div>
       <div className="w-[88px] shrink-0 text-right text-[12.5px] tabular-nums text-ink-2">
         {hint ?? `${value}${max === 100 ? "%" : ""}`}

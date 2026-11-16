@@ -707,6 +707,15 @@ export async function onTimeByOwner(
     .sort((a, b) => b.onTimeRate - a.onTimeRate);
 }
 
+/** Internal people for the Analysis scorecard. Customers are not staff. */
+export async function listAnalysisStaff() {
+  return db.query.users.findMany({
+    where: ne(users.role, "CUSTOMER"),
+    columns: { id: true, name: true, email: true, isActive: true },
+    orderBy: [asc(users.name)],
+  });
+}
+
 /** On-time rate and average duration/variance, one row per complexity tier. */
 export async function onTimeByComplexityTier(
   exclusions: readonly string[] = DEFAULT_ANALYSIS_EXCLUSION_CODES,

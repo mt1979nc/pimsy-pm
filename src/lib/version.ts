@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.44";
+export const APP_VERSION = "1.18.45";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.45",
+    date: "2026-11-13",
+    summary:
+      "The Analysis owner scorecard lists active staff. Former people are hidden unless Include former is on. Someone with no completed sites is labeled, and a 0% bar is a real on-time rate.",
+    highlights: [
+      "Completed sites still count for the implementation lead. Co-lead and the 3rd specialist are not on completed history.",
+      "Active staff with no finished sites show “No completed sites yet” instead of a blank bar.",
+      "No schema migrate.",
+    ],
+  },
   {
     version: "1.18.44",
     date: "2026-11-13",
