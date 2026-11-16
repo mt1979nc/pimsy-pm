@@ -672,6 +672,11 @@ export const projects = pgTable(
      * project is also marked COMPLETED (out of implementation).
      */
     supportHandoffAt: timestamp("support_handoff_at", { withTimezone: true }),
+    /**
+     * Date the site leaves Team capacity tiles. Null means it still counts.
+     * Not `support_handoff_at`, which is the playbook handoff stamp.
+     */
+    capacityHandoffOn: timestamp("capacity_handoff_on", { withTimezone: true }),
 
     /**
      * CEO book fields that PATH did not already store (v1.18.8).

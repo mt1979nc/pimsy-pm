@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.45";
+export const APP_VERSION = "1.18.46";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.46",
+    date: "2026-11-16",
+    summary:
+      "A completed or live site can take a handoff date. On that date it leaves the Team capacity tiles. Clearing the date puts it back. Prism import does not overwrite the date.",
+    highlights: [
+      "Edit engagement and the customer profile have Handoff date. The hint is Removes from capacity.",
+      "The profile shows Handed off and the date. Team capacity cards, specialist load, and the dashboard drop the site once the date is today or earlier.",
+      "Migration 0039 adds capacity_handoff_on. It is separate from the Hand off to Support stamp. No other archived modules change.",
+    ],
+  },
   {
     version: "1.18.45",
     date: "2026-11-13",

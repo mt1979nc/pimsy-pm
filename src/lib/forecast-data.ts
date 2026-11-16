@@ -18,6 +18,7 @@ import type { DurationSample } from "@/lib/go-live-recommendation";
 import { listCompletedForAnalysis } from "@/lib/queries";
 import { inferPrismStatus } from "@/lib/prism-status";
 import { includedInAnalytics } from "@/lib/analytics-scope";
+import { isRemovedFromCapacity } from "@/lib/capacity-handoff";
 import { loadPathConfig } from "@/lib/path-config";
 import { currentPathConfig } from "@/lib/path-config-store";
 
@@ -90,6 +91,7 @@ export async function loadForecastEngagements(): Promise<ForecastEngagement[]> {
       startDate: true,
       initialGoLiveDate: true,
       targetGoLiveDate: true,
+      capacityHandoffOn: true,
       estimatedHours: true,
       crmAcronym: true,
       prismClientId: true,
@@ -101,7 +103,7 @@ export async function loadForecastEngagements(): Promise<ForecastEngagement[]> {
     orderBy: [asc(projects.code)],
   });
 
-  return rows.map((r) => ({
+  return rows.filter((r) => !isRemovedFromCapacity(r.capacityHandoffOn, new Date())).map((r) => ({
     id: r.id,
     code: r.code,
     name: r.customerAccount?.name ?? r.name,

@@ -6,6 +6,8 @@ import { db } from "@/db";
 import { projects, slipEvents } from "@/db/schema";
 import { Card } from "@/components/ui";
 import { fmtDate, toDateInput } from "@/lib/dates";
+import { isRemovedFromCapacity } from "@/lib/capacity-handoff";
+import { HandoffDateForm } from "@/app/(app)/management/_components/handoff-date-form";
 import { expectedArrInputValue } from "@/lib/ceo-book";
 import { EngagementDetailsForm } from "@/app/(app)/management/_components/engagement-details-form";
 import { requireStaff } from "@/lib/guard";
@@ -93,6 +95,9 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
     ["3rd specialist", named(project.thirdSpecialist?.name, project.thirdSplitPercent)],
     ["Kickoff", project.startDate ? fmtDate(project.startDate) : "—"],
     ["Go-live", goLive ? fmtDate(goLive) : "—"],
+    ...(project.capacityHandoffOn
+      ? [["Handoff", `Handed off ${fmtDate(project.capacityHandoffOn)}`] as [string, string]]
+      : []),
   ];
 
   return (
@@ -127,6 +132,13 @@ export async function ReadOnlyCustomerProfile({ projectId }: { projectId: string
             thirdSplitPercent={project.thirdSplitPercent}
             options={options}
           />
+        ) : null}
+        {canEditCoLead ? (
+          <HandoffDateForm projectId={project.id} capacityHandoffOn={toDateInput(project.capacityHandoffOn)} />
+        ) : project.capacityHandoffOn && !isRemovedFromCapacity(project.capacityHandoffOn, new Date()) ? (
+          <p className="border-t border-border px-4 py-3 text-[12.5px] text-ink-3">
+            Handed off {fmtDate(project.capacityHandoffOn)}. Removes from capacity on that date.
+          </p>
         ) : null}
       </Card>
 

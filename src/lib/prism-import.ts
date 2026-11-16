@@ -61,7 +61,7 @@ import {
   type PrismCustomerStatus,
 } from "@/lib/prism-import-overrides";
 import { prismPercentWrite } from "@/lib/co-lead";
-import { isFieldLocked, lockedCustomerUpdate } from "@/lib/detail-locks";
+import { isFieldLocked, lockedCustomerUpdate, stripLockedProjectFields } from "@/lib/detail-locks";
 import { staffingRoleFromTitle } from "@/lib/staffing";
 import { env } from "@/lib/env";
 
@@ -1349,7 +1349,7 @@ async function applyActiveCustomer(
   });
   await db
     .update(projects)
-    .set({
+    .set(stripLockedProjectFields({
       leadId,
       coLeadId,
       ...prismPercentWrite(true, customer.split ?? 100, coLeadId),
@@ -1374,7 +1374,7 @@ async function applyActiveCustomer(
           : {}),
       ...phasePatch,
       ...actualPatch,
-    })
+    }, existing.projectPathManagedFields))
     .where(eq(projects.id, existing.id));
   if (before?.customerAccountId) {
     const accountPatch = lockedCustomerUpdate(
@@ -1462,7 +1462,7 @@ async function applyCompleted(
 
   await db
     .update(projects)
-    .set({
+    .set(stripLockedProjectFields({
       leadId,
       ...(kickoff ? { startDate: kickoff } : {}),
       actualGoLiveDate: actual,
@@ -1484,7 +1484,7 @@ async function applyCompleted(
       portalEnabled: false,
       updatedAt: new Date(),
       ...phasePatch,
-    })
+    }, existing.projectPathManagedFields))
     .where(eq(projects.id, existing.id));
   await ensureLeadMembership(existing.id, leadId, null);
   await upsertScope(existing.id, scope, hours, tier);
