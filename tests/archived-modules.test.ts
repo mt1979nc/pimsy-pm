@@ -97,6 +97,7 @@ describe("PATH_ARCHIVED_MODULES", () => {
     expect(hrefs).toEqual([
       "/management",
       "/management/forecast",
+      "/management/engagements/new",
       "/management/capacity",
       "/management/team",
       "/management/analysis",
