@@ -30,12 +30,14 @@ export function CapacityMemberBody({
   hoursPerWeek,
   sites,
   showSites,
+  viewOnly = false,
 }: {
   memberId: string;
   hoursPerWeek: number;
   sites: CapacitySiteRow[];
   /** Site list stays hidden for an exempt non-lead with nothing assigned. Hours still show. */
   showSites: boolean;
+  viewOnly?: boolean;
 }) {
   return (
     <div className="border-t border-border">
@@ -46,7 +48,7 @@ export function CapacityMemberBody({
         ) : (
           <ul>
             {sites.map((site) => (
-              <CapacitySiteRow key={site.id} site={site} />
+              <CapacitySiteRow key={site.id} site={site} viewOnly={viewOnly} />
             ))}
           </ul>
         )
@@ -55,7 +57,13 @@ export function CapacityMemberBody({
   );
 }
 
-export function CapacityUnassignedSites({ sites }: { sites: CapacitySiteRow[] }) {
+export function CapacityUnassignedSites({
+  sites,
+  viewOnly = false,
+}: {
+  sites: CapacitySiteRow[];
+  viewOnly?: boolean;
+}) {
   if (sites.length === 0) return null;
   return (
     <section className="mt-3 rounded-xl border border-border bg-surface">
@@ -63,7 +71,7 @@ export function CapacityUnassignedSites({ sites }: { sites: CapacitySiteRow[] })
       <p className="px-3 pb-1 text-[12px] text-ink-3">No specialist on the site.</p>
       <ul className="border-t border-border">
         {sites.map((site) => (
-          <CapacitySiteRow key={site.id} site={site} />
+          <CapacitySiteRow key={site.id} site={site} viewOnly={viewOnly} />
         ))}
       </ul>
     </section>
@@ -101,7 +109,7 @@ function MemberControls({
   );
 }
 
-function CapacitySiteRow({ site }: { site: CapacitySiteRow }) {
+function CapacitySiteRow({ site, viewOnly = false }: { site: CapacitySiteRow; viewOnly?: boolean }) {
   const [open, setOpen] = useState(false);
   const badge = capacityNoteBadge({ prismStatus: site.prismStatus, prismNote: site.prismNote });
   const [phase, setPhase] = useState<CapacityPhase | null>(site.currentPhase);
@@ -118,16 +126,28 @@ function CapacitySiteRow({ site }: { site: CapacitySiteRow }) {
   return (
     <li className="border-t border-border px-3 py-2">
       <div className="flex items-center gap-1.5">
-        <Link
-          href={`/projects/${site.id}`}
-          title={site.name}
-          className={cn(
-            "min-w-0 truncate text-[13px] text-ink hover:text-brand",
-            site.isSecondary ? "font-medium text-ink-2" : "font-semibold",
-          )}
-        >
-          {site.acronym}
-        </Link>
+        {viewOnly ? (
+          <span
+            title={site.name}
+            className={cn(
+              "min-w-0 truncate text-[13px] text-ink",
+              site.isSecondary ? "font-medium text-ink-2" : "font-semibold",
+            )}
+          >
+            {site.acronym}
+          </span>
+        ) : (
+          <Link
+            href={`/projects/${site.id}`}
+            title={site.name}
+            className={cn(
+              "min-w-0 truncate text-[13px] text-ink hover:text-brand",
+              site.isSecondary ? "font-medium text-ink-2" : "font-semibold",
+            )}
+          >
+            {site.acronym}
+          </Link>
+        )}
         <span className="shrink-0 text-[11px] text-ink-3">{capacityGoLiveLabel(site.targetGoLive)}</span>
         {badge ? (
           <Badge tone={badge.tone} className="px-1.5 py-0 text-[10.5px]">
@@ -145,16 +165,23 @@ function CapacitySiteRow({ site }: { site: CapacitySiteRow }) {
         {site.splitPercent < 100 ? (
           <span className="shrink-0 text-[10px] text-ink-3">{site.splitPercent}%</span>
         ) : null}
-        <button
-          type="button"
-          className="ml-auto shrink-0 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? "Hide" : "Edit"}
-        </button>
+        {viewOnly ? null : (
+          <button
+            type="button"
+            className="ml-auto shrink-0 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? "Hide" : "Edit"}
+          </button>
+        )}
       </div>
       <div className="mt-1.5 flex items-center gap-2">
+        {viewOnly ? (
+          <span className={cn("text-[12px]", recorded ? "text-ink-2" : "italic text-ink-3")}>
+            {shown && isPhase(shown) ? CAPACITY_PHASE_LABELS[shown] : "Phase not recorded"}
+          </span>
+        ) : (
         <select
           aria-label={`Phase for ${site.acronym}`}
           title={
@@ -192,12 +219,13 @@ function CapacitySiteRow({ site }: { site: CapacitySiteRow }) {
             </option>
           ))}
         </select>
+        )}
         <span className="ml-auto shrink-0 tabular-nums text-[11.5px] text-ink-2">
           {hoursLabel(site.weeklyHours)}h/wk
         </span>
       </div>
-      <FormError error={phaseError} />
-      {open ? <SiteSlipPanel site={site} /> : null}
+      {viewOnly ? null : <FormError error={phaseError} />}
+      {!viewOnly && open ? <SiteSlipPanel site={site} /> : null}
     </li>
   );
 }

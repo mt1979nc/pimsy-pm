@@ -14,12 +14,13 @@ describe("staff Update History source", () => {
       version: string;
     };
     expect(APP_VERSION).toBe(pkg.version);
-    expect(APP_VERSION).toBe("1.18.47");
+    expect(APP_VERSION).toBe("1.18.48");
     expect(APP_VERSION).toMatch(/^1\.18\./);
     expect(currentRelease().version).toBe(APP_VERSION);
     expect(RELEASE_NOTES[0]?.version).toBe(APP_VERSION);
-    expect(RELEASE_NOTES[0]?.summary).toMatch(/Forecast\+/);
-    expect(RELEASE_NOTES[0]?.highlights?.join(" ")).toMatch(/No schema migrate/i);
+    expect(RELEASE_NOTES[0]?.summary).toMatch(/Capacity viewer/);
+    expect(RELEASE_NOTES[0]?.highlights?.join(" ")).toMatch(/0040/);
+    expect(RELEASE_NOTES[0]?.highlights?.join(" ")).toMatch(/403/);
   });
 
   it("lists releases newest-first with unique versions", () => {

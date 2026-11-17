@@ -3,6 +3,7 @@ import { getActor } from "@/auth";
 import { assertAttachmentAccess } from "@/lib/attachments";
 import { readFileStream, contentDisposition } from "@/lib/storage";
 import { NotFoundError, ForbiddenError } from "@/lib/authz";
+import { isCapacityViewerRole } from "@/lib/capacity-viewer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export async function GET(
 
   const actor = await getActor();
   if (!actor) return new NextResponse("Not found", { status: 404 });
+  if (isCapacityViewerRole(actor.role)) return new NextResponse("Forbidden", { status: 403 });
 
   let asset;
   try {

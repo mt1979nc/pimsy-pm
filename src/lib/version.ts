@@ -10,7 +10,7 @@
  * newest-first entry to RELEASE_NOTES — staff Update History (`/updates`)
  * reads that list. Do not invent a separate CMS.
  */
-export const APP_VERSION = "1.18.47";
+export const APP_VERSION = "1.18.48";
 
 export type ReleaseNote = {
   version: string;
@@ -23,6 +23,17 @@ export type ReleaseNote = {
 
 /** One entry per release, newest first. Staff-only `/updates` is fed by this. */
 export const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "1.18.48",
+    date: "2026-11-17",
+    summary:
+      "Capacity viewer can open Team capacity and nothing else. An owner or admin assigns the role in Settings.",
+    highlights: [
+      "Migration 0040 adds the CAPACITY_VIEWER role. After sign-in they land on /management/capacity. The sidebar lists only Team capacity.",
+      "Every other page redirects there. Server actions and session APIs return 403. Edit, hide, reorder, and slip controls are hidden on the capacity page.",
+      "Settings → People has a Role control. Choose Capacity viewer. This release does not change anyone's role by itself.",
+    ],
+  },
   {
     version: "1.18.47",
     date: "2026-11-16",

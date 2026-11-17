@@ -27,7 +27,7 @@ import {
 import type { ActionState } from "@/actions/messages";
 import { isAdmin } from "@/lib/authz";
 import { parseExclusionCodes } from "@/lib/forecast";
-import { requireStaff } from "@/lib/guard";
+import { requireMutatingStaff } from "@/lib/guard";
 import { getOrgSettings } from "@/lib/notification-prefs";
 import {
   DEFAULT_ESTIMATOR,
@@ -134,7 +134,7 @@ function saveError(err: unknown): string {
 }
 
 export async function savePathSettings(_prev: ActionState, form: FormData): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   if (!isAdmin(actor)) return { error: "Only an owner or admin can change workspace settings." };
 
   try {

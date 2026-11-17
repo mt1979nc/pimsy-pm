@@ -13,7 +13,7 @@ import {
   templateTaskChecklistItems,
   templateTasks,
 } from "@/db/schema";
-import { requireStaff } from "@/lib/guard";
+import { requireMutatingStaff } from "@/lib/guard";
 import { canManageTemplates, ForbiddenError, NotFoundError } from "@/lib/authz";
 import { audit } from "@/lib/audit";
 import { parseTemplateDefaultRole } from "@/lib/staffing";
@@ -24,7 +24,7 @@ import { TEMPLATE_LOCKED_MESSAGE } from "@/lib/template-lock";
 import type { ActionState } from "./messages";
 
 async function requireTemplateAdmin() {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   if (!canManageTemplates(actor)) throw new ForbiddenError("Templates are owner/admin only.");
   return actor;
 }

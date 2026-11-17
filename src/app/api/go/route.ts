@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getActor } from "@/auth";
 import { NotFoundError } from "@/lib/authz";
+import { isCapacityViewerRole } from "@/lib/capacity-viewer";
 import { env } from "@/lib/env";
 import { buildGoAbsoluteUrl, parseGoQuery } from "@/lib/path-deep-links";
 import { expandPathDeepLink, resolvePathDeepLink } from "@/lib/path-deep-link-resolve";
@@ -71,6 +72,7 @@ export async function GET(req: Request) {
   if (!actor) {
     return new NextResponse("Not found", { status: 404 });
   }
+  if (isCapacityViewerRole(actor.role)) return new NextResponse("Forbidden", { status: 403 });
 
   try {
     const resolved = await resolvePathDeepLink(actor, query);

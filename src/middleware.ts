@@ -7,11 +7,15 @@ import { archivedModulesEnabled, isArchivedRequestPath } from "@/lib/archived-mo
  * The rewrite target calls notFound() so the status is 404 and the URL stays.
  */
 export function middleware(request: NextRequest) {
-  if (archivedModulesEnabled()) return NextResponse.next();
-  if (!isArchivedRequestPath(request.nextUrl.pathname)) return NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+  requestHeaders.set("x-http-method", request.method);
+  if (archivedModulesEnabled() || !isArchivedRequestPath(request.nextUrl.pathname)) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
   const url = request.nextUrl.clone();
   url.pathname = "/archived-unavailable";
-  return NextResponse.rewrite(url);
+  return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
 }
 
 export const config = {

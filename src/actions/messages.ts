@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { db } from "@/db";
 import { messageThreads, messages, threadParticipants, mentions, users } from "@/db/schema";
-import { requireUser } from "@/lib/guard";
+import { requireMutatingUser } from "@/lib/guard";
 import {
   assertProjectAccess,
   isCustomer,
@@ -48,7 +48,7 @@ export async function createThread(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
 
   const parsed = createThreadSchema.safeParse({
     projectId: formData.get("projectId"),
@@ -142,7 +142,7 @@ export async function postMessage(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
 
   const parsed = postMessageSchema.safeParse({
     threadId: formData.get("threadId"),
@@ -282,7 +282,7 @@ function revalidateThreadSurfaces(projectId: string | null, threadId: string) {
 }
 
 export async function markThreadRead(threadId: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const thread = await assertThreadAccess(actor, threadId);
   await ensureParticipants(threadId, [actor.id]);
   await db
@@ -293,7 +293,7 @@ export async function markThreadRead(threadId: string) {
 }
 
 export async function setThreadResolved(threadId: string, resolved: boolean) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const thread = await assertThreadAccess(actor, threadId);
   const now = new Date();
   const patch: {
@@ -329,7 +329,7 @@ export async function setThreadResolved(threadId: string, resolved: boolean) {
  * that the customer no longer saw it.
  */
 export async function shareThreadWithCustomer(threadId: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (!canSeeInternal(actor)) throw new ForbiddenError();
   const thread = await assertThreadAccess(actor, threadId);
   if (thread.visibility === "SHARED") return;
@@ -360,7 +360,7 @@ const waitingOnSchema = z.enum(["PIMSY", "CUSTOMER", "UNKNOWN"]);
 
 /** Staff sets ball-in-court on a thread. Customers may only read the badge. */
 export async function setThreadWaitingOn(threadId: string, waitingOn: "PIMSY" | "CUSTOMER" | "UNKNOWN") {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (isCustomer(actor)) throw new ForbiddenError("Only staff can set waiting-on.");
   const parsed = waitingOnSchema.safeParse(waitingOn);
   if (!parsed.success) throw new ForbiddenError("Invalid waiting-on value.");

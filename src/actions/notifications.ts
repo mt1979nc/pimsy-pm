@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users, orgSettings, type NotificationPrefs, type NotificationType } from "@/db/schema";
-import { requireUser, requireAdmin } from "@/lib/guard";
+import { requireMutatingUser, requireAdmin } from "@/lib/guard";
 import { isAdmin, ForbiddenError, NotFoundError } from "@/lib/authz";
 import {
   typesFor,
@@ -33,7 +33,7 @@ export async function updateMyAlerts(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const side = sideForRole(actor.role);
 
   await db
@@ -48,7 +48,7 @@ export async function updateMyAlerts(
 
 /** Put someone back on the org defaults. */
 export async function resetMyAlerts() {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   await db
     .update(users)
     .set({ notificationPrefs: null, updatedAt: new Date() })
@@ -98,7 +98,7 @@ export async function updateOrgAlertDefaults(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (!isAdmin(actor)) throw new ForbiddenError("Administrators only.");
 
   await getOrgSettings(); // make sure the row exists
@@ -147,7 +147,7 @@ export async function updateOrgAlertDefaults(
  * before relying on it. Reports the actual failure rather than a shrug.
  */
 export async function sendTeamsTest(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (!isAdmin(actor)) throw new ForbiddenError("Administrators only.");
 
   const url = formData.get("teamsWebhookUrl")?.toString().trim() || (await getOrgSettings()).teamsWebhookUrl;
@@ -167,7 +167,7 @@ export async function sendTeamsTest(_prev: ActionState, formData: FormData): Pro
 }
 
 export async function restoreOrgDefaults(scope: "staff" | "customer") {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (!isAdmin(actor)) throw new ForbiddenError("Administrators only.");
   await getOrgSettings();
 

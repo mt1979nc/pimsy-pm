@@ -18,6 +18,7 @@
 import { and, eq, inArray, isNull, or, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { projects, projectMembers, type Role } from "@/db/schema";
+import { isCapacityViewerRole } from "@/lib/capacity-viewer";
 import { roleHas } from "@/lib/path-config-rules";
 
 export type Actor = {
@@ -35,7 +36,7 @@ export type Actor = {
 // Role predicates
 // ---------------------------------------------------------------------------
 
-const STAFF_ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER", "SPECIALIST", "MEMBER"];
+const STAFF_ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER", "SPECIALIST", "MEMBER", "CAPACITY_VIEWER"];
 /**
  * App-role permissions live in Settings (`path_config_role`) and fall back to
  * the seeded list: OWNER and ADMIN administer, managers see portfolio and
@@ -44,15 +45,18 @@ const STAFF_ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER", "SPECIALIST", "MEMBER"
  */
 
 export const isStaff = (a: Pick<Actor, "role">) => STAFF_ROLES.includes(a.role);
+export const isCapacityViewer = (a: Pick<Actor, "role">) => isCapacityViewerRole(a.role);
 export const isCustomer = (a: Pick<Actor, "role">) => a.role === "CUSTOMER";
 /** OWNER always. Other roles need the `admin` permission (ADMIN by default). */
 export const isAdmin = (a: Pick<Actor, "role">) => a.role === "OWNER" || roleHas(a.role, "admin");
 /** Author or OWNER/ADMIN. Client-safe copy lives in authored-content.ts. */
 export { canEditAuthoredRecord } from "@/lib/authored-content";
-export const canSeePortfolio = (a: Pick<Actor, "role">) => roleHas(a.role, "portfolio");
+export const canSeePortfolio = (a: Pick<Actor, "role">) =>
+  !isCapacityViewerRole(a.role) && roleHas(a.role, "portfolio");
 /** Alias: Prism Management staffing / engagement edit (OWNER/ADMIN/MANAGER). */
 export const canManagePrismCapacity = (a: Pick<Actor, "role">) => canSeePortfolio(a);
-export const canReadAllProjects = (a: Pick<Actor, "role">) => roleHas(a.role, "read_all");
+export const canReadAllProjects = (a: Pick<Actor, "role">) =>
+  !isCapacityViewerRole(a.role) && roleHas(a.role, "read_all");
 /** Team-wide open implies team-wide edit; create / delete / Prism stay leadership-only. */
 export const canWriteAllProjects = (a: Pick<Actor, "role">) => canReadAllProjects(a);
 
@@ -64,7 +68,8 @@ export const canManageTemplates = (a: Pick<Actor, "role">) => roleHas(a.role, "t
 /** Learning Center curation uses the same OWNER/ADMIN bar as playbooks. */
 export const canManageLearningCenter = (a: Pick<Actor, "role">) => isAdmin(a);
 /** Leadership creates portfolio structure; specialists execute on existing sites. */
-export const canCreateProjects = (a: Pick<Actor, "role">) => roleHas(a.role, "create_projects");
+export const canCreateProjects = (a: Pick<Actor, "role">) =>
+  !isCapacityViewerRole(a.role) && roleHas(a.role, "create_projects");
 
 /** Same gate as projects — specialists should not add customer accounts. */
 export const canCreateCustomers = (a: Pick<Actor, "role">) => canCreateProjects(a);

@@ -8,6 +8,7 @@
 
 import { isArchivedHref } from "@/lib/archived-modules";
 import { ADMIN_AREA_HREF, ADMIN_AREA_LABEL, PRISM_NAV } from "@/lib/area-nav";
+import { CAPACITY_VIEWER_HOME } from "@/lib/capacity-viewer";
 import { isNavLinkActive } from "@/lib/nav";
 
 export const STAFF_SIDEBAR_OPEN_KEY = "path.sidebar.sections";
@@ -51,7 +52,18 @@ export function staffSidebarSections(input: {
    * The app shell passes PATH_ARCHIVED_MODULES, which is off by default.
    */
   showArchivedModules?: boolean;
+  /** Team capacity only. No other analytics, no settings. */
+  capacityViewer?: boolean;
 }): StaffSidebarSection[] {
+  if (input.capacityViewer) {
+    return [
+      {
+        id: "analytics",
+        label: STAFF_SIDEBAR_SECTION_LABELS.analytics,
+        items: [{ href: CAPACITY_VIEWER_HOME, label: "Team capacity", exact: true }],
+      },
+    ];
+  }
   const showArchived = input.showArchivedModules !== false;
   const showDayToDay = showArchived && input.showDayToDay !== false;
   const dayToDay: StaffSidebarItem[] = showDayToDay

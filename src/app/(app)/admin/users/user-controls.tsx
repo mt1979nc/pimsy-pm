@@ -5,6 +5,7 @@ import { inviteStaff, setUserRole } from "@/actions/admin";
 import { setUserActive } from "@/actions/customers";
 import { SubmitButton, FormError } from "@/components/submit-button";
 import { Button, inputClass, Field } from "@/components/ui";
+import { ADDABLE_STAFF_ROLES, ASSIGNABLE_STAFF_ROLES, ASSIGNABLE_STAFF_ROLE_LABELS, STAFF_ROLE_LABELS } from "@/lib/team-member";
 
 export function InviteStaffForm() {
   const [state, action] = useActionState(inviteStaff, {});
@@ -40,10 +41,11 @@ export function InviteStaffForm() {
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="Role" htmlFor="staffRole">
           <select id="staffRole" name="role" defaultValue="SPECIALIST" className={inputClass}>
-            <option value="SPECIALIST">Specialist</option>
-            <option value="MEMBER">Member</option>
-            <option value="MANAGER">Manager</option>
-            <option value="ADMIN">Admin</option>
+            {ADDABLE_STAFF_ROLES.map((staffRole) => (
+              <option key={staffRole} value={staffRole}>
+                {STAFF_ROLE_LABELS[staffRole]}
+              </option>
+            ))}
           </select>
         </Field>
         <Field label="Title" htmlFor="staffTitle">
@@ -101,11 +103,11 @@ export function RoleSelect({
             }
           });
         }}
-        className="rounded-md border border-border bg-surface px-1.5 py-1 text-[12.5px] capitalize text-ink-2 disabled:opacity-60"
+        className="rounded-md border border-border bg-surface px-1.5 py-1 text-[12.5px] text-ink-2 disabled:opacity-60"
       >
-        {["OWNER", "ADMIN", "MANAGER", "SPECIALIST", "MEMBER"].map((r) => (
-          <option key={r} value={r}>
-            {r.toLowerCase()}
+        {ASSIGNABLE_STAFF_ROLES.map((staffRole) => (
+          <option key={staffRole} value={staffRole}>
+            {ASSIGNABLE_STAFF_ROLE_LABELS[staffRole]}
           </option>
         ))}
       </select>
