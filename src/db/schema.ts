@@ -37,6 +37,7 @@ export const roleEnum = pgEnum("role", [
   "MANAGER", // COO / director: read-all + portfolio reporting
   "SPECIALIST", // implementation specialist: can open/edit any delivery site
   "MEMBER", // internal contributor (RCM / billing), assigned projects only
+  "CAPACITY_VIEWER", // Team capacity only: read the page, no other routes, no writes
   "CUSTOMER", // external customer contact — portal only
 ]);
 

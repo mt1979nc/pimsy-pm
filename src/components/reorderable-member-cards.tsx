@@ -104,11 +104,14 @@ export function ReorderableMemberLoadCards({
   members,
   sitesByMember,
   unassignedSites = [],
+  viewOnly = false,
 }: {
   members: MemberLoad[];
   /** Site rows under the specialist who owns them. Omitted on pages that only show headroom. */
   sitesByMember?: Record<string, CapacitySiteRow[]>;
   unassignedSites?: CapacitySiteRow[];
+  /** Capacity viewer: no hide, reorder, or edit. */
+  viewOnly?: boolean;
 }) {
   const [preferred, setPreferred] = useState<string[] | null>(null);
   const [showHidden, setShowHidden] = useState(false);
@@ -152,7 +155,7 @@ export function ReorderableMemberLoadCards({
     <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
       <h2 className="text-[13.5px] font-semibold text-ink">Team capacity</h2>
       <div className="flex flex-wrap items-center gap-3">
-        {hiddenCount > 0 ? (
+        {!viewOnly && hiddenCount > 0 ? (
           <button
             type="button"
             aria-pressed={showHidden}
@@ -165,7 +168,7 @@ export function ReorderableMemberLoadCards({
             Show hidden ({hiddenCount})
           </button>
         ) : null}
-        <p className="text-[12px] text-ink-3">Drag to reorder. Saved in this browser.</p>
+        {viewOnly ? null : <p className="text-[12px] text-ink-3">Drag to reorder. Saved in this browser.</p>}
       </div>
     </div>
     <div ref={gridRef} className="card-grid">
@@ -178,6 +181,7 @@ export function ReorderableMemberLoadCards({
             data-member-id={member.id}
             className="min-w-0 rounded-xl"
             onDragOver={(event) => {
+              if (viewOnly) return;
               if (!dragIdRef.current || dragIdRef.current === member.id) return;
               event.preventDefault();
               event.dataTransfer.dropEffect = "move";
@@ -190,6 +194,7 @@ export function ReorderableMemberLoadCards({
             }}
             onDrop={(event) => {
               event.preventDefault();
+              if (viewOnly) return;
               const fromId = dragIdRef.current;
               dragIdRef.current = null;
               clearDragChrome(gridRef.current);
@@ -201,8 +206,8 @@ export function ReorderableMemberLoadCards({
             <MemberLoadCard
               className="rounded-none border-0 shadow-none"
               member={member}
-              action={<CapacityHideButton member={member} />}
-              leading={
+              action={viewOnly ? undefined : <CapacityHideButton member={member} />}
+              leading={viewOnly ? undefined : (
                 <div className="flex shrink-0 flex-col items-center gap-0.5">
                   <button
                     type="button"
@@ -250,7 +255,7 @@ export function ReorderableMemberLoadCards({
                     Down
                   </button>
                 </div>
-              }
+              )}
             />
             {sitesByMember ? (
               <CapacityMemberBody
@@ -258,6 +263,7 @@ export function ReorderableMemberLoadCards({
                 hoursPerWeek={member.capacityHoursPerWeek}
                 sites={sitesByMember[member.id] ?? []}
                 showSites={showSiteBody(member, sitesByMember[member.id] ?? [])}
+                viewOnly={viewOnly}
               />
             ) : null}
             </div>
@@ -265,7 +271,7 @@ export function ReorderableMemberLoadCards({
         );
       })}
     </div>
-    <CapacityUnassignedSites sites={unassignedSites} />
+    <CapacityUnassignedSites sites={unassignedSites} viewOnly={viewOnly} />
     </>
   );
 }

@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { db } from "@/db";
 import { customerAccounts, users } from "@/db/schema";
-import { requireStaff } from "@/lib/guard";
+import { requireMutatingStaff } from "@/lib/guard";
 import { isAdmin, ForbiddenError, canCreateCustomers, canDeletePortfolioRecords } from "@/lib/authz";
 import { revalidatePrismSurfaces } from "@/lib/prism-surfaces";
 import {
@@ -58,7 +58,7 @@ export async function createCustomer(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   if (!canCreateCustomers(actor)) return { error: "You cannot create customers." };
 
   const logo = await parseLogoForm(formData);
@@ -165,7 +165,7 @@ export async function updateCustomer(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const id = String(formData.get("customerId") ?? "");
   if (!id) return { error: "Missing customer." };
 
@@ -215,7 +215,7 @@ export async function saveCustomerLogo(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const id = String(formData.get("customerId") ?? "");
   if (!id) return { error: "Missing customer." };
 
@@ -267,7 +267,7 @@ export async function inviteCustomerContact(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
 
   const parsed = inviteSchema.safeParse({
     customerAccountId: formData.get("customerAccountId"),
@@ -343,7 +343,7 @@ export async function inviteCustomerContact(
 
 /** Explicit staff resend — mints a new set-password link and emails it. */
 export async function resendCustomerInvite(userId: string): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const target = await db.query.users.findFirst({
     where: eq(users.id, userId),
     columns: { id: true, role: true, email: true, name: true, customerAccountId: true, isActive: true },
@@ -388,7 +388,7 @@ export async function resendCustomerInvite(userId: string): Promise<ActionState>
 }
 
 export async function setUserActive(userId: string, isActive: boolean) {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const target = await db.query.users.findFirst({
     where: eq(users.id, userId),
     columns: { id: true, role: true, email: true, customerAccountId: true },
@@ -418,7 +418,7 @@ export async function updateCustomerContact(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const userId = String(formData.get("userId") ?? "");
   if (!userId) return { error: "Missing contact." };
 
@@ -463,7 +463,7 @@ export async function deleteCustomer(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const customerId = String(formData.get("customerId") ?? "");
   const confirmation = String(formData.get("confirmation") ?? "");
   const cascadeProjects = formData.get("cascadeProjects") === "on";

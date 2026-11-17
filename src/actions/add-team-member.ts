@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { pathConfigPerson, users } from "@/db/schema";
 import type { ActionState } from "@/actions/messages";
 import { isAdmin, ForbiddenError } from "@/lib/authz";
-import { requireStaff } from "@/lib/guard";
+import { requireMutatingStaff } from "@/lib/guard";
 import { resetPathConfigCache } from "@/lib/path-config";
 import { staffingRoleFromTitle } from "@/lib/staffing";
 import { parseNewTeamMember } from "@/lib/team-member";
@@ -16,7 +16,7 @@ const HOURS = 30;
 
 /** Owner or admin. Creates the login and the Settings person row together. */
 export async function addTeamMember(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   if (!isAdmin(actor)) throw new ForbiddenError("Only an owner or admin can add a team member.");
 
   const parsed = parseNewTeamMember({

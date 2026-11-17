@@ -10,6 +10,7 @@
  */
 
 import { archivedModulesEnabled } from "@/lib/archived-modules";
+import { CAPACITY_VIEWER_HOME, isCapacityViewerRole } from "@/lib/capacity-viewer";
 
 const PORTFOLIO_ROLES = new Set(["OWNER", "ADMIN", "MANAGER"]);
 
@@ -28,6 +29,7 @@ export function dayToDayEnabled(): boolean {
  * PATH_ARCHIVED_MODULES and PATH_DAY_TO_DAY are on.
  */
 export function staffHomeHref(role: string): string {
+  if (isCapacityViewerRole(role)) return CAPACITY_VIEWER_HOME;
   if (!archivedModulesEnabled()) {
     if (PORTFOLIO_ROLES.has(role)) return "/management";
     return "/settings";

@@ -2,13 +2,16 @@
 
 import { useActionState } from "react";
 import { savePathSettings } from "@/actions/path-settings";
+import { RoleSelect } from "@/app/(app)/admin/users/user-controls";
 import { FormError, SubmitButton } from "@/components/submit-button";
 import { Card, CardHeader, inputClass } from "@/components/ui";
+import { ASSIGNABLE_STAFF_ROLE_LABELS, type AssignableStaffRole } from "@/lib/team-member";
 import type { EstimatorWeights, PathConfig } from "@/lib/path-config-defaults";
 
 type PersonRow = {
   id: string;
   name: string;
+  role: string;
   canLead: boolean;
   capacityExempt: boolean;
   isDirector: boolean;
@@ -242,16 +245,17 @@ export function WorkspaceSettingsForm({
         <Card>
           <CardHeader
             title="People"
-            subtitle="Lead, exempt, director, hidden, and hours. New people are added above."
+            subtitle="Role, lead, exempt, director, hidden, and hours. New people are added above. Capacity viewer sees only Team capacity."
           />
           <div className="overflow-x-auto p-4">
             {people.length === 0 ? (
               <p className="text-[12.5px] text-ink-3">No staff yet.</p>
             ) : (
-              <table className="w-full min-w-[640px] text-left text-[12.5px]">
+              <table className="w-full min-w-[760px] text-left text-[12.5px]">
                 <thead>
                   <tr className="text-ink-3">
                     <th className="pb-2 font-medium">Name</th>
+                    <th className="pb-2 font-medium">Role</th>
                     <th className="pb-2 font-medium">Lead</th>
                     <th className="pb-2 font-medium">Exempt</th>
                     <th className="pb-2 font-medium">Director</th>
@@ -263,6 +267,15 @@ export function WorkspaceSettingsForm({
                   {people.map((row) => (
                     <tr key={row.id} className="border-t border-border">
                       <td className="py-1.5 pr-3 text-ink">{row.name}</td>
+                      <td className="py-1.5 pr-3">
+                        {canEdit ? (
+                          <RoleSelect userId={row.id} role={row.role} />
+                        ) : (
+                          <span className="text-ink-2">
+                            {ASSIGNABLE_STAFF_ROLE_LABELS[row.role as AssignableStaffRole] ?? row.role}
+                          </span>
+                        )}
+                      </td>
                       <td className="py-1.5">
                         <Check name={`personLead.${row.id}`} on={row.canLead} />
                       </td>

@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { db } from "@/db";
 import { tasks, taskComments, milestones, projects, users, projectMembers, phases } from "@/db/schema";
-import { requireUser } from "@/lib/guard";
+import { requireMutatingUser } from "@/lib/guard";
 import {
   assertProjectAccess,
   assertProjectWrite,
@@ -71,7 +71,7 @@ export async function createTask(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
 
   const parsed = createTaskSchema.safeParse({
     projectId: formData.get("projectId"),
@@ -263,7 +263,7 @@ async function loadTaskForActor(actor: Actor, taskId: string) {
  * the whole point of a portal action item — but may not touch internal work.
  */
 export async function setTaskStatus(taskId: string, status: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const parsed = z
     .enum(["TODO", "IN_PROGRESS", "BLOCKED", "IN_REVIEW", "DONE", "CANCELLED"])
     .safeParse(status);
@@ -436,7 +436,7 @@ export async function updateTask(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (isCustomer(actor)) return { error: "Customer contacts cannot edit task details." };
 
   const parsed = updateTaskSchema.safeParse({
@@ -508,7 +508,7 @@ export async function bookTrainingSession(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (isCustomer(actor)) {
     return { error: "Your implementation team records the session date and time." };
   }
@@ -557,7 +557,7 @@ export async function bookTrainingSession(
  * the single most consequential toggle in the product.
  */
 export async function setTaskVisibility(taskId: string, visibility: "INTERNAL" | "SHARED") {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (!canSeeInternal(actor)) throw new ForbiddenError();
 
   const task = await loadTaskForActor(actor, taskId);
@@ -597,7 +597,7 @@ export async function moveTask(
   toPhaseId: string | null,
   toParentTaskId: string | null,
 ) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (isCustomer(actor)) {
     throw new ForbiddenError("Only your implementation team can move tasks.");
   }
@@ -644,7 +644,7 @@ export async function moveTask(
 }
 
 export async function deleteTask(taskId: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (isCustomer(actor)) throw new ForbiddenError();
   const task = await loadTaskForActor(actor, taskId);
   await assertProjectWrite(actor, task.projectId);
@@ -669,7 +669,7 @@ export async function deleteTask(taskId: string) {
 
 /** Marks a task (and its children) N/A on this project only — template unchanged. */
 export async function markTaskNotApplicable(taskId: string, notApplicable: boolean) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (isCustomer(actor)) throw new ForbiddenError();
   const task = await loadTaskForActor(actor, taskId);
   await assertProjectWrite(actor, task.projectId);
@@ -697,7 +697,7 @@ export async function addTaskComment(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const taskId = String(formData.get("taskId") ?? "");
   const body = String(formData.get("body") ?? "").trim();
   if (!taskId) return { error: "Missing task." };
@@ -796,7 +796,7 @@ function revalidateTaskComments(projectId: string, taskId: string) {
 }
 
 export async function editTaskComment(commentId: string, body: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const { projectId, taskId, previousBody, visibility } = await editTaskCommentForActor(
     actor,
     commentId,
@@ -817,7 +817,7 @@ export async function editTaskComment(commentId: string, body: string) {
 }
 
 export async function deleteTaskComment(commentId: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const { projectId, taskId } = await deleteTaskCommentForActor(actor, commentId);
   revalidateTaskComments(projectId, taskId);
 }
@@ -827,7 +827,7 @@ export async function deleteTaskComment(commentId: string) {
  * Customers may add their own teammates on customer-owned SHARED tasks.
  */
 export async function addTaskAssignee(taskId: string, userId: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const task = await loadTaskForActor(actor, taskId);
   const target = await db.query.users.findFirst({
     where: eq(users.id, userId),
@@ -919,7 +919,7 @@ export async function addTaskAssignee(taskId: string, userId: string) {
 }
 
 export async function removeTaskAssignee(taskId: string, userId: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const task = await loadTaskForActor(actor, taskId);
 
   if (isCustomer(actor)) {
@@ -970,7 +970,7 @@ export async function assignTask(taskId: string, userId: string | null) {
 // ---------------------------------------------------------------------------
 
 export async function toggleMilestone(milestoneId: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (isCustomer(actor)) throw new ForbiddenError();
 
   const milestone = await db.query.milestones.findFirst({
@@ -1021,7 +1021,7 @@ export async function createMilestone(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (isCustomer(actor)) return { error: "Not permitted." };
 
   const projectId = String(formData.get("projectId") ?? "");

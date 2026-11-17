@@ -12,6 +12,7 @@ export function StaffUtilityBar({
   role,
   unread,
   showDayToDay = true,
+  showProfileLink = true,
 }: {
   name: string | null;
   email: string;
@@ -19,6 +20,8 @@ export function StaffUtilityBar({
   unread: number;
   /** Inbox and site search are day-to-day. Hidden while that flag is off. */
   showDayToDay?: boolean;
+  /** Capacity viewers have no Settings page. The name stays, the link does not. */
+  showProfileLink?: boolean;
 }) {
   const label = name ?? email;
   const alertLabel = unread > 0 ? `Alerts, ${unread} unread` : "Alerts";
@@ -57,15 +60,25 @@ export function StaffUtilityBar({
             ) : null}
           </Link>
         ) : null}
-        <Link
-          href="/settings"
-          aria-label={`Profile, ${label}`}
-          title={role.toLowerCase()}
-          className="inline-flex h-8 shrink-0 items-center gap-2 rounded-md px-1.5 hover:bg-white/10"
-        >
-          <Avatar name={label} size={24} className="ring-1 ring-white/50" />
-          <span className="hidden max-w-[10rem] truncate text-[13px] font-medium sm:inline">{label}</span>
-        </Link>
+        {showProfileLink ? (
+          <Link
+            href="/settings"
+            aria-label={`Profile, ${label}`}
+            title={role.toLowerCase()}
+            className="inline-flex h-8 shrink-0 items-center gap-2 rounded-md px-1.5 hover:bg-white/10"
+          >
+            <Avatar name={label} size={24} className="ring-1 ring-white/50" />
+            <span className="hidden max-w-[10rem] truncate text-[13px] font-medium sm:inline">{label}</span>
+          </Link>
+        ) : (
+          <span
+            title={role.toLowerCase()}
+            className="inline-flex h-8 shrink-0 items-center gap-2 rounded-md px-1.5"
+          >
+            <Avatar name={label} size={24} className="ring-1 ring-white/50" />
+            <span className="hidden max-w-[10rem] truncate text-[13px] font-medium sm:inline">{label}</span>
+          </span>
+        )}
         <SignOutButton className="w-auto shrink-0 rounded-md px-2 py-1 text-white/90 hover:bg-white/10 hover:text-white" />
       </div>
     </header>

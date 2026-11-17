@@ -20,7 +20,7 @@ import {
   users,
   customerAccounts,
 } from "@/db/schema";
-import { requireStaff, requireUser } from "@/lib/guard";
+import { requireMutatingStaff, requireMutatingUser } from "@/lib/guard";
 import {
   assertProjectAccess,
   assertProjectWrite,
@@ -245,7 +245,7 @@ export async function createProject(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   if (!canCreateProjects(actor)) return { error: "You cannot create projects." };
 
   const logo = await parseLogoForm(formData);
@@ -554,7 +554,7 @@ export async function updateProject(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const projectId = String(formData.get("projectId") ?? "");
   if (!projectId) return { error: "Missing project." };
 
@@ -732,7 +732,7 @@ export async function recordProjectSlip(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const projectId = String(formData.get("projectId") ?? "");
   if (!projectId) return { error: "Missing project." };
 
@@ -779,7 +779,7 @@ export async function addProjectMember(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const projectId = String(formData.get("projectId") ?? "");
   const userId = String(formData.get("userId") ?? "");
   const roleRaw = formData.get("role")?.toString() ?? "CONTRIBUTOR";
@@ -869,7 +869,7 @@ export async function setProjectMemberRole(
   userId: string,
   roleRaw: string,
 ): Promise<{ ok: true } | { error: string }> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   await assertProjectWrite(actor, projectId);
   const role = normalizeAssignableProjectRole(roleRaw);
   if (!role) return { error: "Pick a valid project role." };
@@ -919,7 +919,7 @@ export async function setProjectMemberRole(
 }
 
 export async function removeProjectMember(projectId: string, userId: string) {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   await assertProjectWrite(actor, projectId);
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
@@ -933,7 +933,7 @@ export async function removeProjectMember(projectId: string, userId: string) {
 }
 
 export async function archiveProject(projectId: string) {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   await assertProjectWrite(actor, projectId);
   await db
     .update(projects)
@@ -953,7 +953,7 @@ export async function deleteProject(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const projectId = String(formData.get("projectId") ?? "");
   const confirmation = String(formData.get("confirmation") ?? "");
   if (!projectId) return { error: "Missing project." };
@@ -1000,7 +1000,7 @@ export async function createPhase(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const projectId = String(formData.get("projectId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   if (!projectId || !name) return { error: "Phase needs a name." };
@@ -1034,7 +1034,7 @@ export async function createPhase(
  * just exposed as a per-phase switch instead of being fixed by the template.
  */
 export async function markPhaseNotApplicable(phaseId: string, notApplicable: boolean) {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const phase = await db.query.phases.findFirst({
     where: eq(phases.id, phaseId),
     columns: { id: true, projectId: true, name: true },
@@ -1075,7 +1075,7 @@ export async function addRcmTrack(
   _prev: AddRcmActionState,
   formData: FormData,
 ): Promise<AddRcmActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const projectId = String(formData.get("projectId") ?? "");
   if (!projectId) return { error: "Missing project." };
   await assertProjectWrite(actor, projectId);
@@ -1192,7 +1192,7 @@ export async function addRcmTrack(
 }
 
 export async function setPhaseVisibility(phaseId: string, visible: boolean) {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const phase = await db.query.phases.findFirst({ where: eq(phases.id, phaseId) });
   if (!phase) throw new NotFoundError("Phase not found.");
   await assertProjectWrite(actor, phase.projectId);
@@ -1224,7 +1224,7 @@ export async function createRisk(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const projectId = String(formData.get("projectId") ?? "");
   const title = String(formData.get("title") ?? "").trim();
   if (!projectId || !title) return { error: "Describe the risk." };
@@ -1257,7 +1257,7 @@ export async function createRisk(
 }
 
 export async function setRiskStatus(riskId: string, status: string) {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const risk = await db.query.risks.findFirst({ where: eq(risks.id, riskId) });
   if (!risk) throw new NotFoundError("Risk not found.");
   await assertProjectWrite(actor, risk.projectId);
@@ -1283,7 +1283,7 @@ export async function publishStatusUpdate(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const projectId = String(formData.get("projectId") ?? "");
   const summary = String(formData.get("summary") ?? "").trim();
   if (!projectId || !summary) return { error: "Write a summary." };
@@ -1371,7 +1371,7 @@ export async function editStatusUpdate(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const updateId = String(formData.get("updateId") ?? "");
   if (!updateId) return { error: "Missing update." };
   const health = String(formData.get("health") ?? "") as "GREEN" | "YELLOW" | "RED";
@@ -1402,13 +1402,13 @@ export async function editStatusUpdate(
 }
 
 export async function deleteStatusUpdate(updateId: string) {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const { projectId } = await deleteStatusUpdateForActor(actor, updateId);
   revalidateProjectUpdates(projectId);
 }
 
 export async function editRisk(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const riskId = String(formData.get("riskId") ?? "");
   if (!riskId) return { error: "Missing risk." };
   const severity = String(formData.get("severity") ?? "") as
@@ -1430,7 +1430,7 @@ export async function editRisk(_prev: ActionState, formData: FormData): Promise<
 }
 
 export async function deleteRisk(riskId: string) {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const { projectId } = await deleteRiskForActor(actor, riskId);
   revalidateProjectUpdates(projectId);
 }
@@ -1443,7 +1443,7 @@ export async function updateProjectAbout(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const projectId = String(formData.get("projectId") ?? "");
   if (!projectId) return { error: "Missing project." };
 
@@ -1528,7 +1528,7 @@ export async function updateProjectAbout(
  * must be deleted newest-first so timeline math stays consistent.
  */
 export async function deleteSlipEvent(slipId: string): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const slip = await db.query.slipEvents.findFirst({
     where: eq(slipEvents.id, slipId),
   });
@@ -1602,14 +1602,14 @@ export async function deleteSlipEvent(slipId: string): Promise<ActionState> {
 // ---------------------------------------------------------------------------
 
 export async function getProjectOr404(projectId: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const project = await assertProjectAccess(actor, projectId);
   if (isCustomer(actor) && !project.portalEnabled) throw new NotFoundError();
   return { actor, project };
 }
 
 export async function inviteExistingContactToProject(projectId: string, userId: string) {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   await assertProjectWrite(actor, projectId);
   const contact = await db.query.users.findFirst({ where: eq(users.id, userId) });
   if (!contact || contact.role !== "CUSTOMER") throw new ForbiddenError();
@@ -1648,7 +1648,7 @@ export async function completeHistoricalTasksOnTime(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const projectId = String(formData.get("projectId") ?? "");
   const confirmation = String(formData.get("confirmation") ?? "").trim();
   if (!projectId) return { error: "Missing project." };

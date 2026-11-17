@@ -1,3 +1,5 @@
+import { requireStaff } from "@/lib/guard";
+import { isCapacityViewer } from "@/lib/authz";
 import { teamCapacity } from "@/lib/queries";
 import { loadCapacityForecast } from "@/lib/forecast-data";
 import { loadCapacityBoard } from "@/lib/capacity-board";
@@ -19,6 +21,8 @@ function utilizationTone(pct: number) {
 }
 
 export default async function CapacityPage() {
+  const actor = await requireStaff();
+  const viewOnly = isCapacityViewer(actor);
   const [team, fullForecast] = await Promise.all([teamCapacity(), loadCapacityForecast(12)]);
   const forecast = forecastExcludingHiddenStaff(fullForecast);
   const board = await loadCapacityBoard(fullForecast);
@@ -30,9 +34,9 @@ export default async function CapacityPage() {
   return (
     <>
       <p className="mb-4 text-[13px] text-ink-2">
-        Sites sit under the specialist who owns them. Set the phase on a site, open Edit for the
-        full slip history, and approve the go-live change before the date moves. Green is under
-        85%, amber is 85–100%, red is over the weekly cap.
+        {viewOnly
+          ? "Sites sit under the specialist who owns them. This view is read only. Green is under 85%, amber is 85–100%, red is over the weekly cap."
+          : "Sites sit under the specialist who owns them. Set the phase on a site, open Edit for the full slip history, and approve the go-live change before the date moves. Green is under 85%, amber is 85–100%, red is over the weekly cap."}
       </p>
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -51,7 +55,7 @@ export default async function CapacityPage() {
           label="Hire now"
           value={forecast.hire.hireNow ? "Yes" : "No"}
           tone={forecast.hire.hireNow ? "red" : "green"}
-          href="/management/forecast"
+          href={viewOnly ? undefined : "/management/forecast"}
         />
       </div>
       {fullForecast.staff.length > 0 ? (
@@ -59,6 +63,7 @@ export default async function CapacityPage() {
           <ReorderableMemberLoadCards members={memberLoadsFromForecast(fullForecast)}
             sitesByMember={board.sitesByMember}
             unassignedSites={board.unassigned}
+            viewOnly={viewOnly}
           />
         </div>
       ) : null}

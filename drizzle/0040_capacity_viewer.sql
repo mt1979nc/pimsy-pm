@@ -1,0 +1,1 @@
+ALTER TYPE "public"."role" ADD VALUE 'CAPACITY_VIEWER';

@@ -1,6 +1,8 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireStaff } from "@/lib/guard";
-import { canSeePortfolio, canManageTemplates } from "@/lib/authz";
+import { canSeePortfolio, canManageTemplates, isCapacityViewer } from "@/lib/authz";
+import { CAPACITY_VIEWER_HOME, capacityViewerRouteDecision } from "@/lib/capacity-viewer";
 import { unreadThreadCount } from "@/lib/threads";
 import { StaffSidebar } from "@/components/staff-sidebar";
 import { StaffUtilityBar } from "@/components/staff-utility-bar";
@@ -15,7 +17,12 @@ export const dynamic = "force-dynamic";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const actor = await requireStaff();
   if (actor.mustChangePassword) redirect("/change-password");
-  const unread = await unreadThreadCount(actor);
+  const viewer = isCapacityViewer(actor);
+  if (viewer) {
+    const path = (await headers()).get("x-pathname") ?? "";
+    if (path && capacityViewerRouteDecision(path) === "redirect") redirect(CAPACITY_VIEWER_HOME);
+  }
+  const unread = viewer ? 0 : await unreadThreadCount(actor);
   const showPortfolio = canSeePortfolio(actor);
   const showArchivedModules = archivedModulesEnabled();
   const showDayToDay = showArchivedModules && dayToDayEnabled();
@@ -43,6 +50,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             showTemplates: canManageTemplates(actor),
             showDayToDay,
             showArchivedModules,
+            capacityViewer: viewer,
           })}
         />
 
@@ -58,6 +66,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           role={actor.role}
           unread={unread}
           showDayToDay={showDayToDay}
+          showProfileLink={!viewer}
         />
       </div>
       <main className="row-start-3 min-w-0 px-4 pb-16 pt-4 sm:px-6 lg:col-start-2 lg:row-start-2 lg:pt-6 lg:px-8">

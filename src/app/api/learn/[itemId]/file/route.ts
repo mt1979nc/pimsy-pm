@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getActor } from "@/auth";
+import { isCapacityViewerRole } from "@/lib/capacity-viewer";
 import { assertLearningFileAccess } from "@/lib/learning-center";
 import { readFileStream } from "@/lib/storage";
 
@@ -10,6 +11,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ itemId:
   const { itemId } = await params;
   const actor = await getActor();
   if (!actor) return new NextResponse("Not found", { status: 404 });
+  if (isCapacityViewerRole(actor.role)) return new NextResponse("Forbidden", { status: 403 });
 
   const access = await assertLearningFileAccess(actor, itemId);
   if (!access) return new NextResponse("Not found", { status: 404 });

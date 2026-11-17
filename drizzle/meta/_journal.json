@@ -281,6 +281,13 @@
       "when": 1789093000000,
       "tag": "0039_capacity_handoff",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1789094000000,
+      "tag": "0040_capacity_viewer",
+      "breakpoints": true
     }
   ]
 }

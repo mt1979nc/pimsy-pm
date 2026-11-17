@@ -7,6 +7,7 @@ import { APP_VERSION } from "@/lib/version";
 import { PRODUCT_EXPANSION, PRODUCT_NAME } from "@/lib/brand";
 import { safeAppPath } from "@/lib/path-deep-links";
 import { staffHomeHref } from "@/lib/day-to-day";
+import { isCapacityViewerRole } from "@/lib/capacity-viewer";
 import { PasswordSignInForm } from "./password-form";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default async function SignInPage({
   const { error, callbackUrl } = await searchParams;
   const actor = await getActor();
   if (actor) {
+    if (isCapacityViewerRole(actor.role)) redirect(staffHomeHref(actor.role));
     const next = safeAppPath(callbackUrl);
     if (next) redirect(next);
     redirect(isCustomer(actor) ? "/portal" : staffHomeHref(actor.role));

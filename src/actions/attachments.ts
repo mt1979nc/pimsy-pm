@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { fileAssets, tasks, projects, users, phases } from "@/db/schema";
 import { notify } from "@/lib/notify";
-import { requireUser, requireStaff } from "@/lib/guard";
+import { requireMutatingUser, requireMutatingStaff } from "@/lib/guard";
 import {
   assertProjectAccess,
   assertProjectWrite,
@@ -135,7 +135,7 @@ export async function addTaskLink(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
 
   const parsed = linkSchema.safeParse({
     taskId: formData.get("taskId"),
@@ -243,7 +243,7 @@ export async function addProjectRecording(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
 
   const parsed = recordingSchema.safeParse({
     projectId: formData.get("projectId"),
@@ -305,7 +305,7 @@ export async function uploadTaskFile(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
 
   const taskId = String(formData.get("taskId") ?? "");
   if (!taskId) return { error: "Missing task." };
@@ -442,7 +442,7 @@ export async function attachLibraryItemToTask(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const taskId = String(formData.get("taskId") ?? "");
   const libraryAssetId = String(formData.get("libraryAssetId") ?? "");
   if (!taskId || !libraryAssetId) return { error: "Pick a library item." };
@@ -476,7 +476,7 @@ export async function attachLibraryItemToTask(
 // ---------------------------------------------------------------------------
 
 export async function deleteAttachment(assetId: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const asset = await assertAttachmentAccess(actor, assetId);
 
   // Customers may remove only what they added themselves.
@@ -506,7 +506,7 @@ export async function setAttachmentVisibility(
   assetId: string,
   visibility: "INTERNAL" | "SHARED",
 ) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (!canSeeInternal(actor)) throw new ForbiddenError();
   const asset = await assertAttachmentAccess(actor, assetId);
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getActor } from "@/auth";
 import { canSeePortfolio } from "@/lib/authz";
+import { isCapacityViewerRole } from "@/lib/capacity-viewer";
 import { env } from "@/lib/env";
 import { loadDirectorSnapshot } from "@/lib/prism-snapshot";
 
@@ -29,6 +30,9 @@ export async function GET(req: Request) {
     allowed = true;
   } else {
     const actor = await getActor();
+    if (actor && isCapacityViewerRole(actor.role)) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
     if (actor && canSeePortfolio(actor)) allowed = true;
   }
 

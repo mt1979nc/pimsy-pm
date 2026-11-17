@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { db } from "@/db";
 import { taskChecklistItems, tasks } from "@/db/schema";
-import { requireUser } from "@/lib/guard";
+import { requireMutatingUser } from "@/lib/guard";
 import {
   assertProjectAccess,
   assertProjectWrite,
@@ -38,7 +38,7 @@ function revalidate(projectId: string, taskId: string) {
 }
 
 export async function setChecklistItemDone(itemId: string, done: boolean) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const { item, task } = await loadChecklistContext(itemId);
   await assertProjectAccess(actor, task.projectId);
   if (isCustomer(actor)) {
@@ -63,7 +63,7 @@ export async function addChecklistItem(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   const parsed = z
     .object({
       taskId: z.string().min(1),
@@ -115,7 +115,7 @@ export async function addChecklistItem(
 }
 
 export async function removeChecklistItem(itemId: string) {
-  const actor = await requireUser();
+  const actor = await requireMutatingUser();
   if (isCustomer(actor)) throw new ForbiddenError("Only staff can edit the checklist.");
   const { item, task } = await loadChecklistContext(itemId);
   await assertProjectWrite(actor, task.projectId);

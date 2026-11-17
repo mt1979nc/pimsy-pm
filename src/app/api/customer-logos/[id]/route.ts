@@ -4,6 +4,7 @@ import { getActor } from "@/auth";
 import { db } from "@/db";
 import { customerAccounts } from "@/db/schema";
 import { isCustomer, isStaff } from "@/lib/authz";
+import { isCapacityViewerRole } from "@/lib/capacity-viewer";
 import { logoContentType } from "@/lib/customer-logo-parse";
 import { contentDisposition, readFileStream } from "@/lib/storage";
 
@@ -23,6 +24,7 @@ export async function GET(
   const { id } = await params;
   const actor = await getActor();
   if (!actor) return new NextResponse("Not found", { status: 404 });
+  if (isCapacityViewerRole(actor.role)) return new NextResponse("Forbidden", { status: 403 });
 
   const staff = isStaff(actor);
   const ownCustomer = isCustomer(actor) && actor.customerAccountId === id;

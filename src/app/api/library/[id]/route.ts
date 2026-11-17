@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getActor } from "@/auth";
 import { isStaff } from "@/lib/authz";
+import { isCapacityViewerRole } from "@/lib/capacity-viewer";
 import { loadLibraryAssetForStaff } from "@/lib/learning-center";
 import { readFileStream } from "@/lib/storage";
 
@@ -11,6 +12,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const actor = await getActor();
   if (!actor || !isStaff(actor)) return new NextResponse("Not found", { status: 404 });
+  if (isCapacityViewerRole(actor.role)) return new NextResponse("Forbidden", { status: 403 });
 
   const asset = await loadLibraryAssetForStaff(actor, id);
   if (!asset) return new NextResponse("Not found", { status: 404 });

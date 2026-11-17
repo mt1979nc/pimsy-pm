@@ -3,7 +3,7 @@
  * No database here. The action and the seed scripts call these helpers.
  */
 
-export const ADDABLE_STAFF_ROLES = ["SPECIALIST", "MEMBER", "MANAGER", "ADMIN"] as const;
+export const ADDABLE_STAFF_ROLES = ["SPECIALIST", "MEMBER", "MANAGER", "ADMIN", "CAPACITY_VIEWER"] as const;
 export type AddableStaffRole = (typeof ADDABLE_STAFF_ROLES)[number];
 
 export const STAFF_ROLE_LABELS: Record<AddableStaffRole, string> = {
@@ -11,6 +11,16 @@ export const STAFF_ROLE_LABELS: Record<AddableStaffRole, string> = {
   MEMBER: "Member",
   MANAGER: "Manager",
   ADMIN: "Admin",
+  CAPACITY_VIEWER: "Capacity viewer",
+};
+
+/** Roles an owner or admin can set on an existing person, including this role. */
+export const ASSIGNABLE_STAFF_ROLES = ["OWNER", ...ADDABLE_STAFF_ROLES] as const;
+export type AssignableStaffRole = (typeof ASSIGNABLE_STAFF_ROLES)[number];
+
+export const ASSIGNABLE_STAFF_ROLE_LABELS: Record<AssignableStaffRole, string> = {
+  OWNER: "Owner",
+  ...STAFF_ROLE_LABELS,
 };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,6 +43,7 @@ export function titleForStaffRole(role: AddableStaffRole): string {
   if (role === "SPECIALIST") return "Implementation Specialist";
   if (role === "MANAGER") return "Manager";
   if (role === "ADMIN") return "Admin";
+  if (role === "CAPACITY_VIEWER") return "Capacity viewer";
   return "Member";
 }
 
@@ -48,7 +59,9 @@ export function parseNewTeamMember(input: {
   if (name.length < 2 || name.length > 80) return { ok: false, error: "Name needs 2–80 characters." };
   const email = input.email.trim().toLowerCase();
   if (!EMAIL.test(email) || email.length > 120) return { ok: false, error: "Email is not valid." };
-  if (!isAddableStaffRole(input.role)) return { ok: false, error: "Role must be Specialist, Member, Manager, or Admin." };
+  if (!isAddableStaffRole(input.role)) {
+    return { ok: false, error: "Role must be Specialist, Member, Manager, Admin, or Capacity viewer." };
+  }
   return {
     ok: true,
     value: {

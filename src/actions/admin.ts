@@ -6,7 +6,8 @@ import { z } from "zod";
 
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { requireAdmin, requireStaff } from "@/lib/guard";
+import { requireAdmin, requireMutatingStaff } from "@/lib/guard";
+import { ADDABLE_STAFF_ROLES, ASSIGNABLE_STAFF_ROLES } from "@/lib/team-member";
 import { parseOptionalStaffBookingUrl } from "@/lib/booking-urls";
 import { audit } from "@/lib/audit";
 import { sendEmail, layout } from "@/lib/email";
@@ -16,7 +17,7 @@ import type { ActionState } from "./messages";
 const inviteStaffSchema = z.object({
   email: z.email("Enter a valid email address."),
   name: z.string().trim().min(1, "Enter their name.").max(120),
-  role: z.enum(["ADMIN", "MANAGER", "SPECIALIST", "MEMBER"]),
+  role: z.enum(ADDABLE_STAFF_ROLES),
   title: z.string().trim().max(120).optional(),
   capacityHoursPerWeek: z.string().optional(),
 });
@@ -85,9 +86,7 @@ export async function inviteStaff(
 
 export async function setUserRole(userId: string, role: string) {
   const actor = await requireAdmin();
-  const parsed = z
-    .enum(["OWNER", "ADMIN", "MANAGER", "SPECIALIST", "MEMBER"])
-    .safeParse(role);
+  const parsed = z.enum(ASSIGNABLE_STAFF_ROLES).safeParse(role);
   if (!parsed.success) throw new Error("Unknown role.");
 
   const target = await db.query.users.findFirst({
@@ -111,13 +110,14 @@ export async function setUserRole(userId: string, role: string) {
     summary: `${target.email}: ${target.role} → ${parsed.data}`,
   });
   revalidatePath("/admin/users");
+  revalidatePath("/settings");
 }
 
 export async function updateOwnProfile(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   const name = formData.get("name")?.toString().trim();
   const title = formData.get("title")?.toString().trim();
   const timeZone = formData.get("timeZone")?.toString().trim();

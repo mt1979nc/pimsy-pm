@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { db } from "@/db";
 import { learningCenterItems, learningCenterSections, libraryAssets } from "@/db/schema";
-import { requireAdmin, requireStaff } from "@/lib/guard";
+import { requireAdmin, requireMutatingStaff } from "@/lib/guard";
 import { canManageLearningCenter, ForbiddenError } from "@/lib/authz";
 import { checkUpload, putFile } from "@/lib/storage";
 import type { ActionState } from "./messages";
@@ -21,7 +21,7 @@ export async function updateLearningItem(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   if (!canManageLearningCenter(actor)) {
     return { error: "Only owners and admins can curate the Learning Center." };
   }
@@ -173,7 +173,7 @@ export async function uploadLearningItemFile(
 }
 
 export async function deleteLearningItem(itemId: string) {
-  const actor = await requireStaff();
+  const actor = await requireMutatingStaff();
   if (!canManageLearningCenter(actor)) {
     throw new ForbiddenError("Only owners and admins can curate the Learning Center.");
   }

@@ -236,6 +236,7 @@ export async function listPeopleForSettings() {
       return {
         id: row.id,
         name: row.name ?? row.email,
+        role: row.role,
         canLead: saved?.canLead ?? row.canLead,
         capacityExempt: saved?.capacityExempt ?? row.capacityExempt,
         isDirector: saved?.isDirector ?? row.isDirector,
